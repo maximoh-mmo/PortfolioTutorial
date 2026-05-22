@@ -60,7 +60,8 @@ The final result is a polished, self‑contained demo suitable for:
   - Chase  
   - Attack  
   - Flee  
-- Dynamic enemy types (mesh, stats, behaviour)  
+- Dynamic enemy types (mesh, stats, behaviour)
+- Assist behaviour: allies respond when a group member is attacked
 
 ---
 
@@ -151,6 +152,7 @@ These features are intentionally excluded to keep the project focused and achiev
 
 ### **AI**
 - Advanced EQS‑driven tactics (beyond optional episode)  
+- NPC AI receives assist events from the Group System and transitions into Agro.
 - Navigation mesh generation at runtime  
 - Squad‑level tactics  
 - Behavior Tree‑only AI (StateTree is primary)  
