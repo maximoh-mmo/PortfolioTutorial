@@ -1,0 +1,61 @@
+# Unreal Engine Generated
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+Build/
+*.sln
+*.suo
+*.sdf
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.user
+*.userprefs
+*.vsix
+*.version
+
+# Visual Studio / Rider
+.vs/
+.idea/
+.vscode/
+*.DotSettings.user
+
+# Build artifacts
+Manifest_DebugFiles_Win64.xml
+*.manifest
+*.mdf
+*.ldf
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.metagen
+
+# Content
+Content/Paks/
+Content/*.ubulk
+
+# Plugins
+Plugins/*/Intermediate/
+Plugins/*/Binaries/
+
+# Platform
+*.apk
+*.app
+*.ipa
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# Private / Sensitive
+Steam/SDK/
+Steam/*.sdk
+Server/Builds/
+Server/Config/*.secret.*
+Tools/EpisodeExporter/config.local.*
