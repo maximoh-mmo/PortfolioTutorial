@@ -6,7 +6,7 @@ Use mouse raycasts and MoveToLocation to implement click‑to‑move.
 ---
 
 ## **Context & Dependencies**
-- Requires Episode 2 (top-down camera)
+- Requires [Episode 2](Episode02_TopDown_Camera.md) (top-down camera)
 
 ---
 
@@ -175,9 +175,9 @@ Character Pathfinding
 - Show how navigation handles obstacles
 
 **Outro:**
-"Next episode we add click-to-target so we can select enemies to attack."
+"[Next episode](Episode04_ClickToTarget.md) we add click-to-target so we can select enemies to attack."
 
 ---
 
 ## **Next Episode Preview**
-"Next time, we implement click-to-target selection and basic attack routing."
+"[Next time](Episode04_ClickToTarget.md), we implement click-to-target selection and basic attack routing."

@@ -6,7 +6,7 @@ Implement a fixed top‑down camera with smoothing and collision handling.
 ---
 
 ## **Context & Dependencies**
-- Requires Episode 1 (project setup, base character class)
+- Requires [Episode 1](Episode01_Project_Setup.md) (project setup, base character class)
 
 ---
 
@@ -140,9 +140,9 @@ AMPTDARPGCharacter::AMPTDARPGCharacter()
 - Test with movement
 
 **Outro:**
-"Next episode we add click-to-move so the player can actually navigate the world."
+"[Next episode](Episode03_ClickToMove.md) we add click-to-move so the player can actually navigate the world."
 
 ---
 
 ## **Next Episode Preview**
-"Next time, we implement point-and-click movement using raycasts and AI navigation."
+"[Next time](Episode03_ClickToMove.md), we implement point-and-click movement using raycasts and AI navigation."

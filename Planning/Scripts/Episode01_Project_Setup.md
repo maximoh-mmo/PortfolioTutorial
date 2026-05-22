@@ -6,7 +6,7 @@ Set up the Unreal project, folder structure, C++ base classes, and explain the f
 ---
 
 ## **Context & Dependencies**
-- This is the first episode — no dependencies.
+- This is the first episode — no dependencies (see the [Episode List](../Outlines/Episode_List.md) for the full series roadmap).
 
 ---
 
@@ -19,8 +19,8 @@ We start from scratch: create a new Unreal project, set up the C++ classes that 
 - Blank C++ project setup
 - Project folder structure convention
 - Base class hierarchy (Character, Controller, PlayerState, GameMode)
-- High-level architecture overview of all 13 systems
-- The 36-episode road map
+- High-level [architecture overview](../../Docs/Architecture/Architecture%20Overview.md) of all 13 systems
+- The [36-episode road map](../Outlines/Episode_List.md)
 
 ---
 
@@ -56,11 +56,11 @@ Project/
 - `AMPTDARPGGameState` — game state stub
 
 ### **4. Architecture Walkthrough**
-Show the Architecture Overview diagram and explain how each system connects:
-- Player → Targeting → GAS → Attributes
-- NPC AI ↔ Group ↔ Spawner ↔ Pooling
-- PvP toggle as a cross-cutting rules layer
-- Multiplayer + Steam as the outer authority layer
+Show the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) diagram and explain how each system connects:
+- [Player](../../Docs/Player/Player_System.md) → [Targeting](../../Docs/Gameplay/Targetting_System.md) → [GAS](../../Docs/GAS/GAS_System.md) → Attributes
+- [NPC AI](../../Docs/AI/NPC_AI_System.md) ↔ [Group](../../Docs/AI/Group_System.md) ↔ [Spawner](../../Docs/AI/Spawner_System.md) ↔ [Pooling](../../Docs/AI/Pooling_System.md)
+- [PvP](../../Docs/Gameplay/PVP_System.md) toggle as a cross-cutting rules layer
+- [Multiplayer](../../Docs/Multiplayer/Multiplayer_System.md) + [Steam](../../Docs/Steam/Steam_Integration_System.md) as the outer authority layer
 
 ### **5. Testing**
 - Open the project
@@ -150,9 +150,9 @@ Source/MPTDARPG/
 - Explain why each class exists
 
 **Outro:**
-"In the next episode, we'll set up our top-down camera — the first real gameplay system."
+"In [the next episode](Episode02_TopDown_Camera.md), we'll set up our top-down camera — the first real gameplay system."
 
 ---
 
 ## **Next Episode Preview**
-"Next time, we implement the top-down camera with smoothing and collision."
+"[Next time](Episode02_TopDown_Camera.md), we implement the top-down camera with smoothing and collision."

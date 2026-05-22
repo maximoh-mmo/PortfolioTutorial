@@ -6,7 +6,7 @@ Implement target selection, highlighting, and basic attack input routing.
 ---
 
 ## **Context & Dependencies**
-- Requires Episode 3 (click-to-move movement)
+- Requires [Episode 3](Episode03_ClickToMove.md) (click-to-move movement)
 
 ---
 
@@ -75,7 +75,7 @@ void AMPTDARPGPlayerController::OnBasicAttack()
 {
     if (TargetingComponent->GetCurrentTarget())
     {
-        // Route to GAS (stub — will be filled in Episode 14+)
+        // Route to [GAS](../../Docs/GAS/GAS_System.md) (stub — will be filled in Episode 14+)
         // For now, print a log message
         UE_LOG(LogTemp, Log, TEXT("Attack target: %s"), *TargetingComponent->GetCurrentTarget()->GetName());
     }
@@ -185,9 +185,9 @@ Attack Input → HasTarget? → Yes → Send to GAS (stub)
 - Test the full flow
 
 **Outro:**
-"Next episode we build the enemy spawner — our first real NPC lifecycle system."
+"[Next episode](Episode05_Enemy_Spawner.md) we build the enemy spawner — our first real NPC lifecycle system."
 
 ---
 
 ## **Next Episode Preview**
-"Next time, we create the enemy spawner to generate groups of NPCs in the world."
+"[Next time](Episode05_Enemy_Spawner.md), we create the enemy spawner to generate groups of NPCs in the world."

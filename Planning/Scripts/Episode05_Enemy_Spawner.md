@@ -6,8 +6,8 @@ Create a spawner that generates groups of NPCs at defined points.
 ---
 
 ## **Context & Dependencies**
-- Requires Episode 4 (click-to-target system, enemy actor with tag)
-- The NPC character class must exist (even as a stub)
+- Requires [Episode 4](Episode04_ClickToTarget.md) (click-to-target system, enemy actor with tag)
+- The [NPC character class](../../Docs/AI/NPC_AI_System.md) must exist (even as a stub)
 
 ---
 
@@ -17,7 +17,7 @@ We build the Enemy Spawner — an actor placed in the level that spawns groups o
 ---
 
 ## **Key Concepts Introduced**
-- Spawner actor (AEnemySpawner)
+- [Spawner actor](../../Docs/AI/Spawner_System.md) (AEnemySpawner)
 - Spawn configuration struct
 - UWorld::SpawnActor
 - Group spawning (multiple NPCs at once)
@@ -198,9 +198,9 @@ SpawnGroup()
 - Discuss respawn (stub for future episode)
 
 **Outro:**
-"Next episode we optimize with object pooling — so we're not spawning and destroying NPCs constantly."
+"Next episode we optimize with [object pooling](../../Docs/AI/Pooling_System.md) — so we're not spawning and destroying NPCs constantly."
 
 ---
 
 ## **Next Episode Preview**
-"Next time, we implement object pooling for efficient NPC reuse."
+"Next time, we implement [object pooling](../../Docs/AI/Pooling_System.md) for efficient NPC reuse."
