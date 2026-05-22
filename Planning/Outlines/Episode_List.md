@@ -33,9 +33,9 @@ Implement a fixed top‑down camera with smoothing and collision handling.
 Use mouse raycasts and MoveToLocation to implement click‑to‑move.  
 → [Script](../Scripts/Episode03_ClickToMove.md)
 
-### **Episode 4 — Click‑to‑Target System**  
-Implement target selection, highlighting, and basic attack input routing.  
-→ [Script](../Scripts/Episode04_ClickToTarget.md) · [Targeting System](../../Docs/Gameplay/Targetting_System.md)
+### **Episode 4 — Enemy Spawner (C++)**  
+Create a spawner that generates groups of NPCs at defined points.  
+→ [Script](../Scripts/Episode04_Enemy_Spawner.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
 
 ---
 
@@ -44,9 +44,9 @@ Implement target selection, highlighting, and basic attack input routing.
 
 ---
 
-### **Episode 5 — Enemy Spawner (C++)**  
-Create a spawner that generates groups of NPCs at defined points.  
-→ [Script](../Scripts/Episode05_Enemy_Spawner.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
+### **Episode 5 — Click‑to‑Target System**  
+Implement target selection, highlighting, and basic attack input routing.  
+→ [Script](../Scripts/Episode05_ClickToTarget.md) · [Targeting System](../../Docs/Gameplay/Targeting_System.md)
 
 ### **Episode 6 — Object Pooling System**  
 Implement NPC pooling for efficient reuse and performance.  

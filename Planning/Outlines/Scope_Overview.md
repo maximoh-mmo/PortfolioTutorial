@@ -41,11 +41,12 @@ The final result is a polished, self‑contained demo suitable for:
 ## **1. Player Systems**
 - Top‑down camera  
 - Point‑and‑click movement  
-- Click‑to‑target selection via [Targeting System](../../Docs/Gameplay/Targetting_System.md)  
+- Click‑to‑target selection via [Targeting System](../../Docs/Gameplay/Targeting_System.md)  
 - Basic attack  
 - Multiple abilities (dash, AoE, projectile) via [GAS System](../../Docs/GAS/GAS_System.md)  
 - Ability targeting indicators via [Ability Targeting System](../../Docs/Gameplay/Ability_Targeting_System.md)  
 - [Player AI autoplay mode](../../Docs/AI/Player_AI_System.md)  
+- [PvP toggle](../../Docs/Gameplay/PVP_System.md) — player‑controlled PvP/PvE mode affecting targeting and damage rules  
 
 ---
 

@@ -34,7 +34,7 @@ Provide an **autoplay/testing mode** where the player character is controlled by
 - **[Player System](../Player/Player_System.md):** possession switching between PlayerController and PlayerAIController  
 - **[GAS](../GAS/GAS_System.md):** triggers abilities  
 - **[UI](../Gameplay/UI_System.md):** debug toggle for autoplay  
-- **[Targeting System](../Gameplay/Targetting_System.md):** target selection for AI  
+- **[Targeting System](../Gameplay/Targeting_System.md):** target selection for AI  
 
 ## Replication
 - Player AI logic runs **server‑side** in multiplayer  

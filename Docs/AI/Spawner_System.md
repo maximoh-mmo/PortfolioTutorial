@@ -1,9 +1,11 @@
-## 📘 Spawner System — `/Docs/AI/SpawnerSystem.md`
+## 📘 Spawner System — `/Docs/AI/Spawner_System.md`
 
 # **Spawner System**
 
 ## Purpose
 Manage the creation and ongoing respawn of NPC groups in the world, assigning them to spawn points, groups, and initial states. Each NPC respawns independently on its own timer — the group does not wait for all members to die before respawning.
+
+> **Episode order note:** Episode 4 builds the Spawner with direct spawning (no pooling). Pooling integration is added in Episode 8, when the system transitions to the pooled respawn model shown in the data flow diagram below.
 
 ## Responsibilities
 - Spawn NPCs in groups at predefined locations  

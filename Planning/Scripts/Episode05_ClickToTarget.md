@@ -1,4 +1,4 @@
-# 🎬 **Episode 4 — Click‑to‑Target System**
+# 🎬 **Episode 5 — Click‑to‑Target System**
 
 ## **Episode Goal**
 Implement target selection, highlighting, and basic attack input routing.
@@ -6,7 +6,7 @@ Implement target selection, highlighting, and basic attack input routing.
 ---
 
 ## **Context & Dependencies**
-- Requires [Episode 3](Episode03_ClickToMove.md) (click-to-move movement)
+- Requires [Episode 4](Episode04_Enemy_Spawner.md) (enemy spawner provides NPCs in the world to target)
 
 ---
 
@@ -185,9 +185,9 @@ Attack Input → HasTarget? → Yes → Send to GAS (stub)
 - Test the full flow
 
 **Outro:**
-"[Next episode](Episode05_Enemy_Spawner.md) we build the enemy spawner — our first real NPC lifecycle system."
+"[Next episode](Episode06_Object_Pooling.md) we optimize spawner performance with object pooling."
 
 ---
 
 ## **Next Episode Preview**
-"[Next time](Episode05_Enemy_Spawner.md), we create the enemy spawner to generate groups of NPCs in the world."
+"[Next time](Episode06_Object_Pooling.md), we implement object pooling for efficient NPC reuse."

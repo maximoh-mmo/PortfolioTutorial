@@ -1,5 +1,5 @@
 # 📘 **Targeting System Document**  
-**File:** `/Docs/Gameplay/TargetingSystem.md`
+**File:** `/Docs/Gameplay/Targeting_System.md`
 
 ---
 
@@ -7,6 +7,8 @@
 
 ## **Purpose**
 Provide deterministic targeting for all actors using a **single authoritative target**, with PvP rules integrated into target validation.
+
+> **Episode order note:** The targeting system is built in Episode 5, after the Spawner (Episode 4) has placed NPCs in the world, so testing can begin immediately.
 
 ---
 
@@ -31,6 +33,18 @@ Provide deterministic targeting for all actors using a **single authoritative ta
 ### **NPC**
 - Always target players  
 - PvP flag does **not** affect NPC behaviour  
+
+---
+
+## **Non‑Responsibilities**
+- Ability‑specific targeting rules (handled by [Ability Targeting System](../Gameplay/Ability_Targeting_System.md))  
+- Damage calculations (handled by [GAS System](../GAS/GAS_System.md))  
+- UI rendering (handled by [UI System](UI_System.md))  
+
+---
+
+## **Key Classes**
+- **`UTargetingComponent`** — attached to player, maintains `CurrentTarget`, validates targets  
 
 ---
 
@@ -64,23 +78,20 @@ if (Target is Player && !SourcePlayer->bIsPvPEnabled)
 
 ---
 
-## **Ability Targeting Rules**
+---
 
-### Single‑Target
-Uses `CurrentTarget`  
-PvP rules apply.
+## **Replication**
+- Target selection is **client‑side**  
+- Server validates target data when ability activates via GAS  
 
-### PBAoE
-Centered on caster  
-Players inside AoE are ignored if PvP disabled.
+---
 
-### Target‑Centered AoE
-Centered on `CurrentTarget`  
-Fails if target invalid due to PvP.
-
-### Directional
-Direction = Caster → CurrentTarget  
-If PvP disabled and target is player → ability fails.
+## **Testing Checklist**
+- [ ] Click‑to‑target sets `CurrentTarget`  
+- [ ] Auto‑target fallback selects nearest valid enemy  
+- [ ] PvP filtering correctly excludes players when OFF  
+- [ ] AI targeting respects PvP rules  
+- [ ] Target highlight appears/disappears correctly  
 
 ---
 

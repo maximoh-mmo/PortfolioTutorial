@@ -1,4 +1,4 @@
-## 📘 Pooling System — `/Docs/AI/PoolingSystem.md`
+## 📘 Pooling System — `/Docs/AI/Pooling_System.md`
 
 # **Pooling System**
 

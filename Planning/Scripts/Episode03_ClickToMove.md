@@ -175,9 +175,9 @@ Character Pathfinding
 - Show how navigation handles obstacles
 
 **Outro:**
-"[Next episode](Episode04_ClickToTarget.md) we add click-to-target so we can select enemies to attack."
+"[Next episode](Episode04_Enemy_Spawner.md) we build the enemy spawner — our first real NPC lifecycle system."
 
 ---
 
 ## **Next Episode Preview**
-"[Next time](Episode04_ClickToTarget.md), we implement click-to-target selection and basic attack routing."
+"[Next time](Episode04_Enemy_Spawner.md), we create the enemy spawner to generate groups of NPCs in the world."

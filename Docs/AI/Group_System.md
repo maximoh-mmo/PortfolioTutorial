@@ -1,5 +1,5 @@
 # 📘 **GROUP SYSTEM — SYSTEM DOCUMENT**  
-**File:** `/Docs/AI/GroupSystem.md`
+**File:** `/Docs/AI/Group_System.md`
 
 ---
 

@@ -5,10 +5,10 @@ The project is composed of several modular systems that interact through clean, 
 
 - **[Player System](../Player/Player_System.md)**  
 - **[NPC AI System](../AI/NPC_AI_System.md)**  
-- **StateTree System**  
-- **[Targeting System](../Gameplay/Targetting_System.md)**  
+- **[Player AI System](../AI/Player_AI_System.md)**  
+- **[Targeting System](../Gameplay/Targeting_System.md)**  
+- **[Ability Targeting System](../Gameplay/Ability_Targeting_System.md)**  
 - **[GAS (Gameplay Ability System)](../GAS/GAS_System.md)**  
-- **Attribute System**  
 - **[Spawner System](../AI/Spawner_System.md)**  
 - **[Pooling System](../AI/Pooling_System.md)**  
 - **[Group System](../AI/Group_System.md)**  
@@ -70,7 +70,7 @@ flowchart TD
 - UI toggle triggers `Server_SetPvPEnabled`  
 - PlayerState stores and replicates PvP flag  
 
-## **[PvP System](../Gameplay/PVP_System.md) → [Targeting System](../Gameplay/Targetting_System.md)**
+## **[PvP System](../Gameplay/PVP_System.md) → [Targeting System](../Gameplay/Targeting_System.md)**
 - TargetingComponent filters out player actors when PvP is OFF  
 - Auto‑target fallback ignores players when PvP is OFF  
 
@@ -124,33 +124,34 @@ This document is the technical map for the entire project.
 - Combat behaviour  
 - Assist logic via [Group System](../AI/Group_System.md)  
 
-### **3. StateTree System**
-- High‑level behaviour logic  
-- Evaluators (distance, health, perception)  
-- Tasks (MoveTo, Attack, Flee)  
-- Transitions  
+### **3. [Player AI System](../AI/Player_AI_System.md)**
+- Autoplay/testing mode via AIController  
+- StateTree‑driven movement, targeting, and ability usage  
+- Target selection based on proximity/threat  
+- Enables stress tests, demos, and debugging without human input  
 
-### **4. [Targeting System](../Gameplay/Targetting_System.md) (PvP‑aware)**
+### **4. [Targeting System](../Gameplay/Targeting_System.md) (PvP‑aware)**
 - Maintains `CurrentTarget`  
 - Manual + automatic targeting  
 - PvP filtering  
 - Provides target data to abilities  
 
-### **5. [GAS System](../GAS/GAS_System.md)**
+### **5. [Ability Targeting System](../Gameplay/Ability_Targeting_System.md)**
+- Single‑target, AoE, and directional targeting modes  
+- Mouse input interpretation for ability placement  
+- Targeting indicators (circles, cones, etc.)  
+- Provides `FAbilityTargetData` to GAS  
+
+### **6. [GAS System](../GAS/GAS_System.md)**
 - Ability execution  
 - GameplayEffects  
 - Cooldowns  
 - Damage calculation  
 - PvP damage filtering  
 
-### **6. Attribute System**
-- Health, MaxHealth, Damage  
-- Replication  
-- Death triggers  
-
 ### **7. [Spawner System](../AI/Spawner_System.md)**
 - Group spawning  
-- Respawn logic  
+- Individual per‑NPC respawn logic  
 - Enemy type assignment  
 
 ### **8. [Pooling System](../AI/Pooling_System.md)**
@@ -189,13 +190,12 @@ This document is the technical map for the entire project.
 
 ---
 
-# 🔗 **System Interaction Summary (PvP Included)**
+# 🔗 **Full System Interaction Summary**
 
 ### **[Player System](../Player/Player_System.md) ↔ [PvP System](../Gameplay/PVP_System.md)**
-- UI toggles PvP  
-- PlayerState replicates PvP flag  
+- UI toggles PvP; PlayerState replicates PvP flag  
 
-### **[PvP System](../Gameplay/PVP_System.md) ↔ [Targeting System](../Gameplay/Targetting_System.md)**
+### **[PvP System](../Gameplay/PVP_System.md) ↔ [Targeting System](../Gameplay/Targeting_System.md)**
 - Filters player targets  
 
 ### **[PvP System](../Gameplay/PVP_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
@@ -204,14 +204,73 @@ This document is the technical map for the entire project.
 ### **[PvP System](../Gameplay/PVP_System.md) ↔ [UI System](../Gameplay/UI_System.md)**
 - UI updates PvP status  
 
+### **[PvP System](../Gameplay/PVP_System.md) ↔ [Player AI System](../AI/Player_AI_System.md)**
+- Player AI ignores players when PvP OFF; may target when PvP ON  
+
 ### **[PvP System](../Gameplay/PVP_System.md) ↔ [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
-- Server enforces PvP rules  
-- Replicates PvP flag  
+- Server enforces PvP rules; replicates PvP flag  
+
+### **[Player System](../Player/Player_System.md) ↔ [Targeting System](../Gameplay/Targeting_System.md)**
+- Click‑to‑target sets CurrentTarget  
+
+### **[Player System](../Player/Player_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
+- Routes ability input → ASC  
+
+### **[Player System](../Player/Player_System.md) ↔ [UI System](../Gameplay/UI_System.md)**
+- HUD, ability bar, target highlight, PvP toggle  
+
+### **[Player System](../Player/Player_System.md) ↔ [Player AI System](../AI/Player_AI_System.md)**
+- Possession switching between PlayerController and PlayerAIController  
+
+### **[Targeting System](../Gameplay/Targeting_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
+- Provides target data to abilities  
+
+### **[Targeting System](../Gameplay/Targeting_System.md) ↔ [UI System](../Gameplay/UI_System.md)**
+- Drives target highlight indicator  
+
+### **[Ability Targeting System](../Gameplay/Ability_Targeting_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
+- Provides FAbilityTargetData for ability execution  
+
+### **[Ability Targeting System](../Gameplay/Ability_Targeting_System.md) ↔ [UI System](../Gameplay/UI_System.md)**
+- Renders targeting indicators (circles, cones)  
+
+### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
+- Executes abilities, applies damage, handles death  
+
+### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Group System](../AI/Group_System.md)**
+- Receives assist events; transitions into Agro  
+
+### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Spawner System](../AI/Spawner_System.md) & [Pooling System](../AI/Pooling_System.md)**
+- Resets AI state on respawn; reinitializes StateTree on reuse  
+
+### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
+- AI runs server‑only; clients receive replicated movement + effects  
+
+### **[Spawner System](../AI/Spawner_System.md) ↔ [Pooling System](../AI/Pooling_System.md)**
+- Requests NPC instances on respawn  
+
+### **[Spawner System](../AI/Spawner_System.md) ↔ [Group System](../AI/Group_System.md)**
+- Registers members into groups  
+
+### **[Player AI System](../AI/Player_AI_System.md) ↔ [Targeting System](../Gameplay/Targeting_System.md)**
+- Auto‑target selection for AI  
+
+### **[Player AI System](../AI/Player_AI_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
+- Triggers abilities  
+
+### **[Steam Integration System](../Steam/Steam_Integration_System.md) ↔ [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
+- Auth tickets for session authentication  
+
+### **[Multiplayer System](../Multiplayer/Multiplayer_System.md) ↔ [Player System](../Player/Player_System.md)**
+- Replicates player state; RPCs for PvP toggle, abilities, movement  
+
+### **[Multiplayer System](../Multiplayer/Multiplayer_System.md) ↔ [NPC AI System](../AI/NPC_AI_System.md)**
+- Replicates NPC state to clients; server‑authoritative AI execution  
 
 ---
 
 # 🎯 **Final Notes**
 The PvP System is intentionally lightweight and modular.  
-It does not complicate AI, spawning, pooling, or StateTrees — it simply adds a **rules layer** on top of targeting and damage.
+It does not complicate AI, spawning, or pooling — it simply adds a **rules layer** on top of targeting and damage.
 
 This keeps the architecture clean, predictable, and multiplayer‑safe.

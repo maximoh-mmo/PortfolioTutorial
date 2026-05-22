@@ -1,4 +1,4 @@
-## 📘 Ability Targeting System — `/Docs/Gameplay/AbilityTargetingSystem.md`
+## 📘 Ability Targeting System — `/Docs/Gameplay/Ability_Targeting_System.md`
 
 # **Ability Targeting System**
 
@@ -31,7 +31,7 @@ Input → TargetingComponent → TargetData → GAS Ability → Execution
 
 ## Interactions
 - **[Player System](../Player/Player_System.md):** feeds mouse input  
-- **[Targeting System](Targetting_System.md):** provides target selection context  
+- **[Targeting System](Targeting_System.md):** provides target selection context  
 - **[GAS System](../GAS/GAS_System.md):** consumes TargetData  
 - **[UI](UI_System.md):** renders indicators  
 

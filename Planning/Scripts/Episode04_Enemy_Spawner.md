@@ -1,4 +1,4 @@
-# 🎬 **Episode 5 — Enemy Spawner (C++)**
+# 🎬 **Episode 4 — Enemy Spawner (C++)**
 
 ## **Episode Goal**
 Create a spawner that generates groups of NPCs at defined points.
@@ -6,8 +6,8 @@ Create a spawner that generates groups of NPCs at defined points.
 ---
 
 ## **Context & Dependencies**
-- Requires [Episode 4](Episode04_ClickToTarget.md) (click-to-target system, enemy actor with tag)
-- The [NPC character class](../../Docs/AI/NPC_AI_System.md) must exist (even as a stub)
+- Requires [Episode 3](Episode03_ClickToMove.md) (click-to-move movement)
+- Creates the NPC character class and places enemies in the world for the first time
 
 ---
 
@@ -198,9 +198,9 @@ SpawnGroup()
 - Discuss respawn (stub for future episode)
 
 **Outro:**
-"Next episode we optimize with [object pooling](../../Docs/AI/Pooling_System.md) — so we're not spawning and destroying NPCs constantly."
+"[Next episode](Episode05_ClickToTarget.md), we add click-to-target so we can select the enemies we just spawned."
 
 ---
 
 ## **Next Episode Preview**
-"Next time, we implement [object pooling](../../Docs/AI/Pooling_System.md) for efficient NPC reuse."
+"[Next time](Episode05_ClickToTarget.md), we implement click-to-target selection and basic attack routing."

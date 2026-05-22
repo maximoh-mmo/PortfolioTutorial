@@ -168,7 +168,7 @@ General automation scripts.
 ### **Core Systems**
 - [Player System](Docs/Player/Player_System.md) — click-to-move, click-to-target, ability activation, PvP toggle
 - [NPC AI System](Docs/AI/NPC_AI_System.md) — StateTree-driven enemy behaviour, perception, combat
-- [Targeting System](Docs/Gameplay/Targetting_System.md) — deterministic target selection, PvP-aware filtering
+- [Targeting System](Docs/Gameplay/Targeting_System.md) — deterministic target selection, PvP-aware filtering
 - [Ability Targeting System](Docs/Gameplay/Ability_Targeting_System.md) — single-target, AoE, directional targeting
 - [PvP System](Docs/Gameplay/PVP_System.md) — player-controlled PvP/PvE toggle, damage filtering
 - [UI System](Docs/Gameplay/UI_System.md) — health bars, cooldowns, target highlighting, debug overlays

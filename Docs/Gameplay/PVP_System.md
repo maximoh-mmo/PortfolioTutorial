@@ -1,5 +1,5 @@
 # 📘 **PvP SYSTEM DOCUMENT**  
-**File:** `/Docs/Gameplay/PvPSystem.md`
+**File:** `/Docs/Gameplay/PVP_System.md`
 
 ---
 
@@ -93,7 +93,7 @@ flowchart TD
 
 ## **Interactions**
 
-### [Targeting System](Targetting_System.md)
+### [Targeting System](Targeting_System.md)
 - Filters out players when PvP disabled  
 - Allows targeting players when PvP enabled  
 

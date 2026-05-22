@@ -57,7 +57,7 @@ Project/
 
 ### **4. Architecture Walkthrough**
 Show the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) diagram and explain how each system connects:
-- [Player](../../Docs/Player/Player_System.md) → [Targeting](../../Docs/Gameplay/Targetting_System.md) → [GAS](../../Docs/GAS/GAS_System.md) → Attributes
+- [Player](../../Docs/Player/Player_System.md) → [Targeting](../../Docs/Gameplay/Targeting_System.md) → [GAS](../../Docs/GAS/GAS_System.md) → Attributes
 - [NPC AI](../../Docs/AI/NPC_AI_System.md) ↔ [Group](../../Docs/AI/Group_System.md) ↔ [Spawner](../../Docs/AI/Spawner_System.md) ↔ [Pooling](../../Docs/AI/Pooling_System.md)
 - [PvP](../../Docs/Gameplay/PVP_System.md) toggle as a cross-cutting rules layer
 - [Multiplayer](../../Docs/Multiplayer/Multiplayer_System.md) + [Steam](../../Docs/Steam/Steam_Integration_System.md) as the outer authority layer
