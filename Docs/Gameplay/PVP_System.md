@@ -90,20 +90,20 @@ PlayerState.bIsPvPEnabled (replicated)
 
 ## **Interactions**
 
-### Targeting System
+### [Targeting System](Targetting_System.md)
 - Filters out players when PvP disabled  
 - Allows targeting players when PvP enabled  
 
-### GAS System
+### [GAS System](../GAS/GAS_System.md)
 - Blocks damage to players when PvP disabled  
 
-### UI System
+### [UI System](UI_System.md)
 - Displays PvP toggle  
 - Shows PvP status indicator  
 
-### Multiplayer System
+### [Multiplayer System](../Multiplayer/Multiplayer_System.md)
 - PvP flag is server‑authoritative  
-- Replicates to all clients  
+- Replicates to all clients
 
 ---
 

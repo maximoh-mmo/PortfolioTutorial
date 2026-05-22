@@ -1,7 +1,7 @@
 # 📘 **TOP‑DOWN ARPG AI DEMO — SCOPE OVERVIEW**
 
 ## **Purpose of This Document**
-This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 36‑episode tutorial series.
+This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 36‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Episode List](Episode_List.md)).
 
 It ensures:
 
@@ -41,17 +41,16 @@ The final result is a polished, self‑contained demo suitable for:
 ## **1. Player Systems**
 - Top‑down camera  
 - Point‑and‑click movement  
-- Click‑to‑target selection  
+- Click‑to‑target selection via [Targeting System](../../Docs/Gameplay/Targetting_System.md)  
 - Basic attack  
-- Multiple abilities (dash, AoE, projectile)  
-- Ability targeting indicators  
-- Player AI autoplay mode  
+- Multiple abilities (dash, AoE, projectile) via [GAS System](../../Docs/GAS/GAS_System.md)  
+- Ability targeting indicators via [Ability Targeting System](../../Docs/Gameplay/Ability_Targeting_System.md)  
+- [Player AI autoplay mode](../../Docs/AI/Player_AI_System.md)  
 
 ---
 
 ## **2. NPC Systems**
-- NPC character class (C++ + BP)  
-- StateTree‑driven behaviour  
+- [NPC character class with StateTree AI](../../Docs/AI/NPC_AI_System.md) (C++ + BP)  
 - AI Perception (sight + hearing)  
 - Behaviour states:
   - Idle  
@@ -61,11 +60,11 @@ The final result is a polished, self‑contained demo suitable for:
   - Attack  
   - Flee  
 - Dynamic enemy types (mesh, stats, behaviour)
-- Assist behaviour: allies respond when a group member is attacked
+- [Assist behaviour via Group System](../../Docs/AI/Group_System.md): allies respond when a group member is attacked
 
 ---
 
-## **3. Combat Systems (GAS)**
+## **3. Combat Systems ([GAS](../../Docs/GAS/GAS_System.md))**
 - AbilitySystemComponent  
 - AttributeSet (Health, Damage, etc.)  
 - GameplayEffects  
@@ -78,16 +77,16 @@ The final result is a polished, self‑contained demo suitable for:
 
 ---
 
-## **4. Spawning & Pooling**
+## **4. [Spawning & Pooling](../../Docs/AI/Spawner_System.md)**
 - Enemy spawner actors  
 - Group spawning  
-- Object pooling for NPCs  
+- [Object pooling for NPCs](../../Docs/AI/Pooling_System.md)  
 - Respawn logic  
-- Group data (center, direction, alive count)  
+- [Group data](../../Docs/AI/Group_System.md) (center, direction, alive count)  
 
 ---
 
-## **5. Multiplayer**
+## **5. [Multiplayer](../../Docs/Multiplayer/Multiplayer_System.md)**
 - Server‑authoritative simulation  
 - Replicated NPCs  
 - Replicated abilities  
@@ -96,6 +95,7 @@ The final result is a polished, self‑contained demo suitable for:
 - Client‑side visuals  
 - Dedicated server build  
 - Local + remote testing  
+- [Steam authentication](../../Docs/Steam/Steam_Integration_System.md)  
 
 ---
 

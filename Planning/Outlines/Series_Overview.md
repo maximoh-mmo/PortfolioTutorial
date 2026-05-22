@@ -48,7 +48,7 @@ The final demo includes:
 ---
 
 ## **Series Structure**
-The series is divided into **6 phases**:
+The series is divided into **7 phases** (see the full [Episode List](Episode_List.md) for details):
 
 1. **Foundations** — Player, camera, input, targeting  
 2. **NPC Lifecycle** — Spawning, pooling, groups  
@@ -58,7 +58,7 @@ The series is divided into **6 phases**:
 6. **Multiplayer** — Replication, dedicated server, Steam  
 7. **Final Demo & Polish** — UI, optimization, showcase  
 
-Total: **36 episodes**
+Total: **36 episodes** — see the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
 
 ---
 

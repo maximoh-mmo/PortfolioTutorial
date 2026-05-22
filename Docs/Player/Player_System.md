@@ -45,24 +45,20 @@ bIsPvPEnabled = bEnabled;
 ---
 
 ## **Targeting Integration**
-- If PvP disabled → ignore player actors  
+- If [PvP System](../Gameplay/PVP_System.md) disabled → ignore player actors via [Targeting System](../Gameplay/Targetting_System.md)  
 - If PvP enabled → include player actors  
 - If `CurrentTarget` becomes invalid due to PvP toggle → auto‑select nearest NPC  
 
----
-
 ## **GAS Integration**
-PlayerController routes ability input → ASC  
+PlayerController routes ability input → ASC via [GAS System](../GAS/GAS_System.md)  
 ASC checks PvP rules before applying damage.
 
----
-
 ## **UI Integration**
-HUD displays:
+[UI System](../Gameplay/UI_System.md) displays:
 
 - PvP ON/OFF  
 - Color‑coded indicator  
-- Optional tooltip  
+- Optional tooltip
 
 ---
 

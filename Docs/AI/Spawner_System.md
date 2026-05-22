@@ -32,9 +32,9 @@ Manage the creation of NPC groups in the world, assigning them to spawn points, 
 Spawner → Pooling/Spawn → Group System → NPC AI
 
 ## Interactions
-- **Pooling System:** requests NPC instances  
-- **Group System:** registers members into groups  
-- **NPC AI:** starts in Idle/Roam  
+- **[Pooling System](Pooling_System.md):** requests NPC instances  
+- **[Group System](Group_System.md):** registers members into groups  
+- **[NPC AI System](NPC_AI_System.md):** starts in Idle/Roam  
 - **Final Demo Loop:** may trigger waves via spawners  
 
 ## Replication

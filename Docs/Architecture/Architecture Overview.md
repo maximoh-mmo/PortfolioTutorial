@@ -3,19 +3,19 @@
 ## **High‑Level Architecture**
 The project is composed of several modular systems that interact through clean, well‑defined boundaries:
 
-- **Player System**  
-- **NPC AI System**  
+- **[Player System](../Player/Player_System.md)**  
+- **[NPC AI System](../AI/NPC_AI_System.md)**  
 - **StateTree System**  
-- **Targeting System**  
-- **GAS (Gameplay Ability System)**  
+- **[Targeting System](../Gameplay/Targetting_System.md)**  
+- **[GAS (Gameplay Ability System)](../GAS/GAS_System.md)**  
 - **Attribute System**  
-- **Spawner System**  
-- **Pooling System**  
-- **Group System**  
-- **PvP System (NEW)**  
-- **UI System**  
-- **Multiplayer System**  
-- **Steam Integration System**
+- **[Spawner System](../AI/Spawner_System.md)**  
+- **[Pooling System](../AI/Pooling_System.md)**  
+- **[Group System](../AI/Group_System.md)**  
+- **[PvP System](../Gameplay/PVP_System.md)**  
+- **[UI System](../Gameplay/UI_System.md)**  
+- **[Multiplayer System](../Multiplayer/Multiplayer_System.md)**  
+- **[Steam Integration System](../Steam/Steam_Integration_System.md)**
 
 Each system is responsible for a specific domain and communicates with others through explicit data flows.
 
@@ -70,27 +70,27 @@ Each system is responsible for a specific domain and communicates with others th
 
 # 🧩 **Updated System Interactions (PvP Included)**
 
-## **Player System → PvP System**
+## **[Player System](../Player/Player_System.md) → [PvP System](../Gameplay/PVP_System.md)**
 - UI toggle triggers `Server_SetPvPEnabled`  
 - PlayerState stores and replicates PvP flag  
 
-## **PvP System → Targeting System**
+## **[PvP System](../Gameplay/PVP_System.md) → [Targeting System](../Gameplay/Targetting_System.md)**
 - TargetingComponent filters out player actors when PvP is OFF  
 - Auto‑target fallback ignores players when PvP is OFF  
 
-## **PvP System → GAS System**
+## **[PvP System](../Gameplay/PVP_System.md) → [GAS System](../GAS/GAS_System.md)**
 - Damage execution checks PvP flag  
 - Blocks player→player damage when PvP is OFF  
 
-## **PvP System → UI System**
+## **[PvP System](../Gameplay/PVP_System.md) → [UI System](../Gameplay/UI_System.md)**
 - UI displays PvP status  
 - UI updates on `OnRep_PvPEnabled`  
 
-## **PvP System → Player AI System**
+## **[PvP System](../Gameplay/PVP_System.md) → [Player AI System](../AI/Player_AI_System.md)**
 - Player AI ignores players when PvP is OFF  
 - Player AI may target players when PvP is ON  
 
-## **PvP System → Multiplayer System**
+## **[PvP System](../Gameplay/PVP_System.md) → [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - PvP flag is server‑authoritative  
 - Replicated to all clients  
 - Cannot be spoofed client‑side  
@@ -113,7 +113,7 @@ This document is the technical map for the entire project.
 
 # 🧱 **Core Systems**
 
-### **1. Player System**
+### **1. [Player System](../Player/Player_System.md)**
 - Input handling  
 - Click‑to‑move  
 - Click‑to‑target  
@@ -121,12 +121,12 @@ This document is the technical map for the entire project.
 - PvP toggle UI → PlayerState  
 - Autoplay handoff  
 
-### **2. NPC AI System**
+### **2. [NPC AI System](../AI/NPC_AI_System.md)**
 - StateTree‑driven behaviour  
 - Perception (sight/hearing)  
 - Target selection  
 - Combat behaviour  
-- Assist logic via Group System  
+- Assist logic via [Group System](../AI/Group_System.md)  
 
 ### **3. StateTree System**
 - High‑level behaviour logic  
@@ -134,13 +134,13 @@ This document is the technical map for the entire project.
 - Tasks (MoveTo, Attack, Flee)  
 - Transitions  
 
-### **4. Targeting System (PvP‑aware)**
+### **4. [Targeting System](../Gameplay/Targetting_System.md) (PvP‑aware)**
 - Maintains `CurrentTarget`  
 - Manual + automatic targeting  
 - PvP filtering  
 - Provides target data to abilities  
 
-### **5. GAS System**
+### **5. [GAS System](../GAS/GAS_System.md)**
 - Ability execution  
 - GameplayEffects  
 - Cooldowns  
@@ -152,63 +152,63 @@ This document is the technical map for the entire project.
 - Replication  
 - Death triggers  
 
-### **7. Spawner System**
+### **7. [Spawner System](../AI/Spawner_System.md)**
 - Group spawning  
 - Respawn logic  
 - Enemy type assignment  
 
-### **8. Pooling System**
+### **8. [Pooling System](../AI/Pooling_System.md)**
 - NPC reuse  
 - Resetting state on reuse  
 
-### **9. Group System**
+### **9. [Group System](../AI/Group_System.md)**
 - Group membership  
 - Group center/direction  
 - Assist behaviour  
 
-### **10. PvP System (NEW)**
+### **10. [PvP System](../Gameplay/PVP_System.md)**
 - Player‑controlled PvP toggle  
 - Stored in PlayerState  
 - Filters targeting  
 - Filters damage  
 - Replicated to all clients  
 
-### **11. UI System**
+### **11. [UI System](../Gameplay/UI_System.md)**
 - HUD  
 - Ability bar  
 - Health bars  
 - Target highlight  
 - PvP toggle  
 
-### **12. Multiplayer System**
+### **12. [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - Server‑authoritative simulation  
 - RPCs  
 - Replication  
 - Dedicated server support  
 
-### **13. Steam Integration System**
+### **13. [Steam Integration System](../Steam/Steam_Integration_System.md)**
 - Auth tickets  
 - Server registration  
-- Steam‑authenticated sessions  
+- Steam‑authenticated sessions
 
 ---
 
 # 🔗 **System Interaction Summary (PvP Included)**
 
-### **Player ↔ PvP System**
+### **[Player System](../Player/Player_System.md) ↔ [PvP System](../Gameplay/PVP_System.md)**
 - UI toggles PvP  
 - PlayerState replicates PvP flag  
 
-### **PvP System ↔ Targeting**
+### **[PvP System](../Gameplay/PVP_System.md) ↔ [Targeting System](../Gameplay/Targetting_System.md)**
 - Filters player targets  
 
-### **PvP System ↔ GAS**
+### **[PvP System](../Gameplay/PVP_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
 - Blocks player→player damage  
 
-### **PvP System ↔ UI**
+### **[PvP System](../Gameplay/PVP_System.md) ↔ [UI System](../Gameplay/UI_System.md)**
 - UI updates PvP status  
 
-### **PvP System ↔ Multiplayer**
+### **[PvP System](../Gameplay/PVP_System.md) ↔ [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - Server enforces PvP rules  
 - Replicates PvP flag  
 

@@ -1,8 +1,9 @@
 # 📘 **TOP‑DOWN ARPG AI SERIES — FULL EPISODE LIST**
 
 ## **Overview**
-This document contains the complete episode list for the 36‑episode tutorial series.  
-Episodes are grouped into phases that reflect the natural progression of building the full demo.
+This document contains the complete episode list for the 36‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Scope Overview](Scope_Overview.md) for context).  
+Episodes are grouped into phases that reflect the natural progression of building the full demo.  
+The [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) provides the full system design that this episode list implements.
 
 Each episode includes:
 

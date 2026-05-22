@@ -1,7 +1,7 @@
 # 📚 **SYSTEM DOCUMENTATION TEMPLATE**
 
-Below are templates you can use for each system.  
-They’re structured for clarity and consistency.
+Below are templates you can use for each system (see the [Architecture Overview](../Architecture/Architecture%20Overview.md) for context on how systems fit together).  
+They're structured for clarity and consistency.
 
 ---
 
@@ -49,15 +49,15 @@ Clarify what this system *does not* handle.
 ---
 
 ## **Interactions With Other Systems**
-Describe how this system communicates with:
+Describe how this system communicates with (link to the relevant doc):
 
-- Player  
-- AI  
-- GAS  
-- Spawner  
-- Pooling  
-- Multiplayer  
-- Steam  
+- [Player](../Player/Player_System.md)  
+- [AI](../AI/NPC_AI_System.md)  
+- [GAS](../GAS/GAS_System.md)  
+- [Spawner](../AI/Spawner_System.md)  
+- [Pooling](../AI/Pooling_System.md)  
+- [Multiplayer](../Multiplayer/Multiplayer_System.md)  
+- [Steam](../Steam/Steam_Integration_System.md)  
 
 ---
 

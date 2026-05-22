@@ -113,15 +113,15 @@ Allies Transition to Agro State
 
 ## **Interactions With Other Systems**
 
-### **NPC AI System**
+### **[NPC AI System](NPC_AI_System.md)**
 - Receives assist events  
 - Transitions into Agro state  
 
-### **Spawner System**
+### **[Spawner System](Spawner_System.md)**
 - Assigns NPCs to groups  
 - Creates GroupManagers  
 
-### **Pooling System**
+### **[Pooling System](Pooling_System.md)**
 - Resets group membership on reuse  
 
 ### **StateTree**

@@ -110,20 +110,20 @@ Target Indicator Widget
 
 ## **Interactions With Other Systems**
 
-### **Player System**
+### **[Player System](../Player/Player_System.md)**
 - Provides health, ability cooldowns, targeting data  
 
-### **NPC AI System**
+### **[NPC AI System](../AI/NPC_AI_System.md)**
 - Provides enemy health values  
 - Provides AI debug info  
 
-### **GAS System**
+### **[GAS System](../GAS/GAS_System.md)**
 - Provides cooldowns and attribute changes  
 
-### **Player AI System**
+### **[Player AI System](../AI/Player_AI_System.md)**
 - Provides autoplay debug info  
 
-### **Multiplayer System**
+### **[Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - UI reads replicated PlayerState data  
 
 ---

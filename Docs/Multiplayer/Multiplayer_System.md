@@ -34,9 +34,10 @@ Make the entire demo **server‑authoritative and multiplayer‑safe**, supporti
 Client Input → Server RPC → Server Simulation → Replication → Client View
 
 ## Interactions
-- **NPC AI System:** runs only on server  
-- **GAS System:** server‑authoritative abilities  
-- **Steam Integration:** auth + session validation  
+- **[NPC AI System](../AI/NPC_AI_System.md):** runs only on server  
+- **[GAS System](../GAS/GAS_System.md):** server‑authoritative abilities  
+- **[PvP System](../Gameplay/PVP_System.md):** server-authoritative PvP flag replication  
+- **[Steam Integration](../Steam/Steam_Integration_System.md):** auth + session validation  
 
 ## Replication Rules
 - NPCs, abilities, health, and effects replicate  

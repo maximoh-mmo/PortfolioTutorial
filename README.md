@@ -160,6 +160,44 @@ General automation scripts.
 
 ---
 
+## 📖 **Documentation Index**
+
+### **Architecture**
+- [Architecture Overview](Docs/Architecture/Architecture%20Overview.md) — high-level system map
+
+### **Core Systems**
+- [Player System](Docs/Player/Player_System.md) — click-to-move, click-to-target, ability activation, PvP toggle
+- [NPC AI System](Docs/AI/NPC_AI_System.md) — StateTree-driven enemy behaviour, perception, combat
+- [Targeting System](Docs/Gameplay/Targetting_System.md) — deterministic target selection, PvP-aware filtering
+- [Ability Targeting System](Docs/Gameplay/Ability_Targeting_System.md) — single-target, AoE, directional targeting
+- [PvP System](Docs/Gameplay/PVP_System.md) — player-controlled PvP/PvE toggle, damage filtering
+- [UI System](Docs/Gameplay/UI_System.md) — health bars, cooldowns, target highlighting, debug overlays
+
+### **AI Systems**
+- [NPC AI System](Docs/AI/NPC_AI_System.md) — enemy StateTree behaviour
+- [Player AI System](Docs/AI/Player_AI_System.md) — autoplay/testing mode
+- [Group System](Docs/AI/Group_System.md) — NPC group cohesion, assist behaviour
+- [Spawner System](Docs/AI/Spawner_System.md) — NPC group creation, respawn logic
+- [Pooling System](Docs/AI/Pooling_System.md) — NPC instance reuse for performance
+
+### **Technical Systems**
+- [GAS System](Docs/GAS/GAS_System.md) — abilities, effects, attributes, PvP damage filtering
+- [Multiplayer System](Docs/Multiplayer/Multiplayer_System.md) — server authority, replication, dedicated server
+- [Steam Integration System](Docs/Steam/Steam_Integration_System.md) — auth tickets, server verification
+
+### **Planning & Tracking**
+- [Series Overview](Planning/Outlines/Series_Overview.md) — tutorial series vision, structure, audience
+- [Scope Overview](Planning/Outlines/Scope_Overview.md) — project boundaries, deliverables, success criteria
+- [Episode List](Planning/Outlines/Episode_List.md) — all 36 episodes by phase
+- [Checklist](TODO/Checklist.md) — master task tracker
+- [Worklog](TODO/22-05-26.md) — Phase 1 worklog
+
+### **Templates**
+- [System Documentation Template](Docs/Templates/SYSTEM_DOCUMENTATION_TEMPLATE.md) — reusable system doc structure
+- [Episode Script Template](Planning/Scripts/EPISODE_SCRIPT_TEMPLATE.md) — episode script structure
+
+---
+
 ## 🔄 **Branching Strategy**
 
 - **main** — stable full demo  

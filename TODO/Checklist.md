@@ -1,13 +1,13 @@
 
 ```
-[x] Finalize Series Overview
-[x] Finalize Scope Overview
-[ ] Finalize Episode List
+[x] Finalize [Series Overview](../Planning/Outlines/Series_Overview.md)
+[x] Finalize [Scope Overview](../Planning/Outlines/Scope_Overview.md)
+[ ] Finalize [Episode List](../Planning/Outlines/Episode_List.md)
 
-[ ] Complete Architecture Overview
-[x] Write System Docs for all major systems
+[ ] Complete [Architecture Overview](../Docs/Architecture/Architecture%20Overview.md)
+[x] Write [System Docs](../Docs/Templates/SYSTEM_DOCUMENTATION_TEMPLATE.md) for all major systems
 
-[ ] Create Episode Script Template
+[ ] Create [Episode Script Template](../Planning/Scripts/EPISODE_SCRIPT_TEMPLATE.md)
 [ ] Create Episode README Template
 [ ] Draft Scripts for Episodes 1–5
 

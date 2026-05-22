@@ -30,9 +30,10 @@ Provide a unified way to select targets and locations for abilities: single‑ta
 Input → TargetingComponent → TargetData → GAS Ability → Execution
 
 ## Interactions
-- **Player System:** feeds mouse input  
-- **GAS System:** consumes TargetData  
-- **UI:** renders indicators  
+- **[Player System](../Player/Player_System.md):** feeds mouse input  
+- **[Targeting System](Targetting_System.md):** provides target selection context  
+- **[GAS System](../GAS/GAS_System.md):** consumes TargetData  
+- **[UI](UI_System.md):** renders indicators  
 
 ## Replication
 - Targeting is mostly **client‑side** visual  

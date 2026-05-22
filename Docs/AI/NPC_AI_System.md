@@ -10,8 +10,8 @@ The NPC AI System controls enemy behaviour using:
 
 - **StateTrees** for high‑level logic  
 - **AI Perception** for detecting the player  
-- **Group System** for assist behaviour  
-- **GAS** for combat abilities  
+- **[Group System](Group_System.md)** for assist behaviour  
+- **[GAS](../GAS/GAS_System.md)** for combat abilities  
 
 It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 
@@ -149,20 +149,20 @@ Movement / Abilities / Facing
 
 ## **Interactions With Other Systems**
 
-### **Group System**
+### **[Group System](Group_System.md)**
 - Receives assist events  
 - Transitions into Agro  
 
-### **GAS**
+### **[GAS](../GAS/GAS_System.md)**
 - Executes abilities  
 - Applies damage  
 - Handles death  
 
-### **Spawner & Pooling**
+### **[Spawner](Spawner_System.md) & [Pooling](Pooling_System.md)**
 - Resets AI state  
 - Reinitializes StateTree  
 
-### **Multiplayer**
+### **[Multiplayer](../Multiplayer/Multiplayer_System.md)**
 - AI runs **server‑only**  
 - Clients receive replicated movement + effects  
 

@@ -29,9 +29,9 @@ Provide efficient reuse of NPC instances to avoid frequent spawn/destroy calls a
 Spawner → PoolManager.GetNPC → NPC → (Death) → PoolManager.ReleaseNPC
 
 ## Interactions
-- **Spawner System:** main consumer of pooled NPCs  
-- **NPC AI System:** must reset StateTree/AI state on reuse  
-- **Group System:** must re‑register NPCs on reuse  
+- **[Spawner System](Spawner_System.md):** main consumer of pooled NPCs  
+- **[NPC AI System](NPC_AI_System.md):** must reset StateTree/AI state on reuse  
+- **[Group System](Group_System.md):** must re‑register NPCs on reuse  
 
 ## Replication
 - Pooling is **server‑only**  

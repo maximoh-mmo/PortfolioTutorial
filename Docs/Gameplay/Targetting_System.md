@@ -71,10 +71,10 @@ If PvP disabled and target is player → ability fails.
 ---
 
 ## **Interactions**
-- **PvP System:** filters player targets  
-- **GAS System:** validates damage  
-- **UI System:** updates target highlight  
-- **Player System:** sets target from input  
+- **[PvP System](PVP_System.md):** filters player targets  
+- **[GAS System](../GAS/GAS_System.md):** validates damage  
+- **[UI System](UI_System.md):** updates target highlight  
+- **[Player System](../Player/Player_System.md):** sets target from input  
 
 ---
 

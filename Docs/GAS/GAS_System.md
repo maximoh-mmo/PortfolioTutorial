@@ -45,14 +45,14 @@ if (Source is Player && Target is Player)
 ---
 
 ## **Targeting Integration**
-If targeting system rejects a player target due to PvP, GAS never receives invalid target data.
+If [Targeting System](../Gameplay/Targetting_System.md) rejects a player target due to PvP, GAS never receives invalid target data.
 
 ---
 
 ## **Replication**
-- Damage filtering occurs **server‑side only**  
+- Damage filtering occurs **server‑side only** via the [Multiplayer System](../Multiplayer/Multiplayer_System.md)  
 - Clients receive replicated attribute changes  
-- No client‑side prediction of PvP rules  
+- No client‑side prediction of [PvP System](../Gameplay/PVP_System.md) rules  
 
 ---
 

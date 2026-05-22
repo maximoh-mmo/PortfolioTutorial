@@ -96,14 +96,14 @@ Validation Failure → Kick Player
 
 ## **Interactions With Other Systems**
 
-### **Multiplayer System**
+### **[Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - Steam auth is required before joining  
 - Dedicated server uses Steam for registration  
 
-### **Player System**
+### **[Player System](../Player/Player_System.md)**
 - PlayerState stores Steam ID and display name  
 
-### **UI System**
+### **[UI System](../Gameplay/UI_System.md)**
 - Displays Steam name in UI  
 - Shows connection/auth errors  
 
