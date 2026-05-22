@@ -16,8 +16,8 @@ This is the master outline for the entire series. Drafted scripts follow the [Ep
 
 ---
 
-# **PHASE 0 — Project Foundations (Top‑Down Player Core)**  
-### *Goal: Build the player, camera, input, and basic combat foundation.*
+# **PHASE 0 — Player Core & Enemies**  
+### *Goal: Build a playable demo with movement, enemies, and basic combat.*
 
 ---
 
@@ -37,16 +37,16 @@ Use mouse raycasts and MoveToLocation to implement click‑to‑move.
 Create a spawner that generates groups of NPCs at defined points.  
 → [Script](../Scripts/Episode04_Enemy_Spawner.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
 
----
-
-# **PHASE 1 — NPC Lifecycle: Spawning, Pooling, Groups**  
-### *Goal: Build real game‑ready NPC lifecycle systems before adding AI.*
-
----
-
 ### **Episode 5 — Click‑to‑Target System**  
 Implement target selection, highlighting, and basic attack input routing.  
 → [Script](../Scripts/Episode05_ClickToTarget.md) · [Targeting System](../../Docs/Gameplay/Targeting_System.md)
+
+---
+
+# **PHASE 1 — NPC Lifecycle**  
+### *Goal: Add pooling, groups, and respawn to the NPC pipeline.*
+
+---
 
 ### **Episode 6 — Object Pooling System**  
 Implement NPC pooling for efficient reuse and performance.  

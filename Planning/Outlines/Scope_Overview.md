@@ -26,6 +26,7 @@ Build a **complete, multiplayer‑ready top‑down action RPG combat prototype**
 - Player AI autoplay  
 - Dedicated server support  
 - Steam authentication  
+- PvP toggle & friendly‑fire rules
 
 The final result is a polished, self‑contained demo suitable for:
 
