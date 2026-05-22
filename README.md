@@ -193,6 +193,7 @@ General automation scripts.
 ### **Workflow**
 - [Branching Strategy](Planning/Workflow/BRANCHING_STRATEGY.md) — branch conventions, merge flow, rules
 - [Episode Export Workflow](Planning/Workflow/EPISODE_EXPORT_WORKFLOW.md) — snapshot creation and export process
+- [Public Release Checklist](Planning/Workflow/PUBLIC_RELEASE_CHECKLIST.md) — pre-push verification items
 
 ### **Templates**
 - [System Documentation Template](Docs/Templates/SYSTEM_DOCUMENTATION_TEMPLATE.md) — reusable system doc structure

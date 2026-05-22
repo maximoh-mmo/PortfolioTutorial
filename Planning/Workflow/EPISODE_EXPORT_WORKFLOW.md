@@ -3,7 +3,7 @@
 ## **Purpose**
 Create a clean, self-contained episode snapshot from the private development repo and stage it for the public repo.
 
-See the [Branching Strategy](BRANCHING_STRATEGY.md) for branch conventions and the [Episode List](../Outlines/Episode_List.md) for episode contents.
+See the [Branching Strategy](BRANCHING_STRATEGY.md) for branch conventions, the [Episode List](../Outlines/Episode_List.md) for episode contents, and the [Public Release Checklist](PUBLIC_RELEASE_CHECKLIST.md) for pre-push verification.
 
 ---
 
@@ -75,6 +75,7 @@ A dedicated export tool will live at `Tools/EpisodeExporter/` once implemented. 
 
 ## **Related Documents**
 - [Branching Strategy](BRANCHING_STRATEGY.md) — branch naming and merge flow
+- [Public Release Checklist](PUBLIC_RELEASE_CHECKLIST.md) — pre-push verification items
 - [Episode Script Template](../Scripts/EPISODE_SCRIPT_TEMPLATE.md) — episode content outline
 - [Episode README Template](../Templates/EPISODE_README_TEMPLATE.md) — public-facing episode summary
 - [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) — system dependency map

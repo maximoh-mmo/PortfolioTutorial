@@ -15,7 +15,7 @@
 [x] Create Public Repo Structure (/Series/Episode01–36)
 [x] Define Branching Strategy
 [x] Document Episode Export Workflow
-[ ] Create Public Release Checklist
+[x] Create Public Release Checklist
 
 [ ] Create High-Level Diagrams
 [ ] Create Early Episode Diagrams
