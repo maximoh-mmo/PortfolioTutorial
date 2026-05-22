@@ -2,17 +2,17 @@
 ```
 [x] Finalize [Series Overview](../Planning/Outlines/Series_Overview.md)
 [x] Finalize [Scope Overview](../Planning/Outlines/Scope_Overview.md)
-[ ] Finalize [Episode List](../Planning/Outlines/Episode_List.md)
+[x] Finalize [Episode List](../Planning/Outlines/Episode_List.md)
 
-[ ] Complete [Architecture Overview](../Docs/Architecture/Architecture%20Overview.md)
+[x] Complete [Architecture Overview](../Docs/Architecture/Architecture%20Overview.md)
 [x] Write [System Docs](../Docs/Templates/SYSTEM_DOCUMENTATION_TEMPLATE.md) for all major systems
 
-[ ] Create [Episode Script Template](../Planning/Scripts/EPISODE_SCRIPT_TEMPLATE.md)
-[ ] Create Episode README Template
+[x] Create [Episode Script Template](../Planning/Scripts/EPISODE_SCRIPT_TEMPLATE.md)
+[x] Create [Episode README Template](../Planning/Templates/EPISODE_README_TEMPLATE.md)
 [ ] Draft Scripts for Episodes 1–5
 
-[ ] Create Private Repo Structure
-[ ] Create Public Repo Structure
+[x] Create Private Repo Structure
+[x] Create Public Repo Structure (/Series/Episode01–36)
 [ ] Define Branching Strategy
 [ ] Document Episode Export Workflow
 [ ] Create Public Release Checklist

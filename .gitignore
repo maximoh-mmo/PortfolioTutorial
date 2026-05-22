@@ -59,3 +59,8 @@ Steam/*.sdk
 Server/Builds/
 Server/Config/*.secret.*
 Tools/EpisodeExporter/config.local.*
+
+# Obsidian
+.obsidian/
+.obsidian/workspace
+.obsidian/workspace.json
