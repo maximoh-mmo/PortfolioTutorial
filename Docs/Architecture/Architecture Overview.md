@@ -21,50 +21,46 @@ Each system is responsible for a specific domain and communicates with others th
 
 ---
 
-# 🧱 **Architecture Diagram (Text Version)**
+# 🧱 **Architecture Diagram**
 
+```mermaid
+flowchart TD
+    UI[UI System<br/>HUD, PvP Toggle, Indicators] --> PC[PlayerController]
+    PC --> PS[PlayerState<br/>bIsPvPEnabled]
+    PC --> Targeting[Targeting System]
+    PC --> GAS
+
+    Targeting --> GAS
+    GAS --> Attributes[Attribute System]
+
+    subgraph Player
+        PC
+        PS
+        Targeting
+    end
+
+    subgraph AI
+        NPC[NPC Character]
+        AIController
+        StateTree
+    end
+
+    Spawner --> Pooling
+    Pooling --> NPC
+    NPC --> GroupSystem
+
+    GroupSystem --> StateTree
+    StateTree --> AIController
+    AIController --> NPC
+
+    GAS --> NPC
+    GAS --> Player
+
+    Steam[Steam Integration] --> Multiplayer
+    Multiplayer --> PC
+    Multiplayer --> NPC
 ```
-                   ┌──────────────────────────┐
-                   │        UI System         │
-                   │  (HUD, PvP Toggle, etc.) │
-                   └─────────────┬────────────┘
-                                 │
-                                 ▼
-                      ┌──────────────────┐
-                      │ PlayerController │
-                      │  (Input + UI)    │
-                      └───────┬──────────┘
-                              │
-                              ▼
-                     ┌──────────────────┐
-                     │  PlayerState     │◄──────────────┐
-                     │ bIsPvPEnabled    │               │
-                     └───────┬──────────┘               │
-                             │                          │
-                             ▼                          │
-                   ┌──────────────────────┐             │
-                   │ Targeting System     │             │
-                   │ (PvP-aware filtering)│             │
-                   └──────────┬───────────┘             │
-                              │                         │
-                              ▼                         │
-                     ┌──────────────────┐               │
-                     │      GAS         │               │
-                     │ (Damage Exec)    │               │
-                     └────────┬─────────┘               │
-                              │                         │
-                              ▼                         │
-                     ┌──────────────────┐               │
-                     │ Attribute System │               │
-                     └──────────────────┘               │
-                                                        │
-                                                        │
-                                                        ▼
-                                            ┌──────────────────────────┐
-                                            │ Multiplayer System       │
-                                            │ (Server authority, RPCs) │
-                                            └──────────────────────────┘
-```
+
 
 ---
 

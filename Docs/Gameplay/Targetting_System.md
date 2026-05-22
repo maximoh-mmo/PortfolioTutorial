@@ -34,6 +34,20 @@ Provide deterministic targeting for all actors using a **single authoritative ta
 
 ---
 
+## **Targeting Flow Diagram**
+
+```mermaid
+flowchart TD
+    Input[Player Input<br/>Mouse Click] --> Targeting
+    AI[AI Target Selection] --> Targeting
+
+    Targeting --> Validate[Validate Target<br/>Range, LOS, PvP Rules]
+    Validate --> CurrentTarget[Set CurrentTarget]
+
+    CurrentTarget --> AbilityData[Build Ability Target Data]
+    AbilityData --> GAS[Gameplay Ability System]
+```
+
 ## **Target Validation Rules**
 
 ### Valid target if:

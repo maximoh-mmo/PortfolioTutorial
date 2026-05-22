@@ -73,17 +73,20 @@ Replicated to all clients.
 
 ## **Data Flow Diagram**
 
-```
-UI Toggle
-   │
-   ▼
-PlayerController → Server_SetPvPEnabled()
-   │
-   ▼
-PlayerState.bIsPvPEnabled (replicated)
-   │
-   ├── TargetingComponent filters targets
-   └── GAS blocks player→player damage
+```mermaid
+flowchart TD
+    UI[UI PvP Toggle] --> PC[PlayerController]
+    PC --> RPC[Server_SetPvPEnabled RPC]
+    RPC --> PS[PlayerState.bIsPvPEnabled]
+
+    PS --> Targeting
+    PS --> GAS
+
+    Targeting -->|PvP OFF| FilterOutPlayers
+    Targeting -->|PvP ON| AllowPlayers
+
+    GAS -->|PvP OFF| BlockPlayerDamage
+    GAS -->|PvP ON| AllowPlayerDamage
 ```
 
 ---

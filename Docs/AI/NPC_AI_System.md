@@ -90,59 +90,40 @@ Notifies spawner/pool.
 
 ---
 
-## **StateTree Breakdown**
+## **StateTree Diagram**
 
-### **Idle**
-- Wait timer  
-- Transition → Roam  
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
 
-### **Roam**
-- Brownian motion  
-- Group cohesion  
-- Transition → Agro (perception)  
+    Idle --> Roam: Timer
+    Roam --> Agro: Perception sees player
+    Agro --> Chase: Target acquired
+    Chase --> Attack: In range
+    Attack --> Chase: Cooldown finished
+    Chase --> Lost: Target lost
+    Lost --> Roam
 
-### **Agro**
-- Face target  
-- Transition → Chase  
+    Agro --> Assist: Group assist event
+    Assist --> Chase
 
-### **Chase**
-- MoveToActor  
-- Transition → Attack (in range)  
-- Transition → LostTarget  
-
-### **Attack**
-- Trigger GA_Attack  
-- Cooldown  
-- Transition → Chase  
-
-### **Flee**
-- Move away from threat  
-- Transition → Idle (after safe)  
-
-### **Assist**
-- Triggered by Group System  
-- Behaves like Agro  
-
----
+    Any --> Flee: Low health + isolated
+    Flee --> Idle: Safe
+```
 
 ## **Data Flow Diagram**
 
-```
-Perception Event ───────┐
-Assist Event ───────────┤
-Damage Event ───────────┘
-        │
-        ▼
-   StateTree Input
-        │
-        ▼
-StateTree Evaluators → Conditions → Transitions
-        │
-        ▼
-   Behaviour State
-        │
-        ▼
-Movement / Abilities / Facing
+```mermaid
+flowchart TD
+    PE[Perception Event] --> ST[StateTree Input]
+    AE[Assist Event] --> ST
+    DE[Damage Event] --> ST
+
+    ST --> Eval[StateTree Evaluators]
+    Eval --> Cond[Conditions]
+    Cond --> Trans[Transitions]
+    Trans --> State[Behaviour State]
+    State --> Move[Movement / Abilities / Facing]
 ```
 
 ---

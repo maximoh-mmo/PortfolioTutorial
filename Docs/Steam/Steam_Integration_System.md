@@ -75,21 +75,14 @@ This system ensures that all multiplayer interactions are tied to verified Steam
 
 ## **Data Flow Diagram**
 
-```
-Client Login
-    │
-    ▼
-Steam → Generate Auth Ticket
-    │
-    ▼
-Client → Server RPC (Send Ticket)
-    │
-    ▼
-Server → Steam Backend (Validate Ticket)
-    │
-    ▼
-Validation Success → Allow Player
-Validation Failure → Kick Player
+```mermaid
+flowchart TD
+    Client --> Steam[Steam API<br/>Generate Auth Ticket]
+    Steam --> Client
+    Client --> Server[Send Auth Ticket RPC]
+    Server --> SteamBackend[Validate Ticket]
+    SteamBackend --> Server
+    Server --> AllowOrDeny[Allow or Reject Player]
 ```
 
 ---

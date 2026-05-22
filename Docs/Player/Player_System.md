@@ -20,6 +20,18 @@ Provide top‑down ARPG controls and a UI‑driven PvP toggle that affects targe
 
 ---
 
+## **Click‑to‑Move Flow**
+
+```mermaid
+flowchart TD
+    Click[Mouse Click] --> Raycast
+    Raycast --> HitLocation
+    HitLocation --> MoveTo[AIController MoveToLocation]
+    MoveTo --> CharacterMovement
+```
+
+---
+
 ## **PvP Toggle Flow**
 
 ### UI → PlayerController

@@ -17,6 +17,20 @@ Provide ability execution and attribute modification with PvP‑aware damage fil
 
 ---
 
+## **Ability Flow Diagram**
+
+```mermaid
+flowchart TD
+    InputOrAI[Input or AI Decision] --> ASC[AbilitySystemComponent]
+    ASC --> Ability[GameplayAbility]
+    Ability --> TargetData
+    TargetData --> Execution[GameplayEffect Execution]
+    Execution --> Attributes[AttributeSet]
+    Attributes --> DeathOrHit[Death / Hit Reaction]
+```
+
+---
+
 ## **PvP Damage Filtering**
 
 ### In Damage Execution Calculation:

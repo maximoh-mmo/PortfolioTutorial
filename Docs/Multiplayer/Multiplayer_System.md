@@ -31,7 +31,18 @@ Make the entire demo **server‑authoritative and multiplayer‑safe**, supporti
 - `Multicast_` RPCs for server → all clients (sparingly)  
 
 ## Data Flow
-Client Input → Server RPC → Server Simulation → Replication → Client View
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+
+    Client->>Server: Input RPC (Move, Ability)
+    Server->>Server: Validate + Simulate
+    Server->>Client: Replicate Movement
+    Server->>Client: Replicate Attributes
+    Server->>Client: Replicate Ability Effects
+```
 
 ## Interactions
 - **[NPC AI System](../AI/NPC_AI_System.md):** runs only on server  

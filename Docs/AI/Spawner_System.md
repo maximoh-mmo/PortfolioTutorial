@@ -29,6 +29,20 @@ Manage the creation of NPC groups in the world, assigning them to spawn points, 
 - `InitializeNPC(ANPC*)` — assigns group, type, initial state  
 
 ## Data Flow
+
+```mermaid
+flowchart TD
+    SpawnerStart[Spawner Activated] --> SpawnGroup
+    SpawnGroup --> RegisterGroup
+    RegisterGroup --> NPCsAlive[NPCs Active]
+
+    NPCsAlive --> AllDead{All NPCs Dead?}
+    AllDead -->|Yes| RespawnTimer
+    RespawnTimer --> SpawnGroup
+
+    AllDead -->|No| NPCsAlive
+```
+
 Spawner → Pooling/Spawn → Group System → NPC AI
 
 ## Interactions

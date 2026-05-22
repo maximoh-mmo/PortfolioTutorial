@@ -26,6 +26,21 @@ Provide efficient reuse of NPC instances to avoid frequent spawn/destroy calls a
 - `ResetNPC(ANPC*)` — clears health, AI state, visuals  
 
 ## Data Flow
+
+```mermaid
+flowchart TD
+    RequestNPC --> PoolCheck{NPC Available?}
+    PoolCheck -->|Yes| ActivateNPC
+    PoolCheck -->|No| CreateNewNPC
+
+    ActivateNPC --> ResetState
+    ResetState --> Spawned
+
+    NPCDies --> ReturnToPool
+    ReturnToPool --> Inactive
+    Inactive --> RequestNPC
+```
+
 Spawner → PoolManager.GetNPC → NPC → (Death) → PoolManager.ReleaseNPC
 
 ## Interactions
