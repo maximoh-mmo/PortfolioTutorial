@@ -28,16 +28,14 @@ feature/xxx   fix/xxx   steam/xxx   server/xxx
 
 ## **Episode Export Flow**
 
+See the full [Episode Export Workflow](EPISODE_EXPORT_WORKFLOW.md) for the complete step-by-step process.
+
 1. Work is done on `dev` (or a `feature/*` branch merged into `dev`)
-2. Create `episode/XX` from `dev` at the episode snapshot point (see the [Episode List](../Outlines/Episode_List.md) for the full breakdown):
-   ```
-   git checkout dev
-   git checkout -b episode/XX
-   ```
-3. Strip advanced features not yet introduced in the episode (refer to the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) to understand which systems belong where)
-4. Copy cleaned snapshot to `Series/EpisodeXX/` (see the [Episode README Template](../Templates/EPISODE_README_TEMPLATE.md) for required files)
-5. Push `episode/XX` to remote
-6. Restore branch protections (if any)
+2. Create `episode/XX` from `dev` at the episode snapshot point (see the [Episode List](../Outlines/Episode_List.md) for the full breakdown)
+3. Strip advanced features not yet introduced in the episode
+4. Copy cleaned snapshot to `Series/EpisodeXX/`
+5. Add episode README and verify the snapshot
+6. Push `episode/XX` to remote
 
 ## **Rules**
 

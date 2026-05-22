@@ -190,9 +190,14 @@ General automation scripts.
 - [Scope Overview](Planning/Outlines/Scope_Overview.md) — project boundaries, deliverables, success criteria
 - [Episode List](Planning/Outlines/Episode_List.md) — all 36 episodes by phase
 
+### **Workflow**
+- [Branching Strategy](Planning/Workflow/BRANCHING_STRATEGY.md) — branch conventions, merge flow, rules
+- [Episode Export Workflow](Planning/Workflow/EPISODE_EXPORT_WORKFLOW.md) — snapshot creation and export process
+
 ### **Templates**
 - [System Documentation Template](Docs/Templates/SYSTEM_DOCUMENTATION_TEMPLATE.md) — reusable system doc structure
 - [Episode Script Template](Planning/Scripts/EPISODE_SCRIPT_TEMPLATE.md) — episode script structure
+- [Episode README Template](Planning/Templates/EPISODE_README_TEMPLATE.md) — public episode README structure
 
 ---
 
@@ -212,12 +217,7 @@ See the full [Branching Strategy document](Planning/Workflow/BRANCHING_STRATEGY.
 
 ## 🚀 **Episode Export Workflow**
 
-1. Build the real system in `/Project`  
-2. Create an `episode/*` branch  
-3. Strip out advanced features  
-4. Copy cleaned snapshot into `/Series/EpisodeXX`  
-5. Add episode README + diagrams  
-6. Push to public repo  
+See the full [Episode Export Workflow](Planning/Workflow/EPISODE_EXPORT_WORKFLOW.md) for the complete step-by-step process and stripping guidelines.  
 
 ---
 
