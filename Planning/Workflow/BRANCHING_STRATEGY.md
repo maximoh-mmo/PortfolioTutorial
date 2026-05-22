@@ -1,7 +1,6 @@
 # 🌿 **Branching Strategy**
 
-See the [Repository README](../../README.md) for the full project overview and [Episode List](../Outlines/Episode_List.md) for episode contents.  
-This document is part of the [Phase 4 — Repo & Workflow Setup](../../TODO/Checklist.md) deliverables.
+See the [Repository README](../../README.md) for the full project overview and [Episode List](../Outlines/Episode_List.md) for episode contents.
 
 ## **Branches**
 

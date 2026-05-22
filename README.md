@@ -189,8 +189,6 @@ General automation scripts.
 - [Series Overview](Planning/Outlines/Series_Overview.md) — tutorial series vision, structure, audience
 - [Scope Overview](Planning/Outlines/Scope_Overview.md) — project boundaries, deliverables, success criteria
 - [Episode List](Planning/Outlines/Episode_List.md) — all 36 episodes by phase
-- [Checklist](TODO/Checklist.md) — master task tracker
-- [Worklog](TODO/22-05-26.md) — Phase 1 worklog
 
 ### **Templates**
 - [System Documentation Template](Docs/Templates/SYSTEM_DOCUMENTATION_TEMPLATE.md) — reusable system doc structure
