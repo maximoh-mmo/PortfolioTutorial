@@ -19,6 +19,7 @@ The final demo includes:
 - Basic attack + multiple abilities (GAS)  
 - Ability targeting (single‑target, AoE, directional)  
 - Optional AI‑controlled autoplay mode  
+- PvP toggle: player‑controlled setting that enables/disables friendly fire against other players
 
 ### **NPC Enemies**
 - Server‑authoritative AI  

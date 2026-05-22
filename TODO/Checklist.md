@@ -1,11 +1,11 @@
 
 ```
-[ ] Finalize Series Overview
-[ ] Finalize Scope Overview
+[x] Finalize Series Overview
+[x] Finalize Scope Overview
 [ ] Finalize Episode List
 
 [ ] Complete Architecture Overview
-[ ] Write System Docs for all major systems
+[x] Write System Docs for all major systems
 
 [ ] Create Episode Script Template
 [ ] Create Episode README Template

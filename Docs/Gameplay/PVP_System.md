@@ -1,0 +1,139 @@
+# 📘 **PvP SYSTEM DOCUMENT**  
+**File:** `/Docs/Gameplay/PvPSystem.md`
+
+---
+
+# **PvP System**
+
+## **Purpose**
+Provide a **player‑controlled PvP/PvE toggle** that determines whether a player can:
+
+- Target other players  
+- Damage other players  
+- Be targeted by Player AI (optional)  
+
+This system ensures **player agency** in multiplayer combat while keeping the rules deterministic and server‑authoritative.
+
+---
+
+## **Responsibilities**
+- Store a replicated PvP flag per player  
+- Provide UI controls for toggling PvP mode  
+- Filter valid targets based on PvP state  
+- Prevent player‑to‑player damage when PvP is disabled  
+- Update UI and targeting indicators accordingly  
+
+---
+
+## **Non‑Responsibilities**
+- NPC behaviour (NPCs always treat players as valid targets)  
+- Ability logic (handled by GAS)  
+- UI rendering (handled by UI System)  
+
+---
+
+## **Key Classes**
+
+### `APlayerState`
+Authoritative storage for:
+
+```
+bool bIsPvPEnabled;
+```
+
+Replicated to all clients.
+
+### `APlayerController`
+- Receives UI toggle input  
+- Sends `Server_SetPvPEnabled(bool)` RPC  
+
+### `UTargetingComponent`
+- Filters player actors based on PvP flag  
+
+### `UGameplayEffectExecution` / Damage Execution
+- Blocks damage if PvP disabled  
+
+---
+
+## **Key Functions**
+
+### PlayerController
+- `Server_SetPvPEnabled(bool)`  
+- `OnRep_PvPEnabled()`  
+
+### TargetingComponent
+- `IsActorValidTarget(AActor*)`  
+  - Rejects players if PvP disabled  
+
+### GAS Damage Execution
+- `ShouldApplyDamage(Source, Target)`  
+  - Blocks player→player damage if PvP disabled  
+
+---
+
+## **Data Flow Diagram**
+
+```
+UI Toggle
+   │
+   ▼
+PlayerController → Server_SetPvPEnabled()
+   │
+   ▼
+PlayerState.bIsPvPEnabled (replicated)
+   │
+   ├── TargetingComponent filters targets
+   └── GAS blocks player→player damage
+```
+
+---
+
+## **Interactions**
+
+### Targeting System
+- Filters out players when PvP disabled  
+- Allows targeting players when PvP enabled  
+
+### GAS System
+- Blocks damage to players when PvP disabled  
+
+### UI System
+- Displays PvP toggle  
+- Shows PvP status indicator  
+
+### Multiplayer System
+- PvP flag is server‑authoritative  
+- Replicates to all clients  
+
+---
+
+## **Replication Rules**
+- `bIsPvPEnabled` replicates via PlayerState  
+- UI updates on `OnRep_PvPEnabled`  
+- Server enforces all PvP rules  
+
+---
+
+## **Edge Cases**
+- Player toggles PvP mid‑combat  
+- Player has a player target when toggling PvP OFF  
+- AoE abilities overlapping players  
+- Player AI autoplay respecting PvP rules  
+
+---
+
+## **Testing Checklist**
+- [ ] PvP toggle replicates correctly  
+- [ ] Player cannot target players when PvP disabled  
+- [ ] Player cannot damage players when PvP disabled  
+- [ ] AoE abilities ignore players when PvP disabled  
+- [ ] Player can target/damage players when PvP enabled  
+- [ ] Works in multiplayer with multiple clients  
+
+---
+
+## **Future Extensions**
+- PvP zones  
+- PvP cooldown timer (anti‑toggle abuse)  
+- PvP matchmaking  
+- PvP ranking  

@@ -1,53 +1,62 @@
-## 📘 GAS System — `/Docs/GAS/GASSystem.md`
+# 📘 **GAS SYSTEM DOCUMENT**  
+
+---
 
 # **GAS System**
 
-## Purpose
-Provide a robust, extensible framework for abilities, effects, attributes, and combat interactions using Unreal’s Gameplay Ability System.
+## **Purpose**
+Provide ability execution and attribute modification with PvP‑aware damage filtering.
 
-## Responsibilities
-- Manage attributes (health, damage, etc.)  
-- Execute abilities (attacks, dash, AoE, projectiles)  
-- Apply GameplayEffects (damage, buffs, debuffs)  
-- Handle cooldowns and cost  
-- Replicate ability usage in multiplayer  
+---
 
-## Non‑Responsibilities
-- Input mapping (handled by Player System)  
-- AI decision making  
-- Visual/audio polish  
+## **Responsibilities**
+- Execute abilities  
+- Apply GameplayEffects  
+- Replicate attribute changes  
+- Enforce PvP damage rules  
 
-## Key Classes
-- **`UAbilitySystemComponent` (ASC)** — core GAS component  
-- **`UBaseAttributeSet`** — health, damage, etc.  
-- **`UGameplayAbility` subclasses** — GA_Attack, GA_Dash, GA_AoE, etc.  
-- **`UGameplayEffect`** — damage, cooldown, etc.  
+---
 
-## Key Functions
-- `GiveAbility()` — grant abilities to player/NPC  
-- `TryActivateAbilityByTag()` — used by player and AI  
-- `ApplyGameplayEffectToTarget()` — apply damage/effects  
+## **PvP Damage Filtering**
 
-## Data Flow
-Input/AI → ASC → Ability → Effects → Attribute changes → Death/Hit reactions
+### In Damage Execution Calculation:
+```
+if (Source is Player && Target is Player)
+{
+    if (!SourcePlayerState->bIsPvPEnabled)
+    {
+        // Block damage
+        OutDamage = 0;
+        return;
+    }
+}
+```
 
-## Interactions
-- **Player System:** triggers abilities from input  
-- **NPC AI System:** triggers abilities from StateTree  
-- **UI:** reads cooldowns, health, etc.  
+### Applies to:
+- Single‑target abilities  
+- AoE abilities  
+- Directional abilities  
+- Projectile abilities  
 
-## Replication
-- GAS handles ability and effect replication  
-- ASC exists on both server and client  
-- Server is authoritative for attribute changes  
+### Does NOT apply to:
+- NPC → Player damage  
+- Player → NPC damage  
 
-## Edge Cases
-- Ability activation failure (cooldown, cost)  
-- Multiple effects stacking  
-- Death mid‑ability  
+---
 
-## Testing Checklist
-- [ ] Abilities activate correctly  
-- [ ] Damage and death work as expected  
-- [ ] Cooldowns behave correctly  
-- [ ] Replication is correct (clients see effects)
+## **Targeting Integration**
+If targeting system rejects a player target due to PvP, GAS never receives invalid target data.
+
+---
+
+## **Replication**
+- Damage filtering occurs **server‑side only**  
+- Clients receive replicated attribute changes  
+- No client‑side prediction of PvP rules  
+
+---
+
+## **Edge Cases**
+- AoE overlaps players when PvP disabled  
+- Player toggles PvP mid‑ability  
+- Projectile fired before PvP toggle hits a player  

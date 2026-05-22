@@ -1,7 +1,4 @@
-
-## 📘 Multiplayer System — `/Docs/Multiplayer/Multiplayer_System.md`
-
-# **Multiplayer System**
+# 📘 **Multiplayer System**
 
 ## Purpose
 Make the entire demo **server‑authoritative and multiplayer‑safe**, supporting dedicated servers and Steam‑authenticated sessions.
@@ -22,6 +19,7 @@ Make the entire demo **server‑authoritative and multiplayer‑safe**, supporti
 - Server authority over game state  
 - Clients send input, server simulates  
 - Replication of movement, abilities, health, etc.  
+- PvP flag is server‑authoritative and replicated to all clients
 
 ## Key Classes
 - **`AGameMode` / `AGameState`** — server rules + shared state  
