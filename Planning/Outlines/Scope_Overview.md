@@ -16,8 +16,8 @@ This document is the “contract” for what the project *is* and what it *is no
 # 🎯 **Project Goal**
 Build a **complete, multiplayer‑ready top‑down action RPG combat prototype** featuring:
 
-- Click‑to‑move  
-- Click‑to‑target  
+- Tap/click‑to‑move (mouse + touch)  
+- Tap/click‑to‑target (mouse + touch)  
 - Player abilities (GAS)  
 - Server‑authoritative NPC AI  
 - Object pooling  
@@ -41,7 +41,7 @@ The final result is a polished, self‑contained demo suitable for:
 
 ## **1. Player Systems**
 - Top‑down camera  
-- Point‑and‑click movement  
+- Point‑and‑click / tap‑to‑move  
 - Click‑to‑target selection via [Targeting System](../../Docs/Gameplay/Targeting_System.md)  
 - Basic attack  
 - Multiple abilities (dash, AoE, projectile) via [GAS System](../../Docs/GAS/GAS_System.md)  
@@ -79,7 +79,7 @@ The final result is a polished, self‑contained demo suitable for:
 
 ---
 
-## **4. [Spawning & Pooling](../../Docs/AI/Spawner_System.md)**
+## **4. [Spawning](../../Docs/AI/Spawner_System.md) & [Pooling](../../Docs/AI/Pooling_System.md)**
 - Enemy spawner actors  
 - Group spawning  
 - [Object pooling for NPCs](../../Docs/AI/Pooling_System.md)  
@@ -122,9 +122,10 @@ The final result is a polished, self‑contained demo suitable for:
 ## **8. Debugging & Tools**
 - AIDebugger  
 - StateTree debugger  
-- GAS debugger  
+- [GAS System](../../Docs/GAS/GAS_System.md) debugger  
 - On‑screen debug  
-- Autoplay mode for automated testing  
+- [Autoplay mode](../../Docs/AI/Player_AI_System.md) for automated testing  
+- Mobile viewport testing  
 
 ---
 
@@ -154,7 +155,7 @@ These features are intentionally excluded to keep the project focused and achiev
 
 ### **AI**
 - Advanced EQS‑driven tactics (beyond optional episode)  
-- NPC AI receives assist events from the Group System and transitions into Agro.
+- [NPC AI System](../../Docs/AI/NPC_AI_System.md) receives assist events from the [Group System](../../Docs/AI/Group_System.md) and transitions into Agro.
 - Navigation mesh generation at runtime  
 - Squad‑level tactics  
 - Behavior Tree‑only AI (StateTree is primary)  

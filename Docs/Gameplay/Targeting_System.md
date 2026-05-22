@@ -52,7 +52,7 @@ Provide deterministic targeting for all actors using a **single authoritative ta
 
 ```mermaid
 flowchart TD
-    Input[Player Input<br/>Mouse Click] --> Targeting
+    Input[Player Input<br/>Mouse/Touch] --> Targeting
     AI[AI Target Selection] --> Targeting
 
     Targeting --> Validate[Validate Target<br/>Range, LOS, PvP Rules]

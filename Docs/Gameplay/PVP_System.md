@@ -27,8 +27,8 @@ This system ensures **player agency** in multiplayer combat while keeping the ru
 
 ## **Non‑Responsibilities**
 - NPC behaviour (NPCs always treat players as valid targets)  
-- Ability logic (handled by GAS)  
-- UI rendering (handled by UI System)  
+- Ability logic (handled by [GAS System](../GAS/GAS_System.md))  
+- UI rendering (handled by [UI System](UI_System.md))  
 
 ---
 
@@ -65,7 +65,7 @@ Replicated to all clients.
 - `IsActorValidTarget(AActor*)`  
   - Rejects players if PvP disabled  
 
-### GAS Damage Execution
+### [GAS System](../GAS/GAS_System.md) Damage Execution
 - `ShouldApplyDamage(Source, Target)`  
   - Blocks player→player damage if PvP disabled  
 

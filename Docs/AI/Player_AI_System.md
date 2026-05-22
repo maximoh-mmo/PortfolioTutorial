@@ -14,8 +14,8 @@ Provide an **autoplay/testing mode** where the player character is controlled by
 
 ## Non‑Responsibilities
 - Human input handling  
-- Ability definitions  
-- UI  
+- Ability definitions (handled by [GAS System](../GAS/GAS_System.md))  
+- UI (handled by [UI System](../Gameplay/UI_System.md))  
 
 ## Key Classes
 - **`APlayerAIController`** — AI controller for player pawn  

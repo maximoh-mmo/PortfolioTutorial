@@ -6,15 +6,15 @@
 # **Player System**
 
 ## **Purpose**
-Provide top‑down ARPG controls and a UI‑driven PvP toggle that affects targeting and damage rules.
+Provide top‑down ARPG controls (mouse + touch) and a UI‑driven PvP toggle that affects targeting and damage rules.
 
 ---
 
 ## **Responsibilities**
-- Handle input  
-- Click‑to‑move  
-- Click‑to‑target  
-- Ability activation  
+- Handle input (mouse + touch)  
+- Tap/click‑to‑move  
+- Tap/click‑to‑target  
+- Ability activation (keyboard + touch buttons)  
 - PvP toggle UI → PlayerState  
 - Autoplay handoff  
 
@@ -35,11 +35,13 @@ Provide top‑down ARPG controls and a UI‑driven PvP toggle that affects targe
 
 ---
 
-## **Click‑to‑Move Flow**
+## **Tap/Click‑to‑Move Flow**
+
+Mouse click or touch tap both produce a screen-space position that drives the same raycast pipeline:
 
 ```mermaid
 flowchart TD
-    Click[Mouse Click] --> Raycast
+    Input[Mouse Click / Touch Tap] --> Raycast[Screen → World Raycast]
     Raycast --> HitLocation
     HitLocation --> MoveTo[AIController MoveToLocation]
     MoveTo --> CharacterMovement
@@ -97,8 +99,8 @@ ASC checks PvP rules before applying damage.
 ---
 
 ## **Testing Checklist**
-- [ ] Click‑to‑move moves character to target location  
-- [ ] Click‑to‑target sets `CurrentTarget` correctly  
+- [ ] Tap/click‑to‑move moves character to target location (mouse + touch)  
+- [ ] Tap/click‑to‑target sets `CurrentTarget` correctly (mouse + touch)  
 - [ ] PvP toggle replicates to all clients  
 - [ ] Targeting respects PvP flag (players filtered when OFF)  
 - [ ] Player AI autoplay can be enabled/disabled  

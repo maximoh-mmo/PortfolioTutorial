@@ -36,12 +36,12 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 ---
 
 ## **Non‑Responsibilities**
-- Spawning  
-- Pooling  
-- Ability definitions  
-- UI  
+- Spawning (handled by [Spawner System](Spawner_System.md))  
+- Pooling (handled by [Pooling System](Pooling_System.md))  
+- Ability definitions (handled by [GAS System](../GAS/GAS_System.md))  
+- UI (handled by [UI System](../Gameplay/UI_System.md))  
 - Animation montages  
-- Multiplayer replication (handled by engine + GAS)  
+- Multiplayer replication (handled by engine + [GAS System](../GAS/GAS_System.md) · see [Multiplayer System](../Multiplayer/Multiplayer_System.md))  
 
 ---
 

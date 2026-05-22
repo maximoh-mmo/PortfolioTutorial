@@ -21,9 +21,9 @@
 [x] Create Early Episode Diagrams
 
 [x] Review All Documents (consistency scan + fix all 16 findings)
-[x] Identify Risks (37 risks identified — GAS ownership, multiplayer validation, Steam auth, etc.)
-[ ] Create Risk Mitigation Plan
-[ ] Create Production Timeline
+[x] Identify Risks (37 risks documented — Planning/Risk_Identification.md)
+[x] Create Risk Mitigation Plan (Planning/Risk_Mitigation_Plan.md)
+[x] Create Production Timeline (Planning/Production_Timeline.md)
 
 [ ] Begin Private Demo Development
 ```

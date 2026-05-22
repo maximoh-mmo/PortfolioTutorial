@@ -40,7 +40,7 @@ This system is the backbone of believable group AI.
 - Perception (sight/hearing)  
 - Navigation  
 - Animation  
-- Spawning (handled by Spawner System)  
+- Spawning (handled by [Spawner System](Spawner_System.md))  
 
 ---
 

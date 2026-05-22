@@ -3,18 +3,18 @@
 # **Ability Targeting System**
 
 ## Purpose
-Provide a unified way to select targets and locations for abilities: single‑target, AoE, and directional abilities, driven by mouse input and/or AI.
+Provide a unified way to select targets and locations for abilities: single‑target, AoE, and directional abilities, driven by screen input (mouse/touch) and/or AI.
 
 ## Responsibilities
-- Interpret mouse position / target under cursor  
+- Interpret screen position (mouse cursor / touch location)  
 - Provide targeting data (actor, location, direction)  
 - Show targeting indicators (circles, cones, etc.)  
 - Validate targets (range, line of sight, team)  
 
 ## Non‑Responsibilities
-- Ability execution (handled by GAS)  
+- Ability execution (handled by [GAS System](../GAS/GAS_System.md))  
 - AI decision making  
-- UI outside of targeting indicators  
+- [UI System](UI_System.md) outside of targeting indicators  
 
 ## Key Classes
 - **`UAbilityTargetingComponent`** — attached to player  
@@ -27,10 +27,10 @@ Provide a unified way to select targets and locations for abilities: single‑ta
 - `ShowTargetIndicator()` / `HideTargetIndicator()`  
 
 ## Data Flow
-Input → TargetingComponent → TargetData → GAS Ability → Execution
+Input → TargetingComponent → TargetData → [GAS System](../GAS/GAS_System.md) Ability → Execution
 
 ## Interactions
-- **[Player System](../Player/Player_System.md):** feeds mouse input  
+- **[Player System](../Player/Player_System.md):** feeds screen input (mouse/touch)  
 - **[Targeting System](Targeting_System.md):** provides target selection context  
 - **[GAS System](../GAS/GAS_System.md):** consumes TargetData  
 - **[UI](UI_System.md):** renders indicators  

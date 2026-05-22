@@ -110,10 +110,10 @@ This document is the technical map for the entire project.
 # 🧱 **Core Systems**
 
 ### **1. [Player System](../Player/Player_System.md)**
-- Input handling  
-- Click‑to‑move  
-- Click‑to‑target  
-- Ability activation  
+- Input handling (mouse + touch)  
+- Tap/click‑to‑move  
+- Tap/click‑to‑target  
+- Ability activation (keyboard + touch buttons)  
 - PvP toggle UI → PlayerState  
 - Autoplay handoff  
 
@@ -138,7 +138,7 @@ This document is the technical map for the entire project.
 
 ### **5. [Ability Targeting System](../Gameplay/Ability_Targeting_System.md)**
 - Single‑target, AoE, and directional targeting modes  
-- Mouse input interpretation for ability placement  
+- Screen input interpretation (mouse/touch) for ability placement  
 - Targeting indicators (circles, cones, etc.)  
 - Provides `FAbilityTargetData` to GAS  
 

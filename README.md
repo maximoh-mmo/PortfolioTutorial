@@ -25,8 +25,8 @@ The full Unreal Engine project — this is the *real game*, not the tutorial ver
 Contains all systems:
 
 - Top‑down player controller  
-- Click‑to‑move  
-- Click‑to‑target  
+- Tap/click‑to‑move (mouse + touch)  
+- Tap/click‑to‑target (mouse + touch)  
 - GAS abilities  
 - NPC AI (StateTree + Perception)  
 - Object pooling  
@@ -166,7 +166,7 @@ General automation scripts.
 - [Architecture Overview](Docs/Architecture/Architecture%20Overview.md) — high-level system map
 
 ### **Core Systems**
-- [Player System](Docs/Player/Player_System.md) — click-to-move, click-to-target, ability activation, PvP toggle
+- [Player System](Docs/Player/Player_System.md) — tap/click-to-move, tap/click-to-target, ability activation (keyboard + touch), PvP toggle
 - [NPC AI System](Docs/AI/NPC_AI_System.md) — StateTree-driven enemy behaviour, perception, combat
 - [Targeting System](Docs/Gameplay/Targeting_System.md) — deterministic target selection, PvP-aware filtering
 - [Ability Targeting System](Docs/Gameplay/Ability_Targeting_System.md) — single-target, AoE, directional targeting

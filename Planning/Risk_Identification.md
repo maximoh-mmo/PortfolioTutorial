@@ -1,0 +1,189 @@
+# 📘 RISK IDENTIFICATION
+**File:** `Planning/Risk_Identification.md`
+
+Identified risks for the Top-Down ARPG AI Demo tutorial series, organized by category.
+
+---
+
+# ⚠ TECHNICAL RISKS
+
+## R1 — GAS Complexity Overwhelming Viewers
+**Severity:** High | **Likelihood:** High
+The Gameplay Ability System is the most complex system in the project. Episodes 14–20 depend entirely on it. If viewers struggle, the series loses momentum mid-way.
+
+## R2 — StateTree Learning Curve
+**Severity:** Medium | **Likelihood:** High
+StateTrees are newer than Behavior Trees with fewer community resources. Episodes 9–13 lay the AI foundation — if StateTree setup is confusing, the entire AI pipeline is at risk.
+
+## R3 — Multiplayer Replication Desyncs
+**Severity:** High | **Likelihood:** Medium
+Replicating NPCs, abilities, targeting, PvP flag, and health across server/client creates many synchronization points. A single missed replication can cause hard-to-debug desyncs.
+
+## R4 — Steam Auth Edge Cases
+**Severity:** Medium | **Likelihood:** Medium
+Steam not running, expired auth tickets, ticket validation timeout, dedicated server registration failure — these edge cases are hard to test systematically.
+
+## R5 — Pool Exhaustion Under Load
+**Severity:** Low | **Likelihood:** Low
+If all pooled NPCs are active and a new spawn is requested, the system needs a fallback (create new or queue). Only surfaces under heavy combat.
+
+## R6 — Per-NPC Respawn Timer Cascade
+**Severity:** Medium | **Likelihood:** Medium
+Multiple NPCs dying simultaneously creates many independent timers. Performance spike when all timers fire in close succession.
+
+## R7 — Server-Only AI Enforcement
+**Severity:** High | **Likelihood:** Medium
+Any AI logic accidentally running on clients causes desyncs, wasted CPU, and potential exploits. Requires discipline across all NPC AI episodes.
+
+## R8 — NPC State Reset on Pool Reuse
+**Severity:** High | **Likelihood:** Medium
+Forgetting to reset health, AI state, group membership, or StateTree context when an NPC returns from the pool causes stale behaviour.
+
+## R9 — Client-Side Targeting Exploit
+**Severity:** Medium | **Likelihood:** Low
+Targeting is client-side with server validation. A malicious client could send fabricated target data. Server must validate all target data during ability execution.
+
+## R10 — AoE PvP Damage Filtering
+**Severity:** Medium | **Likelihood:** Medium
+AoE abilities overlapping both enemies and players when PvP is disabled. The damage execution must check each target individually, not just the source.
+
+## R11 — PvP Toggle Mid-Projectile
+**Severity:** Low | **Likelihood:** Low
+A projectile is fired before PvP toggle, arrives after. Should damage apply based on toggle at fire-time or impact-time? Need a clear design decision.
+
+## R12 — Character Movement Replication
+**Severity:** Medium | **Likelihood:** Medium
+Getting smooth replicated movement in a top-down game with click-to-move. Client prediction, correction, and jitter handling.
+
+## R13 — Ability Cooldown Desync
+**Severity:** Medium | **Likelihood:** Medium
+Client-predicted cooldown UI may desync from server state. Need clear cooldown replication strategy.
+
+## R14 — Projectile Replication
+**Severity:** Medium | **Likelihood:** Medium
+Projectile movement, hit detection, and damage application across the network. Server-authoritative projectiles vs client-side visuals.
+
+---
+
+# 🎯 DESIGN RISKS
+
+## R15 — Episode Scope Creep
+**Severity:** High | **Likelihood:** High
+Individual episodes taking longer than expected, pushing the 36-episode target. Each system doc lists 6-8 testing items — real implementation always reveals more.
+
+## R16 — Episode Dependency Chain Breaks
+**Severity:** High | **Likelihood:** Medium
+Later episodes depend on earlier systems. If Episode 4 (Spawner) has issues, Episodes 5-8 cascade. No buffer or catch-up episodes planned.
+
+## R17 — Player AI vs NPC AI Interaction Bugs
+**Severity:** Medium | **Likelihood:** Medium
+Both use StateTrees but have different schemas, targets, and rules (PvP awareness). Edge cases where they interact unexpectedly.
+
+## R18 — Autoplay Possession Switching
+**Severity:** Medium | **Likelihood:** Low
+Switching between PlayerController and PlayerAIController mid-combat. State cleanup, input routing, and UI must all transition cleanly.
+
+## R19 — Camera Collision Edge Cases
+**Severity:** Low | **Likelihood:** Medium
+Camera clipping through geometry in tight spaces or when the character is near walls. SpringArm collision handles most cases, but edge cases remain.
+
+## R20 — Group Assist Trigger Accuracy
+**Severity:** Medium | **Likelihood:** Medium
+The assist radius must feel right — too small and assist never fires, too large and the entire group agros instantly. Requires tuning.
+
+## R21 — Multiple Assist Events Overlapping
+**Severity:** Low | **Likelihood:** Medium
+Multiple NPCs in the same group attacked simultaneously. Each sends an assist event — the target NPC must not stack transitions.
+
+## R22 — Flee State Isolation Detection
+**Severity:** Medium | **Likelihood:** Medium
+Flee triggers on "low health + isolated." Defining "isolated" (distance to allies, number of nearby allies) is subjective and may need tuning.
+
+---
+
+# 🎬 PRODUCTION RISKS
+
+## R23 — Recording Requires Perfect Execution
+**Severity:** High | **Likelihood:** High
+Each episode must be recorded in one take or heavily edited. Mistakes, compile errors, or forgotten steps during recording waste hours.
+
+## R24 — UE Version Compatibility
+**Severity:** Medium | **Likelihood:** Medium
+Viewers may be on a different UE version. GAS, StateTree, or networking APIs may differ. Providing version-specific notes adds overhead.
+
+## R25 — Episode Export Errors
+**Severity:** Medium | **Likelihood:** Medium
+The manual episode export workflow (strip features, copy, verify) is error-prone. Forgetting to strip Steam config or leaving spoiler code.
+
+## R26 — Public Repo Spoilers
+**Severity:** High | **Likelihood:** Medium
+Accidentally exposing future episode content (systems, classes, config) in an early episode snapshot.
+
+## R27 — Asset Creation Bottleneck
+**Severity:** Medium | **Likelihood:** Medium
+The project needs placeholder meshes, UI textures, ability icons, and audio. Creating or sourcing these takes time away from code.
+
+## R28 — Steam AppID Leak
+**Severity:** High | **Likelihood:** Low
+Steam AppID or SDK files accidentally committed to the public repo. The README explicitly warns about this, but it's still a risk.
+
+## R29 — Audio/Video Quality vs Code Depth Tradeoff
+**Severity:** Low | **Likelihood:** Medium
+Balancing production polish (editing, transitions, audio) with technical depth. Too much polish delays release; too little hurts viewership.
+
+## R30 — Tutorial Series Fatigue
+**Severity:** Medium | **Likelihood:** Medium
+36 episodes is a long series. Viewer drop-off after Episode 10-15 is common. Early episodes must deliver value to sustain engagement.
+
+---
+
+# 🧪 TESTING & QA RISKS
+
+## R31 — Multiplayer Testing Complexity
+**Severity:** High | **Likelihood:** High
+Testing requires dedicated server, multiple clients, Steam auth setup. Cannot fully verify multiplayer systems in a single PIE session.
+
+## R32 — No Automated Test Suite
+**Severity:** Medium | **Likelihood:** High
+The project has no unit tests or automated integration tests. All verification is manual (checklist-based). Regressions are easy to miss.
+
+## R33 — AI Behavior Hard to Verify Deterministically
+**Severity:** Medium | **Likelihood:** Medium
+StateTree AI is inherently non-deterministic (perception timings, navigation paths). Hard to write reproducible test cases.
+
+## R34 — Network Latency Not Tested
+**Severity:** Medium | **Likelihood:** Medium
+All development likely happens locally or on LAN. Real-world latency, packet loss, and jitter are not part of the test plan.
+
+## R35 — PvP Toggle Abuse (Rapid Toggling)
+**Severity:** Low | **Likelihood:** Low
+Player rapidly toggling PvP on/off during combat to avoid damage. Noted as a future extension (cooldown timer), not addressed in v1.
+
+## R36 — StateTree Debugging Tooling Immaturity
+**Severity:** Medium | **Likelihood:** Medium
+StateTree debugger exists but has fewer features than Behavior Tree debugger. Troubleshooting AI issues during recording may be harder.
+
+## R37 — Pooled NPC Death During StateTree Evaluation
+**Severity:** Low | **Likelihood:** Low
+An NPC dies while the StateTree is mid-evaluation. The NPC returns to pool mid-frame. Needs careful handling of death + pooling ordering.
+
+---
+
+# 📱 MOBILE / TOUCH RISKS
+
+## R38 — Touch Input Precision & Occlusion
+**Severity:** Medium | **Likelihood:** Medium
+Touch lacks mouse-level precision. Fingers occlude the target area. Tap vs tap-hold differentiation needs care. Single tap must disambiguate between move and target intent.
+
+## R39 — Touch UI Sizing on Different Screens
+**Severity:** Low | **Likelihood:** Medium
+Ability buttons and the PvP toggle must be large enough for touch (44×44 px minimum) but not dominate the screen on small devices. Responsive layout needed.
+
+## R40 — Mobile Performance Constraints
+**Severity:** Medium | **Likelihood:** Medium
+Mobile devices have less CPU/GPU headroom. Object pooling, AI LOD, and draw calls need mobile-friendly thresholds. The demo targets desktop first but must not hard-crash on mobile.
+
+---
+
+**Total: 40 risks identified**
+**Next step:** Mitigation strategies in Risk Mitigation Plan.

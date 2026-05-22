@@ -16,15 +16,17 @@ Provide clear, responsive UI for:
 - Final demo presentation  
 
 The UI is intentionally minimal and functional — not a full RPG interface.
+Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-screen touch controls alongside keyboard hotkeys.
 
 ---
 
 ## **Responsibilities**
 - Display player health  
 - Display enemy health bars  
-- Display ability bar with cooldowns  
+- Display ability bar with cooldowns (touch-friendly buttons)  
 - Show targeting indicators (single‑target, AoE, directional)  
 - Show hit indicators  
+- Provide on-screen touch controls for mobile (ability buttons, PvP toggle)  
 - Provide debug overlays for:
   - AI state  
   - Autoplay mode  
@@ -48,6 +50,11 @@ The UI is intentionally minimal and functional — not a full RPG interface.
 ### **`UHUDWidget`**
 - Main HUD  
 - Contains health, abilities, debug panels  
+- Scales layout for mobile vs desktop  
+
+### **`UMobileTouchControls`**
+- On-screen ability buttons (touch)
+- Responsive sizing, anchored to screen edges  
 
 ### **`UEnemyHealthBarWidget`**
 - Attached to NPCs  
@@ -149,6 +156,7 @@ Target Indicator Widget
 - [ ] Player health updates correctly  
 - [ ] Enemy health bars appear/disappear correctly  
 - [ ] Ability cooldowns update correctly  
+- [ ] Touch controls work on mobile viewport  
 - [ ] Target indicators match ability behaviour  
 - [ ] Debug UI toggles correctly  
 - [ ] UI behaves correctly in multiplayer  
@@ -161,3 +169,4 @@ Target Indicator Widget
 - Minimap  
 - Full menu system  
 - Style/theme pass  
+- Mobile gesture support (pinch zoom, long-press for details)  

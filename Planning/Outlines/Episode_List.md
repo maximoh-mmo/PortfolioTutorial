@@ -30,7 +30,7 @@ Implement a fixed top‑down camera with smoothing and collision handling.
 → [Script](../Scripts/Episode02_TopDown_Camera.md)
 
 ### **Episode 3 — Point‑and‑Click Movement**  
-Use mouse raycasts and MoveToLocation to implement click‑to‑move.  
+Use screen raycasts (mouse/touch) and MoveToLocation to implement tap/click‑to‑move.  
 → [Script](../Scripts/Episode03_ClickToMove.md)
 
 ### **Episode 4 — Enemy Spawner (C++)**  
@@ -38,7 +38,7 @@ Create a spawner that generates groups of NPCs at defined points.
 → [Script](../Scripts/Episode04_Enemy_Spawner.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
 
 ### **Episode 5 — Click‑to‑Target System**  
-Implement target selection, highlighting, and basic attack input routing.  
+Implement target selection (mouse + touch), highlighting, and basic attack input routing.  
 → [Script](../Scripts/Episode05_ClickToTarget.md) · [Targeting System](../../Docs/Gameplay/Targeting_System.md)
 
 ---
@@ -115,7 +115,7 @@ Implement health, death events, and notify the spawner/pool.
 · [GAS System](../../Docs/GAS/GAS_System.md) · [Pooling System](../../Docs/AI/Pooling_System.md)
 
 ### **Episode 19 — Player Ability Targeting**  
-Add single‑target, AoE, and directional targeting with cursor indicators.  
+Add single‑target, AoE, and directional targeting with screen indicators (mouse/touch).  
 · [Ability Targeting System](../../Docs/Gameplay/Ability_Targeting_System.md) · [UI System](../../Docs/Gameplay/UI_System.md)
 
 ### **Episode 20 — Adding Multiple Abilities**  

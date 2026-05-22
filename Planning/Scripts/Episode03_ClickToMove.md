@@ -1,7 +1,7 @@
 # 🎬 **Episode 3 — Point‑and‑Click Movement**
 
 ## **Episode Goal**
-Use mouse raycasts and MoveToLocation to implement click‑to‑move.
+Use screen raycasts (mouse + touch) and MoveToLocation to implement tap/click‑to‑move.
 
 ---
 
@@ -11,35 +11,37 @@ Use mouse raycasts and MoveToLocation to implement click‑to‑move.
 ---
 
 ## **High‑Level Summary**
-We add click-to-move by raycasting from the mouse cursor into the world, finding the clicked location, and sending the character there using Unreal's AI navigation system. This is the primary control scheme for the entire demo.
+We add click-to-move by raycasting from the screen position (mouse cursor or touch tap) into the world, finding the target location, and sending the character there using Unreal's AI navigation system. This is the primary control scheme for the entire demo, supporting both mouse and touch input.
 
 ---
 
 ## **Key Concepts Introduced**
-- Mouse cursor input (Show Mouse Cursor)
+- Screen-space input (mouse cursor + touch tap)
 - Raycasting from screen to world (DeprojectScreenToWorld)
 - Hit result and collision channels
 - AI Navigation / MoveToLocation
 - Input action mappings
-- Simple click feedback (optional)
+- Simple tap/click feedback (optional)
+- Unified input handling for mouse and touch
 
 ---
 
 ## **Technical Breakdown**
 
 ### **1. Input Setup**
-Enable mouse cursor on PlayerController:
+Enable mouse cursor on PlayerController (mouse ignored on touch devices):
 ```cpp
 bShowMouseCursor = true;
 DefaultMouseCursor = EMouseCursor::Default;
 ```
+Touch input is handled by the same input system — UE routes touch taps through the same `GetHitResultUnderCursor` pipeline, so no separate touch handling is needed for click-to-move.
 
 ### **2. Input Mapping**
 Add an `IA_ClickMove` action mapping (Left Mouse Button).
 
 ### **3. Raycast Logic**
 ```cpp
-void AMPTDARPGPlayerController::OnClickMove()
+void AOnsetPlayerController::OnClickMove()
 {
     FHitResult Hit;
     GetHitResultUnderCursor(ECC_Visibility, false, Hit);
@@ -73,9 +75,9 @@ if (APawn* MyPawn = GetPawn())
 ## **Code Snippets**
 
 ```cpp
-// AMPTDARPGPlayerController.h
+// AOnsetPlayerController.h
 UCLASS()
-class AMPTDARPGPlayerController : public APlayerController
+class AOnsetPlayerController : public APlayerController
 {
     GENERATED_BODY()
 
@@ -91,20 +93,20 @@ protected:
 ```
 
 ```cpp
-// AMPTDARPGPlayerController.cpp
-void AMPTDARPGPlayerController::BeginPlay()
+// AOnsetPlayerController.cpp
+void AOnsetPlayerController::BeginPlay()
 {
     Super::BeginPlay();
     bShowMouseCursor = true;
 }
 
-void AMPTDARPGPlayerController::SetupInputComponent()
+void AOnsetPlayerController::SetupInputComponent()
 {
     Super::SetupInputComponent();
-    InputComponent->BindAction("ClickMove", IE_Pressed, this, &AMPTDARPGPlayerController::OnClickMove);
+    InputComponent->BindAction("ClickMove", IE_Pressed, this, &AOnsetPlayerController::OnClickMove);
 }
 
-void AMPTDARPGPlayerController::OnClickMove()
+void AOnsetPlayerController::OnClickMove()
 {
     FHitResult Hit;
     GetHitResultUnderCursor(ECC_Visibility, false, Hit);
@@ -144,13 +146,15 @@ Character Pathfinding
 - Not assigning the input action in Project Settings
 - `bShowMouseCursor` not set to true
 - Character has no AIController or MovementComponent
+- Touch input not working on mobile — ensure touch interface is enabled in Project Settings
 
 ---
 
 ## **Episode Checklist**
 - [ ] Click moves the character
-- [ ] Cursor visible in game
-- [ ] Movement stops at clicked location
+- [ ] Touch tap moves the character (mobile viewport or touch-enabled device)
+- [ ] Cursor visible in game (desktop)
+- [ ] Movement stops at clicked/tapped location
 - [ ] Works on different surfaces and heights
 - [ ] Input action properly mapped
 

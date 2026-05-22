@@ -28,13 +28,13 @@ We start from scratch: create a new Unreal project, set up the C++ classes that 
 
 ### **1. Project Creation**
 - Create new Blank C++ project via Unreal Editor
-- Name: `MPTDARPG` (Multiplayer Top-Down ARPG)
+- Name: `Onset`
 - Choose appropriate project settings (scalability, target platform)
 
 ### **2. Folder Structure**
 ```
 Project/
-├── Source/MPTDARPG/
+├── Source/Onset/
 │   ├── Player/
 │   ├── AI/
 │   ├── Combat/
@@ -49,11 +49,11 @@ Project/
 ```
 
 ### **3. Base C++ Classes (Stubs)**
-- `AMPTDARPGCharacter` — base character with movement component
-- `AMPTDARPGPlayerController` — input handling stub
-- `AMPTDARPGPlayerState` — player state stub
-- `AMPTDARPGGameMode` — game mode stub
-- `AMPTDARPGGameState` — game state stub
+- `AOnsetCharacter` — base character with movement component
+- `AOnsetPlayerController` — input handling stub
+- `AOnsetPlayerState` — player state stub
+- `AOnsetGameMode` — game mode stub
+- `AOnsetGameState` — game state stub
 
 ### **4. Architecture Walkthrough**
 Show the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) diagram and explain how each system connects:
@@ -72,28 +72,28 @@ Show the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview
 ## **Code Snippets**
 
 ```cpp
-// AMPTDARPGCharacter.h — base character declaration
+// AOnsetCharacter.h — base character declaration
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "MPTDARPGCharacter.generated.h"
+#include "OnsetCharacter.generated.h"
 
 UCLASS()
-class AMPTDARPGCharacter : public ACharacter
+class AOnsetCharacter : public ACharacter
 {
     GENERATED_BODY()
 
 public:
-    AMPTDARPGCharacter();
+    AOnsetCharacter();
 };
 ```
 
 ```cpp
-// AMPTDARPGCharacter.cpp — base character implementation
-#include "MPTDARPGCharacter.h"
+// AOnsetCharacter.cpp — base character implementation
+#include "OnsetCharacter.h"
 
-AMPTDARPGCharacter::AMPTDARPGCharacter()
+AOnsetCharacter::AOnsetCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
 }
@@ -104,7 +104,7 @@ AMPTDARPGCharacter::AMPTDARPGCharacter()
 ## **Diagrams**
 ```
 Project Structure:
-Source/MPTDARPG/
+Source/Onset/
 ├── Player/       → Character, Controller, PlayerState
 ├── AI/           → NPC AI, Player AI
 ├── Combat/       → GAS, Targeting

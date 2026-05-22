@@ -11,7 +11,7 @@ Implement target selection, highlighting, and basic attack input routing.
 ---
 
 ## **High‑Level Summary**
-We add click-to-target: when the player clicks on an enemy, that enemy becomes the current target. A highlight indicates the selection, and a basic attack can be triggered. This is the foundation of the combat system.
+We add click-to-target: when the player taps/clicks on an enemy, that enemy becomes the current target. A highlight indicates the selection, and a basic attack can be triggered. This is the foundation of the combat system, supporting both mouse and touch input.
 
 ---
 
@@ -19,7 +19,7 @@ We add click-to-target: when the player clicks on an enemy, that enemy becomes t
 - TargetingComponent — stores and manages the current target
 - Actor channel for enemy trace
 - Target highlighting (outline or material effect)
-- Distinguishing between ground click (move) and enemy click (target)
+- Distinguishing between ground tap/click (move) and enemy tap/click (target)
 - Basic attack input routing
 
 ---
@@ -43,9 +43,9 @@ private:
 ```
 
 ### **2. Modify Click Handler**
-Determine whether the click hit an enemy or the ground:
+Determine whether the tap/click hit an enemy or the ground:
 ```cpp
-void AMPTDARPGPlayerController::OnClick()
+void AOnsetPlayerController::OnClick()
 {
     FHitResult Hit;
     GetHitResultUnderCursor(ECC_Visibility, false, Hit);
@@ -71,7 +71,7 @@ Apply a post-process outline or simple material change on the target actor. Use 
 ### **4. Basic Attack Input**
 Add `IA_BasicAttack` input action → triggers `OnBasicAttack()`:
 ```cpp
-void AMPTDARPGPlayerController::OnBasicAttack()
+void AOnsetPlayerController::OnBasicAttack()
 {
     if (TargetingComponent->GetCurrentTarget())
     {
@@ -116,7 +116,7 @@ private:
 
 ```cpp
 // Targeting logic in PlayerController
-void AMPTDARPGPlayerController::OnClick()
+void AOnsetPlayerController::OnClick()
 {
     FHitResult Hit;
     GetHitResultUnderCursor(ECC_Visibility, false, Hit);
@@ -152,14 +152,15 @@ Attack Input → HasTarget? → Yes → Send to GAS (stub)
 ## **Common Pitfalls**
 - Not distinguishing enemies from other actors (use tags or interface)
 - Highlight persisting on dead or out-of-range targets
-- Click-to-move overriding target selection
+- Tap/click-to-move overriding target selection
 - Forgetting to clear target when enemy dies
+- Touch tap registering as both move and target — use a brief delay or double-tap detection for mobile
 
 ---
 
 ## **Episode Checklist**
-- [ ] Click on enemy sets the target
-- [ ] Click on ground moves the character
+- [ ] Tap/click on enemy sets the target (mouse + touch)
+- [ ] Tap/click on ground moves the character (mouse + touch)
 - [ ] Target highlight visible
 - [ ] Attack key routes to current target
 - [ ] Target clears on death (if applicable)

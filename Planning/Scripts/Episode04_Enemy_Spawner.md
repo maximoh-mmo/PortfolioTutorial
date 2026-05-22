@@ -116,7 +116,7 @@ FVector AEnemySpawner::GetSpawnLocation(int32 Index)
 ```cpp
 // AEnemySpawner.h
 UCLASS()
-class MPTDARPG_API AEnemySpawner : public AActor
+class ONSET_API AEnemySpawner : public AActor
 {
     GENERATED_BODY()
 
