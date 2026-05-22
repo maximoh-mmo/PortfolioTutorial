@@ -9,11 +9,11 @@
 
 [x] Create [Episode Script Template](../Planning/Scripts/EPISODE_SCRIPT_TEMPLATE.md)
 [x] Create [Episode README Template](../Planning/Templates/EPISODE_README_TEMPLATE.md)
-[ ] Draft Scripts for Episodes 1–5
+[x] Draft Scripts for Episodes 1–5
 
 [x] Create Private Repo Structure
 [x] Create Public Repo Structure (/Series/Episode01–36)
-[ ] Define Branching Strategy
+[x] Define [Branching Strategy](../Planning/Workflow/BRANCHING_STRATEGY.md)
 [ ] Document Episode Export Workflow
 [ ] Create Public Release Checklist
 

@@ -200,9 +200,12 @@ General automation scripts.
 
 ## 🔄 **Branching Strategy**
 
+See the full [Branching Strategy document](Planning/Workflow/BRANCHING_STRATEGY.md) for merge flow and rules.
+
 - **main** — stable full demo  
 - **dev** — active development  
 - **feature/*** — new systems  
+- **fix/*** — bug fixes  
 - **episode/*** — staging branches for public releases  
 - **steam/*** — Steam integration  
 - **server/*** — dedicated server work  
