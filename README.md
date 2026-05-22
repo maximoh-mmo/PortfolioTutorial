@@ -1,240 +1,204 @@
-📘 PRIVATE REPO — README TEMPLATE
-Below is a polished README template written for your workflow:
-private development, full demo, tutorial production, and internal documentation.
+## 📘 **Private Unreal Project — Internal Repository**
 
-You can paste this directly into README.md in your private repo.
-
-📘 Private Unreal Project — Internal Repository
-This repository contains the full private development version of the Top‑Down ARPG AI Demo and the complete production pipeline for the 36‑episode tutorial series.
+This repository contains the **full private development version** of the Top‑Down ARPG AI Demo and the complete production pipeline for the **36‑episode tutorial series**.
 
 It includes:
 
-The full Unreal Engine project
+- The full Unreal Engine project  
+- All internal documentation  
+- All design materials  
+- All planning for the tutorial series  
+- Steam integration  
+- Dedicated server configuration  
+- Experimental systems  
+- Episode export tools  
 
-All internal documentation
+This repo is **not** intended for public release.
 
-All design materials
+---
 
-All planning for the tutorial series
+## 🧱 **Repository Structure**
 
-Steam integration
-
-Dedicated server configuration
-
-Experimental systems
-
-Episode export tools
-
-This repo is not intended for public release.
-
-🧱 Repository Structure
-/Project/
-The full Unreal Engine project — this is the real game, not the tutorial version.
+### **/Project/**
+The full Unreal Engine project — this is the *real game*, not the tutorial version.
 
 Contains all systems:
 
-Top‑down player controller
+- Top‑down player controller  
+- Click‑to‑move  
+- Click‑to‑target  
+- GAS abilities  
+- NPC AI (StateTree + Perception)  
+- Object pooling  
+- Spawner system  
+- Player AI autoplay  
+- Multiplayer support  
+- Steam authentication  
+- Dedicated server support  
 
-Click‑to‑move
+---
 
-Click‑to‑target
-
-GAS abilities
-
-NPC AI (StateTree + Perception)
-
-Object pooling
-
-Spawner system
-
-Player AI autoplay
-
-Multiplayer support
-
-Steam authentication
-
-Dedicated server support
-
-/Docs/
+### **/Docs/**
 Internal technical documentation.
 
 Includes:
 
-Architecture diagrams
+- Architecture diagrams  
+- AI behaviour flowcharts  
+- StateTree schemas  
+- GAS ability flow  
+- Multiplayer authority diagrams  
+- Pooling lifecycle  
+- Steam auth flow  
+- Player AI logic  
 
-AI behaviour flowcharts
+---
 
-StateTree schemas
-
-GAS ability flow
-
-Multiplayer authority diagrams
-
-Pooling lifecycle
-
-Steam auth flow
-
-Player AI logic
-
-/Design/
+### **/Design/**
 Game design documentation.
 
 Includes:
 
-Ability design
+- Ability design  
+- Enemy types & behaviours  
+- Player controls  
+- Camera behaviour  
+- UI mockups  
+- Final demo flow  
 
-Enemy types & behaviours
+---
 
-Player controls
-
-Camera behaviour
-
-UI mockups
-
-Final demo flow
-
-/Planning/
+### **/Planning/**
 Tutorial series planning.
 
 Includes:
 
-Episode outlines
+- Episode outlines  
+- Episode scripts  
+- Talking points  
+- Recording notes  
+- Release plan  
 
-Episode scripts
+---
 
-Talking points
-
-Recording notes
-
-Release plan
-
-/Series/
-Clean episode snapshots prepared for the public repo.
+### **/Series/**
+Clean episode snapshots prepared for the **public repo**.
 
 Each episode folder contains:
 
-Cleaned project snapshot
+- Cleaned project snapshot  
+- Episode README  
+- Diagrams  
+- Code snippets  
 
-Episode README
+---
 
-Diagrams
-
-Code snippets
-
-/Tools/
+### **/Tools/**
 Internal tools and automation.
 
 Includes:
 
-Episode export scripts
+- Episode export scripts  
+- Server build scripts  
+- Debug utilities  
+- Profiling tools  
 
-Server build scripts
+---
 
-Debug utilities
-
-Profiling tools
-
-/Server/
+### **/Server/**
 Dedicated server configuration.
 
 Includes:
 
-Config files
+- Config files  
+- Launch scripts  
+- Network emulation configs  
+- Deployment notes  
 
-Launch scripts
+---
 
-Network emulation configs
-
-Deployment notes
-
-/Steam/
+### **/Steam/**
 Steam integration (private).
 
 Includes:
 
-Steamworks SDK
+- Steamworks SDK  
+- Auth ticket testing  
+- Server registration scripts  
+- Steam session testing  
 
-Auth ticket testing
+---
 
-Server registration scripts
-
-Steam session testing
-
-/Experiments/
+### **/Experiments/**
 Prototypes and throwaway tests.
 
 Used for:
 
-AI experiments
+- AI experiments  
+- Ability prototypes  
+- Movement tests  
+- UI mockups  
+- Networking experiments  
 
-Ability prototypes
+---
 
-Movement tests
-
-UI mockups
-
-Networking experiments
-
-/Assets/
+### **/Assets/**
 Non‑Unreal assets.
 
 Includes:
 
-Diagrams
+- Diagrams  
+- Images  
+- Audio  
+- Video  
+- Reference material  
 
-Images
+---
 
-Audio
-
-Video
-
-Reference material
-
-/Scripts/
+### **/Scripts/**
 General automation scripts.
 
-🔄 Branching Strategy
-main — stable full demo
+---
 
-dev — active development
+## 🔄 **Branching Strategy**
 
-feature/* — new systems
+- **main** — stable full demo  
+- **dev** — active development  
+- **feature/*** — new systems  
+- **episode/*** — staging branches for public releases  
+- **steam/*** — Steam integration  
+- **server/*** — dedicated server work  
 
-episode/* — staging branches for public releases
+---
 
-steam/* — Steam integration
+## 🚀 **Episode Export Workflow**
 
-server/* — dedicated server work
+1. Build the real system in `/Project`  
+2. Create an `episode/*` branch  
+3. Strip out advanced features  
+4. Copy cleaned snapshot into `/Series/EpisodeXX`  
+5. Add episode README + diagrams  
+6. Push to public repo  
 
-🚀 Episode Export Workflow
-Build the real system in /Project
+---
 
-Create an episode/* branch
+## 🔒 **Security Notes**
 
-Strip out advanced features
+- Steam AppID and SDK must remain private  
+- Dedicated server configs must remain private  
+- No sensitive keys or tokens should ever be exported  
 
-Copy cleaned snapshot into /Series/EpisodeXX
+---
 
-Add episode README + diagrams
+## 🎯 **Purpose of This Repository**
 
-Push to public repo
+This repo is the **master source of truth** for:
 
-🔒 Security Notes
-Steam AppID and SDK must remain private
+- The full game demo  
+- The tutorial series production pipeline  
+- All internal documentation  
+- All experiments and prototypes  
 
-Dedicated server configs must remain private
+The public repo will contain only the **clean, step‑by‑step episode snapshots**.
 
-No sensitive keys or tokens should ever be exported
-
-🎯 Purpose of This Repository
-This repo is the master source of truth for:
-
-The full game demo
-
-The tutorial series production pipeline
-
-All internal documentation
-
-All experiments and prototypes
-
-The public repo will contain only the clean, step‑by‑step episode snapshots.
+---
