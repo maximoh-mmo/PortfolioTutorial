@@ -3,13 +3,13 @@
 # **Spawner System**
 
 ## Purpose
-Manage the creation of NPC groups in the world, assigning them to spawn points, groups, and initial states. It is responsible for *when* and *where* enemies appear, not how they behave.
+Manage the creation and ongoing respawn of NPC groups in the world, assigning them to spawn points, groups, and initial states. Each NPC respawns independently on its own timer — the group does not wait for all members to die before respawning.
 
 ## Responsibilities
 - Spawn NPCs in groups at predefined locations  
 - Assign NPCs to Group System  
 - Configure enemy types per spawn point  
-- Trigger respawn after group death or wave completion  
+- Assign a per-NPC respawn rate; each killed NPC respawns independently on its own timer  
 - Expose simple controls (enable/disable, wave count, etc.)
 
 ## Non‑Responsibilities
@@ -20,30 +20,33 @@ Manage the creation of NPC groups in the world, assigning them to spawn points, 
 
 ## Key Classes
 - **`AEnemySpawner`** — main spawner actor placed in the level  
-- **`FSpawnConfig`** — struct for enemy type, count, spacing, etc.  
+- **`FSpawnConfig`** — struct for enemy type, count, spacing, respawn rate, etc.  
 
 ## Key Functions
 - `SpawnGroup()` — spawns or activates a group of NPCs  
-- `OnGroupWiped()` — called when all members are dead/pooled  
-- `ScheduleRespawn()` — sets timers for respawn  
+- `OnNPCDeath(ANPC*)` — called when any single NPC dies; starts its individual respawn timer  
+- `ScheduleRespawn(ANPC*)` — sets a per-NPC timer using the group respawn rate  
+- `SpawnSingleNPC()` — respawns a single NPC at its designated point  
 - `InitializeNPC(ANPC*)` — assigns group, type, initial state  
 
 ## Data Flow
 
 ```mermaid
 flowchart TD
-    SpawnerStart[Spawner Activated] --> SpawnGroup
+    Start[Spawner Activated] --> SpawnGroup
     SpawnGroup --> RegisterGroup
-    RegisterGroup --> NPCsAlive[NPCs Active]
+    RegisterGroup --> NPCsActive[NPCs Active]
 
-    NPCsAlive --> AllDead{All NPCs Dead?}
-    AllDead -->|Yes| RespawnTimer
-    RespawnTimer --> SpawnGroup
-
-    AllDead -->|No| NPCsAlive
+    NPCsActive --> NPCDies{NPC Dies}
+    NPCDies --> StartTimer[Start Individual Respawn Timer]
+    StartTimer --> TimerDone[Timer Fires]
+    TimerDone --> RequestNPC[Request NPC from Pooling]
+    RequestNPC --> ResetState[Reset NPC State]
+    ResetState --> SpawnAtPoint[Spawn at Designated Point]
+    SpawnAtPoint --> NPCsActive
 ```
 
-Spawner → Pooling/Spawn → Group System → NPC AI
+Spawner → Pooling/GetNPC → NPC → (On death) → Spawner.OnNPCDeath → Timer → Spawner.SpawnSingleNPC
 
 ## Interactions
 - **[Pooling System](Pooling_System.md):** requests NPC instances  
@@ -56,14 +59,17 @@ Spawner → Pooling/Spawn → Group System → NPC AI
 - Spawner state (active/inactive) may replicate if needed for UI  
 
 ## Edge Cases
-- Spawner disabled mid‑wave  
-- No pooled NPCs available  
+- Spawner disabled mid-respawn — pending timers should cancel  
+- No pooled NPCs available — retry after a short delay or queue the respawn  
 - Respawn while player is too close (optional rule)  
+- Multiple NPCs die simultaneously — each gets its own independent timer  
 
 ## Testing Checklist
 - [ ] Spawns correct number and type of NPCs  
 - [ ] Groups are registered correctly  
-- [ ] Respawn works after wipe  
+- [ ] Individual NPC respawns on its own timer after death  
+- [ ] Respawn timers are independent — killing multiple NPCs does not cascade  
+- [ ] Respawn rate config is respected  
 - [ ] Works with pooling  
 - [ ] Works in multiplayer (server‑only logic)  
 
