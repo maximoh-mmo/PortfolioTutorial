@@ -17,8 +17,8 @@
 [x] Document Episode Export Workflow
 [x] Create Public Release Checklist
 
-[ ] Create High-Level Diagrams
-[ ] Create Early Episode Diagrams
+[x] Create High-Level Diagrams
+[x] Create Early Episode Diagrams
 
 [ ] Review All Documents
 [ ] Identify Risks
