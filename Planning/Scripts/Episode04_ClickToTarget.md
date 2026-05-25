@@ -1,4 +1,4 @@
-# 🎬 **Episode 5 — Click‑to‑Target System**
+# 🎬 **Episode 4 — Click‑to‑Target System**
 
 ## **Episode Goal**
 Implement target selection, highlighting, and basic attack input routing.
@@ -6,12 +6,13 @@ Implement target selection, highlighting, and basic attack input routing.
 ---
 
 ## **Context & Dependencies**
-- Requires [Episode 4](Episode04_Enemy_Spawner.md) (enemy spawner provides NPCs in the world to target)
+- Requires [Episode 3](Episode03_Movement_System.md) (movement system + cursor abstraction)
+- A temporary test NPC will be added to the level for targeting; the proper spawner comes in [Episode 5](Episode05_Enemy_Spawner.md)
 
 ---
 
 ## **High‑Level Summary**
-We add click-to-target: when the player taps/clicks on an enemy, that enemy becomes the current target. A highlight indicates the selection, and a basic attack can be triggered. This is the foundation of the combat system, supporting both mouse and touch input.
+We add click-to-target: when the player taps/clicks/confirms on an enemy, that enemy becomes the current target. A highlight indicates the selection, and a basic attack can be triggered. This works across all input methods — mouse click, touch tap, and gamepad cursor confirm. This is the foundation of the combat system.
 
 ---
 
@@ -19,8 +20,8 @@ We add click-to-target: when the player taps/clicks on an enemy, that enemy beco
 - TargetingComponent — stores and manages the current target
 - Actor channel for enemy trace
 - Target highlighting (outline or material effect)
-- Distinguishing between ground tap/click (move) and enemy tap/click (target)
-- Basic attack input routing
+- Distinguishing between ground confirm (move) and enemy confirm (target)
+- Basic attack input routing via Enhanced Input (IA_Target)
 
 ---
 
@@ -42,13 +43,16 @@ private:
 };
 ```
 
-### **2. Modify Click Handler**
-Determine whether the tap/click hit an enemy or the ground:
+### **2. Modify Confirm Handler (IA_Confirm)**
+Determine whether the confirm action (tap/click/A-button) hit an enemy or the ground, using the cursor abstraction from Episode 3:
 ```cpp
-void AOnsetPlayerController::OnClick()
+void AOnsetPlayerController::OnConfirm()
 {
+    FVector2D ScreenPos;
+    if (!CursorManager->GetCursorPosition(ScreenPos)) return;
+
     FHitResult Hit;
-    GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+    GetHitResultAtScreenPosition(ScreenPos, ECC_Visibility, false, Hit);
 
     if (!Hit.bBlockingHit) return;
 
@@ -69,7 +73,7 @@ void AOnsetPlayerController::OnClick()
 Apply a post-process outline or simple material change on the target actor. Use a decal component or custom depth rendering.
 
 ### **4. Basic Attack Input**
-Add `IA_BasicAttack` input action → triggers `OnBasicAttack()`:
+Bind `IA_Target` (created in Episode 1) → triggers `OnBasicAttack()`:
 ```cpp
 void AOnsetPlayerController::OnBasicAttack()
 {
@@ -115,11 +119,14 @@ private:
 ```
 
 ```cpp
-// Targeting logic in PlayerController
-void AOnsetPlayerController::OnClick()
+// Targeting logic in PlayerController (uses IA_Confirm + CursorManager)
+void AOnsetPlayerController::OnConfirm()
 {
+    FVector2D ScreenPos;
+    if (!CursorManager->GetCursorPosition(ScreenPos)) return;
+
     FHitResult Hit;
-    GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+    GetHitResultAtScreenPosition(ScreenPos, ECC_Visibility, false, Hit);
 
     if (!Hit.bBlockingHit) return;
 
@@ -129,7 +136,6 @@ void AOnsetPlayerController::OnClick()
     }
     else
     {
-        // Move to hit location
         GetPawn()->GetController()->MoveToLocation(Hit.Location);
     }
 }
@@ -139,12 +145,18 @@ void AOnsetPlayerController::OnClick()
 
 ## **Diagrams**
 ```
-Click
+IA_Confirm (any device)
+ │
+ ▼
+CursorManager::GetCursorPosition()
+ │
+ ▼
+Raycast at Screen Position
  ├── Hit Enemy → Set as CurrentTarget → Highlight
  └── Hit Ground → MoveToLocation → ClearTarget (optional)
 
-Attack Input → HasTarget? → Yes → Send to GAS (stub)
-                         → No → Do nothing
+IA_Target (any device) → HasTarget? → Yes → Send to GAS (stub)
+                                     → No → Do nothing
 ```
 
 ---
@@ -154,15 +166,17 @@ Attack Input → HasTarget? → Yes → Send to GAS (stub)
 - Highlight persisting on dead or out-of-range targets
 - Tap/click-to-move overriding target selection
 - Forgetting to clear target when enemy dies
-- Touch tap registering as both move and target — use a brief delay or double-tap detection for mobile
+- Touch tap registering as both move and target — handled by the Confirm handler branching on enemy vs ground
+- Gamepad R-Stick cursor not hitting the enemy hitbox — ensure collision channels are set on NPCs
 
 ---
 
 ## **Episode Checklist**
-- [ ] Tap/click on enemy sets the target (mouse + touch)
-- [ ] Tap/click on ground moves the character (mouse + touch)
+- [ ] Tap/click/A-button on enemy sets the target (all input methods)
+- [ ] Tap/click/A-button on ground moves the character
 - [ ] Target highlight visible
-- [ ] Attack key routes to current target
+- [ ] Attack key (IA_Target) routes to current target
+- [ ] Gamepad R-Stick cursor over enemy → IA_Confirm → target set
 - [ ] Target clears on death (if applicable)
 
 ---
@@ -186,9 +200,9 @@ Attack Input → HasTarget? → Yes → Send to GAS (stub)
 - Test the full flow
 
 **Outro:**
-"[Next episode](Episode06_Object_Pooling.md) we optimize spawner performance with object pooling."
+"Next episode, we create the enemy spawner — now that we can target, we need real enemies to fight."
 
 ---
 
 ## **Next Episode Preview**
-"[Next time](Episode06_Object_Pooling.md), we implement object pooling for efficient NPC reuse."
+"Next time, we build the enemy spawner with groups of NPCs that we can target and attack."

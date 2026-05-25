@@ -17,15 +17,18 @@ This ensures no broken episode dependencies, no rewrites, and no recording dead-
 
 ---
 
-### Mobile / Touch Input Note
+### Multi-Device Input Note
 
-All core systems are designed with **dual input** (mouse + touch) from the start. UE's raycast pipeline handles both inputs identically, so the architecture is unaffected. The additional work is limited to:
+The project targets **touch as primary input** (virtual joystick, tap-to-move, virtual buttons), with mouse/keyboard and gamepad as testing/fallback. Enhanced Input with per-device Mapping Contexts is established in A1.1. A unified cursor abstraction layer feeds all raycast systems regardless of device.
 
-- **~0.5 day** — Unified input action bindings (A1.3)
-- **~1 day** — Touch-friendly UI controls (A6.1)
+The additional work over a single-device approach:
+
+- **~1 day** — Enhanced Input architecture + cursor abstraction (A1.1)
+- **~1.5 days** — Multi-device movement system (A1.3): virtual joystick, tap-to-move, WASD, gamepad stick + R-Stick cursor
+- **~1.5 days** — Touch/gamepad UI widgets (A6.1): virtual joystick, ability buttons, gamepad cursor overlay
 - **~0.5 day** — Mobile performance tuning (A6.3)
 
-**Total impact:** ~+2 days to Phase A. No changes to episode count, system architecture, or release cadence.
+**Total impact:** ~+4.5 days to Phase A (already reflected in per-system estimates below).
 
 ---
 
@@ -36,13 +39,13 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 ## Phase A1 — Core Player Systems
 | System | Est. Days | Dependencies |
 |--------|-----------|--------------|
-| Project Setup + Base Classes | 1 | None |
+| Project Setup + Base Classes + Enhanced Input | 1.5 | None |
 | Top-Down Camera | 1 | Project Setup |
-| Click-to-Move | 1 | Camera |
-| Targeting Component | 1 | Click-to-Move |
+| Movement System (joystick + tap + WASD + gamepad) | 1.5 | Camera |
+| Targeting Component | 1 | Movement System |
 | Ability Targeting (AoE, directional) | 2 | Targeting |
 | PvP Toggle | 1 | Targeting |
-| **Subtotal** | **7 days** | |
+| **Subtotal** | **8 days** | |
 
 ## Phase A2 — NPC Lifecycle
 | System | Est. Days | Dependencies |
@@ -85,10 +88,10 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 ## Phase A6 — UI & Final Demo
 | System | Est. Days | Dependencies |
 |--------|-----------|--------------|
-| UI System (Health, Cooldowns, Target Highlight) | 3 | GAS, Targeting |
+| UI System (Health, Cooldowns, Target Highlight, touch widgets, gamepad cursor) | 4 | GAS, Targeting |
 | Final Demo Loop (Waves, Respawn, Combat Flow) | 2 | All systems |
 | Performance Pass + Polish | 2 | Final Demo |
-| **Subtotal** | **7 days** | |
+| **Subtotal** | **8 days** | |
 
 ## Phase A7 — Integration & Buffer
 | Activity | Est. Days |
@@ -101,14 +104,14 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 ## Phase A Total
 | Section | Days |
 |---------|------|
-| A1 — Core Player (incl. touch input) | 7 |
+| A1 — Core Player (incl. multi-device input) | 8 |
 | A2 — NPC Lifecycle | 6 |
 | A3 — AI Systems | 10 |
 | A4 — GAS Combat | 10 |
 | A5 — Multiplayer & Steam | 10 |
-| A6 — UI & Final Demo (incl. touch controls) | 8 |
+| A6 — UI & Final Demo (incl. touch/gamepad widgets) | 8 |
 | A7 — Integration & Buffer | 11 |
-| **Total** | **~62 days (12.5 weeks)** |
+| **Total** | **~63 days (13 weeks)** |
 
 ---
 
@@ -120,16 +123,19 @@ Each episode requires:
 - **Editing** (2-3 hours)
 - **Export + README** (1 hour)
 
-## B1 — Scripting (Episodes 6-36)
+## B1 — Scripting (Episodes 6-38)
 
-Episodes 1-5 are already scripted. Remaining 31 episodes need scripts:
+Episodes 1-3 need script updates for Enhanced Input + multi-device movement. Episodes 4-5 need re-ordering. Remaining episodes need scripts from scratch:
 
 | Batch | Episodes | Est. Hours Each | Total Hours |
 |-------|----------|-----------------|-------------|
+| Scripts 1-3 (rewrite) | 3 | 3 | 9 |
+| Scripts 4-5 (reorder) | 2 | 1 | 2 |
 | Scripts 6-13 | 8 | 3 | 24 |
 | Scripts 14-23 | 10 | 4 | 40 |
-| Scripts 24-36 | 13 | 3 | 39 |
-| **Total** | **31 scripts** | | **~103 hours (2.5 weeks)** |
+| Scripts 24-33 | 10 | 3 | 30 |
+| Scripts 34-38 | 5 | 3 | 15 |
+| **Total** | **38 scripts** | | **~120 hours (3 weeks)** |
 
 ## B2 — Recording + Editing + Export
 
@@ -150,17 +156,17 @@ Estimated per episode:
 | Phase 2: AI Foundations | 9-13 | 30 |
 | Phase 3: GAS Combat | 14-20 | 42 |
 | Phase 3.5: Player AI | 21-23 | 18 |
-| Phase 4: Advanced AI | 24-27 | 24 |
-| Phase 5: Multiplayer | 28-32 | 30 |
-| Phase 6: Final Demo | 33-36 | 24 |
-| **Total** | **36 episodes** | **~216 hours (5.5 weeks)** |
+| Phase 4: Advanced AI (incl. Group Assist) | 24-28 | 30 |
+| Phase 5: Multiplayer (incl. PvP) | 29-34 | 36 |
+| Phase 6: Final Demo | 35-38 | 24 |
+| **Total** | **38 episodes** | **~228 hours (5.7 weeks)** |
 
 ## Phase B Total
 | Activity | Time |
 |----------|------|
-| Scripting (6-36) | 2.5 weeks |
-| Recording + Editing + Export | 5.5 weeks |
-| **Total** | **~8 weeks** |
+| Scripting (rewrites + new) | 3 weeks |
+| Recording + Editing + Export | 5.7 weeks |
+| **Total** | **~8.7 weeks** |
 
 ---
 
@@ -170,23 +176,23 @@ Estimated per episode:
 |-------|----------|-------|
 | ✅ Planning (Phases 1-5) | Complete | Outlines, docs, scripts 1-5, workflow |
 | ✅ Pre-Production Review | Complete | Consistency scan, risk docs, timeline |
-| **Phase A: Private Demo** | **12.5 weeks** | Build all systems off-camera (incl. touch input) |
-| **Phase B: Episode Production** | **8 weeks** | Record, edit, export 36 episodes |
-| **Total Remaining** | **~20.5 weeks (~5 months)** | |
+| **Phase A: Private Demo** | **~13 weeks** | Build all systems off-camera (incl. multi-device input) |
+| **Phase B: Episode Production** | **~8.7 weeks** | Record, edit, export 38 episodes |
+| **Total Remaining** | **~21.7 weeks (~5.4 months)** | |
 
 ## Parallel Work
 
 Scripting (Phase B1) can overlap with Phase A development:
-- Script Episodes 6-13 during Phase A2/A3 development
+- Script rewriting + Episodes 6-13 during Phase A2/A3 development
 - Script Episodes 14-23 during Phase A4/A5 development
-- Script Episodes 24-36 during Phase A6/A7
+- Script Episodes 24-38 during Phase A6/A7 development
 
 This reduces total calendar time:
 
 | Scenario | Calendar Time |
 |----------|---------------|
-| Sequential (Phase A → Phase B) | ~20 weeks |
-| **With script overlap** | **~16 weeks (~4 months)** |
+| Sequential (Phase A → Phase B) | ~21.7 weeks |
+| **With script overlap** | **~17 weeks (~4.25 months)** |
 
 ## Weekly Cadence (for release)
 
@@ -199,12 +205,12 @@ If releasing one episode per week:
 | Phase 2: AI Foundations | 9-13 | 1/week | 5 weeks |
 | Phase 3: GAS Combat | 14-20 | 1/week | 7 weeks |
 | Phase 3.5: Player AI | 21-23 | 1/week | 3 weeks |
-| Phase 4: Advanced AI | 24-27 | 1/week | 4 weeks |
-| Phase 5: Multiplayer | 28-32 | 1/week | 5 weeks |
-| Phase 6: Final Demo | 33-36 | 1/week | 4 weeks |
-| **Total release window** | **36 episodes** | **1/week** | **36 weeks (~9 months)** |
+| Phase 4: Advanced AI | 24-28 | 1/week | 5 weeks |
+| Phase 5: Multiplayer | 29-34 | 1/week | 6 weeks |
+| Phase 6: Final Demo | 35-38 | 1/week | 4 weeks |
+| **Total release window** | **38 episodes** | **1/week** | **38 weeks (~9.5 months)** |
 
-The 3-month private demo build + 9-month release window means a **~12-month project** from start to finish of the last episode release. Batch-recording (recording multiple episodes per week) compresses the production phase but not the release schedule.
+The ~3-month private demo build + ~9.5-month release window means a **~12.5-month project** from start to finish of the last episode release. Batch-recording (recording multiple episodes per week) compresses the production phase but not the release schedule.
 
 ---
 
@@ -213,15 +219,16 @@ The 3-month private demo build + 9-month release window means a **~12-month proj
 | Milestone | Target | What's True |
 |-----------|--------|-------------|
 | Private demo playable | Week 8 | Core player + NPC + basic combat working |
-| Private demo complete | Week 12 | All 13 systems, multiplayer, Steam, final loop |
-| First episode released | Week 13 | Episode 1 on public repo |
-| Targeting + enemies milestone | Week 17 | Episodes 1-5 released (playable combat) |
-| AI milestone | Week 22 | Episodes 9-13 released (full NPC AI) |
-| GAS milestone | Week 29 | Episodes 14-20 released (full ability system) |
-| Multiplayer milestone | Week 34 | Episodes 28-32 released (MP + Steam) |
-| Series complete | Week 48 | Episode 36 released |
+| Private demo complete | Week 13 | All 13 systems, multiplayer, Steam, final loop |
+| First episode released | Week 14 | Episode 1 on public repo |
+| Targeting + enemies milestone | Week 18 | Episodes 1-5 released (playable combat) |
+| AI milestone | Week 26 | Episodes 9-13 released (full NPC AI) |
+| GAS milestone | Week 33 | Episodes 14-20 released (full ability system) |
+| Advanced AI milestone | Week 41 | Episodes 24-28 released (group assist, advanced behaviour) |
+| Multiplayer milestone | Week 47 | Episodes 29-34 released (MP + Steam + PvP) |
+| Series complete | Week 51 | Episode 38 released |
 
 ---
 
-**Total estimated effort:** ~20 weeks of work, ~12 months calendar (with weekly release cadence)
+**Total estimated effort:** ~21.7 weeks of work, ~12.5 months calendar (with weekly release cadence)
 **Next step:** Begin Private Demo Development

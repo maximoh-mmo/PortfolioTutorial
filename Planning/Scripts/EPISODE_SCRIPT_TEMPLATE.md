@@ -28,7 +28,7 @@ Example:
 *A short paragraph describing the purpose of the episode and why it matters.*
 
 Example:  
-“In this episode we implement point‑and‑click movement, which forms the foundation of our top‑down ARPG control scheme.”
+“In this episode we implement the multi-device movement system, which forms the foundation of our top‑down ARPG control scheme.”
 
 ---
 
@@ -78,7 +78,7 @@ Use fenced blocks:
 
 ```cpp
 // Example snippet
-void AMyPlayerController::HandleClickMove()
+void AMyPlayerController::OnConfirm()
 {
     // ...
 }

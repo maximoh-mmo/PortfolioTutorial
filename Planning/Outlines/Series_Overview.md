@@ -14,8 +14,8 @@ The final demo includes:
 
 ### **Player**
 - Top‑down camera  
-- Point‑and‑click / tap‑to‑move  
-- Click‑to‑target combat  
+- Multi-device movement: virtual joystick (touch), tap-to-move (touch/mouse), WASD (keyboard), left stick (gamepad)  
+- Click‑to‑target combat (mouse + touch + gamepad cursor)  
 - Basic attack + multiple abilities ([GAS System](../../Docs/GAS/GAS_System.md))  
 - Ability targeting (single‑target, AoE, directional)  
 - Optional AI‑controlled autoplay mode  
@@ -48,17 +48,18 @@ The final demo includes:
 ---
 
 ## **Series Structure**
-The series is divided into **7 phases** (see the full [Episode List](Episode_List.md) for details):
+The series is divided into **8 phases** (see the full [Episode List](Episode_List.md) for details):
 
-1. **Foundations** — Player, camera, input, targeting  
-2. **NPC Lifecycle** — Spawning, pooling, groups  
-3. **AI Foundations** — StateTrees, perception, behaviour  
-4. **Combat (GAS)** — Abilities, damage, death  
-5. **Player AI** — Autoplay/testing mode  
-6. **Multiplayer** — Replication, dedicated server, Steam  
-7. **Final Demo & Polish** — UI, optimization, showcase  
+0. **Player Core & Input** — Project setup, camera, multi-device movement, targeting, enemy spawner  
+1. **NPC Lifecycle** — Pooling, groups, respawn  
+2. **AI Foundations** — StateTrees, perception, behaviour  
+3. **Combat (GAS)** — Abilities, damage, death  
+3.5 **Player AI** — Autoplay/testing mode  
+4. **Advanced AI** — Flee, group assist, dynamic types, debugging  
+5. **Multiplayer** — Replication, dedicated server, Steam, PvP  
+6. **Final Demo & Polish** — UI, gameplay loop, optimization, showcase  
 
-Total: **36 episodes** — see the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
+Total: **38 episodes** — see the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
 
 ---
 
@@ -88,6 +89,6 @@ By the end of the series, viewers will understand:
 - How to build multiplayer‑safe systems  
 - How to integrate Steam authentication  
 - How to structure a real game project  
-- How to support both mouse and touch input in the same control scheme  
+- How to support input-agnostic control schemes (touch, mouse, keyboard, gamepad)  
 
 ---

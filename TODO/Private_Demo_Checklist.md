@@ -5,17 +5,31 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 ---
 
-# A1 — CORE PLAYER SYSTEMS (est. 7 days)
+# A1 — CORE PLAYER SYSTEMS (est. 8 days)
 
 ## A1.1 Project Setup & Base Classes
 - [ ] Create blank C++ project (`Onset`)
 - [ ] Create folder structure under `Source/Onset/`:
   - `Player/`, `AI/`, `Combat/`, `Spawning/`, `Multiplayer/`
-- [ ] Create `AOnsetCharacter` base
-- [ ] Create `AOnsetPlayerController` stub
-- [ ] Create `AOnsetPlayerState` stub
-- [ ] Create `AOnsetGameMode` stub
-- [ ] Create `AOnsetGameState` stub
+- [ ] Create `AOnsetCharacter` — `UCLASS(Blueprintable)`, inherits BP-able `ACharacter`
+- [ ] Create `AOnsetPlayerController` — `UCLASS(Blueprintable)`, inherits BP-able `APlayerController`
+- [ ] Create `AOnsetPlayerState` — `UCLASS(Blueprintable)`, inherits BP-able `APlayerState`
+- [ ] Create `AOnsetGameMode` — `UCLASS(Blueprintable)`, inherits BP-able `AGameModeBase`
+- [ ] Create `AOnsetGameState` — `UCLASS(Blueprintable)`, inherits BP-able `AGameStateBase`
+- [ ] Enable Enhanced Input plugin in `.Build.cs`
+- [ ] Create `UCursorManager` — `UCLASS(BlueprintType, Blueprintable, meta=(BlueprintSpawnableComponent))`, provides active cursor screen position from mouse, touch, or gamepad R-Stick
+- [ ] Create all Input Actions:
+  - `IA_Move` (2D Axis — virtual joystick, WASD, gamepad L-Stick)
+  - `IA_Cursor` (2D Axis — gamepad R-Stick emulates mouse; mouse/touch use OS)
+  - `IA_Confirm` (Action — tap, left-click, R-Stick click, A button)
+  - `IA_Target` (Action — right-click, virtual button, gamepad bumper)
+  - `IA_Ability1-4` (Action — number keys, virtual buttons, face buttons)
+  - `IA_PvPToggle` (Action — P key, virtual button, D-pad down)
+- [ ] Create Input Mapping Contexts:
+  - `IMC_Touch` (virtual joystick + tap + virtual buttons)
+  - `IMC_Desktop` (mouse + keyboard bindings)
+  - `IMC_Gamepad` (gamepad bindings)
+- [ ] Add `UEnhancedInputLocalPlayerSubsystem` initialization to PlayerController
 - [ ] Verify project compiles and runs in PIE
 
 ## A1.2 Top-Down Camera
@@ -27,31 +41,41 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify camera follows character in PIE
 - [ ] Verify collision push-back from walls
 
-## A1.3 Click-to-Move (Mouse + Touch)
+## A1.3 Movement System (Touch Joystick + Tap + WASD + Gamepad)
 - [ ] Enable mouse cursor on PlayerController
 - [ ] Enable touch input in Project Settings
-- [ ] Create `IA_ClickMove` input action mapping
-- [ ] Implement `OnClickMove()` with raycast + `MoveToLocation` (works for both mouse + touch)
+- [ ] Implement **virtual joystick widget** (touch): 2D axis → `IA_Move` → character movement
+- [ ] Implement **tap-to-move** (touch): `IA_Confirm` → raycast → `MoveToLocation`
+- [ ] Implement **click-to-move** (mouse): `IA_Confirm` → raycast → `MoveToLocation`
+- [ ] Implement **WASD movement** (keyboard): `IA_Move` → character movement
+- [ ] Implement **gamepad L-Stick movement**: `IA_Move` → character movement
+- [ ] Implement **gamepad R-Stick cursor**: `IA_Cursor` → software cursor overlay
+- [ ] Build **cursor abstraction** layer: mouse OS cursor, touch tap position, gamepad R-Stick cursor → unified screen position for all raycasts
+- [ ] Implement direct-input / pathfinding hand-off: joystick/WASD interrupts active `MoveToLocation`
 - [ ] Set collision channel for ground trace (ECC_Visibility)
-- [ ] Verify click moves character to location
-- [ ] Verify touch tap moves character (mobile viewport)
-- [ ] Verify movement updates on successive taps/clicks
+- [ ] Add `UEnhancedInputComponent` bindings in PlayerController
+- [ ] Verify tap-to-move (touch mobile viewport)
+- [ ] Verify virtual joystick moves character (touch mobile viewport)
+- [ ] Verify click-to-move (mouse)
+- [ ] Verify WASD movement (keyboard)
+- [ ] Verify gamepad L-Stick movement
+- [ ] Verify gamepad R-Stick cursor moves and stays within viewport
 - [ ] Verify navigation around obstacles
+- [ ] Verify joystick/WASD interrupts tap-to-move pathfinding
 
 ## A1.4 Targeting Component
-- [ ] Create `UTargetingComponent` class
+- [ ] Create `UTargetingComponent` — `UCLASS(Blueprintable, BlueprintType, meta=(BlueprintSpawnableComponent))`
 - [ ] Add `CurrentTarget` storage + accessors
-- [ ] Implement `SetCurrentTarget()` with validation
+- [ ] Implement `SetCurrentTarget()` with validation (uses `IA_Confirm` cursor raycast)
 - [ ] Implement `ClearTarget()`
-- [ ] Modify click handler to branch: enemy click → target, ground click → move
-- [ ] Add `IA_BasicAttack` input action mapping
-- [ ] Stub `OnBasicAttack()` that logs target name
-- [ ] Verify target selection works
+- [ ] Branch: `IA_Confirm` → raycast → enemy = SetCurrentTarget, ground = MoveToLocation
+- [ ] Stub `OnBasicAttack()` bound to `IA_Target`/ability input that logs target name
+- [ ] Verify target selection works (mouse, touch tap, gamepad R-Stick cursor + A button)
 - [ ] Verify attack key routes to current target
 
 ## A1.5 Ability Targeting System
-- [ ] Create `UAbilityTargetingComponent`
-- [ ] Create `FAbilityTargetData` struct
+- [ ] Create `UAbilityTargetingComponent` — `UCLASS(Blueprintable, BlueprintType, meta=(BlueprintSpawnableComponent))`
+- [ ] Create `FAbilityTargetData` — `USTRUCT(BlueprintType)`
 - [ ] Implement `GetTargetUnderCursor()` (single-target)
 - [ ] Implement `GetGroundLocationUnderCursor()` (AoE)
 - [ ] Implement `GetDirectionFromPlayerToCursor()` (directional)
@@ -75,10 +99,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 # A2 — NPC LIFECYCLE (est. 6 days)
 
 ## A2.1 NPC Character + Spawner
-- [ ] Create `ANPCCharacter` base class
-- [ ] Create `ANPCAIController` stub
-- [ ] Create `FSpawnConfig` struct (EnemyClass, GroupSize, SpawnRadius, RespawnDelay)
-- [ ] Create `AEnemySpawner` actor
+- [ ] Create `ANPCCharacter` — `UCLASS(Blueprintable)`, inherits BP-able `ACharacter`
+- [ ] Create `ANPCAIController` — `UCLASS(Blueprintable)`, inherits BP-able `AAIController`
+- [ ] Create `FSpawnConfig` — `USTRUCT(BlueprintType)` (EnemyClass, GroupSize, SpawnRadius, RespawnDelay)
+- [ ] Create `AEnemySpawner` — `UCLASS(Blueprintable)`, inherits BP-able `AActor`
 - [ ] Implement `SpawnGroup()` with point-based + fallback scatter spawning
 - [ ] Implement `DestroyGroup()`
 - [ ] Place spawner in level and verify NPCs appear
@@ -86,7 +110,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify spawn points override fallback scatter
 
 ## A2.2 Object Pooling
-- [ ] Create `ANPCPoolManager` class
+- [ ] Create `ANPCPoolManager` — `UCLASS(Blueprintable)`, inherits BP-able `AActor`
 - [ ] Implement pre-allocation of NPC instances
 - [ ] Implement `GetNPC()` — returns available NPC
 - [ ] Implement `ReleaseNPC()` — returns NPC to pool
@@ -98,9 +122,9 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify no crash when pool is exhausted
 
 ## A2.3 Group System
-- [ ] Create `AGroupManager` class
-- [ ] Create `UGroupComponent` for NPCs
-- [ ] Create `FGroupData` struct (Center, Direction, AliveCount, AssistRadius)
+- [ ] Create `AGroupManager` — `UCLASS(Blueprintable)`, inherits BP-able `AActor`
+- [ ] Create `UGroupComponent` — `UCLASS(Blueprintable, BlueprintType, meta=(BlueprintSpawnableComponent))`
+- [ ] Create `FGroupData` — `USTRUCT(BlueprintType)` (Center, Direction, AliveCount, AssistRadius)
 - [ ] Implement `RegisterMember()` / `UnregisterMember()`
 - [ ] Implement `UpdateGroupData()` (center, direction, alive count)
 - [ ] Implement `NotifyMemberAttacked()` — broadcasts assist event
@@ -251,22 +275,28 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 ---
 
-# A6 — UI & FINAL DEMO (est. 7 days)
+# A6 — UI & FINAL DEMO (est. 8 days)
 
 ## A6.1 UI System
 - [ ] Create `UHUDWidget` (main HUD container)
+- [ ] Implement **virtual joystick widget** (touch) — thumbstick zone with drag-outline
+- [ ] Implement **virtual ability button widgets** (touch) — 4 ability hotkeys + basic attack
+- [ ] Implement **gamepad cursor overlay widget** (software crosshair)
 - [ ] Implement player health bar
 - [ ] Implement `UEnemyHealthBarWidget` (world-space attached to NPCs)
 - [ ] Implement `UAbilityBarWidget` (cooldown display)
 - [ ] Implement `UTargetIndicatorWidget` (targeting reticles)
 - [ ] Implement debug overlay (`UAutoplayDebugWidget`)
-- [ ] Add PvP toggle UI element
+- [ ] Add PvP toggle UI element (virtual button for touch, widget for desktop)
 - [ ] Wire up GAS attribute changes → HUD updates
 - [ ] Verify health updates correctly
 - [ ] Verify enemy health bars appear/disappear
 - [ ] Verify ability cooldowns update
 - [ ] Verify target indicators match ability behaviour
 - [ ] Verify debug UI toggles correctly
+- [ ] Verify virtual joystick input on touch device
+- [ ] Verify virtual ability buttons trigger GAS abilities
+- [ ] Verify gamepad cursor renders and follows R-Stick
 
 ## A6.2 Final Demo Loop
 - [ ] Implement wave spawning (multiple spawners, progressive difficulty)

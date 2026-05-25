@@ -188,7 +188,7 @@ General automation scripts.
 ### **Planning & Tracking**
 - [Series Overview](Planning/Outlines/Series_Overview.md) — tutorial series vision, structure, audience
 - [Scope Overview](Planning/Outlines/Scope_Overview.md) — project boundaries, deliverables, success criteria
-- [Episode List](Planning/Outlines/Episode_List.md) — all 36 episodes by phase
+- [Episode List](Planning/Outlines/Episode_List.md) — all 38 episodes by phase
 
 ### **Workflow**
 - [Branching Strategy](Planning/Workflow/BRANCHING_STRATEGY.md) — branch conventions, merge flow, rules

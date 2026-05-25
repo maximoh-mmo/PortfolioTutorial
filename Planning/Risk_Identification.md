@@ -69,7 +69,7 @@ Projectile movement, hit detection, and damage application across the network. S
 
 ## R15 — Episode Scope Creep
 **Severity:** High | **Likelihood:** High
-Individual episodes taking longer than expected, pushing the 36-episode target. Each system doc lists 6-8 testing items — real implementation always reveals more.
+Individual episodes taking longer than expected, pushing the 38-episode target. Each system doc lists 6-8 testing items — real implementation always reveals more.
 
 ## R16 — Episode Dependency Chain Breaks
 **Severity:** High | **Likelihood:** Medium
@@ -133,7 +133,7 @@ Balancing production polish (editing, transitions, audio) with technical depth. 
 
 ## R30 — Tutorial Series Fatigue
 **Severity:** Medium | **Likelihood:** Medium
-36 episodes is a long series. Viewer drop-off after Episode 10-15 is common. Early episodes must deliver value to sustain engagement.
+38 episodes is a long series. Viewer drop-off after Episode 10-15 is common. Early episodes must deliver value to sustain engagement.
 
 ---
 

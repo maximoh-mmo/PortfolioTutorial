@@ -97,7 +97,7 @@ Mitigation strategies for all 37 identified risks (see [Risk_Identification](Ris
 **Strategy:** Hard Timebox
 - **Mitigation:** Each episode has a strict time budget (est. 20-30 min video ≈ 2-4 hours dev). If an episode exceeds budget, cut features to a "Minimum Viable Episode" and defer rest
 - **Tracking:** After each episode script, estimate recording time. If >30 min, split into two episodes or trim
-- **Buffer:** Reserve 2-3 buffer episodes in the 36-count for overflow content
+- **Buffer:** Reserve 2-3 buffer episodes in the 38-count for overflow content
 
 ## R16 — Episode Dependency Chain Breaks
 **Strategy:** Episode 0 / Prep Work
@@ -166,7 +166,7 @@ Mitigation strategies for all 37 identified risks (see [Risk_Identification](Ris
 ## R27 — Asset Creation Bottleneck
 **Strategy:** Use Engine Content + Store Assets
 - **Mitigation:** Use UE starter content (Mannequin, Basic shapes) for placeholder meshes. Use simple colored materials for UI
-- **Simplify:** No custom art until Final Demo episode (Episode 36). Everything is whitebox/prototype quality. Explicitly state this to viewers
+- **Simplify:** No custom art until Final Demo phase (Episode 35+). Everything is whitebox/prototype quality. Explicitly state this to viewers
 
 ## R28 — Steam AppID Leak
 **Strategy:** .gitignore + Export Filter
@@ -198,7 +198,7 @@ Mitigation strategies for all 37 identified risks (see [Risk_Identification](Ris
 **Strategy:** Manual Checklists + Smoke Tests
 - **Mitigation:** Each episode's "Testing Checklist" in the script IS the test plan. Run through it before recording
 - **Long-term:** If the private demo grows complex, add a simple C++ functional test for the final demo loop only
-- **Simplify:** Accept manual testing — 36 episodes of checklist-based verification is sufficient for this scope
+- **Simplify:** Accept manual testing — 38 episodes of checklist-based verification is sufficient for this scope
 
 ## R33 — AI Behavior Hard to Verify Deterministically
 **Strategy:** Debug States + Logs

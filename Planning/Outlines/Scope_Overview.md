@@ -1,7 +1,7 @@
 # 📘 **TOP‑DOWN ARPG AI DEMO — SCOPE OVERVIEW**
 
 ## **Purpose of This Document**
-This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 36‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Episode List](Episode_List.md)).
+This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 38‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Episode List](Episode_List.md)).
 
 It ensures:
 
@@ -16,8 +16,8 @@ This document is the “contract” for what the project *is* and what it *is no
 # 🎯 **Project Goal**
 Build a **complete, multiplayer‑ready top‑down action RPG combat prototype** featuring:
 
-- Tap/click‑to‑move (mouse + touch)  
-- Tap/click‑to‑target (mouse + touch)  
+- Multi-device movement: virtual joystick (touch), tap-to-move (touch/mouse), WASD (keyboard), left stick (gamepad)  
+- Tap/click‑to‑target (mouse + touch + gamepad cursor)  
 - Player abilities (GAS)  
 - Server‑authoritative NPC AI  
 - Object pooling  
@@ -41,7 +41,7 @@ The final result is a polished, self‑contained demo suitable for:
 
 ## **1. Player Systems**
 - Top‑down camera  
-- Point‑and‑click / tap‑to‑move  
+- Multi-device movement: virtual joystick (touch), tap-to-move (touch/mouse), WASD (keyboard), left stick (gamepad)  
 - Click‑to‑target selection via [Targeting System](../../Docs/Gameplay/Targeting_System.md)  
 - Basic attack  
 - Multiple abilities (dash, AoE, projectile) via [GAS System](../../Docs/GAS/GAS_System.md)  
@@ -197,7 +197,7 @@ This ensures the project remains a **focused technical demo**, not a full game.
 ---
 
 ## **2. Public Repo Deliverables**
-- 36 episode branches  
+- 38 episode branches  
 - Clean code snapshots  
 - Episode READMEs  
 - Final demo branch (optional)  
@@ -205,7 +205,7 @@ This ensures the project remains a **focused technical demo**, not a full game.
 ---
 
 ## **3. Tutorial Series Deliverables**
-- 36 recorded episodes  
+- 38 recorded episodes  
 - Supporting diagrams  
 - Code snippets  
 - Explanations and breakdowns  

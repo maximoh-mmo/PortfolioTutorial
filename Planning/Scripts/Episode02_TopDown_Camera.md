@@ -140,9 +140,9 @@ AOnsetCharacter::AOnsetCharacter()
 - Test with movement
 
 **Outro:**
-"[Next episode](Episode03_ClickToMove.md) we add click-to-move so the player can actually navigate the world."
+"[Next episode](Episode03_Movement_System.md) we build the multi-device movement system so the player can navigate the world."
 
 ---
 
 ## **Next Episode Preview**
-"[Next time](Episode03_ClickToMove.md), we implement point-and-click movement using raycasts and AI navigation."
+"[Next time](Episode03_Movement_System.md), we implement multi-device movement with virtual joystick, tap-to-move, WASD, and gamepad support."

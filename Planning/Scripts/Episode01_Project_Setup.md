@@ -20,7 +20,9 @@ We start from scratch: create a new Unreal project, set up the C++ classes that 
 - Project folder structure convention
 - Base class hierarchy (Character, Controller, PlayerState, GameMode)
 - High-level [architecture overview](../../Docs/Architecture/Architecture%20Overview.md) of all 13 systems
-- The [36-episode road map](../Outlines/Episode_List.md)
+- The [38-episode road map](../Outlines/Episode_List.md)
+- Enhanced Input system: Input Actions, Input Mapping Contexts, per-device key bindings
+- Cursor abstraction layer (mouse, touch, gamepad R-Stick → unified screen position)
 
 ---
 
@@ -55,14 +57,37 @@ Project/
 - `AOnsetGameMode` — game mode stub
 - `AOnsetGameState` — game state stub
 
-### **4. Architecture Walkthrough**
+### **4. Enhanced Input Architecture**
+All input for the project goes through UE5's Enhanced Input system. We create the Input Actions and Mapping Contexts here so every future episode can reference them directly:
+
+**Input Actions** (defined in C++ or via Data Assets):
+- `IA_Move` (Axis2D) — virtual joystick, WASD, gamepad L-Stick
+- `IA_Cursor` (Axis2D) — gamepad R-Stick cursor emulation
+- `IA_Confirm` (Digital) — tap, left-click, R-Stick click, A button
+- `IA_Target` (Digital) — right-click, virtual button, gamepad bumper
+- `IA_Ability1-4` (Digital) — number keys, virtual buttons, face buttons
+- `IA_PvPToggle` (Digital) — P key, virtual button, D-pad down
+
+**Input Mapping Contexts** (priority-ordered per device):
+- `IMC_Touch` (priority 0) — virtual joystick + tap + virtual buttons
+- `IMC_Desktop` (priority 1) — mouse clicks + WASD + number keys
+- `IMC_Gamepad` (priority 0) — L-Stick movement + R-Stick cursor + button abilities
+
+**Cursor Abstraction** — a `UCursorManager` component provides the active cursor screen position regardless of source:
+- Mouse: `GetMousePosition()`
+- Touch: last touch event location
+- Gamepad: accumulated R-Stick delta (software cursor)
+
+All downstream raycasts (click-to-move, targeting, ability targeting) read from this single source.
+
+### **5. Architecture Walkthrough**
 Show the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) diagram and explain how each system connects:
 - [Player](../../Docs/Player/Player_System.md) → [Targeting](../../Docs/Gameplay/Targeting_System.md) → [GAS](../../Docs/GAS/GAS_System.md) → Attributes
 - [NPC AI](../../Docs/AI/NPC_AI_System.md) ↔ [Group](../../Docs/AI/Group_System.md) ↔ [Spawner](../../Docs/AI/Spawner_System.md) ↔ [Pooling](../../Docs/AI/Pooling_System.md)
 - [PvP](../../Docs/Gameplay/PVP_System.md) toggle as a cross-cutting rules layer
 - [Multiplayer](../../Docs/Multiplayer/Multiplayer_System.md) + [Steam](../../Docs/Steam/Steam_Integration_System.md) as the outer authority layer
 
-### **5. Testing**
+### **6. Testing**
 - Open the project
 - Verify it compiles
 - Press Play in Editor — empty world with default pawn
@@ -118,6 +143,8 @@ Source/Onset/
 - Forgetting to generate project files after adding C++ classes
 - Using the wrong project template (Blank, not Third Person or Top Down)
 - Not having C++ compiler installed (VS 2022 with Game Development workload)
+- Not adding `EnhancedInput` to `PublicDependencyModuleNames` in `.Build.cs`
+- Forgetting to push Mapping Contexts onto the subsystem in PlayerController `BeginPlay`
 
 ---
 
@@ -125,6 +152,10 @@ Source/Onset/
 - [ ] Project created and compiles
 - [ ] Folder structure created
 - [ ] Base C++ classes created and compiling
+- [ ] Enhanced Input plugin enabled and `.Build.cs` updated
+- [ ] All Input Actions created (IA_Move, IA_Cursor, IA_Confirm, IA_Target, IA_Ability1-4, IA_PvPToggle)
+- [ ] All Mapping Contexts created (IMC_Touch, IMC_Desktop, IMC_Gamepad)
+- [ ] Cursor Manager component created
 - [ ] Architecture overview explained on screen
 - [ ] Tested in PIE
 
@@ -140,14 +171,17 @@ Source/Onset/
 ## **Recording Script**
 
 **Intro:**
-"Welcome to the Top-Down ARPG AI series. Over the next 36 episodes we're going to build a complete multiplayer-ready combat demo from scratch in Unreal Engine, using C++, StateTrees, GAS, dedicated servers, and Steam integration. In this first episode, we set up the project and lay the foundation."
+"Welcome to the Top-Down ARPG AI series. Over the next 38 episodes we're going to build a complete multiplayer-ready combat demo from scratch in Unreal Engine, using C++, StateTrees, GAS, dedicated servers, and Steam integration. In this first episode, we set up the project and lay the foundation."
 
 **Body:**
 - Walk through the architecture overview document
 - Create the project step by step
 - Show the folder structure convention
 - Stub out the base C++ classes
-- Explain why each class exists
+- Set up Enhanced Input: explain the device-agnostic input philosophy
+- Create all Input Actions and Mapping Contexts
+- Build the Cursor Manager abstraction
+- Explain why each class and input asset exists
 
 **Outro:**
 "In [the next episode](Episode02_TopDown_Camera.md), we'll set up our top-down camera — the first real gameplay system."
