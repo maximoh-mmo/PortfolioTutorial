@@ -22,8 +22,8 @@ Make the entire demo **server‑authoritative and multiplayer‑safe**, supporti
 - PvP flag is server‑authoritative and replicated to all clients
 
 ## Key Classes
-- **`AGameMode` / `AGameState`** — server rules + shared state  
-- **`APlayerController` / `APlayerState`** — per‑player state  
+- **`AOnsetGameModeBase` / `AOnsetGameState`** — server rules + shared state  
+- **`AOnsetPlayerController` / `AOnsetPlayerState`** — per‑player state  
 - **`ANPCAIController`** — server‑only AI  
 
 ## Key Functions

@@ -8,70 +8,73 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 # A1 — CORE PLAYER SYSTEMS (est. 8 days)
 
 ## A1.1 Project Setup & Base Classes
-- [ ] Create blank C++ project (`Onset`)
-- [ ] Create folder structure under `Source/Onset/`:
+- [x] Create blank C++ project (`Onset`)
+- [x] Create folder structure under `Source/Onset/`:
   - `Player/`, `AI/`, `Combat/`, `Spawning/`, `Multiplayer/`
-- [ ] Create `AOnsetCharacter` — `UCLASS(Blueprintable)`, inherits BP-able `ACharacter`
-- [ ] Create `AOnsetPlayerController` — `UCLASS(Blueprintable)`, inherits BP-able `APlayerController`
-- [ ] Create `AOnsetPlayerState` — `UCLASS(Blueprintable)`, inherits BP-able `APlayerState`
-- [ ] Create `AOnsetGameMode` — `UCLASS(Blueprintable)`, inherits BP-able `AGameModeBase`
-- [ ] Create `AOnsetGameState` — `UCLASS(Blueprintable)`, inherits BP-able `AGameStateBase`
-- [ ] Enable Enhanced Input plugin in `.Build.cs`
-- [ ] Create `UCursorManager` — `UCLASS(BlueprintType, Blueprintable, meta=(BlueprintSpawnableComponent))`, provides active cursor screen position from mouse, touch, or gamepad R-Stick
-- [ ] Create all Input Actions:
+- [x] Create `AOnsetBaseCharacter` — `UCLASS(Blueprintable)`, inherits `ACharacter`; shared base for player and NPC
+- [x] Create `AOnsetPlayerCharacter` — `UCLASS(Blueprintable)`, inherits `AOnsetBaseCharacter`
+- [x] Create `AOnsetPlayerController` — `UCLASS(Blueprintable)`, inherits BP-able `APlayerController`
+- [x] Create `AOnsetPlayerState` — `UCLASS(Blueprintable)`, inherits BP-able `APlayerState`
+- [x] Create `AOnsetGameModeBase` — `UCLASS(Blueprintable)`, inherits BP-able `AGameModeBase`
+- [x] Create `AOnsetGameState` — `UCLASS(Blueprintable)`, inherits BP-able `AGameStateBase`
+- [x] Enable Enhanced Input plugin in `.Build.cs`
+- [x] Create `UCursorManager` — `UCLASS(BlueprintType, Blueprintable, meta=(BlueprintSpawnableComponent))`, provides active cursor screen position from mouse, touch, or gamepad R-Stick
+- [x] Create `UTargetingComponent` — data-holder, no Tick
+- [x] Create all Input Actions:
   - `IA_Move` (2D Axis — virtual joystick, WASD, gamepad L-Stick)
   - `IA_Cursor` (2D Axis — gamepad R-Stick emulates mouse; mouse/touch use OS)
-  - `IA_Confirm` (Action — tap, left-click, R-Stick click, A button)
-  - `IA_Target` (Action — right-click, virtual button, gamepad bumper)
+  - `IA_Primary` (Action — tap, left-click, R-Stick click, A button) — primary interaction, context resolves move/attack/interact
   - `IA_Ability1-4` (Action — number keys, virtual buttons, face buttons)
   - `IA_PvPToggle` (Action — P key, virtual button, D-pad down)
-- [ ] Create Input Mapping Contexts:
+- [x] Create Input Mapping Contexts:
   - `IMC_Touch` (virtual joystick + tap + virtual buttons)
-  - `IMC_Desktop` (mouse + keyboard bindings)
+  - `IMC_KbMouse` (mouse + keyboard bindings)
   - `IMC_Gamepad` (gamepad bindings)
-- [ ] Add `UEnhancedInputLocalPlayerSubsystem` initialization to PlayerController
-- [ ] Verify project compiles and runs in PIE
+- [x] Add `UEnhancedInputLocalPlayerSubsystem` initialization to PlayerController
+- [x] Wire up all 3 IA bindings in PlayerController (`IA_Primary`, `IA_Move`, `IA_Cursor`)
+- [x] Rename `AOnsetCharacter` → `AOnsetPlayerCharacter` for explicitness
+- [x] Verify project compiles and runs in PIE
 
 ## A1.2 Top-Down Camera
-- [ ] Add `SpringArmComponent` to character
-- [ ] Add `CameraComponent` to character
-- [ ] Configure arm length (1000-1200), pitch (−55 to −65°)
-- [ ] Enable camera collision (`bDoCollisionTest = true`)
-- [ ] Enable camera lag (`CameraLagSpeed = 8.0`)
-- [ ] Verify camera follows character in PIE
-- [ ] Verify collision push-back from walls
+- [x] Add `SpringArmComponent` to character
+- [x] Add `CameraComponent` to character
+- [x] Configure arm length (1000), pitch (−60°)
+- [x] Enable camera collision (`bDoCollisionTest = true`)
+- [x] Enable camera lag (`CameraLagSpeed = 8.0`)
+- [x] Set `DefaultPawnClass` in `AOnsetGameModeBase` constructor
+- [x] Verify camera follows character in PIE
+- [x] Verify collision push-back from walls
 
 ## A1.3 Movement System (Touch Joystick + Tap + WASD + Gamepad)
-- [ ] Enable mouse cursor on PlayerController
-- [ ] Enable touch input in Project Settings
-- [ ] Implement **virtual joystick widget** (touch): 2D axis → `IA_Move` → character movement
-- [ ] Implement **tap-to-move** (touch): `IA_Confirm` → raycast → `MoveToLocation`
-- [ ] Implement **click-to-move** (mouse): `IA_Confirm` → raycast → `MoveToLocation`
-- [ ] Implement **WASD movement** (keyboard): `IA_Move` → character movement
-- [ ] Implement **gamepad L-Stick movement**: `IA_Move` → character movement
-- [ ] Implement **gamepad R-Stick cursor**: `IA_Cursor` → software cursor overlay
-- [ ] Build **cursor abstraction** layer: mouse OS cursor, touch tap position, gamepad R-Stick cursor → unified screen position for all raycasts
-- [ ] Implement direct-input / pathfinding hand-off: joystick/WASD interrupts active `MoveToLocation`
-- [ ] Set collision channel for ground trace (ECC_Visibility)
-- [ ] Add `UEnhancedInputComponent` bindings in PlayerController
-- [ ] Verify tap-to-move (touch mobile viewport)
-- [ ] Verify virtual joystick moves character (touch mobile viewport)
-- [ ] Verify click-to-move (mouse)
-- [ ] Verify WASD movement (keyboard)
-- [ ] Verify gamepad L-Stick movement
-- [ ] Verify gamepad R-Stick cursor moves and stays within viewport
-- [ ] Verify navigation around obstacles
-- [ ] Verify joystick/WASD interrupts tap-to-move pathfinding
+- [x] Enable mouse cursor on PlayerController
+- [x] Enable touch input in Project Settings
+- [x] Implement **virtual joystick widget** (touch): 2D axis → `IA_Move` → character movement
+- [x] Implement **tap-to-move** (touch): `IA_Primary` → raycast → `MoveToLocation`
+- [x] Implement **WASD movement** (keyboard): `IA_Move` → character movement
+- [x] Implement **gamepad L-Stick movement**: `IA_Move` → character movement
+- [x] Implement **gamepad R-Stick cursor**: `IA_Cursor` → software cursor overlay
+- [x] Build **cursor abstraction** layer: mouse OS cursor, touch tap position, gamepad R-Stick cursor → unified screen position for all raycasts
+- [x] Implement direct-input / pathfinding hand-off: joystick/WASD interrupts active `MoveToLocation`
+- [x] Set collision channel for ground trace (ECC_Visibility)
+- [x] Add `UEnhancedInputComponent` bindings in PlayerController
+- [x] Verify tap-to-move (touch mobile viewport)
+- [x] Verify virtual joystick moves character (touch mobile viewport)
+- [x] Verify click-to-move (mouse)
+- [x] Verify WASD movement (keyboard)
+- [x] Verify gamepad L-Stick movement
+- [x] Verify gamepad R-Stick cursor moves and stays within viewport
+- [x] Verify navigation around obstacles
+- [x] Verify joystick/WASD interrupts tap-to-move pathfinding
 
-## A1.4 Targeting Component
-- [ ] Create `UTargetingComponent` — `UCLASS(Blueprintable, BlueprintType, meta=(BlueprintSpawnableComponent))`
-- [ ] Add `CurrentTarget` storage + accessors
-- [ ] Implement `SetCurrentTarget()` with validation (uses `IA_Confirm` cursor raycast)
-- [ ] Implement `ClearTarget()`
-- [ ] Branch: `IA_Confirm` → raycast → enemy = SetCurrentTarget, ground = MoveToLocation
-- [ ] Stub `OnBasicAttack()` bound to `IA_Target`/ability input that logs target name
+## A1.4 Targeting Component (Data Holder + Validation)
+- [x] Create `UTargetingComponent` — `UCLASS(Blueprintable, BlueprintType, meta=(BlueprintSpawnableComponent))`, no Tick needed
+- [x] Add `CurrentTarget` storage + accessors (`GetCurrentTarget`, `SetCurrentTarget`, `ClearTarget`)
+- [ ] Implement `SetCurrentTarget()` with validation (`IsActorValidTarget()`)
+- [ ] Implement `IsActorValidTarget()` — PvP-aware, alive check
+- [x] Context resolution in PlayerController: `IA_Primary` → raycast → enemy = SetCurrentTarget, ground = MoveToLocation
+- [ ] Stub basic attack logging from ability input (e.g., `IA_Ability1`)
 - [ ] Verify target selection works (mouse, touch tap, gamepad R-Stick cursor + A button)
-- [ ] Verify attack key routes to current target
+- [ ] Verify ability input routes to current target
 
 ## A1.5 Ability Targeting System
 - [ ] Create `UAbilityTargetingComponent` — `UCLASS(Blueprintable, BlueprintType, meta=(BlueprintSpawnableComponent))`
@@ -88,7 +91,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Add `bIsPvPEnabled` to `APlayerState` (replicated)
 - [ ] Add `Server_SetPvPEnabled(bool)` RPC on PlayerController
 - [ ] Add `OnRep_PvPEnabled()` callback
-- [ ] Implement `IsActorValidTarget()` with PvP filtering in TargetingComponent
+- [ ] `IsActorValidTarget()` in TargetingComponent includes PvP filtering
 - [ ] Verify toggle replicates to client
 - [ ] Verify players filtered when PvP OFF
 - [ ] Verify players targetable when PvP ON
@@ -99,7 +102,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 # A2 — NPC LIFECYCLE (est. 6 days)
 
 ## A2.1 NPC Character + Spawner
-- [ ] Create `ANPCCharacter` — `UCLASS(Blueprintable)`, inherits BP-able `ACharacter`
+- [ ] Create `ANPCCharacter` — `UCLASS(Blueprintable)`, inherits `AOnsetBaseCharacter`
 - [ ] Create `ANPCAIController` — `UCLASS(Blueprintable)`, inherits BP-able `AAIController`
 - [ ] Create `FSpawnConfig` — `USTRUCT(BlueprintType)` (EnemyClass, GroupSize, SpawnRadius, RespawnDelay)
 - [ ] Create `AEnemySpawner` — `UCLASS(Blueprintable)`, inherits BP-able `AActor`
@@ -352,11 +355,11 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
-| A1 Core Player | — | — | 0% |
+| A1 Core Player | 36 | 26 | 72% |
 | A2 NPC Lifecycle | — | — | 0% |
 | A3 AI Systems | — | — | 0% |
 | A4 GAS Combat | — | — | 0% |
 | A5 Multiplayer & Steam | — | — | 0% |
 | A6 UI & Final Demo | — | — | 0% |
 | A7 Integration & Harden | — | — | 0% |
-| **Total** | — | — | **0%** |
+| **Total** | 36 | 26 | **72%** |

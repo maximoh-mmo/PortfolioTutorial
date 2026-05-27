@@ -60,10 +60,10 @@ A `UJoystickWidget` placed in the viewport as a touch zone:
 - Touch Move → compute normalized 2D delta → inject into `IA_Move` via `UEnhancedInputLocalPlayerSubsystem::InjectInputForAction()`
 - Touch End → return to zero
 
-### **3. IA_Confirm → MoveToLocation (Tap + Click)**
-`IA_Confirm` fires on left-click or touch tap:
+### **3. IA_Primary → MoveToLocation (Tap + Click)**
+`IA_Primary` fires on left-click or touch tap:
 ```cpp
-void AOnsetPlayerController::OnConfirm()
+void AOnsetPlayerController::OnPrimaryInteraction()
 {
     FVector2D ScreenPos;
     if (!CursorManager->GetCursorPosition(ScreenPos)) return;
@@ -81,7 +81,7 @@ void AOnsetPlayerController::OnConfirm()
 
 ### **4. IA_Move → Direct Movement (Joystick + WASD + L-Stick)**
 ```cpp
-void AOnsetCharacter::OnMove(const FInputActionValue& Value)
+void AOnsetPlayerCharacter::OnMove(const FInputActionValue& Value)
 {
     FVector2D MoveVector = Value.Get<FVector2D>();
     AddMovementInput(MoveVector.X, MoveVector.Y);
@@ -114,17 +114,17 @@ void AOnsetPlayerController::SetupInputComponent()
     Super::SetupInputComponent();
     UEnhancedInputComponent* Input = Cast<UEnhancedInputComponent>(InputComponent);
 
-    Input->BindAction(IA_Confirm, ETriggerEvent::Triggered, this, &AOnsetPlayerController::OnConfirm);
+    Input->BindAction(IA_Primary, ETriggerEvent::Triggered, this, &AOnsetPlayerController::OnPrimaryInteraction);
     Input->BindAction(IA_Cursor,  ETriggerEvent::Triggered, this, &AOnsetPlayerController::OnCursorMove);
 }
 ```
 ```cpp
-void AOnsetCharacter::SetupPlayerInputComponent(UInputComponent* Input)
+void AOnsetPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
 {
     Super::SetupPlayerInputComponent(Input);
     UEnhancedInputComponent* Input = Cast<UEnhancedInputComponent>(InputComponent);
 
-    Input->BindAction(IA_Move, ETriggerEvent::Triggered, this, &AOnsetCharacter::OnMove);
+    Input->BindAction(IA_Move, ETriggerEvent::Triggered, this, &AOnsetPlayerCharacter::OnMove);
 }
 ```
 
@@ -168,8 +168,8 @@ Subsystem->InjectInputForAction(IA_Move, FInputActionValue(Delta));
 Input Device        Cursor Source          Enhanced Input          Character
 ───────────         ─────────────          ──────────────          ─────────
 Touch Joystick  ──→ InjectInputForAction ─→ IA_Move          ──→ AddMovementInput
-Touch Tap       ──→ UCursorManager      ─→ IA_Confirm        ─→ MoveToLocation
-Mouse Click     ──→ GetMousePosition    ─→ IA_Confirm        ─→ MoveToLocation  
+Touch Tap       ──→ UCursorManager      ─→ IA_Primary        ─→ MoveToLocation
+Mouse Click     ──→ GetMousePosition    ─→ IA_Primary        ─→ MoveToLocation  
 WASD            ────────────────────────→ IA_Move            ─→ AddMovementInput
 Gamepad L-Stick ────────────────────────→ IA_Move            ─→ AddMovementInput
 Gamepad R-Stick ────────────────────────→ IA_Cursor          ─→ Software Cursor Pos
@@ -181,7 +181,7 @@ Gamepad R-Stick ─────────────────────�
 - Forgetting to call `StopMovement()` on direct input — character keeps pathfinding
 - Virtual joystick not injecting into the right subsystem — must use `APlayerController`'s local subsystem
 - Gamepad cursor going outside viewport — must clamp each frame
-- `IA_Confirm` firing on both tap and touch-joystick interactions — ensure touch events are routed correctly (tap = short press, joystick = hold+drag)
+- `IA_Primary` firing on both tap and touch-joystick interactions — ensure touch events are routed correctly (tap = short press, joystick = hold+drag)
 - Not calling `bShowMouseCursor = true` in PlayerController BeginPlay for desktop
 
 ---
@@ -200,7 +200,7 @@ Gamepad R-Stick ─────────────────────�
 ---
 
 ## **Public Repo Notes**
-- Include Enhanced Input assets (IA_Move, IA_Confirm, IA_Cursor, IMC_Touch, IMC_Desktop, IMC_Gamepad)
+- Include Enhanced Input assets (IA_Move, IA_Primary, IA_Cursor, IMC_Touch, IMC_Desktop, IMC_Gamepad)
 - Ensure Nav Mesh Bounds Volume is in the map
 - Include a default pawn that can be possessed for testing
 
@@ -215,7 +215,7 @@ Gamepad R-Stick ─────────────────────�
 - Recap the Enhanced Input setup from Episode 1
 - Build the cursor manager
 - Implement the virtual joystick widget for touch
-- Wire up IA_Confirm for tap-to-move and click-to-move
+- Wire up IA_Primary for tap-to-move and click-to-move
 - Wire up IA_Move for WASD and gamepad L-Stick
 - Implement the gamepad R-Stick software cursor
 - Show hand-off between direct input and pathfinding

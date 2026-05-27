@@ -34,7 +34,7 @@ This system ensures **player agency** in multiplayer combat while keeping the ru
 
 ## **Key Classes**
 
-### `APlayerState`
+### `AOnsetPlayerState`
 Authoritative storage for:
 
 ```
@@ -43,26 +43,26 @@ bool bIsPvPEnabled;
 
 Replicated to all clients.
 
-### `APlayerController`
+### `AOnsetPlayerController`
 - Receives UI toggle input  
 - Sends `Server_SetPvPEnabled(bool)` RPC  
 
 ### `UTargetingComponent`
-- Filters player actors based on PvP flag  
+- `IsActorValidTarget()` filters player actors based on PvP flag (called by PlayerController during context resolution)  
 
 ### `UGameplayEffectExecution` / Damage Execution
 - Blocks damage if PvP disabled  
 
 ---
 
-## **Key Functions**
+## **Key Functions** *(planned)*
 
-### PlayerController
+### AOnsetPlayerController
 - `Server_SetPvPEnabled(bool)`  
 - `OnRep_PvPEnabled()`  
 
-### TargetingComponent
-- `IsActorValidTarget(AActor*)`  
+### TargetingComponent (via AOnsetPlayerController)
+- `IsActorValidTarget(AActor*)` called in PlayerController's context resolution  
   - Rejects players if PvP disabled  
 
 ### [GAS System](../GAS/GAS_System.md) Damage Execution

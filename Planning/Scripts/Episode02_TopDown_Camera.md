@@ -27,7 +27,7 @@ We add a top-down camera to the player character. The camera sits above the play
 ## **Technical Breakdown**
 
 ### **1. Modify Character Header**
-Add SpringArm and Camera components to `AOnsetCharacter`:
+Add SpringArm and Camera components to `AOnsetPlayerCharacter`:
 
 ```cpp
 UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
@@ -65,7 +65,7 @@ FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 ## **Code Snippets**
 
 ```cpp
-// AOnsetCharacter.h additions
+// AOnsetPlayerCharacter.h additions
 UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 TObjectPtr<USpringArmComponent> CameraBoom;
 
@@ -74,8 +74,8 @@ TObjectPtr<UCameraComponent> FollowCamera;
 ```
 
 ```cpp
-// AOnsetCharacter.cpp constructor
-AOnsetCharacter::AOnsetCharacter()
+// AOnsetPlayerCharacter.cpp constructor
+AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 {
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(GetRootComponent());

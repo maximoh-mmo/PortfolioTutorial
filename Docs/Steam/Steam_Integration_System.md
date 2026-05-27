@@ -45,11 +45,11 @@ This system ensures that all multiplayer interactions are tied to verified Steam
 - Wraps Steam OSS calls  
 - Provides clean C++ API for auth and server registration  
 
-### **`APlayerController`**
+### **`AOnsetPlayerController`**
 - Requests auth ticket from Steam  
 - Sends ticket to server via RPC  
 
-### **`AGameMode`**
+### **`AOnsetGameModeBase`**
 - Validates auth tickets server‑side  
 - Rejects invalid clients  
 

@@ -37,10 +37,11 @@ flowchart TD
         PC
         PS
         Targeting
+        PlayerChar[Player Character<br/>AOnsetBaseCharacter → AOnsetPlayerCharacter]
     end
 
     subgraph AI
-        NPC[NPC Character]
+        NPC[NPC Character<br/>AOnsetBaseCharacter → ANPCCharacter]
         AIController
         StateTree
     end
@@ -110,12 +111,16 @@ This document is the technical map for the entire project.
 # 🧱 **Core Systems**
 
 ### **1. [Player System](../Player/Player_System.md)**
-- Input handling (mouse + touch)  
-- Tap/click‑to‑move  
+- `AOnsetBaseCharacter` as shared base (player + NPC)  
+- `AOnsetPlayerCharacter` as player-specific class (camera)  
+- `AOnsetPlayerController` handles all input, cursor, and targeting  
+- Input handling (mouse + touch + gamepad)  
+- Tap/click‑to‑move + WASD + gamepad L-Stick movement  
 - Tap/click‑to‑target  
-- Ability activation (keyboard + touch buttons)  
-- PvP toggle UI → PlayerState  
-- Autoplay handoff  
+- Gamepad R-Stick software cursor  
+- Ability activation (keyboard + touch buttons + gamepad) *(future)*  
+- PvP toggle UI → PlayerState *(future)*  
+- Autoplay handoff *(future)*  
 
 ### **2. [NPC AI System](../AI/NPC_AI_System.md)**
 - StateTree‑driven behaviour  
@@ -131,8 +136,9 @@ This document is the technical map for the entire project.
 - Enables stress tests, demos, and debugging without human input  
 
 ### **4. [Targeting System](../Gameplay/Targeting_System.md) (PvP‑aware)**
-- Maintains `CurrentTarget`  
-- Manual + automatic targeting  
+- Data holder for `CurrentTarget` with `IsActorValidTarget()` validation  
+- Set by PlayerController context resolution (IA_Primary → raycast → branch)  
+- AI targeting also feeds into TargetingComponent  
 - PvP filtering  
 - Provides target data to abilities  
 

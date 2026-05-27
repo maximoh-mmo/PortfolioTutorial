@@ -17,36 +17,49 @@ We add click-to-target: when the player taps/clicks/confirms on an enemy, that e
 ---
 
 ## **Key Concepts Introduced**
-- TargetingComponent — stores and manages the current target
+- TargetingComponent — data holder for current target with validation
 - Actor channel for enemy trace
 - Target highlighting (outline or material effect)
 - Distinguishing between ground confirm (move) and enemy confirm (target)
-- Basic attack input routing via Enhanced Input (IA_Target)
+- Context resolution in PlayerController (IA_Primary handler branches on hit result)
+- Basic attack routing via ability input (stub)
 
 ---
 
 ## **Technical Breakdown**
 
-### **1. Create TargetingComponent**
+### **1. Create TargetingComponent (Data Holder + Validation)**
 ```cpp
-UCLASS()
+UCLASS(meta=(BlueprintSpawnableComponent))
 class UTargetingComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
+    UTargetingComponent();
+
+    UFUNCTION(BlueprintCallable)
     AActor* GetCurrentTarget() const { return CurrentTarget; }
+
+    UFUNCTION(BlueprintCallable)
     void SetCurrentTarget(AActor* NewTarget);
 
+    UFUNCTION(BlueprintCallable)
+    void ClearTarget();
+
+    UFUNCTION(BlueprintCallable)
+    bool IsActorValidTarget(AActor* Target) const;
+
 private:
-    AActor* CurrentTarget;
+    AActor* CurrentTarget = nullptr;
 };
 ```
+No Tick needed — targeting is purely event-driven via IA_Primary.
 
-### **2. Modify Confirm Handler (IA_Confirm)**
-Determine whether the confirm action (tap/click/A-button) hit an enemy or the ground, using the cursor abstraction from Episode 3:
+### **2. Modify Primary Handler (IA_Primary) — Context Resolution**
+Determine whether the primary action (tap/click/A-button) hit an enemy or the ground, using the cursor abstraction from Episode 3. This context resolution lives in the PlayerController:
 ```cpp
-void AOnsetPlayerController::OnConfirm()
+void AOnsetPlayerController::OnPrimaryInteraction()
 {
     FVector2D ScreenPos;
     if (!CursorManager->GetCursorPosition(ScreenPos)) return;
@@ -58,12 +71,10 @@ void AOnsetPlayerController::OnConfirm()
 
     if (Hit.GetActor() && Hit.GetActor()->ActorHasTag("Enemy"))
     {
-        // Set as target
         TargetingComponent->SetCurrentTarget(Hit.GetActor());
     }
     else
     {
-        // Move to location
         MoveToLocation(Hit.Location);
     }
 }
@@ -72,8 +83,8 @@ void AOnsetPlayerController::OnConfirm()
 ### **3. Target Highlighting**
 Apply a post-process outline or simple material change on the target actor. Use a decal component or custom depth rendering.
 
-### **4. Basic Attack Input**
-Bind `IA_Target` (created in Episode 1) → triggers `OnBasicAttack()`:
+### **4. Basic Attack Input (Stub)**
+Bind an ability input key (e.g., `IA_Ability1`) → triggers `OnBasicAttack()`:
 ```cpp
 void AOnsetPlayerController::OnBasicAttack()
 {
@@ -97,13 +108,15 @@ void AOnsetPlayerController::OnBasicAttack()
 ## **Code Snippets**
 
 ```cpp
-// UTargetingComponent.h
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+// UTargetingComponent.h — data holder with validation, no Tick
+UCLASS(meta=(BlueprintSpawnableComponent))
 class UTargetingComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
+    UTargetingComponent();
+
     UFUNCTION(BlueprintCallable)
     AActor* GetCurrentTarget() const { return CurrentTarget; }
 
@@ -113,14 +126,17 @@ public:
     UFUNCTION(BlueprintCallable)
     void ClearTarget();
 
+    UFUNCTION(BlueprintCallable)
+    bool IsActorValidTarget(AActor* Target) const;
+
 private:
     AActor* CurrentTarget = nullptr;
 };
 ```
 
 ```cpp
-// Targeting logic in PlayerController (uses IA_Confirm + CursorManager)
-void AOnsetPlayerController::OnConfirm()
+// Context resolution in PlayerController (uses IA_Primary + CursorManager)
+void AOnsetPlayerController::OnPrimaryInteraction()
 {
     FVector2D ScreenPos;
     if (!CursorManager->GetCursorPosition(ScreenPos)) return;
@@ -145,7 +161,7 @@ void AOnsetPlayerController::OnConfirm()
 
 ## **Diagrams**
 ```
-IA_Confirm (any device)
+IA_Primary (any device)
  │
  ▼
 CursorManager::GetCursorPosition()
@@ -155,8 +171,8 @@ Raycast at Screen Position
  ├── Hit Enemy → Set as CurrentTarget → Highlight
  └── Hit Ground → MoveToLocation → ClearTarget (optional)
 
-IA_Target (any device) → HasTarget? → Yes → Send to GAS (stub)
-                                     → No → Do nothing
+Ability Input (any device) → HasTarget? → Yes → Send to GAS (stub)
+                                         → No → Do nothing
 ```
 
 ---
@@ -175,8 +191,8 @@ IA_Target (any device) → HasTarget? → Yes → Send to GAS (stub)
 - [ ] Tap/click/A-button on enemy sets the target (all input methods)
 - [ ] Tap/click/A-button on ground moves the character
 - [ ] Target highlight visible
-- [ ] Attack key (IA_Target) routes to current target
-- [ ] Gamepad R-Stick cursor over enemy → IA_Confirm → target set
+- [ ] Ability key routes to current target (stub logs target name)
+- [ ] Gamepad R-Stick cursor over enemy → IA_Primary → target set
 - [ ] Target clears on death (if applicable)
 
 ---

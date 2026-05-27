@@ -47,26 +47,31 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 
 ## **Key Classes**
 
-### **`UHUDWidget`**
+### **`UHUDWidget`** *(planned)*
 - Main HUD  
 - Contains health, abilities, debug panels  
 - Scales layout for mobile vs desktop  
 
-### **`UMobileTouchControls`**
-- On-screen ability buttons (touch)
-- Responsive sizing, anchored to screen edges  
+### **`UJoystickWidget`**
+- Touch virtual joystick (movement thumbstick zone with drag-outline)
+- Injects normalized axis directly into `IA_Move` via `UEnhancedInputLocalPlayerSubsystem::InjectInputForAction()`
 
-### **`UEnemyHealthBarWidget`**
+### **`UGamepadCursorWidget`**
+- Software crosshair overlay for gamepad R-Stick cursor
+- Positioned via `SetRenderTranslation()` from PlayerController
+- Automatically hides after idle timeout  
+
+### **`UEnemyHealthBarWidget`** *(planned)*
 - Attached to NPCs  
 - Shows current health  
 
-### **`UAbilityBarWidget`**
+### **`UAbilityBarWidget`** *(planned)*
 - Shows abilities + cooldowns  
 
-### **`UTargetIndicatorWidget`**
+### **`UTargetIndicatorWidget`** *(planned)*
 - Shows targeting reticles  
 
-### **`UAutoplayDebugWidget`**
+### **`UAutoplayDebugWidget`** *(planned)*
 - Shows player AI state  
 
 ---
@@ -153,13 +158,14 @@ Target Indicator Widget
 ---
 
 ## **Testing Checklist**
-- [ ] Player health updates correctly  
-- [ ] Enemy health bars appear/disappear correctly  
-- [ ] Ability cooldowns update correctly  
-- [ ] Touch controls work on mobile viewport  
-- [ ] Target indicators match ability behaviour  
-- [ ] Debug UI toggles correctly  
-- [ ] UI behaves correctly in multiplayer  
+- [x] Virtual joystick moves character on touch/mobile viewport  
+- [x] Gamepad cursor renders and follows R-Stick  
+- [ ] Player health updates correctly *(planned)*  
+- [ ] Enemy health bars appear/disappear correctly *(planned)*  
+- [ ] Ability cooldowns update correctly *(planned)*  
+- [ ] Target indicators match ability behaviour *(planned)*  
+- [ ] Debug UI toggles correctly *(planned)*  
+- [ ] UI behaves correctly in multiplayer *(planned)*  
 
 ---
 

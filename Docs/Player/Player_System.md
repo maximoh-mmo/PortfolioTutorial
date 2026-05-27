@@ -11,12 +11,13 @@ Provide top‑down ARPG controls (mouse + touch) and a UI‑driven PvP toggle th
 ---
 
 ## **Responsibilities**
-- Handle input (mouse + touch)  
-- Tap/click‑to‑move  
+- Input handling (mouse + touch + gamepad)  
+- Tap/click‑to‑move + WASD + gamepad L-Stick movement  
 - Tap/click‑to‑target  
-- Ability activation (keyboard + touch buttons)  
-- PvP toggle UI → PlayerState  
-- Autoplay handoff  
+- Gamepad R-Stick software cursor  
+- Ability activation (keyboard + touch buttons + gamepad)  
+- PvP toggle UI → PlayerState (future)  
+- Autoplay handoff (future)  
 
 ---
 
@@ -28,28 +29,33 @@ Provide top‑down ARPG controls (mouse + touch) and a UI‑driven PvP toggle th
 ---
 
 ## **Key Classes**
-- **`APlayerController`** — routes input, sends RPCs, manages PvP toggle  
-- **`APlayerState`** — stores and replicates `bIsPvPEnabled`  
-- **`UTargetingComponent`** — maintains `CurrentTarget`, validates targets  
-- **`UAbilitySystemComponent`** — executes abilities via GAS  
+- **`AOnsetBaseCharacter`** — shared base for player and NPC, inherits `ACharacter`  
+- **`AOnsetPlayerCharacter`** — player character, inherits `AOnsetBaseCharacter`, camera lives here  
+- **`AOnsetPlayerController`** — routes input, cursor management, targeting, PvP toggle  
+- **`AOnsetPlayerState`** — stores and replicates `bIsPvPEnabled` (future)  
+- **`UCursorManager`** — provides unified cursor position from mouse, touch, or gamepad R-Stick  
+- **`UTargetingComponent`** — data holder for `CurrentTarget`, target validation stub (`IsActorValidTarget`)  
+- **`UJoystickWidget`** — touch virtual joystick, injects axis into `IA_Move`  
+- **`UGamepadCursorWidget`** — software crosshair overlay for gamepad R-Stick cursor  
 
 ---
 
 ## **Tap/Click‑to‑Move Flow**
 
-Mouse click or touch tap both produce a screen-space position that drives the same raycast pipeline:
+`IA_Primary` (tap/click/A-button) produces a screen-space position that drives the same raycast pipeline. The PlayerController resolves context:
 
 ```mermaid
 flowchart TD
-    Input[Mouse Click / Touch Tap] --> Raycast[Screen → World Raycast]
-    Raycast --> HitLocation
-    HitLocation --> MoveTo[AIController MoveToLocation]
-    MoveTo --> CharacterMovement
+    Input[IA_Primary: Tap / Click / A-Button] --> Cursor[UCursorManager<br/>GetCursorPosition]
+    Cursor --> Raycast[Screen → World Raycast]
+    Raycast --> Branch{Hit what?}
+    Branch -->|Enemy tag| Target[SetCurrentTarget]
+    Branch -->|Ground| MoveTo[MoveToLocation]
 ```
 
 ---
 
-## **PvP Toggle Flow**
+## **PvP Toggle Flow** *(planned — not yet implemented)*
 
 ### UI → PlayerController
 Player clicks PvP toggle:
@@ -74,41 +80,43 @@ bIsPvPEnabled = bEnabled;
 ---
 
 ## **Targeting Integration**
+*(See [Targeting System](../Gameplay/Targeting_System.md) for current state.)*
 - If [PvP System](../Gameplay/PVP_System.md) disabled → ignore player actors via [Targeting System](../Gameplay/Targeting_System.md)  
 - If PvP enabled → include player actors  
 - If `CurrentTarget` becomes invalid due to PvP toggle → auto‑select nearest NPC  
 
-## **GAS Integration**
+## **GAS Integration** *(planned)*
 PlayerController routes ability input → ASC via [GAS System](../GAS/GAS_System.md)  
 ASC checks PvP rules before applying damage.
 
-## **UI Integration**
+## **UI Integration** *(partial — see [UI System](../Gameplay/UI_System.md))*
 [UI System](../Gameplay/UI_System.md) displays:
 
-- PvP ON/OFF  
-- Color‑coded indicator  
-- Optional tooltip
+- Virtual joystick (touch) [done]  
+- Gamepad cursor overlay [done]  
+- PvP ON/OFF [planned]  
+- Color‑coded indicator [planned]  
 
 ---
 
-## **Replication**
-- PvP flag replicates via `APlayerState`  
+## **Replication** *(planned)*
+- PvP flag replicates via `AOnsetPlayerState`  
 - UI updates on `OnRep_PvPEnabled`  
 - Server enforces all PvP rules  
 
 ---
 
 ## **Testing Checklist**
-- [ ] Tap/click‑to‑move moves character to target location (mouse + touch)  
+- [x] Tap/click‑to‑move moves character to target location (mouse + touch)  
 - [ ] Tap/click‑to‑target sets `CurrentTarget` correctly (mouse + touch)  
-- [ ] PvP toggle replicates to all clients  
-- [ ] Targeting respects PvP flag (players filtered when OFF)  
-- [ ] Player AI autoplay can be enabled/disabled  
-- [ ] Works in multiplayer with multiple clients  
+- [ ] PvP toggle replicates to all clients *(planned)*  
+- [ ] Targeting respects PvP flag (players filtered when OFF) *(planned)*  
+- [ ] Player AI autoplay can be enabled/disabled *(planned)*  
+- [ ] Works in multiplayer with multiple clients *(planned)*  
 
 ---
 
-## **Edge Cases**
+## **Edge Cases** *(notes for planned features)*
 - Player toggles PvP mid‑combat  
 - Player AI must respect PvP rules  
 - Player targeting a player when PvP is turned OFF  

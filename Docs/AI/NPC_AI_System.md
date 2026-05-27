@@ -47,7 +47,7 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 
 ## **Key Classes**
 
-### **`ANPCCharacter`**
+### **`ANPCCharacter`** (inherits `AOnsetBaseCharacter` — shared base with `AOnsetPlayerCharacter`)
 - Base NPC pawn  
 - Holds ASC, AttributeSet  
 - Holds StateTreeComponent  

@@ -8,25 +8,24 @@
 ## **Purpose**
 Provide deterministic targeting for all actors using a **single authoritative target**, with PvP rules integrated into target validation.
 
-> **Episode order note:** The targeting system is built in Episode 5, after the Spawner (Episode 4) has placed NPCs in the world, so testing can begin immediately.
+> **Episode order note:** The targeting system is built for player use in A1.4 (after movement), before NPC spawning is added in A2. Testing can use temporary tagged actors.
 
 ---
 
 ## **Responsibilities**
-- Maintain `CurrentTarget`  
-- Manual targeting (player)  
-- Automatic targeting (AI + fallback)  
-- PvP‑aware target filtering  
-- Provide target data for abilities  
-- Drive target highlighting UI  
+- Maintain `CurrentTarget` (data holder with validation)  
+- Manual targeting (player via IA_Primary context resolution in PlayerController)  
+- Stub `IsActorValidTarget()` for future PvP‑aware target filtering  
+- Provide target data for abilities (future)  
+- Drive target highlighting UI (future)  
 
 ---
 
 ## **Target Selection Logic**
 
 ### **Player**
-- Click enemy → set `CurrentTarget`  
-- If no target → auto‑select nearest valid enemy  
+- IA_Primary on enemy → `SetCurrentTarget` (via PlayerController context resolution)  
+- IA_Primary on ground → `MoveToLocation`  
 - If PvP disabled → players are **not valid targets**  
 - If PvP enabled → players become valid targets  
 
@@ -44,7 +43,7 @@ Provide deterministic targeting for all actors using a **single authoritative ta
 ---
 
 ## **Key Classes**
-- **`UTargetingComponent`** — attached to player, maintains `CurrentTarget`, validates targets  
+- **`UTargetingComponent`** — data holder attached to player, maintains `CurrentTarget`, provides `IsActorValidTarget()` stub (validation planned for PvP integration)  
 
 ---
 
@@ -52,25 +51,21 @@ Provide deterministic targeting for all actors using a **single authoritative ta
 
 ```mermaid
 flowchart TD
-    Input[Player Input<br/>Mouse/Touch] --> Targeting
-    AI[AI Target Selection] --> Targeting
-
-    Targeting --> Validate[Validate Target<br/>Range, LOS, PvP Rules]
-    Validate --> CurrentTarget[Set CurrentTarget]
-
-    CurrentTarget --> AbilityData[Build Ability Target Data]
-    AbilityData --> GAS[Gameplay Ability System]
+    Input[IA_Primary → Cursor → Raycast] --> Branch{Hit what?}
+    Branch -->|Enemy tag| TC[TargetingComponent<br/>SetCurrentTarget]
+    Branch -->|Ground| Move[MoveToLocation]
+    TC --> CurrentTarget[(CurrentTarget)]
 ```
 
 ## **Target Validation Rules**
 
-### Valid target if:
+### Valid target if: *(planned — not yet implemented)*
 - Target is alive  
-- Target is within range  
-- Target is visible (optional LOS)  
-- **PvP rules allow targeting**  
+- Target is within range *(future)*  
+- Target is visible (optional LOS) *(future)*  
+- **PvP rules allow targeting** *(future)*  
 
-### PvP Filtering:
+### PvP Filtering *(future)*:
 ```
 if (Target is Player && !SourcePlayer->bIsPvPEnabled)
     return false;
@@ -80,18 +75,18 @@ if (Target is Player && !SourcePlayer->bIsPvPEnabled)
 
 ---
 
-## **Replication**
+## **Replication** *(planned)*
 - Target selection is **client‑side**  
 - Server validates target data when ability activates via GAS  
 
 ---
 
 ## **Testing Checklist**
-- [ ] Click‑to‑target sets `CurrentTarget`  
-- [ ] Auto‑target fallback selects nearest valid enemy  
-- [ ] PvP filtering correctly excludes players when OFF  
-- [ ] AI targeting respects PvP rules  
-- [ ] Target highlight appears/disappears correctly  
+- [x] Click‑to‑target sets `CurrentTarget` (on tagged actors)  
+- [ ] Auto‑target fallback selects nearest valid enemy *(planned)*  
+- [ ] PvP filtering correctly excludes players when OFF *(planned)*  
+- [ ] AI targeting respects PvP rules *(planned)*  
+- [ ] Target highlight appears/disappears correctly *(planned)*  
 
 ---
 

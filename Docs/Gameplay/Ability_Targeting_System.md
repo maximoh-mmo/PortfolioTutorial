@@ -1,50 +1,50 @@
 ## 📘 Ability Targeting System — `/Docs/Gameplay/Ability_Targeting_System.md`
 
-# **Ability Targeting System**
+# **Ability Targeting System** *(planned — not yet implemented)*
 
 ## Purpose
 Provide a unified way to select targets and locations for abilities: single‑target, AoE, and directional abilities, driven by screen input (mouse/touch) and/or AI.
 
-## Responsibilities
+## Responsibilities *(planned)*
 - Interpret screen position (mouse cursor / touch location)  
 - Provide targeting data (actor, location, direction)  
 - Show targeting indicators (circles, cones, etc.)  
-- Validate targets (range, line of sight, team)  
+- Validate targets (range, line of sight, team) 
 
 ## Non‑Responsibilities
 - Ability execution (handled by [GAS System](../GAS/GAS_System.md))  
 - AI decision making  
 - [UI System](UI_System.md) outside of targeting indicators  
 
-## Key Classes
+## Key Classes *(planned)*
 - **`UAbilityTargetingComponent`** — attached to player  
 - **`FAbilityTargetData`** — actor, location, direction, radius, etc.  
 
-## Key Functions
+## Key Functions *(planned)*
 - `GetTargetUnderCursor()` — single‑target  
 - `GetGroundLocationUnderCursor()` — AoE  
 - `GetDirectionFromPlayerToCursor()` — directional abilities  
 - `ShowTargetIndicator()` / `HideTargetIndicator()`  
 
-## Data Flow
+## Data Flow *(planned)*
 Input → TargetingComponent → TargetData → [GAS System](../GAS/GAS_System.md) Ability → Execution
 
-## Interactions
+## Interactions *(planned)*
 - **[Player System](../Player/Player_System.md):** feeds screen input (mouse/touch)  
 - **[Targeting System](Targeting_System.md):** provides target selection context  
 - **[GAS System](../GAS/GAS_System.md):** consumes TargetData  
 - **[UI](UI_System.md):** renders indicators  
 
-## Replication
+## Replication *(planned)*
 - Targeting is mostly **client‑side** visual  
 - Final target data is validated on server when ability activates  
 
-## Edge Cases
+## Edge Cases *(planned)*
 - No valid target under cursor  
 - Target out of range  
 - Obstructed line of sight  
 
-## Testing Checklist
+## Testing Checklist *(planned)*
 - [ ] Single‑target selection works  
 - [ ] AoE location selection works  
 - [ ] Directional abilities aim correctly  

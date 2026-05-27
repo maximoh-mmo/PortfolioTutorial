@@ -51,7 +51,8 @@ Project/
 ```
 
 ### **3. Base C++ Classes (Stubs)**
-- `AOnsetCharacter` — base character with movement component
+- `AOnsetBaseCharacter` — shared base for player and NPC characters, inherits `ACharacter`
+- `AOnsetPlayerCharacter` — player character, inherits `AOnsetBaseCharacter`
 - `AOnsetPlayerController` — input handling stub
 - `AOnsetPlayerState` — player state stub
 - `AOnsetGameMode` — game mode stub
@@ -63,8 +64,7 @@ All input for the project goes through UE5's Enhanced Input system. We create th
 **Input Actions** (defined in C++ or via Data Assets):
 - `IA_Move` (Axis2D) — virtual joystick, WASD, gamepad L-Stick
 - `IA_Cursor` (Axis2D) — gamepad R-Stick cursor emulation
-- `IA_Confirm` (Digital) — tap, left-click, R-Stick click, A button
-- `IA_Target` (Digital) — right-click, virtual button, gamepad bumper
+- `IA_Primary` (Digital) — tap, left-click, R-Stick click, A button — primary interaction, context resolves move/attack/interact
 - `IA_Ability1-4` (Digital) — number keys, virtual buttons, face buttons
 - `IA_PvPToggle` (Digital) — P key, virtual button, D-pad down
 
@@ -97,30 +97,58 @@ Show the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview
 ## **Code Snippets**
 
 ```cpp
-// AOnsetCharacter.h — base character declaration
+// AOnsetBaseCharacter.h — shared character base for player and NPC
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "OnsetCharacter.generated.h"
+#include "AOnsetBaseCharacter.generated.h"
 
 UCLASS()
-class AOnsetCharacter : public ACharacter
+class AOnsetBaseCharacter : public ACharacter
 {
     GENERATED_BODY()
 
 public:
-    AOnsetCharacter();
+    AOnsetBaseCharacter();
 };
 ```
 
 ```cpp
-// AOnsetCharacter.cpp — base character implementation
-#include "OnsetCharacter.h"
+// AOnsetBaseCharacter.cpp — shared character base implementation
+#include "AOnsetBaseCharacter.h"
 
-AOnsetCharacter::AOnsetCharacter()
+AOnsetBaseCharacter::AOnsetBaseCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
+}
+```
+
+```cpp
+// AOnsetPlayerCharacter.h — player character inherits AOnsetBaseCharacter
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Player/AOnsetBaseCharacter.h"
+#include "OnsetPlayerCharacter.generated.h"
+
+UCLASS()
+class AOnsetPlayerCharacter : public AOnsetBaseCharacter
+{
+    GENERATED_BODY()
+
+public:
+    AOnsetPlayerCharacter();
+};
+```
+
+```cpp
+// AOnsetPlayerCharacter.cpp — player character implementation
+#include "Player/OnsetPlayerCharacter.h"
+
+AOnsetPlayerCharacter::AOnsetPlayerCharacter()
+{
+    // Player-specific setup here
 }
 ```
 
@@ -130,7 +158,7 @@ AOnsetCharacter::AOnsetCharacter()
 ```
 Project Structure:
 Source/Onset/
-├── Player/       → Character, Controller, PlayerState
+├── Player/       → BaseCharacter, PlayerCharacter, Controller, PlayerState
 ├── AI/           → NPC AI, Player AI
 ├── Combat/       → GAS, Targeting
 ├── Spawning/     → Spawner, Pooling, Groups
@@ -151,9 +179,9 @@ Source/Onset/
 ## **Episode Checklist**
 - [ ] Project created and compiles
 - [ ] Folder structure created
-- [ ] Base C++ classes created and compiling
+- [ ] Base C++ classes created (AOnsetBaseCharacter, AOnsetPlayerCharacter, PC, PS, GM, GS) and compiling
 - [ ] Enhanced Input plugin enabled and `.Build.cs` updated
-- [ ] All Input Actions created (IA_Move, IA_Cursor, IA_Confirm, IA_Target, IA_Ability1-4, IA_PvPToggle)
+- [ ] All Input Actions created (IA_Move, IA_Cursor, IA_Primary, IA_Ability1-4, IA_PvPToggle)
 - [ ] All Mapping Contexts created (IMC_Touch, IMC_Desktop, IMC_Gamepad)
 - [ ] Cursor Manager component created
 - [ ] Architecture overview explained on screen
