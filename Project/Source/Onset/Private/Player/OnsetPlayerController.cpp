@@ -3,6 +3,7 @@
 
 #include "Player/OnsetPlayerController.h"
 
+#include "Combat/AbilityTargetingLibrary.h"
 #include "EnhancedInputComponent.h"
 #include "Player/CursorManager.h"
 #include "Player/TargetingComponent.h"
@@ -150,28 +151,44 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 	}	
 }
 
+static void LogAbilityTargetData(int32 AbilityIndex, const FAbilityTargetData& Data)
+{
+	if (Data.TargetActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Ability %d on %s at %s (dir: %s)"),
+			AbilityIndex,
+			*Data.TargetActor->GetName(),
+			*Data.TargetLocation.ToString(),
+			*Data.TargetDirection.ToString());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Ability %d — no target"), AbilityIndex);
+	}
+}
+
 void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
-	AActor* Target = TargetingComponent ? TargetingComponent->GetTarget() : nullptr;
-	UE_LOG(LogTemp, Warning, TEXT("Ability 1 — target: %s"), Target ? *Target->GetName() : TEXT("none"));
+	FAbilityTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
+	LogAbilityTargetData(1, Data);
 }
 
 void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
 {
-	AActor* Target = TargetingComponent ? TargetingComponent->GetTarget() : nullptr;
-	UE_LOG(LogTemp, Warning, TEXT("Ability 2 — target: %s"), Target ? *Target->GetName() : TEXT("none"));
+	FAbilityTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
+	LogAbilityTargetData(2, Data);
 }
 
 void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
 {
-	AActor* Target = TargetingComponent ? TargetingComponent->GetTarget() : nullptr;
-	UE_LOG(LogTemp, Warning, TEXT("Ability 3 — target: %s"), Target ? *Target->GetName() : TEXT("none"));
+	FAbilityTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
+	LogAbilityTargetData(3, Data);
 }
 
 void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 {
-	AActor* Target = TargetingComponent ? TargetingComponent->GetTarget() : nullptr;
-	UE_LOG(LogTemp, Warning, TEXT("Ability 4 — target: %s"), Target ? *Target->GetName() : TEXT("none"));
+	FAbilityTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
+	LogAbilityTargetData(4, Data);
 }
 
 void AOnsetPlayerController::InjectAbilityInput(int32 AbilityIndex, bool bPressed)

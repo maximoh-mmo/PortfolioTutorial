@@ -69,23 +69,21 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 ## A1.4 Targeting Component (Data Holder + Validation)
 - [x] Create `UTargetingComponent` — `UCLASS(Blueprintable, BlueprintType, meta=(BlueprintSpawnableComponent))`, no Tick needed
 - [x] Add `CurrentTarget` storage + accessors (`GetCurrentTarget`, `SetCurrentTarget`, `ClearTarget`)
-- [ ] Implement `SetCurrentTarget()` with validation (`IsActorValidTarget()`)
-- [ ] Implement `IsActorValidTarget()` — PvP-aware, alive check
+- [x] Implement `SetCurrentTarget()` with validation (`IsActorValidTarget()`)
+- [x] Implement `IsActorValidTarget()` — basic null + self check (PvP-aware deferred to A1.6, alive check deferred to A4)
 - [x] Context resolution in PlayerController: `IA_Primary` → raycast → enemy = SetCurrentTarget, ground = MoveToLocation
-- [ ] Stub basic attack logging from ability input (e.g., `IA_Ability1`)
-- [ ] Verify target selection works (mouse, touch tap, gamepad R-Stick cursor + A button)
-- [ ] Verify ability input routes to current target
+- [x] Create `BP_OnsetBaseEnemy` (inherits `AOnsetBaseCharacter`, tag "Enemy") placed in level
+- [x] Bind `IA_Ability1-4` + `InjectAbilityInput()` touch bridge in PlayerController
+- [x] Stub ability handlers log target name to output log
+- [x] Verify target selection works (mouse, touch tap, gamepad R-Stick cursor + A button)
+- [x] Verify ability input routes to current target
 
 ## A1.5 Ability Targeting System
-- [ ] Create `UAbilityTargetingComponent` — `UCLASS(Blueprintable, BlueprintType, meta=(BlueprintSpawnableComponent))`
-- [ ] Create `FAbilityTargetData` — `USTRUCT(BlueprintType)`
-- [ ] Implement `GetTargetUnderCursor()` (single-target)
-- [ ] Implement `GetGroundLocationUnderCursor()` (AoE)
-- [ ] Implement `GetDirectionFromPlayerToCursor()` (directional)
-- [ ] Implement `ShowTargetIndicator()` / `HideTargetIndicator()`
-- [ ] Verify single-target selection
-- [ ] Verify AoE location selection
-- [ ] Verify directional aiming
+- [ ] Create `FAbilityTargetData` — `USTRUCT(BlueprintType)` (TargetActor, TargetLocation, TargetDirection)
+- [ ] Create `UAbilityTargetingLibrary` — static `GetTargetData(TargetingComponent*, SourceActor)`
+- [ ] Update ability stubs to call `GetTargetData()` and log
+- [ ] Verify target data returns correct actor/location/direction when target set
+- [ ] Verify empty data when no target set
 
 ## A1.6 PvP Toggle
 - [ ] Add `bIsPvPEnabled` to `APlayerState` (replicated)
@@ -355,11 +353,11 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
-| A1 Core Player | 36 | 26 | 72% |
+| A1 Core Player | 38 | 33 | 87% |
 | A2 NPC Lifecycle | — | — | 0% |
 | A3 AI Systems | — | — | 0% |
 | A4 GAS Combat | — | — | 0% |
 | A5 Multiplayer & Steam | — | — | 0% |
 | A6 UI & Final Demo | — | — | 0% |
 | A7 Integration & Harden | — | — | 0% |
-| **Total** | 36 | 26 | **72%** |
+| **Total** | 38 | 33 | **87%** |

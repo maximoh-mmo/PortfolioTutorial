@@ -144,9 +144,8 @@ This document is the technical map for the entire project.
 
 ### **5. [Ability Targeting System](../Gameplay/Ability_Targeting_System.md)**
 - Single‑target, AoE, and directional targeting modes  
-- Screen input interpretation (mouse/touch) for ability placement  
-- Targeting indicators (circles, cones, etc.)  
-- Provides `FAbilityTargetData` to GAS  
+- Static library (`UAbilityTargetingLibrary`) reads current target from `UTargetingComponent`  
+- Produces `FAbilityTargetData` (actor, location, direction) for GAS  
 
 ### **6. [GAS System](../GAS/GAS_System.md)**
 - Ability execution  
@@ -234,11 +233,17 @@ This document is the technical map for the entire project.
 ### **[Targeting System](../Gameplay/Targeting_System.md) ↔ [UI System](../Gameplay/UI_System.md)**
 - Drives target highlight indicator  
 
-### **[Ability Targeting System](../Gameplay/Ability_Targeting_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
-- Provides FAbilityTargetData for ability execution  
+### **[Ability Targeting System](../Gameplay/Ability_Targeting_System.md) ↔ [Targeting System](Targeting_System.md)**
+- Reads CurrentTarget from `UTargetingComponent` to produce `FAbilityTargetData`
 
-### **[Ability Targeting System](../Gameplay/Ability_Targeting_System.md) ↔ [UI System](../Gameplay/UI_System.md)**
-- Renders targeting indicators (circles, cones)  
+### **[Ability Targeting System](../Gameplay/Ability_Targeting_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
+- Provides `FAbilityTargetData` for ability execution  
+
+### **[Ability Targeting System](../Gameplay/Ability_Targeting_System.md) ↔ [Player System](../Player/Player_System.md)**
+- Player ability stubs call `UAbilityTargetingLibrary::GetTargetData()`
+
+### **[Ability Targeting System](../Gameplay/Ability_Targeting_System.md) ↔ [NPC AI System](../AI/NPC_AI_System.md)**
+- NPCs use same static library with their own TargetingComponent + pawn
 
 ### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [GAS System](../GAS/GAS_System.md)**
 - Executes abilities, applies damage, handles death  
