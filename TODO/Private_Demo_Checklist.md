@@ -79,21 +79,21 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Verify ability input routes to current target
 
 ## A1.5 Ability Targeting System
-- [ ] Create `FAbilityTargetData` — `USTRUCT(BlueprintType)` (TargetActor, TargetLocation, TargetDirection)
-- [ ] Create `UAbilityTargetingLibrary` — static `GetTargetData(TargetingComponent*, SourceActor)`
-- [ ] Update ability stubs to call `GetTargetData()` and log
-- [ ] Verify target data returns correct actor/location/direction when target set
-- [ ] Verify empty data when no target set
+- [x] Create `FAbilityTargetData` — `USTRUCT(BlueprintType)` (TargetActor, TargetLocation, TargetDirection)
+- [x] Create `UAbilityTargetingLibrary` — static `GetTargetData(TargetingComponent*, SourceActor)`
+- [x] Update ability stubs to call `GetTargetData()` and log
+- [x] Verify target data returns correct actor/location/direction when target set
+- [x] Verify empty data when no target set
 
 ## A1.6 PvP Toggle
-- [ ] Add `bIsPvPEnabled` to `APlayerState` (replicated)
-- [ ] Add `Server_SetPvPEnabled(bool)` RPC on PlayerController
-- [ ] Add `OnRep_PvPEnabled()` callback
-- [ ] `IsActorValidTarget()` in TargetingComponent includes PvP filtering
-- [ ] Verify toggle replicates to client
-- [ ] Verify players filtered when PvP OFF
-- [ ] Verify players targetable when PvP ON
-- [ ] Verify auto-target fallback on toggle (PvP OFF while targeting player)
+- [x] Add `bIsPvPEnabled` to `APlayerState` (replicated)
+- [x] Add `Server_SetPvPEnabled(bool)` RPC on PlayerController
+- [x] Add `OnRep_PvPEnabled()` callback
+- [x] `IsActorTargetPVPValid()` in TargetingComponent includes PvP filtering
+- [x] Verify toggle replicates to client
+- [x] Verify players filtered when PvP OFF
+- [x] Verify players targetable when PvP ON
+- [x] Verify auto-target fallback on toggle (PvP OFF while targeting player)
 
 ---
 
@@ -353,11 +353,11 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
-| A1 Core Player | 38 | 33 | 87% |
+| A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | — | — | 0% |
 | A3 AI Systems | — | — | 0% |
 | A4 GAS Combat | — | — | 0% |
 | A5 Multiplayer & Steam | — | — | 0% |
 | A6 UI & Final Demo | — | — | 0% |
 | A7 Integration & Harden | — | — | 0% |
-| **Total** | 38 | 33 | **87%** |
+| **Total** | 38 | 38 | **100%** |

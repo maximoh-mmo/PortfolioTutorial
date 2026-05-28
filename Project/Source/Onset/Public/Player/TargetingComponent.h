@@ -38,6 +38,9 @@ public:
 	/** Target validation determines whether a target should be set */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
 	bool IsActorTargetValid(AActor* Actor);
+	/** Target validation override for pvp checks */
+	UFUNCTION(BlueprintCallable, Category = "Targeting")
+	bool IsActorTargetPVPValid(AActor* TargetActor, AActor* SourceActor);
 
 private:
 	/** The currently targeted actor. Updated by PlayerController context resolution. */

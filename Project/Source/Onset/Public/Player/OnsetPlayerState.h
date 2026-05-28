@@ -10,5 +10,11 @@ UCLASS()
 class ONSET_API AOnsetPlayerState : public APlayerState
 {
 	GENERATED_BODY()
-	
+
+public:
+	UPROPERTY(ReplicatedUsing=OnRep_PvPEnabled) 
+	bool bIsPvPEnabled;
+	UFUNCTION()
+	void OnRep_PvPEnabled();	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };

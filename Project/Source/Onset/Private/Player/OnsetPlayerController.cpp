@@ -14,6 +14,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "Player/OnsetPlayerState.h"
 #include "UI/GamepadCursorWidget.h"
 
 DEFINE_LOG_CATEGORY(LogGamepad);
@@ -75,6 +76,7 @@ void AOnsetPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(IA_Ability2, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility2);
 		EnhancedInputComponent->BindAction(IA_Ability3, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility3);
 		EnhancedInputComponent->BindAction(IA_Ability4, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility4);;
+		EnhancedInputComponent->BindAction(IA_PvPToggle, ETriggerEvent::Started, this, &AOnsetPlayerController::OnPvPToggleTriggered);
 		
 	}
 }
@@ -138,7 +140,10 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 	{
 		TargetingComponent->SetTarget(HitActor);
 	}
-	
+	else if (HitActor && TargetingComponent->IsActorTargetPVPValid(HitActor, GetPawn()))
+	{
+		TargetingComponent->SetTarget(HitActor);
+	}	
 	else
 	{
 		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
@@ -146,6 +151,10 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 		if (NavSys && NavSys->ProjectPointToNavigation(HitResult.Location, NavLoc))
 		{
 			UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, NavLoc.Location);
+		}
+		else
+		{
+			UAIBlueprintHelperLibrary::SimpleMoveToActor(this, HitActor);
 		}
 		TargetingComponent->ClearTarget();
 	}	
@@ -209,3 +218,19 @@ void AOnsetPlayerController::InjectAbilityInput(int32 AbilityIndex, bool bPresse
 	}
 	Subsystem->InjectInputForAction(Action, FInputActionValue(bPressed), {}, {});
 }
+
+void AOnsetPlayerController::OnPvPToggleTriggered(const FInputActionValue& Value)                               
+{                                                                                                               
+	AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
+	if (!OnsetPlayerState) return;                                                                                            
+	Server_SetPvPEnabled(!OnsetPlayerState->bIsPvPEnabled);                                                                   
+}                                                                                                               
+                                                                                                                     
+void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(bool bEnabled)                                 
+{                                                                                                               
+	AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
+	if(OnsetPlayerState) {
+		OnsetPlayerState->bIsPvPEnabled = bEnabled;
+		UE_LOG(LogTemp, Warning, TEXT("PvP Mode %hs"), bEnabled ? "enabled" : "disabled");
+	}
+}   

@@ -61,7 +61,9 @@ private:
 	UInputAction* IA_Ability3;
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")                                                              
 	UInputAction* IA_Ability4; 
-		
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")                                                         
+	UInputAction* IA_PvPToggle;                                                                                     
+	
 	// --- Cursor ---                                                                                         
 	
 	/** Unified cursor position from mouse, touch, or gamepad R-Stick. */                 
@@ -107,5 +109,9 @@ private:
 	// --- Touch bridge (so BP widget does not need subsystem access ---
 	UFUNCTION(BlueprintCallable, Category="Input")
 	void InjectAbilityInput(int32 AbilityIndex, bool bPressed);
+	
+	void OnPvPToggleTriggered(const FInputActionValue& Value);                                                      
+	UFUNCTION(Server, Reliable)                                                                                     
+	void Server_SetPvPEnabled(bool bEnabled);  
 	
 };
