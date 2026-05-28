@@ -19,9 +19,13 @@ DEFINE_LOG_CATEGORY(LogGamepad);
 
 AOnsetPlayerController::AOnsetPlayerController()
 {
-	
-	CursorManager = CreateDefaultSubobject<UCursorManager>(TEXT("CursorManager"));
-	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent"));
+	UE_LOG(LogTemp, Warning, TEXT("[PC Ctor] Started"));                                                        
+	CursorManager = CreateDefaultSubobject<UCursorManager>(TEXT("CursorManager"));                              
+	UE_LOG(LogTemp, Warning, TEXT("[PC Ctor] CursorManager: %s valid? %d"),                                     
+		*GetNameSafe(CursorManager), IsValid(CursorManager));                                                   
+	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent"));               
+	UE_LOG(LogTemp, Warning, TEXT("[PC Ctor] TargetingComponent: %s valid? %d"),                                
+		*GetNameSafe(TargetingComponent), IsValid(TargetingComponent));           
 }
 
 void AOnsetPlayerController::BeginPlay()
@@ -66,6 +70,11 @@ void AOnsetPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(IA_Cursor, ETriggerEvent::Triggered, this, &AOnsetPlayerController::OnCursorMove);
 		EnhancedInputComponent->BindAction(IA_Primary, ETriggerEvent::Started, this, &AOnsetPlayerController::OnPrimaryInteraction);
 		EnhancedInputComponent->BindAction(IA_Cursor, ETriggerEvent::Completed, this, &AOnsetPlayerController::OnCursorMoveEnded);
+		EnhancedInputComponent->BindAction(IA_Ability1, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility1);
+		EnhancedInputComponent->BindAction(IA_Ability2, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility2);
+		EnhancedInputComponent->BindAction(IA_Ability3, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility3);
+		EnhancedInputComponent->BindAction(IA_Ability4, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility4);;
+		
 	}
 }
 
@@ -115,6 +124,8 @@ void AOnsetPlayerController::HideGamepadCursor()
 
 void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value)
 {
+	if (!TargetingComponent) return;
+	
 	FVector2D ScreenPos;
 	if (!CursorManager->GetCursorPosition(ScreenPos)) return;
 	
@@ -126,6 +137,7 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 	{
 		TargetingComponent->SetTarget(HitActor);
 	}
+	
 	else
 	{
 		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
@@ -136,4 +148,47 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 		}
 		TargetingComponent->ClearTarget();
 	}	
+}
+
+void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
+{
+	AActor* Target = TargetingComponent ? TargetingComponent->GetTarget() : nullptr;
+	UE_LOG(LogTemp, Warning, TEXT("Ability 1 — target: %s"), Target ? *Target->GetName() : TEXT("none"));
+}
+
+void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
+{
+	AActor* Target = TargetingComponent ? TargetingComponent->GetTarget() : nullptr;
+	UE_LOG(LogTemp, Warning, TEXT("Ability 2 — target: %s"), Target ? *Target->GetName() : TEXT("none"));
+}
+
+void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
+{
+	AActor* Target = TargetingComponent ? TargetingComponent->GetTarget() : nullptr;
+	UE_LOG(LogTemp, Warning, TEXT("Ability 3 — target: %s"), Target ? *Target->GetName() : TEXT("none"));
+}
+
+void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
+{
+	AActor* Target = TargetingComponent ? TargetingComponent->GetTarget() : nullptr;
+	UE_LOG(LogTemp, Warning, TEXT("Ability 4 — target: %s"), Target ? *Target->GetName() : TEXT("none"));
+}
+
+void AOnsetPlayerController::InjectAbilityInput(int32 AbilityIndex, bool bPressed)
+{
+	// Route to the right action via the Enhanced Input subsystem                                               
+	UEnhancedInputLocalPlayerSubsystem* Subsystem =                                                             
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());                       
+	if (!Subsystem) return;                                                       
+                                                                                                                     
+	UInputAction* Action = nullptr;                                                                             
+	switch (AbilityIndex)                                                                                       
+	{                                                                                                           
+	case 1: Action = IA_Ability1; break;                                                                    
+	case 2: Action = IA_Ability2; break;                                                                    
+	case 3: Action = IA_Ability3; break;                                                                    
+	case 4: Action = IA_Ability4; break;                                                                    
+	default: return;                                                                                        
+	}
+	Subsystem->InjectInputForAction(Action, FInputActionValue(bPressed), {}, {});
 }

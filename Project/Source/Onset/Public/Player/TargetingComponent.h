@@ -34,6 +34,10 @@ public:
 	/** Clears the current target. Identical to SetTarget(nullptr). */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
 	void ClearTarget();
+	
+	/** Target validation determines whether a target should be set */
+	UFUNCTION(BlueprintCallable, Category = "Targeting")
+	bool IsActorTargetValid(AActor* Actor);
 
 private:
 	/** The currently targeted actor. Updated by PlayerController context resolution. */

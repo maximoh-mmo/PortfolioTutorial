@@ -52,6 +52,16 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")
 	UInputAction* IA_Primary;
 	
+	/** Ability Input Actions */
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")
+	UInputAction* IA_Ability1;
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")
+	UInputAction* IA_Ability2;
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")
+	UInputAction* IA_Ability3;
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")                                                              
+	UInputAction* IA_Ability4; 
+		
 	// --- Cursor ---                                                                                         
 	
 	/** Unified cursor position from mouse, touch, or gamepad R-Stick. */                 
@@ -68,7 +78,6 @@ private:
 	/** Virtual cursor for gamepad */
 	UPROPERTY(EditDefaultsOnly, Category = "Cursor")                                                                
 	TSubclassOf<UGamepadCursorWidget> GamepadCursorWidgetClass;                                                     
-                                                                                                                     
 	UPROPERTY()                                                                                                     
 	TObjectPtr<UGamepadCursorWidget> GamepadCursorWidget;         
 	
@@ -88,5 +97,15 @@ private:
 	void OnCursorMoveEnded(const FInputActionValue& Value);	
 	/** Called when IA_Primary triggers. Raycasts at cursor position and branches:                                
 	 *  Enemy → TargetingComponent->SetTarget(), Ground → MoveToLocation(). */                                    
-	void OnPrimaryInteraction(const FInputActionValue& Value);                                                               
+	void OnPrimaryInteraction(const FInputActionValue& Value);
+	/** Abiliity handlers for each ability */
+	void OnAbility1(const FInputActionValue& Value);
+	void OnAbility2(const FInputActionValue& Value);
+	void OnAbility3(const FInputActionValue& Value);
+	void OnAbility4(const FInputActionValue& Value);
+	
+	// --- Touch bridge (so BP widget does not need subsystem access ---
+	UFUNCTION(BlueprintCallable, Category="Input")
+	void InjectAbilityInput(int32 AbilityIndex, bool bPressed);
+	
 };
