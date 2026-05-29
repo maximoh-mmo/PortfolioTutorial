@@ -16,7 +16,7 @@ public:
 	AOnsetEnemy();
 
 	UFUNCTION(BlueprintCallable, Category = "AI")
-	void ApplyProfile(const UAIProfile* InProfile);
+	void ApplyProfile(UAIProfile* InProfile);
 
 	UPROPERTY()
 	TObjectPtr<UGroupComponent> GroupComp;

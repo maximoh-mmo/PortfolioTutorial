@@ -52,8 +52,11 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Holds ASC, AttributeSet *(future)*
 - Holds `UGroupComponent`
 - Stores a `UAIProfile` reference, read by the controller on possession
-- `ApplyProfile(const UAIProfile*)` applies profile-driven visual/config to the pawn:
-  - Sets `OverrideMaterial` on the skeletal mesh (or resets to default on `nullptr`)
+- `ApplyProfile(UAIProfile*)` applies profile-driven visual/config to the pawn:
+  - Sets `SkeletalMesh` (loaded synchronously from soft reference)
+  - Sets `AnimBlueprintClass` on the skeletal mesh component
+  - Sets `OverrideMaterial` on the skeletal mesh
+  - Resets all three to `nullptr` when called with `nullptr` (pool return)
 
 ### **`AOnsetAIController`** (`Onset/Source/Onset/Public/AI/`)
 - Data‑driven base controller — no hardcoded enemy/player logic
@@ -65,8 +68,9 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 
 ### **`UAIProfile`** (`Onset/Source/Onset/Public/AI/AIProfile.h`)
 - `UDataAsset` subclass — created per enemy type in-editor
-- Contains: `OverrideMaterial`, `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
+- Contains: `SkeletalMesh`, `AnimBlueprintClass`, `OverrideMaterial`, `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
 - Designers create new enemy types without C++ changes
+- All visual variation (mesh, animation, material) driven by profile — no Blueprint subclassing needed
 
 ### **`UNPCStateTreeSchema`** *(future)*
 - Defines context data for the StateTree  

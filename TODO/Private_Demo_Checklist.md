@@ -149,10 +149,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 ## A3.0 AI Profile System (data-driven controller)
 - [x] Create `UAIProfile` — `UDataAsset` subclass (`Onset/Source/Onset/Public/AI/AIProfile.h`)
-- [x] Add profile fields: `OverrideMaterial`, `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
+- [x] Add profile fields: `SkeletalMesh`, `AnimBlueprintClass`, `OverrideMaterial`, `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
 - [x] Create `AIProfile.cpp` with default values
 - [x] Add `UPROPERTY(EditAnywhere) UAIProfile* Profile` to `AOnsetEnemy`
-- [x] Add `ApplyProfile(const UAIProfile*)` to `AOnsetEnemy` — applies material override from profile on spawn
+- [x] Add `ApplyProfile(UAIProfile*)` to `AOnsetEnemy` — sets mesh, anim BP, material from profile on spawn; clears all on `nullptr`
 - [x] Refactor `AOnsetAIController` to be data‑driven:
   - [x] Add `UStateTreeComponent` and `UAIPerceptionComponent` as subobjects
   - [x] Implement `ApplyProfile(const UAIProfile*)` — loads StateTree asset, configures perception

@@ -6,6 +6,8 @@
 
 class UStateTree;
 class UMaterialInterface;
+class USkeletalMesh;
+class UAnimInstance;
 
 UCLASS(BlueprintType)
 class ONSET_API UAIProfile : public UDataAsset
@@ -13,6 +15,12 @@ class ONSET_API UAIProfile : public UDataAsset
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TSoftObjectPtr<USkeletalMesh> SkeletalMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TSubclassOf<UAnimInstance> AnimBlueprintClass;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
 	TObjectPtr<UMaterialInterface> OverrideMaterial;
 
