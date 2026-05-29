@@ -9,7 +9,7 @@ public class Onset : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", 
-			"EnhancedInput", "AIModule", "UMG", "NavigationSystem" });
+			"EnhancedInput", "AIModule", "UMG", "NavigationSystem", "StateTreeModule", "GameplayStateTreeModule" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

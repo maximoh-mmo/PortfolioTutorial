@@ -37,7 +37,7 @@ Mitigation strategies for all 37 identified risks (see [Risk_Identification](Ris
 
 ## R5 — Pool Exhaustion Under Load
 **Strategy:** Simple Fallback
-- **Mitigation:** `GetNPC()` falls back to `SpawnActor` if the pool is empty — no crash, just a warning log
+- **Mitigation:** `GetPooledEnemy()` falls back to `SpawnActor` if the pool is empty — no crash, just a warning log
 - **Design rule:** Pool initial size = max expected NPCs × 1.5
 - **Simplify:** Don't implement queueing — if pool is empty, spawn new and log
 
@@ -49,7 +49,7 @@ Mitigation strategies for all 37 identified risks (see [Risk_Identification](Ris
 
 ## R7 — Server-Only AI Enforcement
 **Strategy:** Defensive Guards
-- **Mitigation:** Add `if (!HasAuthority()) return;` guard at the top of every AI-related function in `ANPCAIController` and `ANPCCharacter`
+- **Mitigation:** Add `if (!HasAuthority()) return;` guard at the top of every AI-related function in `AOnsetAIController` and `AOnsetEnemy`
 - **Automation:** Add a dev-only log/warning if AI code runs on client (`ensure(!IsNetMode(NM_Client))`)
 - **Code review:** Check AI authority in every PR
 

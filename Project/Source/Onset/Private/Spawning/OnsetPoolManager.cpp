@@ -3,8 +3,8 @@
 
 #include "Spawning/OnsetPoolManager.h"
 
-#include "AI/GroupComponent.h"
-#include "AI/OnsetEnemy.h"
+#include "Enemy/GroupComponent.h"
+#include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
 
 DEFINE_LOG_CATEGORY(LogPooling);

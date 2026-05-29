@@ -54,8 +54,8 @@ Attached to each NPC.
 - Provides access to group data  
 - Handles registration/unregistration  
 
-### **`AGroupManager`**
-One per group.
+### **`UGroupManagerComponent`**
+Hosted on `AOnsetSpawner`.
 
 - Tracks all members  
 - Computes group metrics  
@@ -66,7 +66,6 @@ One per group.
 Lightweight struct containing:
 
 - `FVector Center`  
-- `FVector Direction`  
 - `int32 AliveCount`  
 - `float AssistRadius`  
 
@@ -74,19 +73,19 @@ Lightweight struct containing:
 
 ## **Key Functions**
 
-### **`RegisterMember(ANPC*)`**
+### **`RegisterMember(AOnsetEnemy*)`**
 Adds NPC to group.
 
-### **`UnregisterMember(ANPC*)`**
+### **`UnregisterMember(AOnsetEnemy*)`**
 Removes NPC from group.
 
-### **`UpdateGroupData()`**
-Recalculates center, direction, alive count.
+### **`GetGroupData()`**
+Returns center + alive count (computed on demand).
 
-### **`NotifyMemberAttacked(ANPC* Victim, AActor* Instigator)`**
+### **`NotifyMemberAttacked(AOnsetEnemy* Victim, AActor* Instigator)`**
 Broadcasts assist event to nearby allies.
 
-### **`GetNearbyAllies(ANPC* Source, float Radius)`**
+### **`GetNearbyAllies(AOnsetEnemy* Source, float Radius)`**
 Returns list of allies within assist radius.
 
 ---
@@ -119,7 +118,7 @@ Allies Transition to Agro State
 
 ### **[Spawner System](Spawner_System.md)**
 - Assigns NPCs to groups  
-- Creates GroupManagers  
+- Hosts a `UGroupManagerComponent`  
 
 ### **[Pooling System](Pooling_System.md)**
 - Resets group membership on reuse  
@@ -143,7 +142,7 @@ Allies Transition to Agro State
 - Group has only one member  
 - NPC is attacked outside assist radius  
 - NPC is attacked by another NPC (ignore)  
-- GroupManager destroyed before cleanup  
+- GroupManagerComponent destroyed before cleanup  
 
 ---
 

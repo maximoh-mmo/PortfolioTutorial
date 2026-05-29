@@ -40,7 +40,7 @@ Project/
 │   ├── Player/
 │   ├── AI/
 │   ├── Combat/
-│   ├── Spawning/
+│   ├── AI/
 │   └── Multiplayer/
 ├── Content/
 │   ├── Characters/

@@ -5,12 +5,10 @@
 ## Purpose
 Manage the creation and ongoing respawn of NPC groups in the world, assigning them to spawn points, groups, and initial states. Each NPC respawns independently on its own timer — the group does not wait for all members to die before respawning.
 
-> **Episode order note:** Episode 4 builds the Spawner with direct spawning (no pooling). Pooling integration is added in Episode 8, when the system transitions to the pooled respawn model shown in the data flow diagram below.
-
 ## Responsibilities
-- Spawn NPCs in groups at predefined locations  
+- Spawn NPCs in groups at predefined slot locations  
 - Assign NPCs to Group System  
-- Configure enemy types per spawn point  
+- Configure enemy types per slot via `UAIProfile`  
 - Assign a per-NPC respawn rate; each killed NPC respawns independently on its own timer  
 - Expose simple controls (enable/disable, wave count, etc.)
 
@@ -21,39 +19,43 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 - UI or wave presentation  
 
 ## Key Classes
-- **`AOnsetSpawner`** — main spawner actor placed in the level  
-- **`FSpawnConfig`** — struct for enemy type, count, spacing, respawn rate, etc.  
+- **`AOnsetSpawner`** (`Onset/Source/Onset/Public/Spawning/`) — main spawner actor placed in the level  
+- **`FSpawnConfig`** — struct for enemy profile, count, spacing, respawn rate, etc.  
+- **`FSpawnerSlot`** (`Onset/Source/Onset/Public/Spawning/SpawnerSlot.h`) — struct pairing a spawn transform with an occupant reference  
 
 ## Key Functions
-- `SpawnGroup()` — spawns or activates a group of NPCs  
-- `OnNPCDeath(AOnsetEnemy*)` — called when any single NPC dies; starts its individual respawn timer  
-- `ScheduleRespawn(AOnsetEnemy*)` — sets a per-NPC timer using the group respawn rate  
-- `SpawnSingleNPC()` — respawns a single NPC at its designated point  
-- `InitializeNPC(AOnsetEnemy*)` — assigns group, type, initial state  
+- `InitSlots()` — pre‑computes slot transforms from `SpawnPoints` or fallback ring scatter on `BeginPlay`  
+- `SpawnGroup()` — fills all empty slots; calls `SpawnEnemyAtSlot()` for each  
+- `SpawnEnemyAtSlot(int32 SlotIndex)` — spawns a single NPC at a specific slot using the configured `UAIProfile` (subclass + AI profile data), registers it with the Group System  
+- `DestroyGroup()` — iterates all slots, destroys any occupant, clears slot references  
+- `DebugKillLast()` — kills the most recently spawned occupant (test helper)  
+- `OnNPCDeath(AOnsetEnemy*)` — called when any single NPC dies; starts its individual respawn timer (future)  
 
 ## Data Flow
 
 ```mermaid
 flowchart TD
-    Start[Spawner Activated] --> SpawnGroup
-    SpawnGroup --> RegisterGroup
-    RegisterGroup --> NPCsActive[NPCs Active]
+    Start[Spawner BeginPlay] --> InitSlots
+    InitSlots --> SlotsReady[Slots Ready]
+    SlotsReady --> SpawnGroup
+    SpawnGroup --> Loop[For Each Empty Slot]
+    Loop --> SpawnAtSlot[SpawnEnemyAtSlot]
+    SpawnAtSlot --> Profile[Read UAIProfile]
+    Profile --> Spawn[FActorSpawnParameters]
+    Spawn --> RegisterGroup[Register with GroupManagerComponent]
+    RegisterGroup --> Occupied[Slot Occupied]
 
-    NPCsActive --> NPCDies{NPC Dies}
-    NPCDies --> StartTimer[Start Individual Respawn Timer]
-    StartTimer --> TimerDone[Timer Fires]
-    TimerDone --> RequestNPC[Request NPC from Pooling]
-    RequestNPC --> ResetState[Reset NPC State]
-    ResetState --> SpawnAtPoint[Spawn at Designated Point]
-    SpawnAtPoint --> NPCsActive
+    Occupied --> NPCDies{NPC Dies}
+    NPCDies --> ClearSlot[Clear Slot Occupant]
+    ClearSlot --> SpawnGroup
 ```
 
-Spawner → Pooling/GetNPC → NPC → (On death) → Spawner.OnNPCDeath → Timer → Spawner.SpawnSingleNPC
+`AOnsetSpawner.InitSlots()` → `FSpawnerSlot[]` → `SpawnEnemyAtSlot(i)` → `UAIProfile` provides class + AI config → `SpawnActor` → `UGroupManagerComponent.RegisterMember()`
 
 ## Interactions
-- **[Pooling System](Pooling_System.md):** requests NPC instances  
-- **[Group System](Group_System.md):** registers members into groups  
-- **[NPC AI System](NPC_AI_System.md):** starts in Idle/Roam  
+- **[Pooling System](Pooling_System.md):** requests NPC instances (future)  
+- **[Group System](Group_System.md):** registers members into groups via `UGroupManagerComponent`  
+- **[NPC AI System](NPC_AI_System.md):** pawn's `UAIProfile` configures controller on possess  
 - **Final Demo Loop:** may trigger waves via spawners  
 
 ## Replication
@@ -68,11 +70,12 @@ Spawner → Pooling/GetNPC → NPC → (On death) → Spawner.OnNPCDeath → Tim
 
 ## Testing Checklist
 - [ ] Spawns correct number and type of NPCs  
-- [ ] Groups are registered correctly  
-- [ ] Individual NPC respawns on its own timer after death  
+- [ ] Slot transforms match spawn points or fallback scatter  
+- [ ] Groups are registered correctly via `UGroupManagerComponent`  
+- [ ] Individual NPC respawns on its own timer after death (future)  
 - [ ] Respawn timers are independent — killing multiple NPCs does not cascade  
-- [ ] Respawn rate config is respected  
-- [ ] Works with pooling  
+- [ ] DebugKillLast works  
+- [ ] Works with pooling (future)  
 - [ ] Works in multiplayer (server‑only logic)  
 
 ---

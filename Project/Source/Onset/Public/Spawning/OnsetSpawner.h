@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "SpawnConfig.h"
+#include "SpawnerSlot.h"
 #include "GameFramework/Actor.h"
 #include "OnsetSpawner.generated.h"
 
@@ -16,7 +17,7 @@ UCLASS(Blueprintable)
 class ONSET_API AOnsetSpawner : public AActor
 {
 	GENERATED_BODY()
-
+                  
 public:
 	AOnsetSpawner();
 	
@@ -29,14 +30,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawning")
 	TArray<AActor*> SpawnPoints;
 	
-	/** Whether to spawn on BeginPlay. */
-	UPROPERTY(EditAnywhere, Category="Spawning")
-	bool bAutoSpawn = true;
-	
 	/** Pool manager for handling NPC pooling. */
 	UPROPERTY(EditAnywhere, Category="Spawning")
 	AOnsetPoolManager* PoolManager;
 	
+	UPROPERTY(VisibleAnywhere, Category = "Spawning")                                                               
+	UGroupManagerComponent* GroupManager;     
+		
 	/** Spawns one full group based on SpawnConfig. */                                                          
 	UFUNCTION(BlueprintCallable, Category = "Spawner")                                                          
 	void SpawnGroup();                                                                                          
@@ -49,21 +49,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Spawner")                                                          
 	void SpawnSingleNPC();
 	
-	UPROPERTY(VisibleAnywhere, Category = "Spawning")                                                               
-	UGroupManagerComponent* GroupManager;     
-	
 	UFUNCTION(BLueprintCallable, Category = "Spawner")
 	void DebugKillAll();
 	
 	UFUNCTION(BlueprintCallable, Category = "Spawner")
 	void DebugKillLast();
+		
 protected:                                                                                                      
-	virtual void BeginPlay() override;                                                                          
-                                                                                                                     
-	/** Returns the spawn transform for index i — either from SpawnPoints or scatter fallback. */               
-	FTransform GetSpawnLocation(int32 Index) const;                                                             
-                                                                                                                     
-	/** Tracks currently alive spawned NPCs. */                                                                 
-	UPROPERTY()                                                                                                 
-	TArray<AOnsetEnemy*> SpawnedGroup;
+	virtual void BeginPlay() override;  
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;                                                            
+                                                               	
+	void InitSlots();
+	AOnsetEnemy* SpawnEnemyAtSlot(int32 SlotIndex);
+	                                       	
+private:       
+	UPROPERTY(EditAnywhere, Category="Spawning")                                                                    
+	bool bAutoSpawn = true;     
+	
+	UPROPERTY()
+	TArray<FSpawnerSlot> Slots;        
 };

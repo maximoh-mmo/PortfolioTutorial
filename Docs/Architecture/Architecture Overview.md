@@ -41,18 +41,23 @@ flowchart TD
     end
 
     subgraph AI
-        NPC[NPC Character<br/>AOnsetBaseCharacter → ANPCCharacter]
-        AIController
-        StateTree
+        NPC[NPC Character<br/>AOnsetBaseCharacter → AOnsetEnemy]
+        AIC[AOnsetAIController<br/>owns StateTreeComp + PerceptionComp]
+        STC[UStateTreeComponent]
+        Profile[UAIProfile<br/>Data Asset]
+        GComp[UGroupComponent]
     end
 
     Spawner --> Pooling
     Pooling --> NPC
-    NPC --> GroupSystem
+    NPC --> GComp
+    NPC --> Profile
+    GComp --> GManager[UGroupManagerComponent]
 
-    GroupSystem --> StateTree
-    StateTree --> AIController
-    AIController --> NPC
+    Profile --> AIC
+    AIC --> STC
+    STC --> AIC
+    AIC --> NPC
 
     GAS --> NPC
     GAS --> Player
@@ -123,8 +128,10 @@ This document is the technical map for the entire project.
 - Autoplay handoff *(future)*  
 
 ### **2. [NPC AI System](../AI/NPC_AI_System.md)**
-- StateTree‑driven behaviour  
-- Perception (sight/hearing)  
+- Data‑driven via `UAIProfile` — profiles define StateTree, perception config, and combat params  
+- `AOnsetAIController` reads the profile on `OnPossess` and self‑configures  
+- StateTree‑driven behaviour (owned by the controller, not the pawn)  
+- Perception (sight/hearing) via component on the controller  
 - Target selection  
 - Combat behaviour  
 - Assist logic via [Group System](../AI/Group_System.md)  
@@ -249,19 +256,20 @@ This document is the technical map for the entire project.
 - Executes abilities, applies damage, handles death  
 
 ### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Group System](../AI/Group_System.md)**
-- Receives assist events; transitions into Agro  
+- Receives assist events from `UGroupManagerComponent`; transitions into Agro  
 
 ### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Spawner System](../AI/Spawner_System.md) & [Pooling System](../AI/Pooling_System.md)**
-- Resets AI state on respawn; reinitializes StateTree on reuse  
+- Spawner sets `AOnsetEnemy.Profile` on spawn; controller reads it on `OnPossess`
+- Resets AI state on respawn; reinitializes StateTree on reuse (future)  
 
 ### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - AI runs server‑only; clients receive replicated movement + effects  
 
 ### **[Spawner System](../AI/Spawner_System.md) ↔ [Pooling System](../AI/Pooling_System.md)**
-- Requests NPC instances on respawn  
+- Requests NPC instances on respawn (future — slot‑based spawner uses direct SpawnActor for now)  
 
 ### **[Spawner System](../AI/Spawner_System.md) ↔ [Group System](../AI/Group_System.md)**
-- Registers members into groups  
+- Registers members into groups via `UGroupManagerComponent.RegisterMember()` in `SpawnEnemyAtSlot()`  
 
 ### **[Player AI System](../AI/Player_AI_System.md) ↔ [Targeting System](../Gameplay/Targeting_System.md)**
 - Auto‑target selection for AI  

@@ -8,7 +8,7 @@
 ## **Purpose**
 The NPC AI System controls enemy behaviour using:
 
-- **StateTrees** for high‑level logic  
+ - **StateTrees** (via `UStateTreeComponent`) for high‑level logic  
 - **AI Perception** for detecting the player  
 - **[Group System](Group_System.md)** for assist behaviour  
 - **[GAS](../GAS/GAS_System.md)** for combat abilities  
@@ -47,45 +47,42 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 
 ## **Key Classes**
 
-### **`ANPCCharacter`** (inherits `AOnsetBaseCharacter` — shared base with `AOnsetPlayerCharacter`)
-- Base NPC pawn  
-- Holds ASC, AttributeSet  
-- Holds StateTreeComponent  
-- Holds PerceptionComponent  
-- Holds GroupComponent  
+### **`AOnsetEnemy`** (inherits `AOnsetBaseCharacter` — shared base with `AOnsetPlayerCharacter`)
+- Base NPC pawn (`Onset/Source/Onset/Public/Enemy/`)
+- Holds ASC, AttributeSet *(future)*
+- Holds `UGroupComponent`
+- Stores a `UAIProfile` reference, read by the controller on possession
 
-### **`ANPCAIController`**
-- Runs the StateTree  
-- Handles perception events  
-- Issues MoveTo commands  
+### **`AOnsetAIController`** (`Onset/Source/Onset/Public/AI/`)
+- Data‑driven base controller — no hardcoded enemy/player logic
+- Owns `UStateTreeComponent` and `UAIPerceptionComponent` as subobjects
+- On `OnPossess`, reads the possessed pawn's `UAIProfile` and self‑configures:
+  - Loads the profile's `StateTree` asset
+  - Sets sight radius/angle and hearing range from the profile
+- Includes authority guard — stops the StateTree on clients
 
-### **`UNPCStateTreeSchema`**
+### **`UAIProfile`** (`Onset/Source/Onset/Public/AI/AIProfile.h`)
+- `UDataAsset` subclass — created per enemy type in-editor
+- Contains: `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
+- Designers create new enemy types without C++ changes
+
+### **`UNPCStateTreeSchema`** *(future)*
 - Defines context data for the StateTree  
-
-### **`UNPCStateTreeComponent`**
-- Executes the StateTree  
-- Stores blackboard‑like data  
 
 ---
 
-## **Key Functions**
+## **Key Functions (AOnsetAIController)**
 
-### **`OnPerceptionUpdated()`**
-Handles sight/hearing events.
+### **`ApplyProfile(const UAIProfile*)`**
+Reads the profile and self‑configures: loads the StateTree asset, sets perception configs, binds `OnPerceptionUpdated`.
 
-### **`SetTarget(AActor*)`**
+### **`OnPerceptionUpdated(const TArray<AActor*>&)`** *(stub)*
+Handles sight/hearing events — feeds data into StateTree context.
+
+### **`SetTarget(AActor*)`** *(future)*
 Assigns a target for chase/attack.
 
-### **`EnterAgroState()`**
-Triggered by perception or assist events.
-
-### **`EnterAttackState()`**
-Triggers GA_Attack.
-
-### **`EnterFleeState()`**
-Triggered by low health + isolation.
-
-### **`OnDeath()`**
+### **`OnDeath()`** *(future)*
 Notifies spawner/pool.
 
 ---
@@ -115,11 +112,15 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    PE[Perception Event] --> ST[StateTree Input]
-    AE[Assist Event] --> ST
-    DE[Damage Event] --> ST
+    Profile[UAIProfile Data Asset] -->|OnPossess| AIC[AOnsetAIController]
+    AIC -->|Configures| STComp[UStateTreeComponent]
+    AIC -->|Configures| PComp[UAIPerceptionComponent]
 
-    ST --> Eval[StateTree Evaluators]
+    PE[Perception Event] --> PComp
+    AE[Assist Event] --> STComp
+    DE[Damage Event] --> STComp
+
+    STComp --> Eval[StateTree Evaluators]
     Eval --> Cond[Conditions]
     Cond --> Trans[Transitions]
     Trans --> State[Behaviour State]

@@ -1,10 +1,7 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+#include "Enemy/GroupComponent.h"
 
-
-#include "AI/GroupComponent.h"
-
-#include "AI/GroupManagerComponent.h"
-#include "AI/OnsetEnemy.h"
+#include "Spawning/GroupManagerComponent.h"
+#include "Enemy/OnsetEnemy.h"
 
 UGroupComponent::UGroupComponent()
 {

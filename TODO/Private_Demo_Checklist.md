@@ -102,10 +102,15 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 ## A2.1 NPC Character + Spawner
 - [x] Create `AOnsetEnemy` — `UCLASS()`, inherits `AOnsetBaseCharacter` (BP-child activated via reparent)
 - [x] Create `AOnsetAIController` — `UCLASS()`, inherits `ADetourCrowdAIController`
-- [x] Create `FSpawnConfig` — `USTRUCT(BlueprintType)` (EnemyClass, GroupSize, SpawnRadius, RespawnDelay)
+- [x] Create `FSpawnConfig` — `USTRUCT(BlueprintType)` (EnemyProfile, GroupSize, SpawnRadius, RespawnDelay)
 - [x] Create `AOnsetSpawner` — `UCLASS(Blueprintable)`, inherits `AActor`
-- [x] Implement `SpawnGroup()` with point-based + ring scatter fallback
-- [x] Implement `DestroyGroup()`
+- [x] Implement slot‑based spawning:
+  - [x] Create `FSpawnerSlot` struct (SpawnTransform, Occupant)
+  - [x] Implement `InitSlots()` — pre‑computes transforms from `SpawnPoints` or fallback ring scatter
+  - [x] Implement `SpawnGroup()` — fills empty slots via `SpawnEnemyAtSlot()`
+  - [x] Implement `SpawnEnemyAtSlot(int32)` — spawns a single NPC at a specific slot using `UAIProfile`
+  - [x] Implement `DestroyGroup()` — iterates slots, destroys all occupants
+  - [x] Implement `DebugKillLast()` — kills the most recently spawned occupant
 - [x] Place spawner in level and verify NPCs appear
 - [x] Verify config group size is respected
 - [x] Verify spawn points override fallback scatter
@@ -119,6 +124,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Handle pool exhaustion fallback — `SpawnActor` if all pooled NPCs in use
 - [x] Integrate Spawner → PoolManager — `AOnsetSpawner.PoolManager` ref, fallback to `SpawnActor`/`Destroy()`
 - [x] Verify NPCs reset correctly on reuse — collision/hidden/tick state toggled correctly
+- [ ] Update slot‑based spawner to integrate with pooling *(future)*
 - [ ] Verify no stale targets or group data after reset — blocked on A2.3/A3
 - [x] Verify no crash when pool is exhausted
 
@@ -140,17 +146,28 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 # A3 — AI SYSTEMS (est. 10 days)
 
+## A3.0 AI Profile System (data-driven controller)
+- [x] Create `UAIProfile` — `UDataAsset` subclass (`Onset/Source/Onset/Public/AI/AIProfile.h`)
+- [x] Add profile fields: `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
+- [x] Create `AIProfile.cpp` with default values
+- [x] Add `UPROPERTY(EditAnywhere) UAIProfile* Profile` to `AOnsetEnemy`
+- [x] Refactor `AOnsetAIController` to be data‑driven:
+  - [x] Add `UStateTreeComponent` and `UAIPerceptionComponent` as subobjects
+  - [x] Implement `ApplyProfile(const UAIProfile*)` — loads StateTree asset, configures perception
+  - [x] On `OnPossess(APawn*)`, read pawn's `UAIProfile` and call `ApplyProfile()`
+  - [x] Add `HasAuthority()` guard in `BeginPlay()` — stop tree on clients
+- [x] Update `FSpawnConfig.EnemyClass` → `EnemyProfile` (profile reference)
+
 ## A3.1 StateTree Setup + Schema
-- [ ] Add `StateTreeComponent` to ANPCCharacter
 - [ ] Create `UNPCStateTreeSchema` with context data
 - [ ] Bind NPC context (self, target, group data, health)
 - [ ] Verify StateTree compiles and runs on NPC spawn
 - [ ] Add on-screen debug display for current AI state
 
 ## A3.2 AI Perception
-- [ ] Add `AIPerceptionComponent` to ANPCAIController
-- [ ] Configure sight config (range, angle, lose sight time)
-- [ ] Configure hearing config (range)
+- [x] Add `AIPerceptionComponent` to AOnsetAIController *(done as part of A3.0)*
+- [x] Configure sight config (range, angle, lose sight time) *(profile-driven, done in A3.0)*
+- [x] Configure hearing config (range) *(profile-driven, done in A3.0)*
 - [ ] Implement `OnPerceptionUpdated()` handler
 - [ ] Feed perception data into StateTree context
 - [ ] Verify perception triggers on player proximity
@@ -354,10 +371,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
-| A2 NPC Lifecycle | 31 | 31 | 100% |
-| A3 AI Systems | — | — | — |
+| A2 NPC Lifecycle | 32 | 32 | 100% |
+| A3 AI Systems | — | 8 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |
-| **Total** | 69 | 69 | **100%** |
+| **Total** | 70 | 78 | **—** |

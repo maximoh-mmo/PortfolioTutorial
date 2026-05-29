@@ -17,13 +17,12 @@ Provide efficient reuse of NPC instances to avoid frequent spawn/destroy calls a
 - Combat logic  
 
 ## Key Classes
-- **`ANPCPoolManager`** — owns and manages pooled NPCs  
-- **`FPooledNPCEntry`** — struct with NPC reference + state  
+- **`AOnsetPoolManager`** — owns and manages pooled NPCs  
 
 ## Key Functions
-- `GetNPC()` — returns an available NPC instance  
-- `ReleaseNPC(ANPC*)` — returns NPC to pool  
-- `ResetNPC(ANPC*)` — clears health, AI state, visuals  
+- `GetPooledEnemy()` — returns an available NPC instance  
+- `ReleasePooledEnemy(AOnsetEnemy*)` — returns NPC to pool  
+- `ReturnToPool(AOnsetEnemy*)` — resets location, collision, state  
 
 ## Data Flow
 
@@ -41,7 +40,7 @@ flowchart TD
     Inactive --> RequestNPC
 ```
 
-Spawner → PoolManager.GetNPC → NPC → (Death) → PoolManager.ReleaseNPC
+Spawner → PoolManager.GetPooledEnemy → NPC → (Death) → PoolManager.ReleasePooledEnemy
 
 ## Interactions
 - **[Spawner System](Spawner_System.md):** main consumer of pooled NPCs  

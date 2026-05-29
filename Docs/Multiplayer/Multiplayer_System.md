@@ -24,7 +24,7 @@ Make the entire demo **server‑authoritative and multiplayer‑safe**, supporti
 ## Key Classes
 - **`AOnsetGameModeBase` / `AOnsetGameState`** — server rules + shared state  
 - **`AOnsetPlayerController` / `AOnsetPlayerState`** — per‑player state  
-- **`ANPCAIController`** — server‑only AI  
+- **`AOnsetAIController`** — server‑only AI  
 
 ## Key Functions
 - `Server_` RPCs for client → server requests  
