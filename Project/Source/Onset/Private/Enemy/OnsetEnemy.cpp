@@ -3,6 +3,7 @@
 #include "AI/AIProfile.h"
 #include "AI/OnsetAIController.h"
 #include "Animation/AnimInstance.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -31,8 +32,14 @@ void AOnsetEnemy::ApplyProfile(UAIProfile* InProfile)
 
 		if (bHasSkeletal)
 		{
-			if (USkeletalMesh* Mesh = Profile->SkeletalMesh.LoadSynchronous())
-				SkeletalComp->SetSkeletalMesh(Mesh);
+			if (USkeletalMesh* SkeletalMesh = Profile->SkeletalMesh.LoadSynchronous())
+			{
+				SkeletalComp->SetSkeletalMesh(SkeletalMesh);
+				FBoxSphereBounds Bounds = SkeletalMesh->GetImportedBounds();
+				float Radius = FMath::Max(Bounds.BoxExtent.X, Bounds.BoxExtent.Y);
+				float HalfHeight = FMath::Max(Radius, Bounds.BoxExtent.Z);
+				GetCapsuleComponent()->SetCapsuleSize(Radius, HalfHeight);
+			}
 			SkeletalComp->SetHiddenInGame(false);
 
 			if (Profile->AnimBlueprintClass)
@@ -46,7 +53,10 @@ void AOnsetEnemy::ApplyProfile(UAIProfile* InProfile)
 			UStaticMeshComponent* CubeVis = NewObject<UStaticMeshComponent>(this, TEXT("CubeVis"));
 			CubeVis->SetupAttachment(RootComponent);
 			CubeVis->RegisterComponent();
-			CubeVis->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			CubeVis->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			CubeVis->SetCollisionObjectType(ECC_WorldDynamic);
+			CubeVis->SetCollisionResponseToAllChannels(ECR_Block);
+			CubeVis->SetWorldScale3D(FVector(1.0f));
 			if (UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
 				CubeVis->SetStaticMesh(CubeMesh);
 			CubeVis->SetHiddenInGame(false);
