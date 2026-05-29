@@ -7,7 +7,10 @@
 #include "GameFramework/Actor.h"
 #include "OnsetSpawner.generated.h"
 
+class AOnsetPoolManager;
+
 DECLARE_LOG_CATEGORY_EXTERN(LogSpawner, Log, All);
+
 UCLASS(Blueprintable)
 class ONSET_API AOnsetSpawner : public AActor
 {
@@ -29,6 +32,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Spawning")
 	bool bAutoSpawn = true;
 	
+	/** Pool manager for handling NPC pooling. */
+	UPROPERTY(EditAnywhere, Category="Spawning")
+	AOnsetPoolManager* PoolManager;
+	
 	/** Spawns one full group based on SpawnConfig. */                                                          
 	UFUNCTION(BlueprintCallable, Category = "Spawner")                                                          
 	void SpawnGroup();                                                                                          
@@ -49,5 +56,5 @@ protected:
                                                                                                                      
 	/** Tracks currently alive spawned NPCs. */                                                                 
 	UPROPERTY()                                                                                                 
-	TArray<AActor*> SpawnedGroup;
+	TArray<AOnsetEnemy*> SpawnedGroup;
 };

@@ -111,16 +111,16 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Verify spawn points override fallback scatter
 
 ## A2.2 Object Pooling
-- [ ] Create `ANPCPoolManager` — `UCLASS(Blueprintable)`, inherits BP-able `AActor`
-- [ ] Implement pre-allocation of NPC instances
-- [ ] Implement `GetNPC()` — returns available NPC
-- [ ] Implement `ReleaseNPC()` — returns NPC to pool
-- [ ] Implement `ResetNPC()` — clears health, AI state, visuals
-- [ ] Handle pool exhaustion fallback (`SpawnActor` if empty)
-- [ ] Integrate Spawner → PoolManager flow
-- [ ] Verify NPCs reset correctly on reuse
-- [ ] Verify no stale targets or group data after reset
-- [ ] Verify no crash when pool is exhausted
+- [x] Create `AOnsetPoolManager` — `UCLASS()`, inherits `AActor`, lazy init via `bPoolInitialized`
+- [x] Implement pre-allocation — `InitializePool()` spawns `PoolSize` NPCs, `ReturnToPool()` deactivates
+- [x] Implement `GetPooledEnemy()` — returns deactivated NPC from pool, `ActivateEnemy()` re-enables
+- [x] Implement `ReleasePooledEnemy()` — calls `ReturnToPool()`, deactivates + stores
+- [x] Implement `ReturnToPool()` — resets location, hides, disables tick/input/collision
+- [x] Handle pool exhaustion fallback — `SpawnActor` if all pooled NPCs in use
+- [x] Integrate Spawner → PoolManager — `AOnsetSpawner.PoolManager` ref, fallback to `SpawnActor`/`Destroy()`
+- [x] Verify NPCs reset correctly on reuse — collision/hidden/tick state toggled correctly
+- [ ] Verify no stale targets or group data after reset — blocked on A2.3/A3
+- [x] Verify no crash when pool is exhausted
 
 ## A2.3 Group System
 - [ ] Create `AGroupManager` — `UCLASS(Blueprintable)`, inherits BP-able `AActor`
@@ -354,10 +354,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
-| A2 NPC Lifecycle | 15 | 9 | 60% |
-| A3 AI Systems | — | — | 0% |
-| A4 GAS Combat | — | — | 0% |
-| A5 Multiplayer & Steam | — | — | 0% |
-| A6 UI & Final Demo | — | — | 0% |
-| A7 Integration & Harden | — | — | 0% |
-| **Total** | 53 | 47 | **89%** |
+| A2 NPC Lifecycle | 31 | 19 | 61% |
+| A3 AI Systems | — | — | — |
+| A4 GAS Combat | — | — | — |
+| A5 Multiplayer & Steam | — | — | — |
+| A6 UI & Final Demo | — | — | — |
+| A7 Integration & Harden | — | — | — |
+| **Total** | 69 | 57 | **83%** |

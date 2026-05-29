@@ -2,6 +2,8 @@
 #include "Engine/World.h"
 #include "Spawning/OnsetSpawner.h"
 
+#include "Spawning/OnsetPoolManager.h"
+
 DEFINE_LOG_CATEGORY(LogSpawner);
 
 AOnsetSpawner::AOnsetSpawner()
@@ -13,19 +15,36 @@ void AOnsetSpawner::SpawnGroup()
 	if (!Config.EnemyClass || Config.GroupSize <= 0) return;                                                    
 	for (int32 i = 0; i < Config.GroupSize; i++)                                                                
 	{    
-		FTransform SpawnTransform = GetSpawnLocation(i);                                                        
-		FActorSpawnParameters Params;                                                                           
-		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;                                                                                 
-		AActor* Spawned = GetWorld()->SpawnActor<AActor>(Config.EnemyClass, SpawnTransform, Params);            
+		FTransform SpawnTransform = GetSpawnLocation(i);
+		AOnsetEnemy* Spawned; 
+		if (PoolManager)
+		{
+			Spawned = PoolManager->GetPooledEnemy();
+			if (Spawned) Spawned->SetActorTransform(SpawnTransform);		
+		}
+		else
+		{
+			FActorSpawnParameters Params;                                                                           
+			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			Spawned = GetWorld()->SpawnActor<AOnsetEnemy>(Config.EnemyClass, SpawnTransform, Params);
+		}            
 		if (Spawned) SpawnedGroup.Add(Spawned);                                                                 
 	}         
 }
 
 void AOnsetSpawner::DestroyGroup()
 {
-	for (AActor* Actor : SpawnedGroup)
+	for (AOnsetEnemy* Enemy : SpawnedGroup)
 	{
-		if (Actor && !Actor->IsPendingKillPending()) Actor->Destroy();
+		if (!Enemy || Enemy->IsPendingKillPending()) continue;
+		if (PoolManager)
+		{
+			PoolManager->ReleasePooledEnemy(Enemy);
+		}
+		else
+		{
+			Enemy->Destroy();
+		}
 	}
 	SpawnedGroup.Empty();
 }
@@ -53,9 +72,19 @@ void AOnsetSpawner::SpawnSingleNPC()
 {
 	if (!Config.EnemyClass) return;
 	FTransform SpawnTransform = GetSpawnLocation(SpawnedGroup.Num());
-	FActorSpawnParameters Params;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	AActor* Spawned = GetWorld()->SpawnActor<AActor>(Config.EnemyClass, SpawnTransform, Params);
+	
+	AOnsetEnemy* Spawned;
+	if (PoolManager)
+	{
+		Spawned = PoolManager->GetPooledEnemy();
+		if (Spawned) Spawned->SetActorTransform(SpawnTransform);
+	}
+	else
+	{
+		FActorSpawnParameters Params;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		Spawned = GetWorld()->SpawnActor<AOnsetEnemy>(Config.EnemyClass, SpawnTransform, Params);
+	}
 	if (Spawned) SpawnedGroup.Add(Spawned);
 }
 
