@@ -84,8 +84,8 @@ void AOnsetPoolManager::ReturnToPool(AOnsetEnemy* Enemy)
 		GroupComp->UnregisterFromGroup();
 	}
 	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
-	Enemy->ApplyProfile(nullptr);
-	Enemy->SetActorLocation(FVector::ZeroVector);                                                                 
+	Enemy->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyProfile)
+	Enemy->SetActorLocation(FVector::ZeroVector);
 	Enemy->SetActorHiddenInGame(true);                                                                            
 	Enemy->SetActorTickEnabled(false);                                                                            
 	Enemy->DisableInput(nullptr);
