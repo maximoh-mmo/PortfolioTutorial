@@ -5,6 +5,7 @@
 #include "AIProfile.generated.h"
 
 class UStateTree;
+class UMaterialInterface;
 
 UCLASS(BlueprintType)
 class ONSET_API UAIProfile : public UDataAsset
@@ -12,6 +13,9 @@ class ONSET_API UAIProfile : public UDataAsset
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TObjectPtr<UMaterialInterface> OverrideMaterial;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StateTree")
 	TObjectPtr<UStateTree> StateTreeAsset;
 

@@ -15,6 +15,9 @@ class ONSET_API AOnsetEnemy : public AOnsetBaseCharacter
 public:
 	AOnsetEnemy();
 
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	void ApplyProfile(const UAIProfile* InProfile);
+
 	UPROPERTY()
 	TObjectPtr<UGroupComponent> GroupComp;
 

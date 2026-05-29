@@ -26,7 +26,7 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 ## Key Functions
 - `InitSlots()` — pre‑computes slot transforms from `SpawnPoints` or fallback ring scatter on `BeginPlay`  
 - `SpawnGroup()` — fills all empty slots; calls `SpawnEnemyAtSlot()` for each  
-- `SpawnEnemyAtSlot(int32 SlotIndex)` — spawns a single NPC at a specific slot using the configured `UAIProfile` (subclass + AI profile data), registers it with the Group System  
+- `SpawnEnemyAtSlot(int32 SlotIndex)` — retrieves an NPC from `PoolManager`, calls `ApplyProfile()` with the configured `UAIProfile`, registers it with the Group System. Requires a `PoolManager` — no direct `SpawnActor` fallback.  
 - `DestroyGroup()` — iterates all slots, destroys any occupant, clears slot references  
 - `DebugKillLast()` — kills the most recently spawned occupant (test helper)  
 - `OnNPCDeath(AOnsetEnemy*)` — called when any single NPC dies; starts its individual respawn timer (future)  
@@ -50,10 +50,10 @@ flowchart TD
     ClearSlot --> SpawnGroup
 ```
 
-`AOnsetSpawner.InitSlots()` → `FSpawnerSlot[]` → `SpawnEnemyAtSlot(i)` → `UAIProfile` provides class + AI config → `SpawnActor` → `UGroupManagerComponent.RegisterMember()`
+`AOnsetSpawner.InitSlots()` → `FSpawnerSlot[]` → `SpawnEnemyAtSlot(i)` → `PoolManager.GetPooledEnemy()` → `ApplyProfile(UAIProfile)` → `UGroupManagerComponent.RegisterMember()`
 
 ## Interactions
-- **[Pooling System](Pooling_System.md):** requests NPC instances (future)  
+- **[Pooling System](Pooling_System.md):** requests NPC instances via `PoolManager->GetPooledEnemy()`; pool handles pre-allocation and exhaustion fallback  
 - **[Group System](Group_System.md):** registers members into groups via `UGroupManagerComponent`  
 - **[NPC AI System](NPC_AI_System.md):** pawn's `UAIProfile` configures controller on possess  
 - **Final Demo Loop:** may trigger waves via spawners  
@@ -75,7 +75,7 @@ flowchart TD
 - [ ] Individual NPC respawns on its own timer after death (future)  
 - [ ] Respawn timers are independent — killing multiple NPCs does not cascade  
 - [ ] DebugKillLast works  
-- [ ] Works with pooling (future)  
+- [ ] Works with pooling — pool pre-allocates, spawner always retrieves from pool  
 - [ ] Works in multiplayer (server‑only logic)  
 
 ---

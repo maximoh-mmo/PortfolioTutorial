@@ -84,6 +84,7 @@ void AOnsetPoolManager::ReturnToPool(AOnsetEnemy* Enemy)
 		GroupComp->UnregisterFromGroup();
 	}
 	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
+	Enemy->ApplyProfile(nullptr);
 	Enemy->SetActorLocation(FVector::ZeroVector);                                                                 
 	Enemy->SetActorHiddenInGame(true);                                                                            
 	Enemy->SetActorTickEnabled(false);                                                                            

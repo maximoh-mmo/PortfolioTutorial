@@ -108,23 +108,24 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
   - [x] Create `FSpawnerSlot` struct (SpawnTransform, Occupant)
   - [x] Implement `InitSlots()` — pre‑computes transforms from `SpawnPoints` or fallback ring scatter
   - [x] Implement `SpawnGroup()` — fills empty slots via `SpawnEnemyAtSlot()`
-  - [x] Implement `SpawnEnemyAtSlot(int32)` — spawns a single NPC at a specific slot using `UAIProfile`
-  - [x] Implement `DestroyGroup()` — iterates slots, destroys all occupants
-  - [x] Implement `DebugKillLast()` — kills the most recently spawned occupant
+- [x] Implement `SpawnEnemyAtSlot(int32)` — retrieves NPC from `PoolManager`, calls `ApplyProfile()`, registers with group
+- [x] Implement `DestroyGroup()` — iterates slots, destroys all occupants
+- [x] Implement `DebugKillLast()` — kills the most recently spawned occupant
+- [x] Remove direct SpawnActor fallback — spawner requires PoolManager for all spawning
 - [x] Place spawner in level and verify NPCs appear
 - [x] Verify config group size is respected
 - [x] Verify spawn points override fallback scatter
 
 ## A2.2 Object Pooling
 - [x] Create `AOnsetPoolManager` — `UCLASS()`, inherits `AActor`, lazy init via `bPoolInitialized`
+- [x] Remove `PoolClass` property — hardcode `AOnsetEnemy::StaticClass()` for pre-allocation
 - [x] Implement pre-allocation — `InitializePool()` spawns `PoolSize` NPCs, `ReturnToPool()` deactivates
 - [x] Implement `GetPooledEnemy()` — returns deactivated NPC from pool, `ActivateEnemy()` re-enables
 - [x] Implement `ReleasePooledEnemy()` — calls `ReturnToPool()`, deactivates + stores
-- [x] Implement `ReturnToPool()` — resets location, hides, disables tick/input/collision
-- [x] Handle pool exhaustion fallback — `SpawnActor` if all pooled NPCs in use
-- [x] Integrate Spawner → PoolManager — `AOnsetSpawner.PoolManager` ref, fallback to `SpawnActor`/`Destroy()`
+- [x] Implement `ReturnToPool()` — resets location, profile, collision, tick/input; calls `ApplyProfile(nullptr)`
+- [x] Handle pool exhaustion fallback — `SpawnActor` + add to pool if all pooled NPCs in use
+- [x] Integrate Spawner → PoolManager — `AOnsetSpawner.PoolManager` ref; spawner always goes through pool
 - [x] Verify NPCs reset correctly on reuse — collision/hidden/tick state toggled correctly
-- [ ] Update slot‑based spawner to integrate with pooling *(future)*
 - [ ] Verify no stale targets or group data after reset — blocked on A2.3/A3
 - [x] Verify no crash when pool is exhausted
 
@@ -148,9 +149,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 ## A3.0 AI Profile System (data-driven controller)
 - [x] Create `UAIProfile` — `UDataAsset` subclass (`Onset/Source/Onset/Public/AI/AIProfile.h`)
-- [x] Add profile fields: `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
+- [x] Add profile fields: `OverrideMaterial`, `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
 - [x] Create `AIProfile.cpp` with default values
 - [x] Add `UPROPERTY(EditAnywhere) UAIProfile* Profile` to `AOnsetEnemy`
+- [x] Add `ApplyProfile(const UAIProfile*)` to `AOnsetEnemy` — applies material override from profile on spawn
 - [x] Refactor `AOnsetAIController` to be data‑driven:
   - [x] Add `UStateTreeComponent` and `UAIPerceptionComponent` as subobjects
   - [x] Implement `ApplyProfile(const UAIProfile*)` — loads StateTree asset, configures perception
@@ -371,10 +373,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
-| A2 NPC Lifecycle | 32 | 32 | 100% |
-| A3 AI Systems | — | 8 | — |
+| A2 NPC Lifecycle | 36 | 35 | 97% |
+| A3 AI Systems | — | 10 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |
-| **Total** | 70 | 78 | **—** |
+| **Total** | 74 | 83 | **—** |

@@ -102,7 +102,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	}
 	if (Spawned)
 	{
-		Spawned->Profile = Config.EnemyProfile;
+		Spawned->ApplyProfile(Config.EnemyProfile);
 		Slot.Occupant = Spawned;
 		if (GroupManager) GroupManager->RegisterMember(Spawned);
 	}

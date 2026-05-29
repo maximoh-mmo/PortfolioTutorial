@@ -17,12 +17,12 @@ Provide efficient reuse of NPC instances to avoid frequent spawn/destroy calls a
 - Combat logic  
 
 ## Key Classes
-- **`AOnsetPoolManager`** — owns and manages pooled NPCs  
+- **`AOnsetPoolManager`** — owns and manages pooled NPCs; hardcodes `AOnsetEnemy::StaticClass()` for pre-allocation (no `PoolClass` property — all NPCs share the same base class)  
 
 ## Key Functions
-- `GetPooledEnemy()` — returns an available NPC instance  
+- `GetPooledEnemy()` — returns an available NPC instance (creates new one on exhaustion as fallback)  
 - `ReleasePooledEnemy(AOnsetEnemy*)` — returns NPC to pool  
-- `ReturnToPool(AOnsetEnemy*)` — resets location, collision, state  
+- `ReturnToPool(AOnsetEnemy*)` — resets location, collision, state; calls `ApplyProfile(nullptr)` to clear profile-driven visuals  
 
 ## Data Flow
 
