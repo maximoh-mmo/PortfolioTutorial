@@ -98,13 +98,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	}
 	else
 	{
-		FActorSpawnParameters Params;
-		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-		if (UClass* Class = Config.EnemyProfile ? Config.EnemyProfile->StaticClass() : AOnsetEnemy::StaticClass())
-		{
-			// Fallback: Use default class but we want the pool to own that.
-			Spawned = GetWorld()->SpawnActor<AOnsetEnemy>(Class, Slot.SpawnTransform, Params);
-		}
+		UE_LOG(LogSpawner, Warning, TEXT("SpawnEnemyAtSlot: PoolManager is null — cannot spawn NPC."));
 	}
 	if (Spawned)
 	{

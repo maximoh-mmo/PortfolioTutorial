@@ -344,3 +344,42 @@ SpawnGroup()
 
 ## **Next Episode Preview**
 "Next episode, we implement AI perception and state tree integration to bring our NPCs to life."
+
+---
+
+## **Design Decision: Direct Class vs Profile-Driven Components**
+
+The initial `UAIProfile` contained only AI behavior values (StateTree, sight range, hearing range, aggression). When expanding it to drive visual/animation variation, two approaches were considered:
+
+### Approach A: Direct on `GetMesh()` (chosen)
+`ApplyProfile()` on `AOnsetEnemy` directly modifies the pawn's existing `SkeletalMeshComponent` — `SetSkeletalMesh()`, `SetAnimInstanceClass()`, etc.
+
+**Pros:**
+- Minimal code (~5 lines in `ApplyProfile`)
+- No new files or `UCLASS` declarations
+- No indirection — the single consumer knows where its mesh is
+- Easy extraction later if needed
+
+**Cons:**
+- Ties visual logic to the pawn class
+- Not reusable by other actor types (items, pickups, props)
+- Would require duplication if another actor type needs profile-driven visuals
+
+### Approach B: Dedicated `UVisualAppearanceComponent`
+A reusable component handling mesh/anim switching, attachable to any actor type.
+
+**Pros:**
+- Encapsulated — visual logic in one place
+- Reusable across NPCs, items, pickups, props
+- Cleaner pool interaction (`VisualComp->Reset()`)
+- Easier to add material overrides, VFX, LODs later
+
+**Cons:**
+- More boilerplate (new `UCLASS`, new files)
+- Over-engineering for a single consumer
+- Must handle init order with `GetMesh()`
+
+### When B becomes the right choice
+- Multiple actor types need data-driven visuals (NPCs + items + props)
+- Visual logic grows complex (LOD switching, material overlays, VFX)
+- You want testable visual logic independent of the pawn

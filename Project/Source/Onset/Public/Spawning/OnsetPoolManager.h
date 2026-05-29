@@ -19,9 +19,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Pooling")                                                               
 	int32 PoolSize = 10;                                                                                        
                                                                                                                      
-	UPROPERTY(EditAnywhere, Category = "Pooling")                                                               
-	TSubclassOf<AOnsetEnemy> PoolClass;                                                                         
-                                                                                                                     
 	UFUNCTION(BlueprintCallable, Category = "Pooling")                                                          
 	AOnsetEnemy* GetPooledEnemy();                                                                                      
                                                                                                                      

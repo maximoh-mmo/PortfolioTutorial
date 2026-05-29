@@ -32,17 +32,14 @@ AOnsetEnemy* AOnsetPoolManager::GetPooledEnemy()
 			return Enemy;
 		}
 	}
-	// Pool exhausted — fallback SpawnActor                                                                              
-	if (PoolClass)
+	// Pool exhausted — fallback SpawnActor (hardcoded to base AOnsetEnemy)                                          
+	UE_LOG(LogPooling, Warning, TEXT("OnsetPoolManager: Pool exhausted — spawning new NPC as fallback."));
+	FActorSpawnParameters Params;                                                                           
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AOnsetEnemy* Enemy = GetWorld()->SpawnActor<AOnsetEnemy>(AOnsetEnemy::StaticClass(), FTransform::Identity, Params))
 	{
-		UE_LOG(LogPooling, Warning, TEXT("OnsetPoolManager: Pool exhausted — spawning new NPC as fallback."));
-		FActorSpawnParameters Params;                                                                           
-		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		if (AOnsetEnemy* Enemy = GetWorld()->SpawnActor<AOnsetEnemy>(PoolClass, FTransform::Identity, Params))
-		{
-			ObjectPool.Add(Enemy);          
-			return Enemy;                                                                                         
-		}                                                                                                       
+		ObjectPool.Add(Enemy);          
+		return Enemy;                                                                                         
 	}
 	return nullptr;
 }
@@ -58,17 +55,12 @@ void AOnsetPoolManager::InitializePool()
 {
 	if (bPoolInitialized) return;
 	bPoolInitialized = true;
-	if (!PoolClass)
-	{
-		UE_LOG(LogPooling, Error, TEXT("PoolClass not set on %s"), *GetName());
-		return;
-	}
 	
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	for (int32 i = 0; i < PoolSize; i++)
 	{
-		AOnsetEnemy* Spawned = GetWorld()->SpawnActor<AOnsetEnemy>(PoolClass, FTransform::Identity, Params);
+		AOnsetEnemy* Spawned = GetWorld()->SpawnActor<AOnsetEnemy>(AOnsetEnemy::StaticClass(), FTransform::Identity, Params);
 		if (Spawned)
 		{
 			ReturnToPool(Spawned);                                                                  
