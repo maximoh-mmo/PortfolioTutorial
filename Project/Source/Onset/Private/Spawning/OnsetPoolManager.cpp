@@ -3,6 +3,7 @@
 
 #include "Spawning/OnsetPoolManager.h"
 
+#include "AI/GroupComponent.h"
 #include "AI/OnsetEnemy.h"
 #include "Engine/World.h"
 
@@ -86,6 +87,10 @@ void AOnsetPoolManager::BeginPlay()
 void AOnsetPoolManager::ReturnToPool(AOnsetEnemy* Enemy)
 {
 	if (!Enemy) return;	
+	if (UGroupComponent* GroupComp = Enemy->FindComponentByClass<UGroupComponent>())
+	{
+		GroupComp->UnregisterFromGroup();
+	}
 	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
 	Enemy->SetActorLocation(FVector::ZeroVector);                                                                 
 	Enemy->SetActorHiddenInGame(true);                                                                            

@@ -6,6 +6,7 @@
 #include "Player/OnsetBaseCharacter.h"
 #include "OnsetEnemy.generated.h"
 
+class UGroupComponent;
 /**
  * 
  */
@@ -19,4 +20,7 @@ public:
 	 * 
 	 */
 	AOnsetEnemy();
+	
+	UPROPERTY()                                                                                                     
+	UGroupComponent* GroupComp;     
 };

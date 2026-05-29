@@ -8,6 +8,7 @@
 #include "OnsetSpawner.generated.h"
 
 class AOnsetPoolManager;
+class UGroupManagerComponent;;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSpawner, Log, All);
 
@@ -48,6 +49,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Spawner")                                                          
 	void SpawnSingleNPC();
 	
+	UPROPERTY(VisibleAnywhere, Category = "Spawning")                                                               
+	UGroupManagerComponent* GroupManager;     
+	
+	UFUNCTION(BLueprintCallable, Category = "Spawner")
+	void DebugKillAll();
+	
+	UFUNCTION(BlueprintCallable, Category = "Spawner")
+	void DebugKillLast();
 protected:                                                                                                      
 	virtual void BeginPlay() override;                                                                          
                                                                                                                      

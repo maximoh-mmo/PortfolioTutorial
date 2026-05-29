@@ -2,12 +2,14 @@
 #include "Engine/World.h"
 #include "Spawning/OnsetSpawner.h"
 
+#include "AI/GroupManagerComponent.h"
 #include "Spawning/OnsetPoolManager.h"
 
 DEFINE_LOG_CATEGORY(LogSpawner);
 
 AOnsetSpawner::AOnsetSpawner()
 {
+	GroupManager = CreateDefaultSubobject<UGroupManagerComponent>(TEXT("GroupManager"));                        
 }
 
 void AOnsetSpawner::SpawnGroup()
@@ -28,7 +30,8 @@ void AOnsetSpawner::SpawnGroup()
 			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 			Spawned = GetWorld()->SpawnActor<AOnsetEnemy>(Config.EnemyClass, SpawnTransform, Params);
 		}            
-		if (Spawned) SpawnedGroup.Add(Spawned);                                                                 
+		if (Spawned) SpawnedGroup.Add(Spawned); 
+		if (GroupManager) GroupManager->RegisterMember(Spawned);
 	}         
 }
 
@@ -37,6 +40,7 @@ void AOnsetSpawner::DestroyGroup()
 	for (AOnsetEnemy* Enemy : SpawnedGroup)
 	{
 		if (!Enemy || Enemy->IsPendingKillPending()) continue;
+		if (GroupManager) GroupManager->UnregisterMember(Enemy);
 		if (PoolManager)
 		{
 			PoolManager->ReleasePooledEnemy(Enemy);
@@ -86,5 +90,18 @@ void AOnsetSpawner::SpawnSingleNPC()
 		Spawned = GetWorld()->SpawnActor<AOnsetEnemy>(Config.EnemyClass, SpawnTransform, Params);
 	}
 	if (Spawned) SpawnedGroup.Add(Spawned);
+}
+
+void AOnsetSpawner::DebugKillAll()
+{
+	DestroyGroup();
+}
+
+void AOnsetSpawner::DebugKillLast()
+{
+	if (SpawnedGroup.IsEmpty()) return;
+	AOnsetEnemy* Enemy = SpawnedGroup.Pop();
+	if (GroupManager) GroupManager->UnregisterMember(Enemy);
+	if (PoolManager) PoolManager->ReleasePooledEnemy(Enemy);
 }
 
