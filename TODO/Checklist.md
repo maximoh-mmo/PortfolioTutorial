@@ -25,5 +25,5 @@
 [x] Create Risk Mitigation Plan (Planning/Risk_Mitigation_Plan.md)
 [x] Create Production Timeline (Planning/Production_Timeline.md)
 
-[ ] Begin Private Demo Development
+[x] Begin Private Demo Development
 ```
