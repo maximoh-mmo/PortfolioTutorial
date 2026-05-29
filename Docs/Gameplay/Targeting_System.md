@@ -75,6 +75,19 @@ if (Target is Player && !SourcePlayer->bIsPvPEnabled)
 
 ---
 
+---
+
+## **Collision Prerequisites**
+
+For `GetHitResultAtScreenPosition` with `ECC_Visibility` to successfully detect an actor:
+
+- **Pawn capsules** — by default, `ACharacter` capsules block `ECC_Visibility`. If the capsule is much smaller than the visual mesh (e.g. a tall enemy with default humanoid capsule), the player will click on the visible area but miss the capsule. Solution: auto-size the capsule to the mesh bounds (done in `AOnsetEnemy::ApplyProfile` via `GetImportedBounds()` → `SetCapsuleSize`).
+- **No physics asset on skeletal mesh** — the `SkeletalMeshComponent` has no traceable collision. Auto-sizing the capsule (above) ensures the trace still hits the enemy.
+- **Fallback cube** — when no skeletal mesh is set, the dynamically-created `UStaticMeshComponent` uses `ECC_WorldDynamic` with `ECR_Block` on all channels, making it directly targetable without relying on the capsule.
+- **Pool return** — `SetActorEnableCollision(false)` in `ReturnToPool` + `SetActorEnableCollision(true)` in `ActivateEnemy` toggles collision on all components.
+
+---
+
 ## **Replication** *(planned)*
 - Target selection is **client‑side**  
 - Server validates target data when ability activates via GAS  

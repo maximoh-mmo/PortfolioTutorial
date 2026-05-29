@@ -53,10 +53,9 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Holds `UGroupComponent`
 - Stores a `UAIProfile` reference, read by the controller on possession
 - `ApplyProfile(UAIProfile*)` applies profile-driven visual/config to the pawn:
-  - Sets `SkeletalMesh` (loaded synchronously from soft reference)
-  - Sets `AnimBlueprintClass` on the skeletal mesh component
-  - Sets `OverrideMaterial` on the skeletal mesh
-  - Resets all three to `nullptr` when called with `nullptr` (pool return)
+  - **Skeletal mesh path** — loads `SkeletalMesh` synchronously, sets mesh + anim BP + material; auto-sizes the capsule to `GetImportedBounds()` so targeting (`ECC_Visibility` traces) hits the capsule regardless of physics assets
+  - **Cube fallback path** — when the profile has no `SkeletalMesh`, creates a `UStaticMeshComponent` (CubeVis) with `/Engine/BasicShapes/Cube.Cube`, sets `QueryAndPhysics` + `ECR_Block` on all channels so the cube itself blocks targeting traces and physics movement
+  - **Pool return** — called with `nullptr`; destroys any existing CubeVis via `FindComponentByClass` + `DestroyComponent`, clears skeletal mesh/anim/material, hides the actor
 
 ### **`AOnsetAIController`** (`Onset/Source/Onset/Public/AI/`)
 - Data‑driven base controller — no hardcoded enemy/player logic

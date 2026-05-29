@@ -22,7 +22,8 @@ We build the Enemy Spawner — an actor placed in the level that manages a set o
 - Slot‑based spawn management (`FSpawnerSlot`)
 - `UAIProfile` data assets for data‑driven enemy configuration
 - [`UGroupManagerComponent`](../../Docs/AI/Group_System.md) for group registration
-- `UWorld::SpawnActor` with profile‑driven parameters
+- Object Pooling — NPCs retrieved from `PoolManager` rather than spawned directly
+- `UAIProfile::ApplyProfile()` to configure each NPC from its data asset
 
 ---
 
@@ -174,18 +175,13 @@ void AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
     UAIProfile* Profile = SpawnConfig.EnemyProfile;
     if (!Profile) return;
 
-    UClass* EnemyClass = Profile->GetEnemyPawnClass(); // provided by BP child of UAIProfile
-    if (!EnemyClass) return;
-
-    FActorSpawnParameters Params;
-    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-    AOnsetEnemy* Enemy = GetWorld()->SpawnActor<AOnsetEnemy>(EnemyClass, Slots[SlotIndex].SpawnTransform, Params);
+    AOnsetEnemy* Enemy = PoolManager->GetPooledEnemy();
     if (Enemy)
     {
-        Enemy->Profile = Profile;
+        Enemy->SetActorTransform(Slots[SlotIndex].SpawnTransform);
+        Enemy->ApplyProfile(Profile);
         Slots[SlotIndex].Occupant = Enemy;
-        GroupManager->RegisterMember(Enemy); // register with group system
+        GroupManager->RegisterMember(Enemy);
     }
 }
 ```
@@ -352,10 +348,13 @@ SpawnGroup()
 The initial `UAIProfile` contained only AI behavior values (StateTree, sight range, hearing range, aggression). When expanding it to drive visual/animation variation, two approaches were considered:
 
 ### Approach A: Direct on `GetMesh()` (chosen)
-`ApplyProfile()` on `AOnsetEnemy` directly modifies the pawn's existing `SkeletalMeshComponent` — `SetSkeletalMesh()`, `SetAnimInstanceClass()`, etc.
+`ApplyProfile()` on `AOnsetEnemy` directly modifies the pawn's existing `SkeletalMeshComponent` — `SetSkeletalMesh()`, `SetAnimInstanceClass()`, etc. Also handles:
+- **Cube fallback** — creates a `UStaticMeshComponent` when no skeletal mesh is set, with collision enabled for targeting
+- **Capsule auto-sizing** — reads `GetImportedBounds()` to scale the collision capsule to match the mesh
+- **Pool cleanup** — destroys the fallback cube and resets all visual state on `nullptr`
 
 **Pros:**
-- Minimal code (~5 lines in `ApplyProfile`)
+- Minimal code (~70 lines in `ApplyProfile` handles all mesh/collision/cube scenarios)
 - No new files or `UCLASS` declarations
 - No indirection — the single consumer knows where its mesh is
 - Easy extraction later if needed

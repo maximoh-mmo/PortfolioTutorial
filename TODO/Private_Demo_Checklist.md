@@ -126,7 +126,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Handle pool exhaustion fallback — `SpawnActor` + add to pool if all pooled NPCs in use
 - [x] Integrate Spawner → PoolManager — `AOnsetSpawner.PoolManager` ref; spawner always goes through pool
 - [x] Verify NPCs reset correctly on reuse — collision/hidden/tick state toggled correctly
-- [ ] Verify no stale targets or group data after reset — blocked on A2.3/A3
+- [x] Verify no stale targets or group data after reset
 - [x] Verify no crash when pool is exhausted
 
 ## A2.3 Group System
@@ -373,10 +373,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
-| A2 NPC Lifecycle | 36 | 35 | 97% |
+| A2 NPC Lifecycle | 36 | 36 | 100% |
 | A3 AI Systems | — | 10 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |
-| **Total** | 74 | 83 | **—** |
+| **Total** | 74 | 84 | **—** |
