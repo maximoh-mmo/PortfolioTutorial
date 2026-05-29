@@ -1,4 +1,4 @@
-# 🧱 PRIVATE DEMO DEVELOPMENT CHECKLIST
+can y# 🧱 PRIVATE DEMO DEVELOPMENT CHECKLIST
 
 Track progress for Phase A — building all 13 systems off-camera before recording begins.
 Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production_Timeline.md) for details).
