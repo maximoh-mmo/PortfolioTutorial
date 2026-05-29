@@ -5,7 +5,6 @@
 #include "OnsetEnemy.generated.h"
 
 class UGroupComponent;
-class UStaticMeshComponent;
 class UAIProfile;
 
 UCLASS()
@@ -21,9 +20,6 @@ public:
 
 	UPROPERTY()
 	TObjectPtr<UGroupComponent> GroupComp;
-
-	UPROPERTY(VisibleAnywhere, Category = "Visual")
-	TObjectPtr<UStaticMeshComponent> FallbackMeshComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	TObjectPtr<UAIProfile> Profile;
