@@ -136,11 +136,11 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Implement `RegisterMember()` / `UnregisterMember()` on `UGroupManagerComponent`
 - [x] Implement `GetGroupData()` — computes center + alive count on demand (no manual `UpdateGroupData()`)
 - [x] Implement `GetNearbyAllies()` — filters members within assist radius
-- [x] Implement `NotifyMemberAttacked()` — stub (fully wired in A3.4)
+- [ ] Implement `NotifyMemberAttacked()` — stub only (function body empty; iteration, broadcast, distance check remain)
 - [x] Integrate Spawner → Group — `SpawnGroup()` calls `RegisterMember`, `DestroyGroup()` calls `UnregisterMember`
 - [x] Integrate Pool → Group — `ReturnToPool()` calls `UnregisterFromGroup()` on NPC's component
 - [x] Verify NPCs register/unregister correctly — tested via editor
-- [x] Verify group center updates — tested
+- [ ] Verify group center updates — tested (had `IsHidden` polarity bug, now fixed)
 - [ ] Verify assist radius triggers correctly — blocked on A3.4
 
 ---
@@ -373,10 +373,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
-| A2 NPC Lifecycle | 36 | 36 | 100% |
+| A2 NPC Lifecycle | 37 | 34 | 92% |
 | A3 AI Systems | — | 10 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |
-| **Total** | 74 | 84 | **—** |
+| **Total** | 75 | 82 | **—** |

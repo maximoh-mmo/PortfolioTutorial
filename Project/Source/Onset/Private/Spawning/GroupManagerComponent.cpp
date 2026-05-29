@@ -38,7 +38,7 @@ FGroupData UGroupManagerComponent::GetGroupData() const
 	int32 ValidCount = 0;
 	for (const AOnsetEnemy* Enemy : Members)
 	{
-		if (Enemy && !Enemy->IsPendingKillPending() && Enemy->IsHidden())
+		if (Enemy && !Enemy->IsPendingKillPending() && !Enemy->IsHidden())
 		{
 			AccumulatedLocation += Enemy->GetActorLocation();
 			ValidCount++;
