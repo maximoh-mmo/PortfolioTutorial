@@ -4,7 +4,9 @@
 #include "AI/OnsetAIController.h"
 #include "Animation/AnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
+#include "Engine/StaticMesh.h"
 #include "Enemy/GroupComponent.h"
 
 AOnsetEnemy::AOnsetEnemy()
@@ -17,33 +19,56 @@ AOnsetEnemy::AOnsetEnemy()
 void AOnsetEnemy::ApplyProfile(UAIProfile* InProfile)
 {
 	Profile = InProfile;
-	USkeletalMeshComponent* MeshComp = GetMesh();
-	if (!MeshComp) return;
+	USkeletalMeshComponent* SkeletalComp = GetMesh();
+	if (!SkeletalComp) return;
+
+	if (UStaticMeshComponent* OldCube = FindComponentByClass<UStaticMeshComponent>())
+		OldCube->DestroyComponent(false);
 
 	if (Profile)
 	{
-		if (!Profile->SkeletalMesh.IsNull())
+		const bool bHasSkeletal = !Profile->SkeletalMesh.IsNull();
+
+		if (bHasSkeletal)
 		{
-			USkeletalMesh* Mesh = Profile->SkeletalMesh.LoadSynchronous();
-			if (Mesh) MeshComp->SetSkeletalMesh(Mesh);
-		}
-		if (Profile->AnimBlueprintClass)
-		{
-			MeshComp->SetAnimInstanceClass(Profile->AnimBlueprintClass);
-		}
-		if (Profile->OverrideMaterial)
-		{
-			MeshComp->SetMaterial(0, Profile->OverrideMaterial);
+			if (USkeletalMesh* Mesh = Profile->SkeletalMesh.LoadSynchronous())
+				SkeletalComp->SetSkeletalMesh(Mesh);
+			SkeletalComp->SetHiddenInGame(false);
+
+			if (Profile->AnimBlueprintClass)
+				SkeletalComp->SetAnimInstanceClass(Profile->AnimBlueprintClass);
 		}
 		else
 		{
-			MeshComp->SetMaterial(0, nullptr);
+			SkeletalComp->SetSkeletalMesh(nullptr);
+			SkeletalComp->SetHiddenInGame(true);
+
+			UStaticMeshComponent* CubeVis = NewObject<UStaticMeshComponent>(this, TEXT("CubeVis"));
+			CubeVis->SetupAttachment(RootComponent);
+			CubeVis->RegisterComponent();
+			CubeVis->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			if (UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+				CubeVis->SetStaticMesh(CubeMesh);
+			CubeVis->SetHiddenInGame(false);
+		}
+
+		if (Profile->OverrideMaterial)
+		{
+			if (bHasSkeletal)
+				SkeletalComp->SetMaterial(0, Profile->OverrideMaterial);
+			else if (UStaticMeshComponent* CubeVis = FindComponentByClass<UStaticMeshComponent>())
+				CubeVis->SetMaterial(0, Profile->OverrideMaterial);
+		}
+		else
+		{
+			SkeletalComp->SetMaterial(0, nullptr);
 		}
 	}
 	else
 	{
-		MeshComp->SetSkeletalMesh(nullptr);
-		MeshComp->SetAnimInstanceClass(nullptr);
-		MeshComp->SetMaterial(0, nullptr);
+		SkeletalComp->SetSkeletalMesh(nullptr);
+		SkeletalComp->SetAnimInstanceClass(nullptr);
+		SkeletalComp->SetHiddenInGame(true);
+		SkeletalComp->SetMaterial(0, nullptr);
 	}
 }
