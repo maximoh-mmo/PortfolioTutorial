@@ -13,10 +13,4 @@ class ONSET_API AOnsetBaseCharacter : public ACharacter
 
 public:
 	AOnsetBaseCharacter();
-
-protected:
-	virtual void BeginPlay() override;
-
-public:	
-	virtual void Tick(float DeltaTime) override;
 };

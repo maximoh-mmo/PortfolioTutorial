@@ -100,15 +100,15 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 # A2 — NPC LIFECYCLE (est. 6 days)
 
 ## A2.1 NPC Character + Spawner
-- [ ] Create `ANPCCharacter` — `UCLASS(Blueprintable)`, inherits `AOnsetBaseCharacter`
-- [ ] Create `ANPCAIController` — `UCLASS(Blueprintable)`, inherits BP-able `AAIController`
-- [ ] Create `FSpawnConfig` — `USTRUCT(BlueprintType)` (EnemyClass, GroupSize, SpawnRadius, RespawnDelay)
-- [ ] Create `AEnemySpawner` — `UCLASS(Blueprintable)`, inherits BP-able `AActor`
-- [ ] Implement `SpawnGroup()` with point-based + fallback scatter spawning
-- [ ] Implement `DestroyGroup()`
-- [ ] Place spawner in level and verify NPCs appear
-- [ ] Verify config group size is respected
-- [ ] Verify spawn points override fallback scatter
+- [x] Create `AOnsetEnemy` — `UCLASS()`, inherits `AOnsetBaseCharacter` (BP-child activated via reparent)
+- [x] Create `AOnsetAIController` — `UCLASS()`, inherits `ADetourCrowdAIController`
+- [x] Create `FSpawnConfig` — `USTRUCT(BlueprintType)` (EnemyClass, GroupSize, SpawnRadius, RespawnDelay)
+- [x] Create `AOnsetSpawner` — `UCLASS(Blueprintable)`, inherits `AActor`
+- [x] Implement `SpawnGroup()` with point-based + ring scatter fallback
+- [x] Implement `DestroyGroup()`
+- [x] Place spawner in level and verify NPCs appear
+- [x] Verify config group size is respected
+- [x] Verify spawn points override fallback scatter
 
 ## A2.2 Object Pooling
 - [ ] Create `ANPCPoolManager` — `UCLASS(Blueprintable)`, inherits BP-able `AActor`
@@ -354,10 +354,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
-| A2 NPC Lifecycle | — | — | 0% |
+| A2 NPC Lifecycle | 15 | 9 | 60% |
 | A3 AI Systems | — | — | 0% |
 | A4 GAS Combat | — | — | 0% |
 | A5 Multiplayer & Steam | — | — | 0% |
 | A6 UI & Final Demo | — | — | 0% |
 | A7 Integration & Harden | — | — | 0% |
-| **Total** | 38 | 38 | **100%** |
+| **Total** | 53 | 47 | **89%** |

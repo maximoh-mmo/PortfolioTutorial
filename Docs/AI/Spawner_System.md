@@ -21,15 +21,15 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 - UI or wave presentation  
 
 ## Key Classes
-- **`AEnemySpawner`** — main spawner actor placed in the level  
+- **`AOnsetSpawner`** — main spawner actor placed in the level  
 - **`FSpawnConfig`** — struct for enemy type, count, spacing, respawn rate, etc.  
 
 ## Key Functions
 - `SpawnGroup()` — spawns or activates a group of NPCs  
-- `OnNPCDeath(ANPC*)` — called when any single NPC dies; starts its individual respawn timer  
-- `ScheduleRespawn(ANPC*)` — sets a per-NPC timer using the group respawn rate  
+- `OnNPCDeath(AOnsetEnemy*)` — called when any single NPC dies; starts its individual respawn timer  
+- `ScheduleRespawn(AOnsetEnemy*)` — sets a per-NPC timer using the group respawn rate  
 - `SpawnSingleNPC()` — respawns a single NPC at its designated point  
-- `InitializeNPC(ANPC*)` — assigns group, type, initial state  
+- `InitializeNPC(AOnsetEnemy*)` — assigns group, type, initial state  
 
 ## Data Flow
 

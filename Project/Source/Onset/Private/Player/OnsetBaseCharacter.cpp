@@ -7,14 +7,3 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
-
-void AOnsetBaseCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-void AOnsetBaseCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
