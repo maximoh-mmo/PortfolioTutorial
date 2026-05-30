@@ -62,7 +62,7 @@ TArray<AOnsetEnemy*> UGroupManagerComponent::GetNearbyAllies(AOnsetEnemy* Source
 
 	for (AOnsetEnemy* Enemy : Members)
 	{
-		if (Enemy && !Enemy->IsPendingKillPending() && Enemy->IsHidden())
+		if (Enemy && !Enemy->IsPendingKillPending() && !Enemy->IsHidden())
 		{
 			if (FVector::Dist(Enemy->GetActorLocation(), SourceLocation) <= Radius)
 			{
@@ -71,8 +71,4 @@ TArray<AOnsetEnemy*> UGroupManagerComponent::GetNearbyAllies(AOnsetEnemy* Source
 		}
 	}
 	return Result;
-}
-
-void UGroupManagerComponent::NotifyMemberAttacked(AOnsetEnemy* Victim, AActor* Instigator)
-{
 }

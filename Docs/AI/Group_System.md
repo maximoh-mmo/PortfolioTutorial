@@ -10,7 +10,7 @@ The Group System manages **collections of NPCs that behave as a cohesive unit**.
 It provides:
 
 - Group‑level data (center, direction, alive count)  
-- Assist behaviour (allies respond when a member is attacked)  
+ - Attack alerts (all members notified when one is attacked; response handled by AI Perception)  
 - Cohesion for roaming behaviour  
 - A lightweight communication layer between NPCs  
 
@@ -25,10 +25,9 @@ This system is the backbone of believable group AI.
   - Group center  
   - Group forward direction  
   - Alive count  
-- Handle assist logic:
-  - When one NPC is attacked  
-  - Notify nearby allies  
-  - Trigger assist/agro behaviour  
+- Broadcast attack notifications when a member is attacked:
+  - Notify all group members (no distance filter)  
+  - Individual response (agro, assist, ignore) determined per-NPC via AI Perception hearing  
 - Provide group data to NPC StateTrees  
 - Reset group state when NPCs return to pool  
 
@@ -59,7 +58,7 @@ Hosted on `AOnsetSpawner`.
 
 - Tracks all members  
 - Computes group metrics  
-- Handles assist events  
+- Broadcasts attack notifications to all group members  
 - Provides data to StateTrees  
 
 ### **`FGroupData`**
@@ -67,7 +66,6 @@ Lightweight struct containing:
 
 - `FVector Center`  
 - `int32 AliveCount`  
-- `float AssistRadius`  
 
 ---
 
@@ -82,11 +80,8 @@ Removes NPC from group.
 ### **`GetGroupData()`**
 Returns center + alive count (computed on demand).
 
-### **`NotifyMemberAttacked(AOnsetEnemy* Victim, AActor* Instigator)`**
-Broadcasts assist event to nearby allies.
-
-### **`GetNearbyAllies(AOnsetEnemy* Source, float Radius)`**
-Returns list of allies within assist radius.
+### **`GetNearbyAllies(AOnsetEnemy* Source, float Radius)`** *(private helper)*
+Returns members within `Radius` of `Source`. Used internally for cohesion queries (A3.3 Roam). Not part of the assist flow.  
 
 ---
 
@@ -96,25 +91,28 @@ Returns list of allies within assist radius.
 NPC Takes Damage
         │
         ▼
-GroupComponent → GroupManager
+OnHit → UAIPerceptionSystem::ReportEvent(FAINoiseEvent)
         │
         ▼
-Find Nearby Allies
+UAIPerceptionSystem distributes to all AIControllers
+within range (filtered by each receiver's HearingRange)
         │
         ▼
-Send Assist Event
+OnPerceptionUpdated → is noise maker an ally?
         │
         ▼
-Allies Transition to Agro State
+Set StateTree assist flag → Agro transition
 ```
+
+> **Note:** The Group System itself does not emit noise events or filter by range. It only provides group membership for the group-identity check in `OnPerceptionUpdated`.  
 
 ---
 
 ## **Interactions With Other Systems**
 
 ### **[NPC AI System](NPC_AI_System.md)**
-- Receives assist events  
-- Transitions into Agro state  
+- Uses group membership to identify allies in `OnPerceptionUpdated`  
+- Group System does not trigger AI state transitions directly — that flows through AI Perception  
 
 ### **[Spawner System](Spawner_System.md)**
 - Assigns NPCs to groups  
@@ -131,7 +129,7 @@ Allies Transition to Agro State
 
 ## **Replication Rules**
 - Group data is **server‑only**  
-- Assist events are **server‑only**  
+- Group notifications are **server‑only**  
 - NPC state changes replicate normally  
 - No group‑level replication required  
 
@@ -140,7 +138,6 @@ Allies Transition to Agro State
 ## **Edge Cases**
 - NPC dies while allies are assisting  
 - Group has only one member  
-- NPC is attacked outside assist radius  
 - NPC is attacked by another NPC (ignore)  
 - GroupManagerComponent destroyed before cleanup  
 
@@ -149,9 +146,6 @@ Allies Transition to Agro State
 ## **Testing Checklist**
 - [ ] NPCs register/unregister correctly  
 - [ ] Group center updates correctly  
-- [ ] Assist radius triggers correctly  
-- [ ] Allies transition to Agro  
-- [ ] No assist when attacker is out of range  
 - [ ] Works with pooled NPCs  
 - [ ] Works in multiplayer (server‑only logic)  
 

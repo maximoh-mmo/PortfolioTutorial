@@ -256,7 +256,7 @@ This document is the technical map for the entire project.
 - Executes abilities, applies damage, handles death  
 
 ### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Group System](../AI/Group_System.md)**
-- Receives assist events from `UGroupManagerComponent`; transitions into Agro  
+- NPC AI uses Group System for ally identification in `OnPerceptionUpdated`; assist response is triggered via AI Perception hearing, not directly from the Group System  
 
 ### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Spawner System](../AI/Spawner_System.md) & [Pooling System](../AI/Pooling_System.md)**
 - Spawner sets `AOnsetEnemy.Profile` on spawn; controller reads it on `OnPossess`

@@ -24,11 +24,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FGroupData GetGroupData() const;
 
-	TArray<AOnsetEnemy*> GetNearbyAllies(AOnsetEnemy* Source, float Radius) const;
-
-	void NotifyMemberAttacked(AOnsetEnemy* Victim, AActor* Instigator);
-
 private:
+	
+	TArray<AOnsetEnemy*> GetNearbyAllies(AOnsetEnemy* Source, float Radius) const;
+	
 	UPROPERTY()
 	TArray<AOnsetEnemy*> Members;
 };

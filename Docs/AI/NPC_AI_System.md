@@ -10,7 +10,7 @@ The NPC AI System controls enemy behaviour using:
 
  - **StateTrees** (via `UStateTreeComponent`) for high‑level logic  
 - **AI Perception** for detecting the player  
-- **[Group System](Group_System.md)** for assist behaviour  
+ - **[Group System](Group_System.md)** for group membership and attack alerts  
 - **[GAS](../GAS/GAS_System.md)** for combat abilities  
 
 It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
@@ -31,7 +31,7 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Trigger abilities (GAS)  
 - Move using AI navigation  
 - React to damage and death  
-- Integrate with Group System for assist logic  
+- React to assist events via AI Perception hearing (noise from damage → `OnPerceptionUpdated`)  
 
 ---
 
@@ -67,7 +67,7 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 
 ### **`UAIProfile`** (`Onset/Source/Onset/Public/AI/AIProfile.h`)
 - `UDataAsset` subclass — created per enemy type in-editor
-- Contains: `SkeletalMesh`, `AnimBlueprintClass`, `OverrideMaterial`, `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
+- Contains: `SkeletalMesh`, `AnimBlueprintClass`, `OverrideMaterial`, `StateTreeAsset`, sight range/angle, hearing range (acts as assist response radius), aggression, flee threshold  
 - Designers create new enemy types without C++ changes
 - All visual variation (mesh, animation, material) driven by profile — no Blueprint subclassing needed
 
@@ -81,8 +81,9 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 ### **`ApplyProfile(const UAIProfile*)`**
 Reads the profile and self‑configures: loads the StateTree asset, sets perception configs, binds `OnPerceptionUpdated`.
 
-### **`OnPerceptionUpdated(const TArray<AActor*>&)`** *(stub)*
-Handles sight/hearing events — feeds data into StateTree context.
+### **`OnPerceptionUpdated(const TArray<AActor*>&)`** *(stub — body empty)*
+Handles sight/hearing events — feeds data into StateTree context.  
+**Hearing is the primary assist mechanism:** when an ally is damaged, a noise event broadcasts via `UAIPerceptionSystem`; each AI controller within its own `HearingRange` receives it here. The handler checks group membership via `UGroupComponent` and sets the StateTree assist flag if the noise maker is an ally.  
 
 ### **`SetTarget(AActor*)`** *(future)*
 Assigns a target for chase/attack.
@@ -106,7 +107,7 @@ stateDiagram-v2
     Chase --> Lost: Target lost
     Lost --> Roam
 
-    Agro --> Assist: Group assist event
+    Agro --> Assist: Perception (hears ally attacked)  
     Assist --> Chase
 
     Any --> Flee: Low health + isolated
@@ -121,8 +122,11 @@ flowchart TD
     AIC -->|Configures| STComp[UStateTreeComponent]
     AIC -->|Configures| PComp[UAIPerceptionComponent]
 
-    PE[Perception Event] --> PComp
-    AE[Assist Event] --> STComp
+    subgraph PE[Assist via Perception]
+        Dmg[Damage Event] -->|FAINoiseEvent| PComp
+    end
+
+    PComp -->|OnPerceptionUpdated| STComp
     DE[Damage Event] --> STComp
 
     STComp --> Eval[StateTree Evaluators]
@@ -131,14 +135,15 @@ flowchart TD
     Trans --> State[Behaviour State]
     State --> Move[Movement / Abilities / Facing]
 ```
+> **Note:** Assist is not received directly from the Group System. Instead, damage emits a noise event via `UAIPerceptionSystem`. Each AI controller's `UAIPerceptionComponent` picks it up within `HearingRange` and the `OnPerceptionUpdated` handler filters by group identity.  
 
 ---
 
 ## **Interactions With Other Systems**
 
 ### **[Group System](Group_System.md)**
-- Receives assist events  
-- Transitions into Agro  
+- Provides group membership for ally identification in `OnPerceptionUpdated`  
+- Does not directly trigger AI state transitions — assist flows through AI Perception hearing  
 
 ### **[GAS](../GAS/GAS_System.md)**
 - Executes abilities  
@@ -176,7 +181,7 @@ flowchart TD
 
 ## **Testing Checklist**
 - [ ] Perception triggers Agro  
-- [ ] Assist events trigger Agro  
+- [ ] Assist (via perception hearing) triggers Agro  
 - [ ] Chase transitions correctly  
 - [ ] Attack triggers GAS ability  
 - [ ] Flee triggers at low health  

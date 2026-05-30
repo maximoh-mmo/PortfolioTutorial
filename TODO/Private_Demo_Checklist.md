@@ -1,4 +1,4 @@
-can y# 🧱 PRIVATE DEMO DEVELOPMENT CHECKLIST
+# 🧱 PRIVATE DEMO DEVELOPMENT CHECKLIST
 
 Track progress for Phase A — building all 13 systems off-camera before recording begins.
 Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production_Timeline.md) for details).
@@ -130,18 +130,18 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Verify no crash when pool is exhausted
 
 ## A2.3 Group System
-- [x] Create `FGroupData` — `USTRUCT(BlueprintType)` (Center, AliveCount, AssistRadius). Direction deferred to A3.3 Roam
+- [x] Create `FGroupData` — `USTRUCT(BlueprintType)` (Center, AliveCount). Direction deferred to A3.3 Roam  
 - [x] Create `UGroupComponent` — on `AOnsetEnemy`, stores ref to `UGroupManagerComponent`
 - [x] Create `UGroupManagerComponent` — on `AOnsetSpawner`, manages members + metrics (component, not actor)
 - [x] Implement `RegisterMember()` / `UnregisterMember()` on `UGroupManagerComponent`
 - [x] Implement `GetGroupData()` — computes center + alive count on demand (no manual `UpdateGroupData()`)
-- [x] Implement `GetNearbyAllies()` — filters members within assist radius
-- [ ] Implement `NotifyMemberAttacked()` — stub only (function body empty; iteration, broadcast, distance check remain)
+- [x] Implement `GetNearbyAllies()` — filters group members by distance (not part of assist flow; kept for cohesion queries)  
+- [x] ~~NotifyMemberAttacked~~ — **Removed.** Assist now flows through AI Perception: damage emits `FAINoiseEvent` → each AI controller's hearing picks it up within its `HearingRange` → `OnPerceptionUpdated` checks group membership → sets StateTree assist flag  
 - [x] Integrate Spawner → Group — `SpawnGroup()` calls `RegisterMember`, `DestroyGroup()` calls `UnregisterMember`
 - [x] Integrate Pool → Group — `ReturnToPool()` calls `UnregisterFromGroup()` on NPC's component
 - [x] Verify NPCs register/unregister correctly — tested via editor
-- [ ] Verify group center updates — tested (had `IsHidden` polarity bug, now fixed)
-- [ ] Verify assist radius triggers correctly — blocked on A3.4
+- [x] Verify group center updates — tested (had `IsHidden` polarity bug, now fixed)
+- [ ] ~~Verify assist radius triggers correctly~~ — **Moved to A3.4.** Now handled by AI Perception hearing range (noise event → `OnPerceptionUpdated`)  
 
 ---
 
@@ -188,8 +188,9 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 ## A3.4 Group Assist Integration
 - [ ] Add assist event input to StateTree context
 - [ ] Implement **Assist** state transition (Agro on assist event)
-- [ ] Verify assist triggers when nearby ally is attacked
-- [ ] Verify no assist when attacker is out of assist radius
+- [ ] Verify assist triggers when nearby ally is attacked — uses AI Perception hearing (noise event from damage)
+- [ ] Verify no assist when attacker is out of assist range — filtered by each enemy's HearingRange on profile
+- [x] Assist radius testing moved here from A2.3 — assist now flows through perception hearing, not Group System
 
 ## A3.5 Player AI Autoplay
 - [ ] Create `APlayerAIController` class
@@ -373,7 +374,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | Section | Tasks | Done | % |
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
-| A2 NPC Lifecycle | 37 | 34 | 92% |
+| A2 NPC Lifecycle | 35 | 35 | 100% |
 | A3 AI Systems | — | 10 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |

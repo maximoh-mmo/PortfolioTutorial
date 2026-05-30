@@ -13,7 +13,4 @@ struct FGroupData
 
 	UPROPERTY()
 	int32 AliveCount = 0;
-
-	UPROPERTY(EditDefaultsOnly)
-	float AssistRadius = 800.0f;
 };
