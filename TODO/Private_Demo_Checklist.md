@@ -161,8 +161,8 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Update `FSpawnConfig.EnemyClass` → `EnemyProfile` (profile reference)
 
 ## A3.1 StateTree Setup + Schema
-- [ ] Create `UNPCStateTreeSchema` with context data
-- [ ] Bind NPC context (self, target, group data, health)
+- [x] Create `UNPCStateTreeSchema` with context data *(created as `UOnsetStateTreeSchema`)*
+- [x] Bind NPC context (self, target, group data, health) *(via `FOnsetStateTreeContextTask` Global Task; group moved to per-task read — not universal context)*
 - [ ] Verify StateTree compiles and runs on NPC spawn
 - [ ] Add on-screen debug display for current AI state
 
@@ -375,7 +375,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | — | 10 | — |
+| A3 AI Systems | — | 12 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |

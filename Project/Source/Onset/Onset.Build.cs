@@ -10,7 +10,7 @@ public class Onset : ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", 
 			"EnhancedInput", "AIModule", "UMG", "NavigationSystem", "StateTreeModule", "GameplayStateTreeModule",
-			"GameplayAbilities", "GameplayTags", "GameplayTasks" });
+			"GameplayAbilities", "GameplayTags", "GameplayTasks"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

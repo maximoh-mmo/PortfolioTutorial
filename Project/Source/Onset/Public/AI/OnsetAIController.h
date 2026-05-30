@@ -4,6 +4,7 @@
 #include "DetourCrowdAIController.h"
 #include "OnsetAIController.generated.h"
 
+class UTargetingComponent;
 class UStateTreeComponent;
 class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
@@ -26,7 +27,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void ApplyProfile(const UAIProfile* Profile);
-
+	
+	/** Stores the current target with validation. Set by context resolution in OnPrimaryInteraction. */          
+	UPROPERTY()
+	UTargetingComponent* TargetingComponent;
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void BeginPlay() override;

@@ -21,13 +21,8 @@ DEFINE_LOG_CATEGORY(LogGamepad);
 
 AOnsetPlayerController::AOnsetPlayerController()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[PC Ctor] Started"));                                                        
-	CursorManager = CreateDefaultSubobject<UCursorManager>(TEXT("CursorManager"));                              
-	UE_LOG(LogTemp, Warning, TEXT("[PC Ctor] CursorManager: %s valid? %d"),                                     
-		*GetNameSafe(CursorManager), IsValid(CursorManager));                                                   
-	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent"));               
-	UE_LOG(LogTemp, Warning, TEXT("[PC Ctor] TargetingComponent: %s valid? %d"),                                
-		*GetNameSafe(TargetingComponent), IsValid(TargetingComponent));           
+	CursorManager = CreateDefaultSubobject<UCursorManager>(TEXT("CursorManager"));                                     
+	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent")); 
 }
 
 void AOnsetPlayerController::BeginPlay()
