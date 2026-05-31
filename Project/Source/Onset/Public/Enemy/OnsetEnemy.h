@@ -7,6 +7,7 @@
 class UGroupComponent;
 class UAIProfile;
 
+/** NPC pawn owned by AOnsetAIController. Visuals are driven by UAIProfile via ApplyProfile(). */
 UCLASS()
 class ONSET_API AOnsetEnemy : public AOnsetBaseCharacter
 {
@@ -15,12 +16,15 @@ class ONSET_API AOnsetEnemy : public AOnsetBaseCharacter
 public:
 	AOnsetEnemy();
 
+	/** Applies or clears the profile — sets mesh, anim BP, material, and capsule size. */
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void ApplyProfile(UAIProfile* InProfile);
 
+	/** Group membership component. Pawn-level bridge to UGroupManagerComponent. */
 	UPROPERTY()
 	TObjectPtr<UGroupComponent> GroupComp;
 
+	/** The active profile asset. Set by ApplyProfile(). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	TObjectPtr<UAIProfile> Profile;
 };

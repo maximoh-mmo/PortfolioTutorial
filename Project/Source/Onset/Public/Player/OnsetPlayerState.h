@@ -6,15 +6,20 @@
 #include "GameFramework/PlayerState.h"
 #include "OnsetPlayerState.generated.h"
 
+/** Per-player replicated state. Currently holds the PvP toggle flag. */
 UCLASS()
 class ONSET_API AOnsetPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(ReplicatedUsing=OnRep_PvPEnabled) 
+	/** Whether PvP is enabled for this player. Replicated; triggers OnRep on clients. */
+	UPROPERTY(ReplicatedUsing=OnRep_PvPEnabled)
 	bool bIsPvPEnabled;
+
+	/** Called when bIsPvPEnabled changes on a client. Updates TargetingComponent validation. */
 	UFUNCTION()
-	void OnRep_PvPEnabled();	
+	void OnRep_PvPEnabled();
+
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };

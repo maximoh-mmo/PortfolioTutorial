@@ -4,13 +4,14 @@
 #include "DetourCrowdAIController.h"
 #include "OnsetAIController.generated.h"
 
+class UStateTreeAIComponent;
 class UTargetingComponent;
-class UStateTreeComponent;
 class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
 class UAISenseConfig_Hearing;
 class UAIProfile;
 
+/** Controller for NPC and Player-AI pawns. Owns perception, state tree, and targeting. */
 UCLASS()
 class ONSET_API AOnsetAIController : public ADetourCrowdAIController
 {
@@ -19,28 +20,41 @@ class ONSET_API AOnsetAIController : public ADetourCrowdAIController
 public:
 	AOnsetAIController();
 
-	UPROPERTY(VisibleAnywhere, Category = "AI")
-	TObjectPtr<UStateTreeComponent> StateTreeComp;
+	// --- Components ---
 
+	/** StateTree execution component. Started on possess, stopped on pool return. */
+	UPROPERTY(VisibleAnywhere, Category = "AI")
+	TObjectPtr<UStateTreeAIComponent> StateTreeComp;
+
+	/** AI perception component — sight and hearing, configured per AIProfile. */
 	UPROPERTY(VisibleAnywhere, Category = "AI")
 	TObjectPtr<UAIPerceptionComponent> PerceptionComp;
 
+	/** Push a profile to this controller — sets StateTree asset and configures perception. */
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void ApplyProfile(const UAIProfile* Profile);
-	
-	/** Stores the current target with validation. Set by context resolution in OnPrimaryInteraction. */          
+
+	// --- Targeting ---
+
+	/** Current target actor. Set by OnPerceptionUpdated for NPCs, by input for Player AI. */
 	UPROPERTY()
 	UTargetingComponent* TargetingComponent;
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void BeginPlay() override;
 
+	// --- Perception ---
+
+	/** Called when any perceived actor changes state (enters/leaves sight or hearing range). */
 	UFUNCTION()
 	void OnPerceptionUpdated(const TArray<AActor*>& UpdatedActors);
 
+	/** Sight sense config, configured per AIProfile. */
 	UPROPERTY()
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
 
+	/** Hearing sense config, configured per AIProfile. */
 	UPROPERTY()
 	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
 };

@@ -6,17 +6,21 @@
 
 class UTargetingComponent;
 
+/** Ability targeting info derived from the targeting component and source actor. */
 USTRUCT(BlueprintType)
 struct FAbilityTargetData
 {
 	GENERATED_BODY()
 
+	/** The targeted actor, or null if targeting a location. */
 	UPROPERTY(BlueprintReadWrite, Category = "Ability Targeting")
 	AActor* TargetActor = nullptr;
 
+	/** World location of the target (actor position or ground hit). */
 	UPROPERTY(BlueprintReadWrite, Category = "Ability Targeting")
 	FVector TargetLocation = FVector::ZeroVector;
 
+	/** Normalized direction from source to target. */
 	UPROPERTY(BlueprintReadWrite, Category = "Ability Targeting")
 	FVector TargetDirection = FVector::ZeroVector;
 };

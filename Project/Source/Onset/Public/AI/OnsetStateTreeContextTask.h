@@ -2,6 +2,7 @@
 #include "CoreMinimal.h"
 #include "OnsetStateTreeContext.h"
 #include "OnsetStateTreeContextTask.generated.h"
+/** Global StateTree task that keeps FOnsetStateTreeContextData up to date. */
 USTRUCT()
 struct FOnsetStateTreeContextTask : public FStateTreeTaskCommonBase
 {

@@ -1,14 +1,12 @@
-﻿#pragma once
-#include "CoreMinimal.h"
-#include "SpawnerSlot.generated.h"
-
-class AOnsetEnemy;
-
-USTRUCT()                                                                                  
-struct FSpawnerSlot                                                                                         
+﻿/** A single spawn position tracked by the spawner. Occupant is the currently-spawned enemy, or null. */
+USTRUCT()
+struct FSpawnerSlot
 {
-	GENERATED_BODY();
-	
-	FTransform SpawnTransform;                                                                            
-	TObjectPtr<AOnsetEnemy> Occupant = nullptr;                                                                        
+	GENERATED_BODY()
+
+	/** World transform at which the enemy spawns. */
+	FTransform SpawnTransform;
+
+	/** The enemy currently occupying this slot, or null if empty. */
+	TObjectPtr<AOnsetEnemy> Occupant = nullptr;
 };                                                                                                          

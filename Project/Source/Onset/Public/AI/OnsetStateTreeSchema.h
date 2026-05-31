@@ -3,18 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StateTreeSchema.h"
+#include "Components/StateTreeAIComponentSchema.h"
 #include "OnsetStateTreeSchema.generated.h"
 
-/**
- * 
- */
+/** Schema that restricts ST_NPC_Base to Onset-specific tasks and context data. */
 UCLASS()
-class ONSET_API UOnsetStateTreeSchema : public UStateTreeSchema
+class ONSET_API UOnsetStateTreeSchema : public UStateTreeAIComponentSchema
 {
 	GENERATED_BODY()
 	
 public:
 	UOnsetStateTreeSchema();
-	
 };

@@ -7,9 +7,7 @@
 #include "JoystickWidget.generated.h"
 
 class UInputAction;
-/**
- * 
- */
+/** Touch-screen virtual joystick widget. Reads touch deltas and injects movement input via IA_Move. */
 UCLASS()
 class ONSET_API UJoystickWidget : public UUserWidget
 {
