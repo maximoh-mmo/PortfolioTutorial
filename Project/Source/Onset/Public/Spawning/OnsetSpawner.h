@@ -1,4 +1,19 @@
-﻿/** Level actor that spawns groups of enemies at configurable spawn points or in a ring scatter. */
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SpawnConfig.h"
+#include "SpawnerSlot.h"
+#include "GameFramework/Actor.h"
+#include "OnsetSpawner.generated.h"
+
+class AOnsetPoolManager;
+class UGroupManagerComponent;
+
+DECLARE_LOG_CATEGORY_EXTERN(LogSpawner, Log, All);
+
+/** Level actor that spawns groups of enemies at configurable spawn points or in a ring scatter. */
 UCLASS(Blueprintable)
 class ONSET_API AOnsetSpawner : public AActor
 {

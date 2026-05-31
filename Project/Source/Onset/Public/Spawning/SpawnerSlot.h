@@ -1,4 +1,12 @@
-﻿/** A single spawn position tracked by the spawner. Occupant is the currently-spawned enemy, or null. */
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+#include "CoreMinimal.h"
+#include "SpawnerSlot.generated.h"
+
+class AOnsetEnemy;
+
+/** A single spawn position tracked by the spawner. Occupant is the currently-spawned enemy, or null. */
 USTRUCT()
 struct FSpawnerSlot
 {

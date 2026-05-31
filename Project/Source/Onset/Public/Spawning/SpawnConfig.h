@@ -1,4 +1,14 @@
-﻿/** Configuration for a single spawner: which profile, group size, and placement. */
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Templates/SubclassOf.h"
+#include "SpawnConfig.generated.h"
+
+class UAIProfile;
+
+/** Configuration for a single spawner: which profile, group size, and placement. */
 USTRUCT(BlueprintType)
 struct FSpawnConfig
 {
