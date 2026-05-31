@@ -15,6 +15,7 @@ AOnsetEnemy::AOnsetEnemy()
 	this->Tags.Add(FName("Enemy"));
 	AIControllerClass = AOnsetAIController::StaticClass();
 	GroupComp = CreateDefaultSubobject<UGroupComponent>(TEXT("GroupComp"));
+	AutoPossessAI = EAutoPossessAI::Spawned;
 }
 
 void AOnsetEnemy::ApplyProfile(UAIProfile* InProfile)

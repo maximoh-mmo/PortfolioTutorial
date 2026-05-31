@@ -1,8 +1,9 @@
 #include "AI/OnsetAIController.h"
 
 #include "AI/AIProfile.h"
+#include "AI/OnsetStateTreeSchema.h"
+#include "Components/StateTreeAIComponent.h"
 #include "Enemy/OnsetEnemy.h"
-#include "Components/StateTreeComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -10,7 +11,11 @@
 
 AOnsetAIController::AOnsetAIController()
 {
-	StateTreeComp = CreateDefaultSubobject<UStateTreeComponent>(TEXT("StateTreeComp"));
+	bStartAILogicOnPossess = false;
+	StateTreeComp = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeComp"));
+	StateTreeComp->SetStateTree(nullptr);
+	StateTreeComp->SetComponentTickEnabled(true);
+	
 	PerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComp"));
 
@@ -20,17 +25,25 @@ AOnsetAIController::AOnsetAIController()
 
 	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
 	PerceptionComp->ConfigureSense(*HearingConfig);
+	
+	PerceptionComp->OnPerceptionUpdated.AddDynamic(this, &AOnsetAIController::OnPerceptionUpdated);
+
 }
 
 void AOnsetAIController::ApplyProfile(const UAIProfile* Profile)
 {
-	if (!Profile)
+	if (Profile == nullptr)
 	{
+		if (StateTreeComp->IsRunning())
+			StateTreeComp->StopLogic(TEXT("Pooled"));
 		StateTreeComp->SetStateTree(nullptr);
 		return;
 	}
-
-	StateTreeComp->SetStateTree(Profile->StateTreeAsset);
+	if (Profile != nullptr)
+	{
+		StateTreeComp->StopLogic(TEXT("Applying new profile"));
+		StateTreeComp->SetStateTree(Profile->StateTreeAsset);
+	}
 
 	if (SightConfig)
 	{
@@ -51,18 +64,12 @@ void AOnsetAIController::ApplyProfile(const UAIProfile* Profile)
 		HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
 		PerceptionComp->ConfigureSense(*HearingConfig);
 	}
-
-	PerceptionComp->OnPerceptionUpdated.AddDynamic(this, &AOnsetAIController::OnPerceptionUpdated);
 }
 
 void AOnsetAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-
-	if (const auto* Enemy = Cast<AOnsetEnemy>(InPawn))
-	{
-		ApplyProfile(Enemy->Profile);
-	}
+	StateTreeComp->StartLogic();
 }
 
 void AOnsetAIController::BeginPlay()
@@ -78,4 +85,36 @@ void AOnsetAIController::BeginPlay()
 
 void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActors)
 {
+	if (GetPawn() == nullptr) return;
+	
+	TArray<AActor*> PerceivedActors;
+	PerceptionComp->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), PerceivedActors);
+	PerceptionComp->GetCurrentlyPerceivedActors(UAISense_Hearing::StaticClass(), PerceivedActors);
+	
+	AActor* BestTarget = nullptr;
+	float BestDist = FLT_MAX;
+	FVector MyLocation = GetPawn()->GetActorLocation();
+	
+	for (AActor* Actor : PerceivedActors)
+	{
+		if (Actor == nullptr) continue;
+		
+		if (Actor->ActorHasTag(FName("Player")) == GetPawn()->ActorHasTag(FName("Player")))
+		{
+			continue;
+		}
+		float Dist = FVector::DistSquared(MyLocation, Actor->GetActorLocation());
+		if (Dist < BestDist)	
+		{
+			BestDist = Dist;
+			BestTarget = Actor;
+		}
+	}
+	if (BestTarget == nullptr)
+	{
+		TargetingComponent->ClearTarget();
+		return;
+	}
+	TargetingComponent->SetTarget(BestTarget);
+		
 }

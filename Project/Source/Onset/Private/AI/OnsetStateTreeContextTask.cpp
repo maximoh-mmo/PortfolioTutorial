@@ -3,8 +3,6 @@
 #include "AI/OnsetStateTreeContext.h"
 #include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
-#include "Enemy/GroupComponent.h"
-#include "Spawning/GroupManagerComponent.h"
 #include "StateTreeExecutionContext.h"
 #include "Player/TargetingComponent.h"
 

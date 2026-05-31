@@ -3,6 +3,8 @@
 
 #include "Spawning/OnsetPoolManager.h"
 
+#include "AI/OnsetAIController.h"
+#include "Components/StateTreeComponent.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
@@ -82,6 +84,11 @@ void AOnsetPoolManager::ReturnToPool(AOnsetEnemy* Enemy)
 	if (UGroupComponent* GroupComp = Enemy->FindComponentByClass<UGroupComponent>())
 	{
 		GroupComp->UnregisterFromGroup();
+	}
+	if (AOnsetAIController* AIController = Enemy->GetController<AOnsetAIController>())
+	{
+		AIController->UnPossess();
+		AIController->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyProfile)
 	}
 	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
 	Enemy->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyProfile)

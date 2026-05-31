@@ -1,6 +1,7 @@
 ﻿#include "Spawning/OnsetSpawner.h"
 
 #include "AI/AIProfile.h"
+#include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
 #include "Spawning/GroupManagerComponent.h"
@@ -11,7 +12,7 @@ DEFINE_LOG_CATEGORY(LogSpawner);
 
 AOnsetSpawner::AOnsetSpawner()
 {
-	GroupManager = CreateDefaultSubobject<UGroupManagerComponent>(TEXT("GroupManager"));                        
+	GroupManager = CreateDefaultSubobject<UGroupManagerComponent>(TEXT("GroupManager"));
 }
 
 void AOnsetSpawner::SpawnGroup()
@@ -103,6 +104,15 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	if (Spawned)
 	{
 		Spawned->ApplyProfile(Config.EnemyProfile);
+		AOnsetAIController* AIController = Cast<AOnsetAIController>(Spawned->GetController());
+		if (!AIController)
+		{
+			FActorSpawnParameters Params;
+			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AIController = GetWorld()->SpawnActor<AOnsetAIController>(AOnsetAIController::StaticClass(), FTransform::Identity, Params);
+		}
+		AIController->ApplyProfile(Config.EnemyProfile);
+		AIController->Possess(Spawned);
 		Slot.Occupant = Spawned;
 		if (GroupManager) GroupManager->RegisterMember(Spawned);
 	}
