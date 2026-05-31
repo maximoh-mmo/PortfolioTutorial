@@ -8,7 +8,7 @@
 ## **Purpose**
 The NPC AI System controls enemy behaviour using:
 
- - **StateTrees** (via `UStateTreeComponent`) for high‑level logic  
+ - **StateTrees** (via `UStateTreeAIComponent`) for high‑level logic  
 - **AI Perception** for detecting the player  
  - **[Group System](Group_System.md)** for group membership and attack alerts  
 - **[GAS](../GAS/GAS_System.md)** for combat abilities  
@@ -59,11 +59,11 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 
 ### **`AOnsetAIController`** (`Onset/Source/Onset/Public/AI/`)
 - Data‑driven base controller — no hardcoded enemy/player logic
-- Owns `UStateTreeComponent` and `UAIPerceptionComponent` as subobjects
-- On `OnPossess`, reads the possessed pawn's `UAIProfile` and self‑configures:
-  - Loads the profile's `StateTree` asset
-  - Sets sight radius/angle and hearing range from the profile
+- Owns `UStateTreeAIComponent`, `UAIPerceptionComponent`, and `UTargetingComponent` as subobjects
+- On `OnPossess`, calls `StateTreeComp->StartLogic()` (profile-driven config applied by the spawner before possession)
+- `ApplyProfile(const UAIProfile*)` loads the profile's StateTree asset and configures sight radius/angle and hearing range
 - Includes authority guard — stops the StateTree on clients
+- `bStartAILogicOnPossess = false` — lifecycle is manual (Spawner → ApplyProfile → Possess → StartLogic)
 
 ### **`UAIProfile`** (`Onset/Source/Onset/Public/AI/AIProfile.h`)
 - `UDataAsset` subclass — created per enemy type in-editor
@@ -71,8 +71,9 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Designers create new enemy types without C++ changes
 - All visual variation (mesh, animation, material) driven by profile — no Blueprint subclassing needed
 
-### **`UNPCStateTreeSchema`** *(future)*
-- Defines context data for the StateTree  
+### **`UOnsetStateTreeSchema`** (`Onset/Source/Onset/Public/AI/OnsetStateTreeSchema.h`)
+- Defines context data (`FOnsetStateTreeContextData`) and the Global Task (`FOnsetStateTreeContextTask`) for the StateTree
+- Context data includes: Self actor, CurrentTarget (from `TargetingComponent`), AssistTarget, group data, health, bAssistTriggered  
 
 ---
 
@@ -81,9 +82,9 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 ### **`ApplyProfile(const UAIProfile*)`**
 Reads the profile and self‑configures: loads the StateTree asset, sets perception configs, binds `OnPerceptionUpdated`.
 
-### **`OnPerceptionUpdated(const TArray<AActor*>&)`** *(stub — body empty)*
-Handles sight/hearing events — feeds data into StateTree context.  
-**Hearing is the primary assist mechanism:** when an ally is damaged, a noise event broadcasts via `UAIPerceptionSystem`; each AI controller within its own `HearingRange` receives it here. The handler checks group membership via `UGroupComponent` and sets the StateTree assist flag if the noise maker is an ally.  
+### **`OnPerceptionUpdated(const TArray<AActor*>&)`**
+Handles sight/hearing events — queries `GetCurrentlyPerceivedActors` for sight and hearing, finds the nearest valid enemy (skipping same-side actors via tag comparison), and sets `TargetingComponent.CurrentTarget`. Clears target when no enemies are perceived.  
+**Hearing is the primary assist mechanism:** when an ally is damaged, a noise event broadcasts via `UAIPerceptionSystem`; each AI controller within its own `HearingRange` receives it here. The handler collects these noise sources alongside sight stimuli and feeds them into the same target acquisition flow. Group membership filtering for assist-specific logic is handled in the StateTree tasks.  
 
 ### **`SetTarget(AActor*)`** *(future)*
 Assigns a target for chase/attack.
@@ -119,15 +120,17 @@ stateDiagram-v2
 ```mermaid
 flowchart TD
     Profile[UAIProfile Data Asset] -->|OnPossess| AIC[AOnsetAIController]
-    AIC -->|Configures| STComp[UStateTreeComponent]
+    AIC -->|Configures| STComp[UStateTreeAIComponent]
     AIC -->|Configures| PComp[UAIPerceptionComponent]
 
     subgraph PE[Assist via Perception]
         Dmg[Damage Event] -->|FAINoiseEvent| PComp
     end
 
-    PComp -->|OnPerceptionUpdated| STComp
+    PComp -->|OnPerceptionUpdated| AIC
+    AIC -->|Sets target| TargetComp[UTargetingComponent]
     DE[Damage Event] --> STComp
+    TargetComp -->|Context Task reads| STComp
 
     STComp --> Eval[StateTree Evaluators]
     Eval --> Cond[Conditions]

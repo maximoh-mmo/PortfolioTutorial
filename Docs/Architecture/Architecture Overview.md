@@ -42,7 +42,7 @@ flowchart TD
 
     subgraph AI
         NPC[NPC Character<br/>AOnsetBaseCharacter → AOnsetEnemy]
-        AIC[AOnsetAIController<br/>owns StateTreeComp + PerceptionComp]
+        AIC[AOnsetAIController<br/>owns StateTreeAIComp + PerceptionComp + TargetingComp]
         STC[UStateTreeComponent]
         Profile[UAIProfile<br/>Data Asset]
         GComp[UGroupComponent]

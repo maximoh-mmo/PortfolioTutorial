@@ -163,15 +163,15 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 ## A3.1 StateTree Setup + Schema
 - [x] Create `UNPCStateTreeSchema` with context data *(created as `UOnsetStateTreeSchema`)*
 - [x] Bind NPC context (self, target, group data, health) *(via `FOnsetStateTreeContextTask` Global Task; group moved to per-task read — not universal context)*
-- [ ] Verify StateTree compiles and runs on NPC spawn
+- [x] Verify StateTree compiles and runs on NPC spawn
 - [ ] Add on-screen debug display for current AI state
 
 ## A3.2 AI Perception
 - [x] Add `AIPerceptionComponent` to AOnsetAIController *(done as part of A3.0)*
 - [x] Configure sight config (range, angle, lose sight time) *(profile-driven, done in A3.0)*
 - [x] Configure hearing config (range) *(profile-driven, done in A3.0)*
-- [ ] Implement `OnPerceptionUpdated()` handler
-- [ ] Feed perception data into StateTree context
+- [x] Implement `OnPerceptionUpdated()` handler
+- [x] Feed perception data into StateTree context
 - [ ] Verify perception triggers on player proximity
 
 ## A3.3 Behaviour States (Idle → Flee)
