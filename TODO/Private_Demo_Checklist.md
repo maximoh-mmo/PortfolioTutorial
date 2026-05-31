@@ -375,9 +375,9 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | — | 12 | — |
+| A3 AI Systems | — | 20 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |
-| **Total** | 75 | 82 | **—** |
+| **Total** | 75 | 90 | **—** |
