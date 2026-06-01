@@ -178,11 +178,11 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 ## A3.3 Behaviour States (Idle → Flee)
 - [x] Implement **Idle** state (timer-based, stand still) — `FOnsetStateTreeIdleTask`
 - [x] Implement **Roam** state (nav-reachable territory patrol, home-anchor) — `FOnsetStateTreeRoamTask`
-- [ ] Implement **Agro** state (face target, prepare to chase)
+- [x] Implement **Agro** state (face target via `SetFocus`, facing-angle check + timer) — `FOnsetStateTreeAgroTask`
 - [ ] Implement **Chase** state (MoveToActor, distance checks)
 - [ ] Implement **Attack** state (trigger GA_Attack, cooldown)
 - [ ] Implement **Flee** state (retreat when low health + isolated)
-- [ ] Implement **Lost** state (target lost → return to Roam)
+- [x] Implement **Lost** state (target lost → clear focus, random pause 2-4s, → Roam) — `FOnsetStateTreeLostTargetTask`
 - [ ] Wire up StateTree transitions between all states
 - [ ] Verify full behaviour loop: Idle → Roam → Agro → Chase → Attack → (repeat/retreat)
 
@@ -376,7 +376,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | — | 22 | — |
+| A3 AI Systems | — | 24 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |

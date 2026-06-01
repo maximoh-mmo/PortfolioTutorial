@@ -25,6 +25,7 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
   - Chase  
   - Attack  
   - Flee  
+  - Lost  
   - Assist  
 - Handle perception events  
 - Select targets  
@@ -78,7 +79,9 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 
 ### **StateTree Tasks** (`Onset/Source/Onset/Public/AI/Tasks/`)
 - **`FOnsetStateTreeIdleTask`** — timer-based idle (3-8s), `FOnsetStateTreeIdleInstanceData` holds MinDuration/MaxDuration/RemainingTime
-- **`FOnsetStateTreeRoamTask`** — territory patrol using `UNavigationSystemV1::GetRandomReachablePointInRadius()` anchored at `AOnsetEnemy::HomeLocation` (set from spawn slot transform in `SpawnEnemyAtSlot`), with `ADetourCrowdAIController` crowd avoidance enabled  
+- **`FOnsetStateTreeRoamTask`** — territory patrol using `UNavigationSystemV1::GetRandomReachablePointInRadius()` anchored at `AOnsetEnemy::HomeLocation` (set from spawn slot transform in `SpawnEnemyAtSlot`), with `ADetourCrowdAIController` crowd avoidance enabled
+- **`FOnsetStateTreeAgroTask`** — face target via `AAIController::SetFocus()`, checks facing angle against threshold (15°) and minimum duration (0.5s) before succeeding; early-succeeds if target is lost
+- **`FOnsetStateTreeLostTargetTask`** — clear focus via `AAIController::ClearFocus()`, random pause 2-4s, then succeeds → transitions back to Roam  
 
 ---
 
@@ -101,8 +104,8 @@ Notifies spawner/pool.
 
 ## **StateTree Diagram**
 
-Implemented tasks: `FOnsetStateTreeIdleTask`, `FOnsetStateTreeRoamTask`.  
-Remaining tasks: Agro, Chase, Attack, Flee, Lost (all A3.3 — see `TODO/Private_Demo_Checklist.md`).
+Implemented tasks: `FOnsetStateTreeIdleTask`, `FOnsetStateTreeRoamTask`, `FOnsetStateTreeAgroTask`, `FOnsetStateTreeLostTargetTask`.  
+Remaining tasks: Chase, Attack, Flee, Marooned, RoamWander (all A3.3 — see `TODO/Private_Demo_Checklist.md`).
 
 ```mermaid
 stateDiagram-v2
