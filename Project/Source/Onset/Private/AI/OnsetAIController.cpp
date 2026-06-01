@@ -11,38 +11,38 @@
 
 AOnsetAIController::AOnsetAIController()
 {
-	bStartAILogicOnPossess = false;
-	StateTreeComp = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeComp"));
-	StateTreeComp->SetStateTree(nullptr);
-	StateTreeComp->SetComponentTickEnabled(true);
+	bStartAILogicOnPossess = true;
 	
-	PerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
+	StateTreeComponent = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeComp"));
+	StateTreeComponent->SetStateTree(nullptr);
+	StateTreeComponent->SetComponentTickEnabled(true);
+	
+	PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComp"));
 
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
-	PerceptionComp->ConfigureSense(*SightConfig);
-	PerceptionComp->SetDominantSense(SightConfig->GetSenseImplementation());
+	PerceptionComponent->ConfigureSense(*SightConfig);
+	PerceptionComponent->SetDominantSense(SightConfig->GetSenseImplementation());
 
 	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
-	PerceptionComp->ConfigureSense(*HearingConfig);
+	PerceptionComponent->ConfigureSense(*HearingConfig);
 	
-	PerceptionComp->OnPerceptionUpdated.AddDynamic(this, &AOnsetAIController::OnPerceptionUpdated);
-
+	PerceptionComponent->OnPerceptionUpdated.AddDynamic(this, &AOnsetAIController::OnPerceptionUpdated);
 }
 
 void AOnsetAIController::ApplyProfile(const UAIProfile* Profile)
 {
 	if (Profile == nullptr)
 	{
-		if (StateTreeComp->IsRunning())
-			StateTreeComp->StopLogic(TEXT("Pooled"));
-		StateTreeComp->SetStateTree(nullptr);
+		if (StateTreeComponent->IsRunning())
+			StateTreeComponent->StopLogic(TEXT("Pooled"));
+		StateTreeComponent->SetStateTree(nullptr);
 		return;
 	}
 	if (Profile != nullptr)
 	{
-		StateTreeComp->StopLogic(TEXT("Applying new profile"));
-		StateTreeComp->SetStateTree(Profile->StateTreeAsset);
+		StateTreeComponent->StopLogic(TEXT("Applying new profile"));
+		StateTreeComponent->SetStateTree(Profile->StateTreeAsset);
 	}
 
 	if (SightConfig)
@@ -53,7 +53,7 @@ void AOnsetAIController::ApplyProfile(const UAIProfile* Profile)
 		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 		SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 		SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
-		PerceptionComp->ConfigureSense(*SightConfig);
+		PerceptionComponent->ConfigureSense(*SightConfig);
 	}
 
 	if (HearingConfig)
@@ -62,14 +62,37 @@ void AOnsetAIController::ApplyProfile(const UAIProfile* Profile)
 		HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
 		HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
 		HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
-		PerceptionComp->ConfigureSense(*HearingConfig);
+		PerceptionComponent->ConfigureSense(*HearingConfig);
 	}
 }
 
 void AOnsetAIController::OnPossess(APawn* InPawn)
 {
+	bInUse = true;
+	UE_LOG(LogController, Error, TEXT("OnPossess: %s, state tree status: %hhd"), *InPawn->GetName(), StateTreeComponent->GetStateTreeRunStatus());
 	Super::OnPossess(InPawn);
-	StateTreeComp->StartLogic();
+	StateTreeComponent->StartLogic();
+}
+
+void AOnsetAIController::OnUnPossess()
+{
+	bInUse = false;
+	UE_LOG(LogController, Error, TEXT("OnUnPossess"));
+	StateTreeComponent->StopLogic(TEXT("Unpossessed"));
+	Super::OnUnPossess();
+}
+
+void AOnsetAIController::ResetForPool()
+{
+	UnPossess();
+	bInUse = false;
+	StateTreeComponent->StopLogic(TEXT("Reset for pool"));
+	ApplyProfile(nullptr);                                                                                        
+	SetActorHiddenInGame(true);                                                                                   
+	SetActorTickEnabled(false);                                                                                   
+	StateTreeComponent->SetComponentTickEnabled(false);                                                           
+	DisableInput(nullptr);                                                                                        
+	SetActorEnableCollision(false);
 }
 
 void AOnsetAIController::BeginPlay()
@@ -78,8 +101,8 @@ void AOnsetAIController::BeginPlay()
 
 	if (!HasAuthority())
 	{
-		StateTreeComp->StopLogic(TEXT("Client - No Authority"));
-		StateTreeComp->SetStateTree(nullptr);
+		StateTreeComponent->StopLogic(TEXT("Client - No Authority"));
+		StateTreeComponent->SetStateTree(nullptr);
 	}
 }
 
@@ -88,8 +111,8 @@ void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActor
 	if (GetPawn() == nullptr) return;
 	
 	TArray<AActor*> PerceivedActors;
-	PerceptionComp->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), PerceivedActors);
-	PerceptionComp->GetCurrentlyPerceivedActors(UAISense_Hearing::StaticClass(), PerceivedActors);
+	PerceptionComponent->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), PerceivedActors);
+	PerceptionComponent->GetCurrentlyPerceivedActors(UAISense_Hearing::StaticClass(), PerceivedActors);
 	
 	AActor* BestTarget = nullptr;
 	float BestDist = FLT_MAX;

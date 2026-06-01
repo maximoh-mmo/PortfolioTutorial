@@ -3,6 +3,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "OnsetStateTreeContext.h"
+#include "StateTreeTaskBase.h"
 #include "OnsetStateTreeContextTask.generated.h"
 
 /** Global StateTree task that keeps FOnsetStateTreeContextData up to date. */
@@ -10,8 +11,10 @@ USTRUCT()
 struct FOnsetStateTreeContextTask : public FStateTreeTaskCommonBase
 {
 	GENERATED_BODY()
-	
+                          
 	using FInstanceDataType = FOnsetStateTreeContextData;
+	
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }       
 	
 	virtual EStateTreeRunStatus EnterState(
 		FStateTreeExecutionContext& Context,

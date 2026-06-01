@@ -104,13 +104,13 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	if (Spawned)
 	{
 		Spawned->ApplyProfile(Config.EnemyProfile);
-		AOnsetAIController* AIController = Cast<AOnsetAIController>(Spawned->GetController());
+		AOnsetAIController* AIController = PoolManager->GetPooledController();
 		if (!AIController)
 		{
-			FActorSpawnParameters Params;
-			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			AIController = GetWorld()->SpawnActor<AOnsetAIController>(AOnsetAIController::StaticClass(), FTransform::Identity, Params);
+			UE_LOG(LogSpawner, Error, TEXT("SpawnEnemyAtSlot: No pooled controller available."));
+			return nullptr;
 		}
+		
 		AIController->ApplyProfile(Config.EnemyProfile);
 		AIController->Possess(Spawned);
 		Slot.Occupant = Spawned;
@@ -144,7 +144,10 @@ void AOnsetSpawner::DebugKillLast()
 		if (Slots[i].Occupant && IsValid(Slots[i].Occupant))
 		{
 			if (GroupManager) GroupManager->UnregisterMember(Slots[i].Occupant);
-			if (PoolManager) PoolManager->ReleasePooledEnemy(Slots[i].Occupant);
+			if (PoolManager)
+			{
+				PoolManager->ReleasePooledEnemy(Slots[i].Occupant);
+			}
 			else Slots[i].Occupant->Destroy();
 			Slots[i].Occupant = nullptr;
 			return;

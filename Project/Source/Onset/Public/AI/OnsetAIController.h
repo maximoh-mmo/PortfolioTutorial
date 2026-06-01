@@ -22,15 +22,13 @@ class ONSET_API AOnsetAIController : public ADetourCrowdAIController
 public:
 	AOnsetAIController();
 
+	UFUNCTION(BlueprintPure, Category = "AI")
+	bool InUse() { return bInUse; }
 	// --- Components ---
 
 	/** StateTree execution component. Started on possess, stopped on pool return. */
 	UPROPERTY(VisibleAnywhere, Category = "AI")
-	TObjectPtr<UStateTreeAIComponent> StateTreeComp;
-
-	/** AI perception component — sight and hearing, configured per AIProfile. */
-	UPROPERTY(VisibleAnywhere, Category = "AI")
-	TObjectPtr<UAIPerceptionComponent> PerceptionComp;
+	TObjectPtr<UStateTreeAIComponent> StateTreeComponent;
 
 	/** Push a profile to this controller — sets StateTree asset and configures perception. */
 	UFUNCTION(BlueprintCallable, Category = "AI")
@@ -41,9 +39,15 @@ public:
 	/** Current target actor. Set by OnPerceptionUpdated for NPCs, by input for Player AI. */
 	UPROPERTY()
 	UTargetingComponent* TargetingComponent;
+	
+	// --- Pooling ---
+	/** Resets the controller to base, non-active, state for pooling reuse. Called by pool manager on release. */
+	UFUNCTION(BlueprintCallable, Category = "Pooling")
+	void ResetForPool();
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
+	virtual void OnUnPossess() override;
 	virtual void BeginPlay() override;
 
 	// --- Perception ---
@@ -59,4 +63,7 @@ protected:
 	/** Hearing sense config, configured per AIProfile. */
 	UPROPERTY()
 	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
+	
+private:
+	bool bInUse;
 };

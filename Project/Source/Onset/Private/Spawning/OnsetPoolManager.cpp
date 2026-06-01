@@ -4,23 +4,17 @@
 #include "Spawning/OnsetPoolManager.h"
 
 #include "AI/OnsetAIController.h"
-#include "Components/StateTreeComponent.h"
+#include "Components/StateTreeAIComponent.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
+#include "Perception/AIPerceptionComponent.h"
 
 DEFINE_LOG_CATEGORY(LogPooling);
 // Sets default values
 AOnsetPoolManager::AOnsetPoolManager()
 {
 	PrimaryActorTick.bCanEverTick = false;
-}
-
-void AOnsetPoolManager::ActivateEnemy(AOnsetEnemy* Enemy)
-{
-	Enemy->SetActorHiddenInGame(false);                                                                   
-	Enemy->SetActorTickEnabled(true);
-	Enemy->SetActorEnableCollision(true);
 }
 	
 AOnsetEnemy* AOnsetPoolManager::GetPooledEnemy()
@@ -29,8 +23,10 @@ AOnsetEnemy* AOnsetPoolManager::GetPooledEnemy()
 	for (AOnsetEnemy* Enemy : ObjectPool)
 	{
 		if (Enemy && Enemy->IsHidden())
-		{                                                                        
-			ActivateEnemy(Enemy);                                                                     
+		{                          
+			Enemy->SetActorHiddenInGame(false);                                                                   
+			Enemy->SetActorTickEnabled(true);
+			Enemy->SetActorEnableCollision(true);
 			return Enemy;
 		}
 	}
@@ -40,8 +36,34 @@ AOnsetEnemy* AOnsetPoolManager::GetPooledEnemy()
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (AOnsetEnemy* Enemy = GetWorld()->SpawnActor<AOnsetEnemy>(AOnsetEnemy::StaticClass(), FTransform::Identity, Params))
 	{
-		ObjectPool.Add(Enemy);          
+		ReleasePooledEnemy(Enemy);
 		return Enemy;                                                                                         
+	}
+	return nullptr;
+}
+
+AOnsetAIController* AOnsetPoolManager::GetPooledController()
+{
+	if (!bPoolInitialized) InitializePool();
+	for (AOnsetAIController* Controller : ControllerPool)
+	{
+		if (Controller && Controller->IsHidden())
+		{         
+			Controller->SetActorHiddenInGame(false);
+			Controller->SetActorTickEnabled(true);
+			Controller->StateTreeComponent->SetComponentTickEnabled(true);
+			Controller->PerceptionComponent->SetComponentTickEnabled(true);
+			return Controller;
+		}
+	}
+	// Pool exhausted — fallback SpawnActor (hardcoded to base AOnsetEnemy)                                          
+	UE_LOG(LogPooling, Warning, TEXT("OnsetPoolManager: Controller Pool exhausted — spawning new Controllers as fallback."));
+	FActorSpawnParameters Params;                                                                           
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AOnsetAIController* Controller = GetWorld()->SpawnActor<AOnsetAIController>(AOnsetAIController::StaticClass(), FTransform::Identity, Params))
+	{
+		ReleasePooledController(Controller);
+		return Controller;                                                                                         
 	}
 	return nullptr;
 }
@@ -51,6 +73,13 @@ void AOnsetPoolManager::ReleasePooledEnemy(AOnsetEnemy* Enemy)
 	if (!Enemy || Enemy->IsPendingKillPending()) return;
 	
 	ReturnToPool(Enemy);
+}
+
+void AOnsetPoolManager::ReleasePooledController(AOnsetAIController* Controller)
+{
+	if (!Controller || Controller->IsPendingKillPending()) return;
+	Controller->ResetForPool();
+	if (!ControllerPool.Contains(Controller)) ControllerPool.Add(Controller);    
 }
 
 void AOnsetPoolManager::InitializePool()
@@ -67,8 +96,13 @@ void AOnsetPoolManager::InitializePool()
 		{
 			ReturnToPool(Spawned);                                                                  
 		}
+		AOnsetAIController* SpawnedController = GetWorld()->SpawnActor<AOnsetAIController>(AOnsetAIController::StaticClass(), FTransform::Identity, Params);
+		if (SpawnedController)
+		{
+			ReleasePooledController(SpawnedController);
+		}
 	}
-	UE_LOG(LogPooling, Warning, TEXT("OnsetPoolManager: Pre-allocated %d NPCs."), ObjectPool.Num()); 
+	UE_LOG(LogPooling, Warning, TEXT("OnsetPoolManager: Pre-allocated %d NPCs and %d controllers."), ObjectPool.Num(), ControllerPool.Num()); 
 
 }
 
@@ -85,10 +119,9 @@ void AOnsetPoolManager::ReturnToPool(AOnsetEnemy* Enemy)
 	{
 		GroupComp->UnregisterFromGroup();
 	}
-	if (AOnsetAIController* AIController = Enemy->GetController<AOnsetAIController>())
+	if (AOnsetAIController* Controller = Enemy->GetController<AOnsetAIController>())
 	{
-		AIController->UnPossess();
-		AIController->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyProfile)
+		ReleasePooledController(Controller);
 	}
 	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
 	Enemy->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyProfile)

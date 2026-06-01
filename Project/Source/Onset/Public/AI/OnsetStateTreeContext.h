@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
-#include "StateTreeTaskBase.h"
+#include "StateTreeTypes.h"
 #include "OnsetStateTreeContext.generated.h"
 
 /** Per-NPC context data written every tick by FOnsetStateTreeContextTask. */
@@ -19,7 +19,6 @@ struct FOnsetStateTreeContextData
 	TObjectPtr<AActor> Target = nullptr;
 
 	/** Current health value. Stub until GAS (A4) provides the attribute set. */
-	UPROPERTY(VisibleAnywhere, Category = "Context")
-	float Health = 100.0f;
+	//UPROPERTY(VisibleAnywhere, Category = "Context")
 };
 
