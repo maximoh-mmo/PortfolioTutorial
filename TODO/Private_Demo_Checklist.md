@@ -172,11 +172,12 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Configure hearing config (range) *(profile-driven, done in A3.0)*
 - [x] Implement `OnPerceptionUpdated()` handler
 - [x] Feed perception data into StateTree context
-- [ ] Verify perception triggers on player proximity
+- [x] Verify perception triggers on player proximity
+- [ ] Verify perception hearing triggers on assist (deferred until GAS/attack emits noise events — A4)
 
 ## A3.3 Behaviour States (Idle → Flee)
-- [ ] Implement **Idle** state (timer-based, stand still)
-- [ ] Implement **Roam** state (Brownian motion, group cohesion)
+- [x] Implement **Idle** state (timer-based, stand still) — `FOnsetStateTreeIdleTask`
+- [x] Implement **Roam** state (nav-reachable territory patrol, home-anchor) — `FOnsetStateTreeRoamTask`
 - [ ] Implement **Agro** state (face target, prepare to chase)
 - [ ] Implement **Chase** state (MoveToActor, distance checks)
 - [ ] Implement **Attack** state (trigger GA_Attack, cooldown)
@@ -375,7 +376,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | — | 20 | — |
+| A3 AI Systems | — | 22 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |

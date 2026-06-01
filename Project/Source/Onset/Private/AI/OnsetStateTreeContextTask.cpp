@@ -12,7 +12,6 @@
 EStateTreeRunStatus FOnsetStateTreeContextTask::EnterState(FStateTreeExecutionContext& Context,
                                                            const FStateTreeTransitionResult& TransitionResult) const
 {
-	UE_LOG(LogStateTree, Log, TEXT("Entering StateTree context task"));
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	
 	const AOnsetAIController* AIController = Cast<AOnsetAIController>(Context.GetOwner());
@@ -24,8 +23,6 @@ EStateTreeRunStatus FOnsetStateTreeContextTask::EnterState(FStateTreeExecutionCo
 	}
 
 	const TArray<FName> Names = AIController->StateTreeComponent->GetActiveStateNames();
-	UE_LOG(LogStateTree, Log, TEXT("State: %s"),                                                                             
-		*FString::JoinBy(Names, TEXT(" > "), [](const FName& N) { return N.ToString(); }));
 	return EStateTreeRunStatus::Running;
 }
 	

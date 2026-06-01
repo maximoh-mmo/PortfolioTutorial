@@ -115,6 +115,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 		AIController->Possess(Spawned);
 		Slot.Occupant = Spawned;
 		if (GroupManager) GroupManager->RegisterMember(Spawned);
+		Spawned->HomeLocation = Slot.SpawnTransform.GetLocation();
 	}
 	return Spawned;
 }

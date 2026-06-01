@@ -4,6 +4,7 @@
 #include "AI/OnsetStateTreeSchema.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Enemy/OnsetEnemy.h"
+#include "Navigation/CrowdFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -28,6 +29,15 @@ AOnsetAIController::AOnsetAIController()
 	PerceptionComponent->ConfigureSense(*HearingConfig);
 	
 	PerceptionComponent->OnPerceptionUpdated.AddDynamic(this, &AOnsetAIController::OnPerceptionUpdated);
+	
+	UCrowdFollowingComponent* CrowdComp = Cast<UCrowdFollowingComponent>(                                           
+		 GetPathFollowingComponent());                                                                               
+	if (CrowdComp)                                                                                                  
+	{                                                                                                               
+		CrowdComp->SetCrowdSeparation(true);                                                                        
+		CrowdComp->SetCrowdSeparationWeight(2.0f);                                                                       
+		CrowdComp->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::Good);
+	}         
 }
 
 void AOnsetAIController::ApplyProfile(const UAIProfile* Profile)

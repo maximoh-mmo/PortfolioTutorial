@@ -51,6 +51,7 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Base NPC pawn (`Onset/Source/Onset/Public/Enemy/`)
 - Holds ASC, AttributeSet *(future)*
 - Holds `UGroupComponent`
+- Stores `FVector HomeLocation` — anchor point for territory-based Roam AI (set from spawn slot transform in `SpawnEnemyAtSlot`)
 - Stores a `UAIProfile` reference, read by the controller on possession
 - `ApplyProfile(UAIProfile*)` applies profile-driven visual/config to the pawn:
   - **Skeletal mesh path** — loads `SkeletalMesh` synchronously, sets mesh + anim BP + material; auto-sizes the capsule to `GetImportedBounds()` so targeting (`ECC_Visibility` traces) hits the capsule regardless of physics assets
@@ -73,7 +74,11 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 
 ### **`UOnsetStateTreeSchema`** (`Onset/Source/Onset/Public/AI/OnsetStateTreeSchema.h`)
 - Defines context data (`FOnsetStateTreeContextData`) and the Global Task (`FOnsetStateTreeContextTask`) for the StateTree
-- Context data includes: Self actor, CurrentTarget (from `TargetingComponent`), AssistTarget, group data, health, bAssistTriggered  
+- Context data includes: Self actor, CurrentTarget (from `TargetingComponent`), AssistTarget, group data, health, bAssistTriggered
+
+### **StateTree Tasks** (`Onset/Source/Onset/Public/AI/Tasks/`)
+- **`FOnsetStateTreeIdleTask`** — timer-based idle (3-8s), `FOnsetStateTreeIdleInstanceData` holds MinDuration/MaxDuration/RemainingTime
+- **`FOnsetStateTreeRoamTask`** — territory patrol using `UNavigationSystemV1::GetRandomReachablePointInRadius()` anchored at `AOnsetEnemy::HomeLocation` (set from spawn slot transform in `SpawnEnemyAtSlot`), with `ADetourCrowdAIController` crowd avoidance enabled  
 
 ---
 
@@ -95,6 +100,9 @@ Notifies spawner/pool.
 ---
 
 ## **StateTree Diagram**
+
+Implemented tasks: `FOnsetStateTreeIdleTask`, `FOnsetStateTreeRoamTask`.  
+Remaining tasks: Agro, Chase, Attack, Flee, Lost (all A3.3 — see `TODO/Private_Demo_Checklist.md`).
 
 ```mermaid
 stateDiagram-v2
