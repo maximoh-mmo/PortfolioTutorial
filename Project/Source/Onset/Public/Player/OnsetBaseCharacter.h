@@ -14,4 +14,7 @@ class ONSET_API AOnsetBaseCharacter : public ACharacter
 
 public:
 	AOnsetBaseCharacter();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	FVector HomeLocation;
 };

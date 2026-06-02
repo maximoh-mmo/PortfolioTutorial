@@ -1,18 +1,16 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "AI/Tasks/OnsetStateTreeAgroTask.h"
-
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
-#include "Player/TargetingComponent.h"
 
 EStateTreeRunStatus FOnsetStateTreeAgroTask::EnterState(FStateTreeExecutionContext& Context,
                                                         const FStateTreeTransitionResult& Transition) const
 {
-	AOnsetAIController* AIController = Cast<AOnsetAIController>(Context.GetOwner());
+	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
-	AActor* Target = AIController->TargetingComponent->GetTarget();
-	if (!Target) return EStateTreeRunStatus::Failed;
+	AActor* Target = GetTarget(Context);
+	if (!Target) return EStateTreeRunStatus::Succeeded;
 	AIController->SetFocus(Target);	
 	return EStateTreeRunStatus::Running;
 }
@@ -22,9 +20,9 @@ EStateTreeRunStatus FOnsetStateTreeAgroTask::Tick(FStateTreeExecutionContext& Co
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	InstanceData.TimeSpent += DeltaTime;
 	
-	AOnsetAIController* AIController = Cast<AOnsetAIController>(Context.GetOwner());
+	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
-	AActor* Target = AIController->TargetingComponent->GetTarget();
+	AActor* Target = GetTarget(Context);
 	// No target means we're done agroing, so succeed to transition out.
 	if (!Target) return EStateTreeRunStatus::Succeeded;
 	

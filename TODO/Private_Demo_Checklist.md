@@ -179,10 +179,14 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Implement **Idle** state (timer-based, stand still) — `FOnsetStateTreeIdleTask`
 - [x] Implement **Roam** state (nav-reachable territory patrol, home-anchor) — `FOnsetStateTreeRoamTask`
 - [x] Implement **Agro** state (face target via `SetFocus`, facing-angle check + timer) — `FOnsetStateTreeAgroTask`
-- [ ] Implement **Chase** state (MoveToActor, distance checks)
+- [x] Implement **Chase** state (MoveToActor, exit on arrival, transitions gated by DistanceCondition) — `FOnsetStateTreeChaseTask`
 - [ ] Implement **Attack** state (trigger GA_Attack, cooldown)
 - [ ] Implement **Flee** state (retreat when low health + isolated)
 - [x] Implement **Lost** state (target lost → clear focus, random pause 2-4s, → Roam) — `FOnsetStateTreeLostTargetTask`
+- [x] Create **FOnsetStateTreeTaskBase** — shared helpers (GetController, GetTarget, HasMoveCompleted, GetSelfBaseCharacter, GetPathFollowingComponent); all 5 tasks migrated
+- [x] Create **FOnsetStateTreeDistanceCondition** — reusable transition condition (Target or HomeLocation, DistSquared, UE::StateTree::EComparisonOperator)
+- [x] Create **Marooned** state — same ChaseTask in asset, no leash transition
+- [x] Move **HomeLocation** from AOnsetEnemy → AOnsetBaseCharacter (shared with player for respawn)
 - [ ] Wire up StateTree transitions between all states
 - [ ] Verify full behaviour loop: Idle → Roam → Agro → Chase → Attack → (repeat/retreat)
 
@@ -376,7 +380,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | — | 24 | — |
+| A3 AI Systems | — | 27 | — |
 | A4 GAS Combat | — | — | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |

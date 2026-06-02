@@ -16,14 +16,14 @@ EStateTreeRunStatus FOnsetStateTreeRoamTask::EnterState(FStateTreeExecutionConte
 	InstanceData.bHasArrived = false;
 	InstanceData.PauseTimer = 0.0f;
 	
-	AOnsetAIController* AIController = Cast<AOnsetAIController>(Context.GetOwner());
+	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController)  return EStateTreeRunStatus::Failed;
-	AOnsetEnemy* Enemy = Cast<AOnsetEnemy>(AIController->GetPawn());
-	if (!Enemy) return EStateTreeRunStatus::Failed;
+	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
+	if (!Self) return EStateTreeRunStatus::Failed;
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(AIController->GetWorld());               
 	if (!NavSys) return EStateTreeRunStatus::Failed;
 	
-	FVector Home = Enemy->HomeLocation;
+	FVector Home = Self->HomeLocation;
 	FNavLocation RandomPoint;
 	if (NavSys->GetRandomReachablePointInRadius(Home, InstanceData.RoamRadius, RandomPoint))
 	{
@@ -46,15 +46,13 @@ EStateTreeRunStatus FOnsetStateTreeRoamTask::Tick(FStateTreeExecutionContext& Co
 		}
 		return EStateTreeRunStatus::Running;
 	}
-	AOnsetAIController* AIController = Cast<AOnsetAIController>(Context.GetOwner());
-	if (!AIController) return EStateTreeRunStatus::Failed;
-	UPathFollowingComponent* PFComponent = AIController->GetPathFollowingComponent();
-	if (!PFComponent) return EStateTreeRunStatus::Failed;
 	
+	UPathFollowingComponent* PFComponent = GetPathFollowingComponent(Context);
+	if (!PFComponent) return EStateTreeRunStatus::Failed;
 	EPathFollowingStatus::Type MoveStatus  = PFComponent->GetStatus();
 	if (MoveStatus == EPathFollowingStatus::Type::Idle)
 	{
-		if (PFComponent->DidMoveReachGoal())
+		if (HasMoveCompleted(Context))
 		{
 			InstanceData.bHasArrived = true;
 			InstanceData.PauseTimer = InstanceData.PauseOnArrival;

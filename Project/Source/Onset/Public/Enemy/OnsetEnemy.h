@@ -29,7 +29,4 @@ public:
 	/** The active profile asset. Set by ApplyProfile(). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	TObjectPtr<UAIProfile> Profile;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	FVector HomeLocation;
 };

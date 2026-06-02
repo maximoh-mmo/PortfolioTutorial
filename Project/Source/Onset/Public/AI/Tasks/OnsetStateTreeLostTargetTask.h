@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StateTreeTaskBase.h"
+#include "OnsetStateTreeTaskBase.h"
 #include "OnsetStateTreeLostTargetTask.generated.h"
 
 USTRUCT()
@@ -21,7 +21,7 @@ struct FOnsetStateTreeLostTargetInstanceData
 };
 
 USTRUCT()
-struct FOnsetStateTreeLostTargetTask : public FStateTreeTaskCommonBase
+struct FOnsetStateTreeLostTargetTask : public FOnsetStateTreeTaskBase
 {
 	GENERATED_BODY()
 

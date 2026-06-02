@@ -8,7 +8,7 @@
 EStateTreeRunStatus FOnsetStateTreeLostTargetTask::EnterState(FStateTreeExecutionContext& Context,
                                                               const FStateTreeTransitionResult& Transition) const
 {
-	AOnsetAIController* AIController = Cast<AOnsetAIController>(Context.GetOwner());
+	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
 	AIController->ClearFocus(EAIFocusPriority::Gameplay);
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);

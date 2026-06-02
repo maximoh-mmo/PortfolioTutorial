@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StateTreeTaskBase.h"
+#include "OnsetStateTreeTaskBase.h"
 #include "OnsetStateTreeAgroTask.generated.h"
 
 USTRUCT()                                                                                                       
@@ -24,7 +24,7 @@ struct FOnsetStateTreeAgroInstanceData
 };
 
 USTRUCT()
-struct FOnsetStateTreeAgroTask : public FStateTreeTaskCommonBase
+struct FOnsetStateTreeAgroTask : public FOnsetStateTreeTaskBase
 {
 	GENERATED_BODY()
 

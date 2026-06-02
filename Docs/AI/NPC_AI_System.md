@@ -52,7 +52,7 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Base NPC pawn (`Onset/Source/Onset/Public/Enemy/`)
 - Holds ASC, AttributeSet *(future)*
 - Holds `UGroupComponent`
-- Stores `FVector HomeLocation` — anchor point for territory-based Roam AI (set from spawn slot transform in `SpawnEnemyAtSlot`)
+- `HomeLocation` inherited from `AOnsetBaseCharacter` — anchor point for territory-based Roam AI (set from spawn slot transform in `SpawnEnemyAtSlot`); also usable for player respawn
 - Stores a `UAIProfile` reference, read by the controller on possession
 - `ApplyProfile(UAIProfile*)` applies profile-driven visual/config to the pawn:
   - **Skeletal mesh path** — loads `SkeletalMesh` synchronously, sets mesh + anim BP + material; auto-sizes the capsule to `GetImportedBounds()` so targeting (`ECC_Visibility` traces) hits the capsule regardless of physics assets
@@ -77,11 +77,25 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Defines context data (`FOnsetStateTreeContextData`) and the Global Task (`FOnsetStateTreeContextTask`) for the StateTree
 - Context data includes: Self actor, CurrentTarget (from `TargetingComponent`), AssistTarget, group data, health, bAssistTriggered
 
+### **`AOnsetBaseCharacter`** (`Onset/Source/Onset/Public/Player/`)
+- Shared base for `AOnsetEnemy` and `AOnsetPlayerCharacter`
+- Stores `FVector HomeLocation` — spawn anchor for territory-based AI and player respawn
+
 ### **StateTree Tasks** (`Onset/Source/Onset/Public/AI/Tasks/`)
+- **`FOnsetStateTreeTaskBase`** — shared base struct for all task implementations. Provides static helpers accessed by every task:
+  - `GetController(Context)` — `Cast<AOnsetAIController>(Context.GetOwner())` with logged null guard
+  - `GetTarget(Context)` — gets target from `AIC->TargetingComponent->GetTarget()` with logged null guard
+  - `GetSelfBaseCharacter(Context)` — `Cast<AOnsetBaseCharacter>(AIC->GetPawn())` with logged null guard
+  - `GetPathFollowingComponent(Context)` — gets `UPathFollowingComponent` with logged null guard
+  - `HasMoveCompleted(Context)` — guards + `DidMoveReachGoal()`
 - **`FOnsetStateTreeIdleTask`** — timer-based idle (3-8s), `FOnsetStateTreeIdleInstanceData` holds MinDuration/MaxDuration/RemainingTime
-- **`FOnsetStateTreeRoamTask`** — territory patrol using `UNavigationSystemV1::GetRandomReachablePointInRadius()` anchored at `AOnsetEnemy::HomeLocation` (set from spawn slot transform in `SpawnEnemyAtSlot`), with `ADetourCrowdAIController` crowd avoidance enabled
+- **`FOnsetStateTreeRoamTask`** — territory patrol using `UNavigationSystemV1::GetRandomReachablePointInRadius()` anchored at `HomeLocation` (on `AOnsetBaseCharacter`, set from spawn slot transform in `SpawnEnemyAtSlot`), with crowd avoidance enabled
 - **`FOnsetStateTreeAgroTask`** — face target via `AAIController::SetFocus()`, checks facing angle against threshold (15°) and minimum duration (0.5s) before succeeding; early-succeeds if target is lost
-- **`FOnsetStateTreeLostTargetTask`** — clear focus via `AAIController::ClearFocus()`, random pause 2-4s, then succeeds → transitions back to Roam  
+- **`FOnsetStateTreeChaseTask`** — `MoveToActor` on enter state, re-follows target continuously (native `MoveToActor` auto-repath). Tick returns `Succeeded` on arrival (transition conditions route to Attack/Lost/Marooned). `ExitState` calls `StopMovement()`. Used by both Chase and Marooned asset states.
+- **`FOnsetStateTreeLostTargetTask`** — clear focus via `AAIController::ClearFocus()`, random pause 2-4s, then succeeds → transitions back to Roam
+
+### **StateTree Conditions** (`Onset/Source/Onset/Public/AI/Conditions/`)
+- **`FOnsetStateTreeDistanceCondition`** — reusable transition condition. Compares distance between the pawn and either its `CurrentTarget` or `HomeLocation` using `DistSquared` + squared threshold (avoids `sqrt`). Supports `UE::StateTree::EComparisonOperator` (Less, LessOrEqual, Greater, GreaterOrEqual). `bAllowNoTarget` flag: when true, no target passes as "target lost" for Lost-range fallback. Used for AttackRange, LostRange, and LeashRadius gating.
 
 ---
 
@@ -104,8 +118,8 @@ Notifies spawner/pool.
 
 ## **StateTree Diagram**
 
-Implemented tasks: `FOnsetStateTreeIdleTask`, `FOnsetStateTreeRoamTask`, `FOnsetStateTreeAgroTask`, `FOnsetStateTreeLostTargetTask`.  
-Remaining tasks: Chase, Attack, Flee, Marooned, RoamWander (all A3.3 — see `TODO/Private_Demo_Checklist.md`).
+Implemented tasks: `FOnsetStateTreeIdleTask`, `FOnsetStateTreeRoamTask`, `FOnsetStateTreeAgroTask`, `FOnsetStateTreeChaseTask`, `FOnsetStateTreeLostTargetTask`.  
+Remaining tasks: Attack, Flee, RoamWander (all A3.3 — see `TODO/Private_Demo_Checklist.md`).
 
 ```mermaid
 stateDiagram-v2
@@ -114,10 +128,14 @@ stateDiagram-v2
     Idle --> Roam: Timer
     Roam --> Agro: Perception sees player
     Agro --> Chase: Target acquired
-    Chase --> Attack: In range
+    Chase --> Attack: DistanceCondition ≤ AttackRange
     Attack --> Chase: Cooldown finished
-    Chase --> Lost: Target lost
-    Lost --> Roam
+    Chase --> Lost: DistanceCondition > LostRange / no target
+    Lost --> Roam: Timer (2-4s)
+
+    Chase --> Marooned: DistanceCondition > LeashRadius
+    Marooned --> Attack: DistanceCondition ≤ AttackRange
+    Marooned --> Lost: DistanceCondition > LostRange / no target
 
     Agro --> Assist: Perception (hears ally attacked)  
     Assist --> Chase
