@@ -2,9 +2,9 @@
 #include "Player/TargetingComponent.h"
 #include "GameFramework/Actor.h"
 
-FAbilityTargetData UAbilityTargetingLibrary::GetTargetData(UTargetingComponent* TargetingComponent, AActor* SourceActor)
+FOnsetTargetData UAbilityTargetingLibrary::GetTargetData(UTargetingComponent* TargetingComponent, AActor* SourceActor)
 {
-	FAbilityTargetData Data;
+	FOnsetTargetData Data;
 
 	if (!TargetingComponent) return Data;
 

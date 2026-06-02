@@ -64,3 +64,6 @@ Tools/EpisodeExporter/config.local.*
 .obsidian/
 .obsidian/workspace
 .obsidian/workspace.json
+
+# opencode internal plans
+.opencode/

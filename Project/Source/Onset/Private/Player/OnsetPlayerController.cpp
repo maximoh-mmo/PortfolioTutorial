@@ -155,7 +155,7 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 	}	
 }
 
-static void LogAbilityTargetData(int32 AbilityIndex, const FAbilityTargetData& Data)
+static void LogAbilityTargetData(int32 AbilityIndex, const FOnsetTargetData& Data)
 {
 	if (Data.TargetActor)
 	{
@@ -173,25 +173,25 @@ static void LogAbilityTargetData(int32 AbilityIndex, const FAbilityTargetData& D
 
 void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
-	FAbilityTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
+	FOnsetTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
 	LogAbilityTargetData(1, Data);
 }
 
 void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
 {
-	FAbilityTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
+	FOnsetTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
 	LogAbilityTargetData(2, Data);
 }
 
 void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
 {
-	FAbilityTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
+	FOnsetTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
 	LogAbilityTargetData(3, Data);
 }
 
 void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 {
-	FAbilityTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
+	FOnsetTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
 	LogAbilityTargetData(4, Data);
 }
 

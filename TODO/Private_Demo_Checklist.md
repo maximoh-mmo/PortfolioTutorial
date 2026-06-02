@@ -180,7 +180,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Implement **Roam** state (nav-reachable territory patrol, home-anchor) — `FOnsetStateTreeRoamTask`
 - [x] Implement **Agro** state (face target via `SetFocus`, facing-angle check + timer) — `FOnsetStateTreeAgroTask`
 - [x] Implement **Chase** state (MoveToActor, exit on arrival, transitions gated by DistanceCondition) — `FOnsetStateTreeChaseTask`
-- [ ] Implement **Attack** state (trigger GA_Attack, cooldown)
+- [x] Implement **Attack** state (timer-based cooldown stub, ready for GAS) — `FOnsetStateTreeAttackTask`
 - [ ] Implement **Flee** state (retreat when low health + isolated)
 - [x] Implement **Lost** state (target lost → clear focus, random pause 2-4s, → Roam) — `FOnsetStateTreeLostTargetTask`
 - [x] Create **FOnsetStateTreeTaskBase** — shared helpers (GetController, GetTarget, HasMoveCompleted, GetSelfBaseCharacter, GetPathFollowingComponent); all 5 tasks migrated
@@ -212,12 +212,13 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 # A4 — GAS COMBAT (est. 10 days)
 
 ## A4.1 GAS Setup
-- [ ] Add `AbilitySystemComponent` to player and NPC
-- [ ] Create `UAttributeSet` (Health, MaxHealth, Damage)
-- [ ] Set up `GameplayTags` (damage type, state tags, cooldown tags)
-- [ ] Initialize attributes on BeginPlay
-- [ ] Verify attributes replicate
-- [ ] Verify ASC initializes correctly on both player and NPC
+- [x] Add `AbilitySystemComponent` to player and NPC — `CreateDefaultSubobject` on `AOnsetBaseCharacter` (was already done)
+- [x] Create `UOnsetAttributeSet` (Health, MaxHealth, clamp in PostGameplayEffectExecute)
+- [x] Set up `GameplayTags` (Damage.Physical, Damage.Magical, State.Dead, State.Staggered, State.Invulnerable, Cooldown.Melee) — native tags via UE_DEFINE_GAMEPLAY_TAG macros
+- [x] Initialize attributes on BeginPlay/PossessedBy — `InitAbilityActorInfo` in PossessedBy
+- [x] Verify attributes replicate — `DOREPLIFETIME_CONDITION_NOTIFY` + `GAMEPLAYATTRIBUTE_REPNOTIFY` in OnRep
+- [x] Verify ASC initializes correctly on both player and NPC — PossessedBy fires for both
+- [ ] Actually verify via runtime test
 
 ## A4.2 Basic Attack Ability
 - [ ] Create `UGameplayAbility_MeleeAttack` (C++ GA)
@@ -380,8 +381,8 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | — | 27 | — |
-| A4 GAS Combat | — | — | — |
+| A3 AI Systems | — | 28 | — |
+| A4 GAS Combat | — | 6 | — |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |

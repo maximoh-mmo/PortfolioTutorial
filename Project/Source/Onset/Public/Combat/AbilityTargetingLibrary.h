@@ -10,7 +10,7 @@ class UTargetingComponent;
 
 /** Ability targeting info derived from the targeting component and source actor. */
 USTRUCT(BlueprintType)
-struct FAbilityTargetData
+struct FOnsetTargetData
 {
 	GENERATED_BODY()
 
@@ -34,5 +34,5 @@ class ONSET_API UAbilityTargetingLibrary : public UBlueprintFunctionLibrary
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Ability Targeting")
-	static FAbilityTargetData GetTargetData(UTargetingComponent* TargetingComponent, AActor* SourceActor);
+	static FOnsetTargetData GetTargetData(UTargetingComponent* TargetingComponent, AActor* SourceActor);
 };
