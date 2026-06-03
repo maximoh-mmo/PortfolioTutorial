@@ -16,7 +16,6 @@ void UTargetingComponent::SetTarget(AActor* NewTarget)
 {
 	if (!IsActorTargetValid(NewTarget)) return;
 	CurrentTarget = NewTarget;
-	UE_LOG(LogTemp, Warning, TEXT("Setting target to %s"), *NewTarget->GetName());
 }
 
 void UTargetingComponent::ClearTarget()

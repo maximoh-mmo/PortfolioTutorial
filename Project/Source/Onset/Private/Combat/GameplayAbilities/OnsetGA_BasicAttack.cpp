@@ -17,19 +17,11 @@ UOnsetGA_BasicAttack::UOnsetGA_BasicAttack()
 	{
 		CooldownGameplayEffectClass = CooldownFinder.Class;
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("CooldownFinder failed"));
-	}
 	static ConstructorHelpers::FClassFinder<UGameplayEffect> DamageFinder(
 		TEXT("/Game/Game/Combat/GE_BasicAttackDamage.GE_BasicAttackDamage_C"));
 	if (DamageFinder.Succeeded())
 	{
 		DamageEffectClass = DamageFinder.Class;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("DamageFinder failed"));
 	}
 	
 }
@@ -41,7 +33,6 @@ void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 {
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BasicAttack: CommitAbility failed"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
@@ -49,13 +40,12 @@ void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	AOnsetBaseCharacter* Self = Cast<AOnsetBaseCharacter>(ActorInfo->AvatarActor);
 	if (!Self || !Self->TargetingComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BasicAttack: Invalid self or targeting component"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
 	AActor* TargetActor = Self->TargetingComponent->GetTarget();
-	if (!TargetActor)	{
-		UE_LOG(LogTemp, Warning, TEXT("BasicAttack: No target found"));
+	if (!TargetActor)
+	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
@@ -64,14 +54,12 @@ void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	const float DistSq = FVector::DistSquared(Self->GetActorLocation(), TargetActor->GetActorLocation());
 	if (DistSq > FMath::Square(AttackRange))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BasicAttack: Target out of range"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
 	
 	if (!DamageEffectClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BasicAttack: Damage effect class not found"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
@@ -85,6 +73,5 @@ void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	auto results = ApplyGameplayEffectToTarget(Handle, ActorInfo, ActivationInfo, TargetData, DamageEffectClass,
 	GetAbilityLevel()); 
 	
-	UE_LOG(LogTemp, Log, TEXT("BasicAttack: Damage applied to %s"), *TargetActor->GetName());                                                                                     
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);                                                 
 }                                                                         

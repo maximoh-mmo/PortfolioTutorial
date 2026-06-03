@@ -218,14 +218,14 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Initialize attributes on BeginPlay/PossessedBy — `InitAbilityActorInfo` in PossessedBy
 - [x] Verify attributes replicate — `DOREPLIFETIME_CONDITION_NOTIFY` + `GAMEPLAYATTRIBUTE_REPNOTIFY` in OnRep
 - [x] Verify ASC initializes correctly on both player and NPC — PossessedBy fires for both
-- [ ] Actually verify via runtime test
+- [x] Actually verify via runtime test
 
 ## A4.2 Basic Attack Ability
-- [ ] Create `UGameplayAbility_MeleeAttack` (C++ GA)
-- [ ] Implement targeting from TargetingComponent/TargetData
-- [ ] Apply damage via GameplayEffect
+- [x] Create `UOnsetGA_BasicAttack` (C++ GA)
+- [x] Implement targeting from TargetingComponent/TargetData
+- [x] Apply damage via GameplayEffect
 - [ ] Add animation montage support (simple melee swing)
-- [ ] Verify player attack hits target
+- [x] Verify player attack hits target
 - [ ] Verify NPC attack hits player
 
 ## A4.3 Hit Reaction Ability
@@ -382,7 +382,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
 | A3 AI Systems | — | 28 | — |
-| A4 GAS Combat | — | 6 | — |
+| A4 GAS Combat | 12 | 10 | 83% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |

@@ -15,9 +15,7 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
 		// Clamp Health to [0, MaxHealth]
-		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));    
-		UE_LOG(LogTemp, Log, TEXT("%s Health = %.1f / %.1f"),
-			*GetOwningActor()->GetName(), GetHealth(), GetMaxHealth()); 
+		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth())); 
 	}
 }
 

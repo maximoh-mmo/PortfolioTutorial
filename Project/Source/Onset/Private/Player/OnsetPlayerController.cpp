@@ -4,14 +4,12 @@
 #include "Player/OnsetPlayerController.h"
 
 #include "AbilitySystemComponent.h"
-#include "Combat/AbilityTargetingLibrary.h"
 #include "EnhancedInputComponent.h"
 #include "Player/CursorManager.h"
 #include "Player/TargetingComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"
-#include "Abilities/GameplayAbility.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
@@ -28,16 +26,11 @@ AOnsetPlayerController::AOnsetPlayerController()
 	if (!BasicAttackAbility)
 	{
 		BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
-		if (!BasicAttackAbility)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to find Basic Attack Ability class"));
-		}
 	}
 }
 
 void AOnsetPlayerController::StartAutoAttack()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Starting auto-attack"));
 	// Ensure we have a valid world context before setting the timer
 	if (!GetWorld()) return;
 	GetWorldTimerManager().SetTimer(
@@ -107,25 +100,13 @@ void AOnsetPlayerController::SetupInputComponent()
 
 void AOnsetPlayerController::OnAutoAttackTick()
 {
-	UE_LOG(LogTemp, Log, TEXT("Auto-attack tick"));
 	const AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (!Self || !Self->AbilitySystemComponent || !Self->TargetingComponent || !Self->TargetingComponent->GetTarget() || !BasicAttackAbility)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Self=%s ASC=%s TC=%s Target=%s BAA=%s"),                                                   
-			Self ? TEXT("ok") : TEXT("null"),                                                                         
-			Self && Self->AbilitySystemComponent ? TEXT("ok") : TEXT("null"),                                                    
-			Self && Self->TargetingComponent ? TEXT("ok") : TEXT("null"),                                                        
-			Self && Self->TargetingComponent && Self->TargetingComponent->GetTarget() ? *Self->TargetingComponent->GetTarget()->GetName() : TEXT("null"),                                                                         
-		 BasicAttackAbility ? TEXT("ok") : TEXT("null"));  
 		StopAutoAttack();
 		return;
 	}
-	bool bActivated = Self->AbilitySystemComponent->TryActivateAbilityByClass(BasicAttackAbility);
-	UE_LOG(LogTemp, Log, TEXT("TryActivateAbilityByClass returned %s"), bActivated ? TEXT("true") : TEXT("false"));
-	for (const FGameplayAbilitySpec& Spec : Self->AbilitySystemComponent->GetActivatableAbilities())
-	{
-		UE_LOG(LogTemp, Log, TEXT("  Spec class: %s"), *Spec.Ability->GetClass()->GetName());
-	}  
+	Self->AbilitySystemComponent->TryActivateAbilityByClass(BasicAttackAbility);
 }
 
 void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
@@ -211,44 +192,20 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 }	
 
 
-static void LogAbilityTargetData(int32 AbilityIndex, const FOnsetTargetData& Data)
-{
-	if (Data.TargetActor)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Ability %d on %s at %s (dir: %s)"),
-			AbilityIndex,
-			*Data.TargetActor->GetName(),
-			*Data.TargetLocation.ToString(),
-			*Data.TargetDirection.ToString());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Ability %d — no target"), AbilityIndex);
-	}
-}
-
 void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
-	FOnsetTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
-	LogAbilityTargetData(1, Data);
 }
 
 void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
 {
-	FOnsetTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
-	LogAbilityTargetData(2, Data);
 }
 
 void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
 {
-	FOnsetTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
-	LogAbilityTargetData(3, Data);
 }
 
 void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 {
-	FOnsetTargetData Data = UAbilityTargetingLibrary::GetTargetData(TargetingComponent, GetPawn());
-	LogAbilityTargetData(4, Data);
 }
 
 void AOnsetPlayerController::InjectAbilityInput(int32 AbilityIndex, bool bPressed)
@@ -294,6 +251,5 @@ void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(bool bEnabled)
 	AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
 	if(OnsetPlayerState) {
 		OnsetPlayerState->bIsPvPEnabled = bEnabled;
-		UE_LOG(LogTemp, Warning, TEXT("PvP Mode %hs"), bEnabled ? "enabled" : "disabled");
 	}
 }   

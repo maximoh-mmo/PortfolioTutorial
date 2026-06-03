@@ -10,7 +10,6 @@
 
 void AOnsetPlayerState::OnRep_PvPEnabled()
 {
-	UE_LOG(LogNet, Log, TEXT("AOnsetPlayerState::OnRep_PvPEnabled()"));
 	if (bIsPvPEnabled) return;
 	AOnsetPlayerController* Controller = Cast<AOnsetPlayerController>(GetPlayerController());
 	if (Controller)

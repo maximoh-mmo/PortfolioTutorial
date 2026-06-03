@@ -102,8 +102,7 @@ void AOnsetPoolManager::InitializePool()
 			ReleasePooledController(SpawnedController);
 		}
 	}
-	UE_LOG(LogPooling, Warning, TEXT("OnsetPoolManager: Pre-allocated %d NPCs and %d controllers."), ObjectPool.Num(), ControllerPool.Num()); 
-
+	
 }
 
 void AOnsetPoolManager::BeginPlay()

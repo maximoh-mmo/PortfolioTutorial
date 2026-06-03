@@ -55,8 +55,6 @@ void UGamepadCursorWidget::NativeConstruct()
 void UGamepadCursorWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
-	auto d = GetWidgetFromName(TEXT("Crosshair"));
-	if (!d) UE_LOG(LogTemp, Warning, TEXT("Crosshair widget not found!"));
 	CrosshairImage = Cast<UImage>(GetWidgetFromName(TEXT("Crosshair")));
 }
 
