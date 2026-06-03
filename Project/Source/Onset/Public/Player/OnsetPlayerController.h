@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "OnsetPlayerController.generated.h"
 
+class UGameplayAbility;
 class UGamepadCursorWidget;
 class UCursorManager;
 class UInputAction;
@@ -20,12 +21,25 @@ class ONSET_API AOnsetPlayerController : public APlayerController
 {
 	
 	GENERATED_BODY()
-
+public:
 	AOnsetPlayerController();
+	
+	UFUNCTION(BlueprintCallable, Category="Combat")
+	void StartAutoAttack();
+	
+	UFUNCTION(BlueprintCallable, Category="Combat")
+	void StopAutoAttack();
+	
+	
 protected:
 	virtual void BeginPlay() override;
 
 	virtual void SetupInputComponent() override;
+	
+	virtual void OnPossess(APawn* InPawn) override;
+	
+	virtual void OnUnPossess() override;
+	
 private:
 	//  --- Input Mapping Contexts ---
 	
@@ -85,9 +99,21 @@ private:
 	
 	// --- Targeting ---
 	
-	/** Stores the current target with validation. Set by context resolution in OnPrimaryInteraction. */          
+	/** Stores the current targeting component via OnPossess, clear's on UnPossess. */          
 	UPROPERTY()
-	UTargetingComponent* TargetingComponent;
+	TObjectPtr<UTargetingComponent> TargetingComponent;
+	
+	// --- Combat ---
+	UPROPERTY()
+	FTimerHandle AutoAttackTimerHandle;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Combat")
+	float AutoAttackInterval = 1.5f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Combat")
+	TSubclassOf<UGameplayAbility> BasicAttackAbility;
+	
+	void OnAutoAttackTick();	
 	
 	// --- Input Handlers ---                                                                                     
                                                                                                                      
@@ -110,8 +136,10 @@ private:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	void InjectAbilityInput(int32 AbilityIndex, bool bPressed);
 	
+	// --- PVP toggling ---
 	void OnPvPToggleTriggered(const FInputActionValue& Value);                                                      
+
 	UFUNCTION(Server, Reliable)                                                                                     
 	void Server_SetPvPEnabled(bool bEnabled);  
-	
+		
 };

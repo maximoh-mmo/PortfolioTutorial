@@ -36,9 +36,9 @@ public:
 
 	// --- Targeting ---
 
-	/** Current target actor. Set by OnPerceptionUpdated for NPCs, by input for Player AI. */
+	/** Current cached Targeting Component set in OnPossess, cleared on UnPossess. */
 	UPROPERTY()
-	UTargetingComponent* TargetingComponent;
+	TObjectPtr<UTargetingComponent> TargetingComponent;
 	
 	// --- Pooling ---
 	/** Resets the controller to base, non-active, state for pooling reuse. Called by pool manager on release. */

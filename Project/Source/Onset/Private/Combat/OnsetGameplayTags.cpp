@@ -7,4 +7,4 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Magical, "Damage.Magical");
 UE_DEFINE_GAMEPLAY_TAG(TAG_State_Dead, "State.Dead");                                                    
 UE_DEFINE_GAMEPLAY_TAG(TAG_State_Staggered, "State.Staggered");                                               
 UE_DEFINE_GAMEPLAY_TAG(TAG_State_Invulnerable,"State.Invulnerable");                                            
-UE_DEFINE_GAMEPLAY_TAG(TAG_Cooldown_Melee, "Cooldown.Melee");  
+UE_DEFINE_GAMEPLAY_TAG(TAG_Cooldown_BasicAttack, "Cooldown.BasicAttack");  

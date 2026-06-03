@@ -19,7 +19,6 @@ AOnsetAIController::AOnsetAIController()
 	StateTreeComponent->SetComponentTickEnabled(true);
 	
 	PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
-	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComp"));
 
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 	PerceptionComponent->ConfigureSense(*SightConfig);
@@ -82,6 +81,7 @@ void AOnsetAIController::OnPossess(APawn* InPawn)
 	UE_LOG(LogController, Error, TEXT("OnPossess: %s, state tree status: %hhd"), *InPawn->GetName(), StateTreeComponent->GetStateTreeRunStatus());
 	Super::OnPossess(InPawn);
 	StateTreeComponent->StartLogic();
+	TargetingComponent = GetPawn()->FindComponentByClass<UTargetingComponent>();
 }
 
 void AOnsetAIController::OnUnPossess()
@@ -90,6 +90,7 @@ void AOnsetAIController::OnUnPossess()
 	UE_LOG(LogController, Error, TEXT("OnUnPossess"));
 	StateTreeComponent->StopLogic(TEXT("Unpossessed"));
 	Super::OnUnPossess();
+	TargetingComponent = nullptr;
 }
 
 void AOnsetAIController::ResetForPool()

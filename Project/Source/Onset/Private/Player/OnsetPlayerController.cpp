@@ -3,6 +3,7 @@
 
 #include "Player/OnsetPlayerController.h"
 
+#include "AbilitySystemComponent.h"
 #include "Combat/AbilityTargetingLibrary.h"
 #include "EnhancedInputComponent.h"
 #include "Player/CursorManager.h"
@@ -10,10 +11,12 @@
 #include "EnhancedInputSubsystems.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"
+#include "Abilities/GameplayAbility.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "Player/OnsetBaseCharacter.h"
 #include "Player/OnsetPlayerState.h"
 #include "UI/GamepadCursorWidget.h"
 
@@ -21,8 +24,34 @@ DEFINE_LOG_CATEGORY(LogGamepad);
 
 AOnsetPlayerController::AOnsetPlayerController()
 {
-	CursorManager = CreateDefaultSubobject<UCursorManager>(TEXT("CursorManager"));                                     
-	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent")); 
+	CursorManager = CreateDefaultSubobject<UCursorManager>(TEXT("CursorManager"));
+	if (!BasicAttackAbility)
+	{
+		BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
+		if (!BasicAttackAbility)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to find Basic Attack Ability class"));
+		}
+	}
+}
+
+void AOnsetPlayerController::StartAutoAttack()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Starting auto-attack"));
+	// Ensure we have a valid world context before setting the timer
+	if (!GetWorld()) return;
+	GetWorldTimerManager().SetTimer(
+		AutoAttackTimerHandle,
+		this,
+		&AOnsetPlayerController::OnAutoAttackTick,
+		AutoAttackInterval,
+		true,
+		0.0f);
+}
+
+void AOnsetPlayerController::StopAutoAttack()
+{
+	GetWorldTimerManager().ClearTimer(AutoAttackTimerHandle);
 }
 
 void AOnsetPlayerController::BeginPlay()
@@ -74,6 +103,29 @@ void AOnsetPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(IA_PvPToggle, ETriggerEvent::Started, this, &AOnsetPlayerController::OnPvPToggleTriggered);
 		
 	}
+}
+
+void AOnsetPlayerController::OnAutoAttackTick()
+{
+	UE_LOG(LogTemp, Log, TEXT("Auto-attack tick"));
+	const AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
+	if (!Self || !Self->AbilitySystemComponent || !Self->TargetingComponent || !Self->TargetingComponent->GetTarget() || !BasicAttackAbility)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Self=%s ASC=%s TC=%s Target=%s BAA=%s"),                                                   
+			Self ? TEXT("ok") : TEXT("null"),                                                                         
+			Self && Self->AbilitySystemComponent ? TEXT("ok") : TEXT("null"),                                                    
+			Self && Self->TargetingComponent ? TEXT("ok") : TEXT("null"),                                                        
+			Self && Self->TargetingComponent && Self->TargetingComponent->GetTarget() ? *Self->TargetingComponent->GetTarget()->GetName() : TEXT("null"),                                                                         
+		 BasicAttackAbility ? TEXT("ok") : TEXT("null"));  
+		StopAutoAttack();
+		return;
+	}
+	bool bActivated = Self->AbilitySystemComponent->TryActivateAbilityByClass(BasicAttackAbility);
+	UE_LOG(LogTemp, Log, TEXT("TryActivateAbilityByClass returned %s"), bActivated ? TEXT("true") : TEXT("false"));
+	for (const FGameplayAbilitySpec& Spec : Self->AbilitySystemComponent->GetActivatableAbilities())
+	{
+		UE_LOG(LogTemp, Log, TEXT("  Spec class: %s"), *Spec.Ability->GetClass()->GetName());
+	}  
 }
 
 void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
@@ -131,29 +183,33 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 	if (!GetHitResultAtScreenPosition(ScreenPos, ECC_Visibility, false, HitResult)) return;
 	
 	AActor* HitActor = HitResult.GetActor();
-	if (HitActor && HitActor->ActorHasTag("Enemy"))
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	FNavLocation NavLoc;
+	bool bIsHostile = false;                                                                                        
+	if (HitActor)
 	{
-		TargetingComponent->SetTarget(HitActor);
+		if (HitActor->ActorHasTag("Enemy") || TargetingComponent->IsActorTargetPVPValid(HitActor, GetPawn()))
+		{
+			TargetingComponent->SetTarget(HitActor);
+			StartAutoAttack();
+			bIsHostile = true;
+		}
+	}                
+	if (NavSys && NavSys->ProjectPointToNavigation(HitResult.Location, NavLoc))
+	{
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, NavLoc.Location);
 	}
-	else if (HitActor && TargetingComponent->IsActorTargetPVPValid(HitActor, GetPawn()))
+	else if (HitActor)
 	{
-		TargetingComponent->SetTarget(HitActor);
-	}	
-	else
+		UAIBlueprintHelperLibrary::SimpleMoveToActor(this, HitActor);
+	}                                         
+	if (!bIsHostile)
 	{
-		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
-		FNavLocation NavLoc;
-		if (NavSys && NavSys->ProjectPointToNavigation(HitResult.Location, NavLoc))
-		{
-			UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, NavLoc.Location);
-		}
-		else
-		{
-			UAIBlueprintHelperLibrary::SimpleMoveToActor(this, HitActor);
-		}
-		TargetingComponent->ClearTarget();
-	}	
-}
+		TargetingComponent->ClearTarget();                                                                          
+		StopAutoAttack();
+	}
+}	
+
 
 static void LogAbilityTargetData(int32 AbilityIndex, const FOnsetTargetData& Data)
 {
@@ -219,8 +275,20 @@ void AOnsetPlayerController::OnPvPToggleTriggered(const FInputActionValue& Value
 	AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
 	if (!OnsetPlayerState) return;                                                                                            
 	Server_SetPvPEnabled(!OnsetPlayerState->bIsPvPEnabled);                                                                   
-}                                                                                                               
-                                                                                                                     
+}
+
+void AOnsetPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	TargetingComponent = GetPawn()->FindComponentByClass<UTargetingComponent>();
+}
+
+void AOnsetPlayerController::OnUnPossess()
+{
+	Super::OnUnPossess();
+	TargetingComponent = nullptr;
+}
+
 void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(bool bEnabled)                                 
 {                                                                                                               
 	AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
