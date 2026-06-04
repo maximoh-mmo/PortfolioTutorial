@@ -155,19 +155,19 @@ Estimated per episode:
 | Phase 0: Player Core | 1-5 | 30 |
 | Phase 1: NPC Lifecycle | 6-8 | 18 |
 | Phase 2: AI Foundations | 9-13 | 30 |
-| Phase 3: GAS Combat | 14-20 | 42 |
+| Phase 3: GAS Combat | 14-20 | 48 |
 | Phase 3.5: Player AI | 21-23 | 18 |
 | Phase 4: Advanced AI (incl. Group Assist) | 24-28 | 30 |
 | Phase 5: Multiplayer (incl. PvP) | 29-34 | 36 |
-| Phase 6: Final Demo | 35-39 | 30 |
+| Phase 6: Final Demo | 35-38 | 24 |
 | **Total** | **39 episodes** | **~234 hours (5.85 weeks)** |
 
 ## Phase B Total
 | Activity | Time |
 |----------|------|
 | Scripting (rewrites + new) | 3 weeks |
-| Recording + Editing + Export | 5.7 weeks |
-| **Total** | **~8.7 weeks** |
+| Recording + Editing + Export | 5.85 weeks |
+| **Total** | **~8.85 weeks** |
 
 ---
 
@@ -177,9 +177,9 @@ Estimated per episode:
 |-------|----------|-------|
 | ✅ Planning (Phases 1-5) | Complete | Outlines, docs, scripts 1-5, workflow |
 | ✅ Pre-Production Review | Complete | Consistency scan, risk docs, timeline |
-| **Phase A: Private Demo** | **~13 weeks** | Build all systems off-camera (incl. multi-device input) |
-| **Phase B: Episode Production** | **~8.85 weeks** | Record, edit, export 39 episodes |
-| **Total Remaining** | **~21.85 weeks (~5.5 months)** | |
+| **Phase A: Private Demo** | **~13.5 weeks** | Build all systems off-camera (incl. multi-device input, corpse system) |
+| **Phase B: Episode Production** | **~8.85 weeks** | Record, edit, export 39 episodes (123h scripting + 234h recording) |
+| **Total Remaining** | **~22.35 weeks (~5.6 months)** | |
 
 ## Parallel Work
 
@@ -192,8 +192,8 @@ This reduces total calendar time:
 
 | Scenario | Calendar Time |
 |----------|---------------|
-| Sequential (Phase A → Phase B) | ~21.7 weeks |
-| **With script overlap** | **~17 weeks (~4.25 months)** |
+| Sequential (Phase A → Phase B) | ~22.35 weeks |
+| **With script overlap** | **~19.3 weeks (~4.5 months)** |
 
 ## Weekly Cadence (for release)
 
@@ -204,11 +204,11 @@ If releasing one episode per week:
 | Phase 0: Player Core | 1-5 | 1/week | 5 weeks |
 | Phase 1: NPC Lifecycle | 6-8 | 1/week | 3 weeks |
 | Phase 2: AI Foundations | 9-13 | 1/week | 5 weeks |
-| Phase 3: GAS Combat | 14-20 | 1/week | 7 weeks |
+| Phase 3: GAS Combat | 14-20 | 1/week | 8 weeks |
 | Phase 3.5: Player AI | 21-23 | 1/week | 3 weeks |
 | Phase 4: Advanced AI | 24-28 | 1/week | 5 weeks |
 | Phase 5: Multiplayer | 29-34 | 1/week | 6 weeks |
-| Phase 6: Final Demo | 35-39 | 1/week | 5 weeks |
+| Phase 6: Final Demo | 35-38 | 1/week | 4 weeks |
 | **Total release window** | **39 episodes** | **1/week** | **39 weeks (~9.75 months)** |
 
 The ~3-month private demo build + ~9.75-month release window means a **~12.75-month project** from start to finish of the last episode release. Batch-recording (recording multiple episodes per week) compresses the production phase but not the release schedule.
@@ -227,9 +227,9 @@ The ~3-month private demo build + ~9.75-month release window means a **~12.75-mo
 | GAS milestone | Week 33 | Episodes 14-20 released (full ability system) |
 | Advanced AI milestone | Week 41 | Episodes 24-28 released (group assist, advanced behaviour) |
 | Multiplayer milestone | Week 47 | Episodes 29-34 released (MP + Steam + PvP) |
-| Series complete | Week 52 | Episode 39 released |
+| Series complete | Week 52 | Episode 38 (Final Showcase) released — 39th release |
 
 ---
 
-**Total estimated effort:** ~21.85 weeks of work, ~12.75 months calendar (with weekly release cadence)
+**Total estimated effort:** ~21.85 weeks of work, ~12.75 months calendar (with weekly release cadence; 39 unique episodes over 39 weeks)
 **Next step:** Begin Private Demo Development
