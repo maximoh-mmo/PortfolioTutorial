@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "Combat/OnsetAttributeSet.h"
 #include "Combat/GameplayAbilities/OnsetGA_BasicAttack.h"
+#include "Combat/GameplayAbilities/OnsetGA_HitReaction.h"
 #include "Player/TargetingComponent.h"
 
 AOnsetBaseCharacter::AOnsetBaseCharacter()
@@ -37,8 +38,11 @@ void AOnsetBaseCharacter::GrantDefaultAbilities()
 	
 	UClass* BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
 	if (!BasicAttackAbility) BasicAttackAbility = UOnsetGA_BasicAttack::StaticClass();
-	FGameplayAbilitySpec Spec(BasicAttackAbility, 1, INDEX_NONE, this);
-	AbilitySystemComponent->GiveAbility(Spec);
+	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(BasicAttackAbility, 1, INDEX_NONE, this));
+	
+	UClass* HitReaction = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_HitReaction.GA_HitReaction_C")));
+	if (!HitReaction) HitReaction = UOnsetGA_HitReaction::StaticClass();
+	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(HitReaction, 1, INDEX_NONE, this));
 	
 	bAbilitiesGranted = true;
 }

@@ -4,15 +4,16 @@
 #include "OnsetStateTreeTaskBase.h"
 #include "OnsetStateTreeAttackTask.generated.h"
 
+class UGameplayAbility;
+
 USTRUCT()
 struct FOnsetStateTreeAttackTaskInstanceData
 {
 	GENERATED_BODY()
 	
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	float CooldownDuration = 1.5f;
+	UPROPERTY(EditAnywhere, Category = "Attack")                                                                 
+	TSubclassOf<UGameplayAbility> AbilityClass;    
 	
-	float RemainingCooldown = 0.0f;
 };
 
 

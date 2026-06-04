@@ -241,7 +241,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify NPC attacks player in range
 - [ ] Verify NPC exits Attack state on cooldown
 
-## A4.5 Damage, Death, and Pool Return
+## A4.5a — Damage, Death, Pool Return, Respawn (baseline)
 - [ ] Implement health depletion on damage
 - [ ] Implement death event (OnDeath())
 - [ ] Notify spawner on death → start respawn timer
@@ -250,6 +250,16 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify respawn timer fires
 - [ ] Verify NPC re-enters pool cleanly
 - [ ] Verify multiple NPCs dying simultaneously creates independent timers
+
+## A4.5b — Corpse Actor System (new)
+- [ ] Create `AOnsetCorpse` — minimal actor, static mesh, timed self-destruct
+- [ ] On NPC death: spawn corpse at death location
+- [ ] Corpse despawns after configurable lifespan
+- [ ] Hard cap on active corpses (oldest evicted)
+- [ ] Verify NPC returns to pool immediately (corpse lifecycle independent)
+- [ ] Verify spawner respawn timer starts at death, not corpse despawn
+- [ ] Verify corpse spawned for player kills and NPC-kills-NPC deaths
+- [ ] Verify no performance regression under rapid death cascade
 
 ## A4.6 Multiple Abilities
 - [ ] Create dash ability (movement-based GA)
@@ -382,7 +392,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
 | A3 AI Systems | — | 28 | — |
-| A4 GAS Combat | 12 | 10 | 83% |
+| A4 GAS Combat | 20 | 10 | 50% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |

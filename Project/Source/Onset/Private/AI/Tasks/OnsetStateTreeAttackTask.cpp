@@ -1,25 +1,41 @@
 ﻿#include "AI/Tasks/OnsetStateTreeAttackTask.h"
 
+#include "AbilitySystemComponent.h"
+#include "Combat/GameplayAbilities/OnsetGA_BasicAttack.h"
+#include "Combat/OnsetGameplayTags.h"
+
 EStateTreeRunStatus FOnsetStateTreeAttackTask::EnterState(FStateTreeExecutionContext& Context,
-	const FStateTreeTransitionResult& Transition) const
+                                                          const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
 	AActor* Target = GetTarget(Context);
 	if (!Target) return EStateTreeRunStatus::Failed;
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-	InstanceData.RemainingCooldown = InstanceData.CooldownDuration; 	
 	AIController->StopMovement();
+	AOnsetBaseCharacter* Self = Cast<AOnsetBaseCharacter>(AIController->GetPawn());
+	if (!Self || !Self->AbilitySystemComponent || !Self->TargetingComponent || !Self->TargetingComponent->GetTarget())
+	{
+		Self->AbilitySystemComponent->TryActivateAbility(
+			Self->AbilitySystemComponent->FindAbilitySpecFromClass(UOnsetGA_BasicAttack::StaticClass())->Handle);
+	}
 	return EStateTreeRunStatus::Running;
 }
 
 EStateTreeRunStatus FOnsetStateTreeAttackTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-	InstanceData.RemainingCooldown -= DeltaTime;
-	if (InstanceData.RemainingCooldown <= 0.0f)
-	{
-		return EStateTreeRunStatus::Succeeded; // Attack completed
-	}
-	return EStateTreeRunStatus::Running; // Still cooling down
+	if (!InstanceData.AbilityClass) return EStateTreeRunStatus::Failed;
+	
+	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
+	if (!Self || !Self->AbilitySystemComponent)	return EStateTreeRunStatus::Failed;
+	
+	if (Self->AbilitySystemComponent->HasMatchingGameplayTag(TAG_Cooldown_BasicAttack))
+		return EStateTreeRunStatus::Running;
+	
+	Self->AbilitySystemComponent->TryActivateAbilityByClass(InstanceData.AbilityClass);
+	
+	if (!GetTarget(Context)) return EStateTreeRunStatus::Succeeded;
+	
+	return EStateTreeRunStatus::Running;
 }

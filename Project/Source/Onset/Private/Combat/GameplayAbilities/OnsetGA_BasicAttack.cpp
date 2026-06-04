@@ -11,12 +11,12 @@ UOnsetGA_BasicAttack::UOnsetGA_BasicAttack()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	
-	static ConstructorHelpers::FClassFinder<UGameplayEffect> CooldownFinder(
-		TEXT("/Game/Game/Combat/GE_BasicAttackCooldown.GE_BasicAttackCooldown_C"));
-	if (CooldownFinder.Succeeded())
-	{
-		CooldownGameplayEffectClass = CooldownFinder.Class;
-	}
+	static ConstructorHelpers::FObjectFinder<UGameplayEffect> CooldownFinder(                                       
+		 TEXT("/Game/Game/Combat/GE_BasicAttackCooldown.GE_BasicAttackCooldown_C"));                                   
+	if (CooldownFinder.Succeeded())                                                                                 
+	{                                                                                                               
+		CooldownGameplayEffectClass = CooldownFinder.Object;                                                        
+	}   
 	static ConstructorHelpers::FClassFinder<UGameplayEffect> DamageFinder(
 		TEXT("/Game/Game/Combat/GE_BasicAttackDamage.GE_BasicAttackDamage_C"));
 	if (DamageFinder.Succeeded())

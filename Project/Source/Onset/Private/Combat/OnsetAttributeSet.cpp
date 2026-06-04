@@ -2,6 +2,7 @@
 #include "Combat/OnsetAttributeSet.h"
 
 #include "GameplayEffectExtension.h"
+#include "Combat/OnsetGameplayTags.h"
 #include "Net/UnrealNetwork.h"
 
 UOnsetAttributeSet::UOnsetAttributeSet()
@@ -16,6 +17,20 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 	{
 		// Clamp Health to [0, MaxHealth]
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth())); 
+		
+		if (Data.EvaluatedData.Magnitude < 0.0f)                                                                        
+		{                                                                                                               
+			FGameplayEventData Payload;                                                                                 
+			Payload.EventTag = TAG_Event_HitReaction;                                                                   
+			Payload.Instigator = Data.EffectSpec.GetContext().GetInstigator();                                          
+			Payload.Target = GetOwningActor();                                                                          
+			Payload.EventMagnitude = FMath::Abs(Data.EvaluatedData.Magnitude);                                          
+                                                                                                                     
+			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())                                       
+			{                                                                                                           
+				ASC->HandleGameplayEvent(TAG_Event_HitReaction, &Payload);                                              
+			}                                                                                                           
+		}              
 	}
 }
 

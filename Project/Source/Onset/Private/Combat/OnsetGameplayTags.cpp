@@ -8,3 +8,4 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_State_Dead, "State.Dead");
 UE_DEFINE_GAMEPLAY_TAG(TAG_State_Staggered, "State.Staggered");                                               
 UE_DEFINE_GAMEPLAY_TAG(TAG_State_Invulnerable,"State.Invulnerable");                                            
 UE_DEFINE_GAMEPLAY_TAG(TAG_Cooldown_BasicAttack, "Cooldown.BasicAttack");  
+UE_DEFINE_GAMEPLAY_TAG(TAG_Event_HitReaction, "Event.HitReaction");
