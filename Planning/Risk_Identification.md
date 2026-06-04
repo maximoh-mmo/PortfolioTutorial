@@ -185,5 +185,17 @@ Mobile devices have less CPU/GPU headroom. Object pooling, AI LOD, and draw call
 
 ---
 
-**Total: 40 risks identified**
+# 💀 CORPSE SYSTEM RISKS
+
+## R41 — Corpse-Pool Desync
+**Severity:** Low | **Likelihood:** Low
+The two-tier architecture (NPC returns to pool on death while corpse persists in world) creates a split lifecycle that must remain synchronized. If the corpse fails to spawn (bad location, null reference, world cleanup), the NPC still returns to pool correctly — no crash, but a visual gap. The reverse (corpse spawns but NPC doesn't return to pool) would cause an actor leak.
+
+## R42 — Corpse Accumulation Under Heavy Combat
+**Severity:** Low | **Likelihood:** Medium
+If NPCs die faster than the corpse despawn timer (e.g., AoE kill-cascade), corpses accumulate. Without a hard cap, this causes world-bloat, increased draw calls, and eventual performance degradation on all clients.
+
+---
+
+**Total: 42 risks identified**
 **Next step:** Mitigation strategies in Risk Mitigation Plan.

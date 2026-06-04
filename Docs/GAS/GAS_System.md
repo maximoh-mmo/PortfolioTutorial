@@ -33,7 +33,12 @@ flowchart TD
     Ability --> TargetData
     TargetData --> Execution[GameplayEffect Execution]
     Execution --> Attributes[AttributeSet]
-    Attributes --> DeathOrHit[Death / Hit Reaction]
+    Attributes --> DeathOrHit{Health <= 0?}
+    DeathOrHit -->|No| HitReaction[Hit Reaction via Event.Heal]
+    DeathOrHit -->|Yes| DeathFork[Death Fork]
+    DeathFork --> PoolReturn[ReturnToPool]
+    DeathFork --> CorpseSpawn[Corpse Actor Spawn]
+    DeathFork --> RespawnTimer[Spawner Respawn Timer]
 ```
 
 ---
@@ -92,6 +97,7 @@ If [Targeting System](../Gameplay/Targeting_System.md) rejects a player target d
 - [ ] AoE abilities respect PvP rules  
 - [ ] Cooldowns work and replicate  
 - [ ] Death triggers correctly (health ≤ 0)  
+- [ ] Death fires both pool return and corpse spawn (two parallel paths)  
 
 ---
 

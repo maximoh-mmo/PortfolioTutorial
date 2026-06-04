@@ -26,9 +26,10 @@ The final demo includes:
 - StateTree‑driven behaviour  
 - Idle → Roam → Agro → Chase → Attack → Flee  
 - Group spawning  
-- Object pooling  
+- Object pooling (two-tier: AI actors + corpse actors)  
 - Respawn logic  
 - Dynamic enemy types (mesh, stats, behaviour)  
+- Corpse actor system — lightweight world-debris on death, timed cleanup, loot extension point  
 
 ### **Combat**
 - GAS abilities  
@@ -59,7 +60,7 @@ The series is divided into **8 phases** (see the full [Episode List](Episode_Lis
 5. **Multiplayer** — Replication, dedicated server, Steam, PvP  
 6. **Final Demo & Polish** — UI, gameplay loop, optimization, showcase  
 
-Total: **38 episodes** — see the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
+Total: **39 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
 
 ---
 

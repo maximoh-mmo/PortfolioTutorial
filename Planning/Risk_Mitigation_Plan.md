@@ -38,6 +38,18 @@ Mitigation strategies for all 37 identified risks (see [Risk_Identification](Ris
 ## R5 — Pool Exhaustion Under Load
 **Strategy:** Simple Fallback
 - **Mitigation:** `GetPooledEnemy()` falls back to `SpawnActor` if the pool is empty — no crash, just a warning log
+
+## R41 — Corpse-Pool Desync
+**Strategy:** Defensive Ordering
+- **Order by dependency:** NPC always returns to pool first, then corpse spawns. If corpse spawn fails, the NPC is still safely recycled
+- **Guard:** `SpawnCorpse()` asserts that the NPC's `ReturnToPool()` has already been called; if not, skip corpse spawn
+- **Fallback:** Corpse failure is cosmetic only — the NPC death + respawn loop is unaffected
+
+## R42 — Corpse Accumulation Under Heavy Combat
+**Strategy:** Hard Cap + Oldest-Eviction
+- **Hard cap:** `MAX_ACTIVE_CORPSES` constant (e.g. 20). Before spawning a new corpse, if at cap, destroy the oldest active corpse
+- **Timer floor:** Despawn timer never exceeds a maximum (e.g. 30s) even if config says higher — prevents accidental world-bloat on rapid kills
+- **Testing:** Stress test with AoE killing 10+ NPCs simultaneously; verify cap enforcement and no performance regression
 - **Design rule:** Pool initial size = max expected NPCs × 1.5
 - **Simplify:** Don't implement queueing — if pool is empty, spawn new and log
 
@@ -282,5 +294,5 @@ These systems should be built and validated in private (Episode 0 / prep work) b
 
 ---
 
-**Total: 40 risks with mitigation strategies**
+**Total: 42 risks with mitigation strategies**
 **Next step:** Create Production Timeline

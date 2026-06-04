@@ -1,7 +1,7 @@
 # 📘 **TOP‑DOWN ARPG AI SERIES — FULL EPISODE LIST**
 
 ## **Overview**
-This document contains the complete episode list for the 38‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Scope Overview](Scope_Overview.md) for context).
+This document contains the complete episode list for the 39‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Scope Overview](Scope_Overview.md) for context).
 Episodes are grouped into phases that reflect the natural progression of building the full demo.
 The [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) provides the full system design that this episode list implements.
 
@@ -110,9 +110,13 @@ Add hitstop, stagger, and GameplayEffects for reactions.
 Trigger GA_Attack from the StateTree with cooldowns and transitions.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
 
-### **Episode 18 — Damage, Death, and Cleanup**
-Implement health, death events, and notify the spawner/pool.
-· [GAS System](../../Docs/GAS/GAS_System.md) · [Pooling System](../../Docs/AI/Pooling_System.md)
+### **Episode 18a — Damage, Death, Pool Return, and Respawn**
+Implement health depletion, death events, NPC pool return, and spawner respawn timers.
+· [GAS System](../../Docs/GAS/GAS_System.md) · [Pooling System](../../Docs/AI/Pooling_System.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
+
+### **Episode 18b — Corpse Actor System**
+Spawn a lightweight corpse actor on death; NPC returns to pool immediately. Timed despawn, corpse cap, and loot-container extension point.
+· [Corpse System](../../Docs/AI/Corpse_System.md) · [Pooling System](../../Docs/AI/Pooling_System.md)
 
 ### **Episode 19 — Player Ability Targeting**
 Add single‑target, AoE, and directional targeting with screen indicators (mouse/touch/gamepad).

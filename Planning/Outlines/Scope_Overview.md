@@ -82,9 +82,10 @@ The final result is a polished, self‑contained demo suitable for:
 ## **4. [Spawning](../../Docs/AI/Spawner_System.md) & [Pooling](../../Docs/AI/Pooling_System.md)**
 - Enemy spawner actors  
 - Group spawning  
-- [Object pooling for NPCs](../../Docs/AI/Pooling_System.md)  
+- [Object pooling for NPCs](../../Docs/AI/Pooling_System.md) — two-tier architecture (AI actors + corpse actors)  
 - Respawn logic  
 - [Group data](../../Docs/AI/Group_System.md) (center, direction, alive count)  
+- [Corpse Actor System](../../Docs/AI/Corpse_System.md) — world-debris persistence, timed cleanup, loot-container extension point  
 
 ---
 
@@ -145,7 +146,7 @@ These features are intentionally excluded to keep the project focused and achiev
 
 ### **Gameplay**
 - Inventory systems  
-- Loot drops  
+- Full loot drops (corpse system provides the container architecture; loot gameplay payload is out of scope)  
 - Equipment or stats progression  
 - Skill trees  
 - Quests or narrative  

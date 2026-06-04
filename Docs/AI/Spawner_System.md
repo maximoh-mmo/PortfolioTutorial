@@ -10,6 +10,7 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 - Assign NPCs to Group System  
 - Configure enemy types per slot via `UAIProfile`  
 - Assign a per-NPC respawn rate; each killed NPC respawns independently on its own timer  
+- On NPC death, receive notification and start respawn timer (independent of corpse lifecycle)  
 - Expose simple controls (enable/disable, wave count, etc.)
 
 ## Non‑Responsibilities
@@ -46,14 +47,27 @@ flowchart TD
     RegisterGroup --> Occupied[Slot Occupied]
 
     Occupied --> NPCDies{NPC Dies}
-    NPCDies --> ClearSlot[Clear Slot Occupant]
+    NPCDies -->|Path 1| ReturnPool[ReturnToPool]
+    NPCDies -->|Path 2| SpawnCorpse[SpawnCorpse]
+    NPCDies -->|Path 3| StartTimer[Start Respawn Timer]
+    ReturnPool --> Pool[Inactive Pool]
+    SpawnCorpse --> Corpse[Corpse Actor]
+    StartTimer --> ClearSlot
     ClearSlot --> SpawnGroup
-```
 
 `AOnsetSpawner.InitSlots()` → `FSpawnerSlot[]` → `SpawnEnemyAtSlot(i)` → `PoolManager.GetPooledEnemy()` → `ApplyProfile(UAIProfile)` → `UGroupManagerComponent.RegisterMember()`
 
+## Death Flow
+When an NPC dies (health ≤ 0), three parallel paths execute:
+1. **Pool Return** — NPC immediately returns to the pool (hidden, collision off, tick off). The AI actor is recycled.
+2. **Corpse Spawn** — A lightweight `AOnsetCorpse` appears at the death location for visual persistence. See the [Corpse System](Corpse_System.md).
+3. **Respawn Timer** — The spawner starts a per-slot timer. When it fires, `SpawnEnemyAtSlot()` reuses the same slot.
+
+The respawn timer is **independent** of the corpse despawn timer. The slot can refill even if the corpse from the previous occupant is still visible.
+
 ## Interactions
 - **[Pooling System](Pooling_System.md):** requests NPC instances via `PoolManager->GetPooledEnemy()`; pool handles pre-allocation and exhaustion fallback  
+- **[Corpse System](Corpse_System.md):** spawner's death notification is sent at the same time as the corpse spawn — the two are parallel, not sequential  
 - **[Group System](Group_System.md):** registers members into groups via `UGroupManagerComponent`  
 - **[NPC AI System](NPC_AI_System.md):** pawn's `UAIProfile` configures controller on possess  
 - **Final Demo Loop:** may trigger waves via spawners  
@@ -72,8 +86,9 @@ flowchart TD
 - [ ] Spawns correct number and type of NPCs  
 - [ ] Slot transforms match spawn points or fallback scatter  
 - [ ] Groups are registered correctly via `UGroupManagerComponent`  
-- [ ] Individual NPC respawns on its own timer after death (future)  
+- [ ] Individual NPC respawns on its own timer after death  
 - [ ] Respawn timers are independent — killing multiple NPCs does not cascade  
+- [ ] Respawn timer starts immediately on death, not after corpse despawn  
 - [ ] DebugKillLast works  
 - [ ] Works with pooling — pool pre-allocates, spawner always retrieves from pool  
 - [ ] Works in multiplayer (server‑only logic)  

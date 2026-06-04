@@ -10,6 +10,7 @@ Provide efficient reuse of NPC instances to avoid frequent spawn/destroy calls a
 - Hand out NPCs on request  
 - Reset NPC state on reuse  
 - Return NPCs to pool on death/cleanup  
+- Hand off world-debris lifecycle to the Corpse System on NPC death  
 
 ## Non‑Responsibilities
 - Spawning logic (when/where)  
@@ -40,7 +41,21 @@ flowchart TD
     Inactive --> RequestNPC
 ```
 
-Spawner → PoolManager.GetPooledEnemy → NPC → (Death) → PoolManager.ReleasePooledEnemy
+```
+Spawner → PoolManager.GetPooledEnemy → NPC
+NPC → (Death) → PoolManager.ReleasePooledEnemy (NPC recycled immediately)
+               → Corpse System.SpawnCorpse() (lightweight debris persists)
+```
+
+## Two-Tier Architecture
+The pooling system operates in two tiers:
+
+1. **AI Actor Pool** — Full NPCs with StateTree, Perception, AbilitySystemComponent, targeting. These are high-cost actors that recycle instantly into the pool when the NPC dies.
+2. **Corpse Actor Pool** (or timed-life spawns) — Minimal `AOnsetCorpse` actors with a static mesh, no Tick, and a self-destruct timer. Created on death, destroyed after a lifespan, never block the AI pool.
+
+This separation frees high-cost AI actors immediately on death while maintaining visual persistence in the world. The two lifecycles are independent — a corpse can outlive several pool-recycles of the same NPC type.
+
+For full documentation, see the [Corpse System](Corpse_System.md).
 
 ## Interactions
 - **[Spawner System](Spawner_System.md):** main consumer of pooled NPCs  
@@ -61,3 +76,6 @@ Spawner → PoolManager.GetPooledEnemy → NPC → (Death) → PoolManager.Relea
 - [ ] No stale targets or group data  
 - [ ] No crashes when pool is exhausted  
 - [ ] Works under heavy spawn/respawn cycles  
+- [ ] NPC returns to pool on death — hidden, collision off, tick off  
+- [ ] Corpse spawns independently — pool return not blocked by corpse cleanup  
+- [ ] Corpse cap enforced under rapid death cascade  

@@ -72,9 +72,10 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 | Basic Attack Ability | 1 | GAS Setup |
 | Hit Reaction Ability | 1 | Basic Attack |
 | NPC Attack Integration | 1 | GAS, StateTree |
-| Damage + Death + Pool Return | 2 | GAS, Pooling |
+| Damage + Death + Pool Return (A4.5a) | 1.5 | GAS, Pooling |
+| Corpse Actor System (A4.5b) | 1 | GAS, Pooling |
 | Multiple Abilities (Dash, AoE, Projectile) | 3 | GAS Setup |
-| **Subtotal** | **10 days** | |
+| **Subtotal** | **10.5 days** | |
 
 ## Phase A5 — Multiplayer & Steam
 | System | Est. Days | Dependencies |
@@ -123,7 +124,7 @@ Each episode requires:
 - **Editing** (2-3 hours)
 - **Export + README** (1 hour)
 
-## B1 — Scripting (Episodes 6-38)
+## B1 — Scripting (Episodes 6-39)
 
 Episodes 1-3 need script updates for Enhanced Input + multi-device movement. Episodes 4-5 need re-ordering. Remaining episodes need scripts from scratch:
 
@@ -134,8 +135,8 @@ Episodes 1-3 need script updates for Enhanced Input + multi-device movement. Epi
 | Scripts 6-13 | 8 | 3 | 24 |
 | Scripts 14-23 | 10 | 4 | 40 |
 | Scripts 24-33 | 10 | 3 | 30 |
-| Scripts 34-38 | 5 | 3 | 15 |
-| **Total** | **38 scripts** | | **~120 hours (3 weeks)** |
+| Scripts 34-39 | 6 | 3 | 18 |
+| **Total** | **39 scripts** | | **~123 hours (3 weeks)** |
 
 ## B2 — Recording + Editing + Export
 
@@ -158,8 +159,8 @@ Estimated per episode:
 | Phase 3.5: Player AI | 21-23 | 18 |
 | Phase 4: Advanced AI (incl. Group Assist) | 24-28 | 30 |
 | Phase 5: Multiplayer (incl. PvP) | 29-34 | 36 |
-| Phase 6: Final Demo | 35-38 | 24 |
-| **Total** | **38 episodes** | **~228 hours (5.7 weeks)** |
+| Phase 6: Final Demo | 35-39 | 30 |
+| **Total** | **39 episodes** | **~234 hours (5.85 weeks)** |
 
 ## Phase B Total
 | Activity | Time |
@@ -177,8 +178,8 @@ Estimated per episode:
 | ✅ Planning (Phases 1-5) | Complete | Outlines, docs, scripts 1-5, workflow |
 | ✅ Pre-Production Review | Complete | Consistency scan, risk docs, timeline |
 | **Phase A: Private Demo** | **~13 weeks** | Build all systems off-camera (incl. multi-device input) |
-| **Phase B: Episode Production** | **~8.7 weeks** | Record, edit, export 38 episodes |
-| **Total Remaining** | **~21.7 weeks (~5.4 months)** | |
+| **Phase B: Episode Production** | **~8.85 weeks** | Record, edit, export 39 episodes |
+| **Total Remaining** | **~21.85 weeks (~5.5 months)** | |
 
 ## Parallel Work
 
@@ -207,10 +208,10 @@ If releasing one episode per week:
 | Phase 3.5: Player AI | 21-23 | 1/week | 3 weeks |
 | Phase 4: Advanced AI | 24-28 | 1/week | 5 weeks |
 | Phase 5: Multiplayer | 29-34 | 1/week | 6 weeks |
-| Phase 6: Final Demo | 35-38 | 1/week | 4 weeks |
-| **Total release window** | **38 episodes** | **1/week** | **38 weeks (~9.5 months)** |
+| Phase 6: Final Demo | 35-39 | 1/week | 5 weeks |
+| **Total release window** | **39 episodes** | **1/week** | **39 weeks (~9.75 months)** |
 
-The ~3-month private demo build + ~9.5-month release window means a **~12.5-month project** from start to finish of the last episode release. Batch-recording (recording multiple episodes per week) compresses the production phase but not the release schedule.
+The ~3-month private demo build + ~9.75-month release window means a **~12.75-month project** from start to finish of the last episode release. Batch-recording (recording multiple episodes per week) compresses the production phase but not the release schedule.
 
 ---
 
@@ -219,16 +220,16 @@ The ~3-month private demo build + ~9.5-month release window means a **~12.5-mont
 | Milestone | Target | What's True |
 |-----------|--------|-------------|
 | Private demo playable | Week 8 | Core player + NPC + basic combat working |
-| Private demo complete | Week 13 | All 13 systems, multiplayer, Steam, final loop |
+| Private demo complete | Week 13.5 | All systems, corpse system, multiplayer, Steam, final loop |
 | First episode released | Week 14 | Episode 1 on public repo |
 | Targeting + enemies milestone | Week 18 | Episodes 1-5 released (playable combat) |
 | AI milestone | Week 26 | Episodes 9-13 released (full NPC AI) |
 | GAS milestone | Week 33 | Episodes 14-20 released (full ability system) |
 | Advanced AI milestone | Week 41 | Episodes 24-28 released (group assist, advanced behaviour) |
 | Multiplayer milestone | Week 47 | Episodes 29-34 released (MP + Steam + PvP) |
-| Series complete | Week 51 | Episode 38 released |
+| Series complete | Week 52 | Episode 39 released |
 
 ---
 
-**Total estimated effort:** ~21.7 weeks of work, ~12.5 months calendar (with weekly release cadence)
+**Total estimated effort:** ~21.85 weeks of work, ~12.75 months calendar (with weekly release cadence)
 **Next step:** Begin Private Demo Development

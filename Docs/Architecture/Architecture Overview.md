@@ -62,15 +62,22 @@ flowchart TD
     GAS --> NPC
     GAS --> Player
 
+    subgraph Death
+        GAS --> DeathFork{Health <= 0}
+        DeathFork --> Pool[Pooling System]
+        DeathFork --> Corpse[Corpse System]
+        DeathFork --> Spawner[Spawner System]
+    end
+
     Steam[Steam Integration] --> Multiplayer
     Multiplayer --> PC
     Multiplayer --> NPC
+    Corpse --> Multiplayer
 ```
-
 
 ---
 
-# 🧩 **Updated System Interactions (PvP Included)**
+# 🧩 **System Interactions**
 
 ## **[Player System](../Player/Player_System.md) → [PvP System](../Gameplay/PVP_System.md)**
 - UI toggle triggers `Server_SetPvPEnabled`  
@@ -200,6 +207,12 @@ This document is the technical map for the entire project.
 - Server registration  
 - Steam‑authenticated sessions
 
+### **14. [Corpse System](../AI/Corpse_System.md)**
+- Lightweight corpse actor spawned on NPC death  
+- Timed despawn with hard cap  
+- NPC returns to pool immediately (two-tier pooling architecture)  
+- Loot-container extension point (future)
+
 ---
 
 # 🔗 **Full System Interaction Summary**
@@ -284,7 +297,19 @@ This document is the technical map for the entire project.
 - Replicates player state; RPCs for PvP toggle, abilities, movement  
 
 ### **[Multiplayer System](../Multiplayer/Multiplayer_System.md) ↔ [NPC AI System](../AI/NPC_AI_System.md)**
-- Replicates NPC state to clients; server‑authoritative AI execution  
+- Replicates NPC state to clients; server‑authoritative AI execution
+
+### **[GAS System](../GAS/GAS_System.md) ↔ [Corpse System](../AI/Corpse_System.md)**
+- On death (Health ≤ 0), GAS fires a death event that triggers the corpse spawn
+- Corpse spawn is parallel to pool return — not sequential
+
+### **[Spawner System](../AI/Spawner_System.md) ↔ [Corpse System](../AI/Corpse_System.md)**
+- Respawn timer starts at death, independent of corpse despawn
+- Spawner does not wait for corpse cleanup before refilling a slot
+
+### **[Pooling System](../AI/Pooling_System.md) ↔ [Corpse System](../AI/Corpse_System.md)**
+- Two-tier architecture: AI actor pool recycles instantly, corpse actors have independent lifecycle
+- Pool return does not block corpse spawn, and corpse despawn does not block pool retrieval  
 
 ---
 
