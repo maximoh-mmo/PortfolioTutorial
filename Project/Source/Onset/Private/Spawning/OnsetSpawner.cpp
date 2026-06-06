@@ -1,5 +1,6 @@
 ﻿#include "Spawning/OnsetSpawner.h"
 
+#include "TimerManager.h"
 #include "AI/AIProfile.h"
 #include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
@@ -104,6 +105,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	if (Spawned)
 	{
 		Spawned->ApplyProfile(Config.EnemyProfile);
+		Spawned->OwningSpawner = this;
 		AOnsetAIController* AIController = PoolManager->GetPooledController();
 		if (!AIController)
 		{
@@ -115,7 +117,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 		AIController->Possess(Spawned);
 		Slot.Occupant = Spawned;
 		if (GroupManager) GroupManager->RegisterMember(Spawned);
-		Spawned->HomeLocation = Slot.SpawnTransform.GetLocation();
+		Spawned->HomeTransform = Slot.SpawnTransform;
 	}
 	return Spawned;
 }
@@ -155,3 +157,33 @@ void AOnsetSpawner::DebugKillLast()
 		}
 	}
 }
+
+void AOnsetSpawner::OnNPCDeath(AOnsetEnemy* Enemy)
+{
+	if (!Enemy || !PoolManager) return;
+	
+	for (int32 i = 0; i < Slots.Num(); ++i)
+	{
+		if (Slots[i].Occupant == Enemy)
+		{
+			Slots[i].Occupant = nullptr;
+			GetWorldTimerManager().SetTimer(
+				Slots[i].RespawnTimerHandle,
+				FTimerDelegate::CreateUObject(this, &AOnsetSpawner::RespawnNPC, i),
+				Config.RespawnDelay,
+				false);
+			break;
+		}
+	}
+	
+	PoolManager->ReleasePooledEnemy(Enemy);
+}
+
+void AOnsetSpawner::RespawnNPC(int32 SlotIndex)
+{
+	if (!Slots.IsValidIndex(SlotIndex)) return;
+	
+	Slots[SlotIndex].RespawnTimerHandle.Invalidate();
+	SpawnEnemyAtSlot(SlotIndex);
+}
+

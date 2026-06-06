@@ -23,7 +23,7 @@ EStateTreeRunStatus FOnsetStateTreeRoamTask::EnterState(FStateTreeExecutionConte
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(AIController->GetWorld());               
 	if (!NavSys) return EStateTreeRunStatus::Failed;
 	
-	FVector Home = Self->HomeLocation;
+	FVector Home = Self->HomeTransform.GetLocation();
 	FNavLocation RandomPoint;
 	if (NavSys->GetRandomReachablePointInRadius(Home, InstanceData.RoamRadius, RandomPoint))
 	{

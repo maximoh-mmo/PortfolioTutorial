@@ -87,21 +87,14 @@ void AOnsetAIController::OnUnPossess()
 {
 	bInUse = false;
 	StateTreeComponent->StopLogic(TEXT("Unpossessed"));
-	Super::OnUnPossess();
-	TargetingComponent = nullptr;
-}
-
-void AOnsetAIController::ResetForPool()
-{
-	UnPossess();
-	bInUse = false;
-	StateTreeComponent->StopLogic(TEXT("Reset for pool"));
 	ApplyProfile(nullptr);                                                                                        
 	SetActorHiddenInGame(true);                                                                                   
 	SetActorTickEnabled(false);                                                                                   
 	StateTreeComponent->SetComponentTickEnabled(false);                                                           
 	DisableInput(nullptr);                                                                                        
 	SetActorEnableCollision(false);
+	Super::OnUnPossess();
+	TargetingComponent = nullptr;
 }
 
 void AOnsetAIController::BeginPlay()

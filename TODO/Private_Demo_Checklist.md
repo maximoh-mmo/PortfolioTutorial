@@ -226,30 +226,32 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Apply damage via GameplayEffect
 - [ ] Add animation montage support (simple melee swing)
 - [x] Verify player attack hits target
-- [ ] Verify NPC attack hits player
+- [x] Verify NPC attack hits player
 
 ## A4.3 Hit Reaction Ability
 - [x] Create `UOnsetGA_HitReaction` (C++ GA)
 - [ ] Apply hitstop / stagger effect
 - [x] Trigger on damage received (HandleGameplayEvent in PostGameplayEffectExecute)
-- [ ] Verify hit reaction plays on damage
-- [ ] Verify cooldown prevents hit-reaction spam
+- [x] Verify hit reaction plays on damage
+- [x] Verify cooldown prevents hit-reaction spam
 
 ## A4.4 NPC Attack Integration
 - [x] Trigger `GA_Attack` from NPC StateTree Attack state (TryActivateAbilityByClass in AttackTask)
 - [x] Add cooldown handling in StateTree (cooldown driven by GAS GE, not StateTree timer)
-- [ ] Verify NPC attacks player in range
-- [ ] Verify NPC exits Attack state on cooldown
+- [x] Verify NPC attacks player in range
+- [x] Verify NPC exits Attack state on cooldown
 
 ## A4.5a — Damage, Death, Pool Return, Respawn (baseline)
-- [ ] Implement health depletion on damage
-- [ ] Implement death event (OnDeath())
-- [ ] Notify spawner on death → start respawn timer
-- [ ] Return NPC to pool on death
-- [ ] Verify NPC dies when health ≤ 0
-- [ ] Verify respawn timer fires
-- [ ] Verify NPC re-enters pool cleanly
-- [ ] Verify multiple NPCs dying simultaneously creates independent timers
+- [x] Implement health depletion on damage
+- [x] Implement death event (OnDeath())
+- [x] Notify spawner on death → start respawn timer
+- [x] Return NPC to pool on death
+- [x] Verify NPC dies when health ≤ 0
+- [x] Verify respawn timer fires
+- [x] Verify NPC re-enters pool cleanly
+- [x] Verify multiple NPCs dying simultaneously creates independent timers
+- [x] Create `UOnsetCheatManager` — God() toggles invulnerability tag, Heal() restores health
+- [x] Wire CheatClass in PlayerController, add god mode guard to PostGameplayEffectExecute
 
 ## A4.5b — Corpse Actor System (new)
 - [ ] Create `AOnsetCorpse` — minimal actor, static mesh, timed self-destruct
@@ -392,8 +394,8 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
 | A3 AI Systems | — | 28 | — |
-| A4 GAS Combat | 45 | 15 | 33% |
+| A4 GAS Combat | 47 | 30 | 64% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |
-| **Total** | 75 | 90 | **—** |
+| **Total** | 77 | 105 | **—** |

@@ -15,6 +15,7 @@
 #include "GameFramework/Pawn.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "Player/OnsetBaseCharacter.h"
+#include "Player/OnsetCheatManager.h"
 #include "Player/OnsetPlayerState.h"
 #include "UI/GamepadCursorWidget.h"
 
@@ -27,6 +28,7 @@ AOnsetPlayerController::AOnsetPlayerController()
 	{
 		BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
 	}
+	CheatClass = UOnsetCheatManager::StaticClass();
 }
 
 void AOnsetPlayerController::StartAutoAttack()

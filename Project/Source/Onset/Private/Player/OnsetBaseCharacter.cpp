@@ -46,3 +46,8 @@ void AOnsetBaseCharacter::GrantDefaultAbilities()
 	
 	bAbilitiesGranted = true;
 }
+
+void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)
+{
+	checkf(false, TEXT("OnDeath : Must be overriden by subclass."));
+}

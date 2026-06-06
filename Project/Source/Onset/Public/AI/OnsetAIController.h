@@ -39,11 +39,6 @@ public:
 	/** Current cached Targeting Component set in OnPossess, cleared on UnPossess. */
 	UPROPERTY()
 	TObjectPtr<UTargetingComponent> TargetingComponent;
-	
-	// --- Pooling ---
-	/** Resets the controller to base, non-active, state for pooling reuse. Called by pool manager on release. */
-	UFUNCTION(BlueprintCallable, Category = "Pooling")
-	void ResetForPool();
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;

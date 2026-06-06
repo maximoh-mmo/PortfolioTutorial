@@ -58,6 +58,10 @@ public:
 	/** Kills and returns the most recently spawned NPC. */
 	UFUNCTION(BlueprintCallable, Category = "Spawner")
 	void DebugKillLast();
+	
+	UFUNCTION(BlueprintCallable, Category = "Spawner")
+	void OnNPCDeath(AOnsetEnemy* Enemy);
+	void RespawnNPC(int32 SlotIndex);
 
 protected:
 	virtual void BeginPlay() override;

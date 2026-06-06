@@ -19,4 +19,5 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_State_Invulnerable)
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Cooldown_BasicAttack)    
 
 // Event tags
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Event_HitReaction);                                                          
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Event_HitReaction)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Event_Death)

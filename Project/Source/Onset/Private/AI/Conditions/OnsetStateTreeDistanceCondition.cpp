@@ -26,7 +26,7 @@ bool FOnsetStateTreeDistanceCondition::TestCondition(FStateTreeExecutionContext&
 	{
 		AOnsetBaseCharacter* Self = FOnsetStateTreeTaskBase::GetSelfBaseCharacter(Context);
 		if (!Self) return false;
-		TargetLocation = Self->HomeLocation;
+		TargetLocation = Self->HomeTransform.GetLocation();
 	}
 	
 	float Distance = FVector::DistSquared(SourceLocation, TargetLocation);

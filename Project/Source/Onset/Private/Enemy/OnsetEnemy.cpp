@@ -1,5 +1,6 @@
 #include "Enemy/OnsetEnemy.h"
 
+#include "TimerManager.h"
 #include "AI/AIProfile.h"
 #include "AI/OnsetAIController.h"
 #include "Animation/AnimInstance.h"
@@ -9,6 +10,8 @@
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Enemy/GroupComponent.h"
+#include "Spawning/OnsetPoolManager.h"
+#include "Spawning/OnsetSpawner.h"
 
 AOnsetEnemy::AOnsetEnemy()
 {
@@ -80,4 +83,14 @@ void AOnsetEnemy::ApplyProfile(UAIProfile* InProfile)
 		SkeletalComp->SetHiddenInGame(true);
 		SkeletalComp->SetMaterial(0, nullptr);
 	}
+}
+
+void AOnsetEnemy::OnDeath(AActor* KillingActor)
+{
+	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetEnemy::DeferredDeathCleanup);
+}
+
+void AOnsetEnemy::DeferredDeathCleanup()
+{
+	OwningSpawner->OnNPCDeath(this);
 }

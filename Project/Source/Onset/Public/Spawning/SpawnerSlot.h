@@ -2,6 +2,7 @@
 
 #pragma once
 #include "CoreMinimal.h"
+#include "Engine/TimerHandle.h"
 #include "SpawnerSlot.generated.h"
 
 class AOnsetEnemy;
@@ -13,8 +14,13 @@ struct FSpawnerSlot
 	GENERATED_BODY()
 
 	/** World transform at which the enemy spawns. */
+	UPROPERTY()
 	FTransform SpawnTransform;
 
 	/** The enemy currently occupying this slot, or null if empty. */
+	UPROPERTY(Transient)
 	TObjectPtr<AOnsetEnemy> Occupant = nullptr;
+	
+	UPROPERTY()
+	FTimerHandle RespawnTimerHandle;
 };                                                                                                          

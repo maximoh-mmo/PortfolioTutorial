@@ -6,6 +6,7 @@
 #include "Player/OnsetBaseCharacter.h"
 #include "OnsetEnemy.generated.h"
 
+class AOnsetSpawner;
 class UGroupComponent;
 class UAIProfile;
 
@@ -29,4 +30,14 @@ public:
 	/** The active profile asset. Set by ApplyProfile(). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	TObjectPtr<UAIProfile> Profile;
+	
+	/** */
+	UPROPERTY()
+	TObjectPtr<AOnsetSpawner> OwningSpawner;
+	
+	virtual void OnDeath(AActor* KillingActor = nullptr) override;
+	
+protected:
+
+	void DeferredDeathCleanup();
 };

@@ -1,7 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Player/OnsetPlayerCharacter.h"
+
+#include "TimerManager.h"
 #include "Camera/CameraComponent.h"
+#include "Combat/OnsetAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
 
 AOnsetPlayerCharacter::AOnsetPlayerCharacter()
@@ -23,7 +26,23 @@ AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 void AOnsetPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	HomeTransform = FTransform(
+		GetActorRotation().GetEquivalentRotator(),
+		GetActorLocation()
+		);
+}
+
+void AOnsetPlayerCharacter::RespawnPlayer()
+{
+	if (AttributeSet)                                                                                           
+	{                                                                                                           
+		AttributeSet->SetHealth(AttributeSet->GetMaxHealth());                                                  
+	}                                                                                                           
+	SetActorTransform(HomeTransform);                                                                             
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))                                       
+	{                                                                                                           
+		EnableInput(PC);                                                                                        
+	}                        
 }
 
 void AOnsetPlayerCharacter::Tick(float DeltaTime)
@@ -35,4 +54,10 @@ void AOnsetPlayerCharacter::Tick(float DeltaTime)
 void AOnsetPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void AOnsetPlayerCharacter::OnDeath(AActor* KillingActor)
+{
+	DisableInput(nullptr);
+	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerCharacter::RespawnPlayer);
 }

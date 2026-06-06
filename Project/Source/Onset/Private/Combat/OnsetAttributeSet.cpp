@@ -4,6 +4,7 @@
 #include "GameplayEffectExtension.h"
 #include "Combat/OnsetGameplayTags.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/OnsetBaseCharacter.h"
 
 UOnsetAttributeSet::UOnsetAttributeSet()
 {
@@ -15,10 +16,46 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 {
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
+		float OldHealth = GetHealth() - Data.EvaluatedData.Magnitude; // Calculate old health before modification
 		// Clamp Health to [0, MaxHealth]
-		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth())); 
+		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 		
-		if (Data.EvaluatedData.Magnitude < 0.0f)                                                                        
+		if (Data.EvaluatedData.Magnitude < 0.0f)                                                                    
+		{                                                                                                           
+			if (const UAbilitySystemComponent* AbilitySystemComponent = GetOwningAbilitySystemComponent())                                   
+			{                                                                                                       
+				if (AbilitySystemComponent->HasMatchingGameplayTag(TAG_State_Invulnerable))                                            
+				{                                                                                                   
+					SetHealth(OldHealth);                                                                           
+					return;                                                                                         
+				}                                                                                                   
+			}                                                                                                       
+		}              
+		
+		if (GetHealth() == 0.0f)
+		{
+			if (OldHealth != GetHealth())
+			{
+				// Handle death logic here
+			
+				FGameplayEventData Payload;                                                                                 
+				Payload.EventTag = TAG_Event_Death;                                                                   
+				Payload.Instigator = Data.EffectSpec.GetContext().GetInstigator();                                          
+				Payload.Target = GetOwningActor();
+				
+				if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+				{
+					ASC->HandleGameplayEvent(TAG_Event_Death, &Payload);
+				}
+				
+				if (AOnsetBaseCharacter* Character = Cast<AOnsetBaseCharacter>(GetOwningActor()))
+				{
+					Character->OnDeath(Data.EffectSpec.GetContext().GetInstigator());
+				}
+			}
+		}
+
+		if (Data.EvaluatedData.Magnitude < 0.0f && GetHealth() > 0.0f)                                                                        
 		{                                                                                                               
 			FGameplayEventData Payload;                                                                                 
 			Payload.EventTag = TAG_Event_HitReaction;                                                                   
@@ -29,7 +66,8 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())                                       
 			{                                                                                                           
 				ASC->HandleGameplayEvent(TAG_Event_HitReaction, &Payload);                                              
-			}                                                                                                           
+			}                                      
+			UE_LOG(LogTemp, Log, TEXT("%s Health set to: %f"), *Data.Target.GetName(),GetHealth());
 		}              
 	}
 }

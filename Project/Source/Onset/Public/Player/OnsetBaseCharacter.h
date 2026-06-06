@@ -21,7 +21,7 @@ public:
 	virtual void PossessedBy(AController* NewController) override;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	FVector HomeLocation;
+	FTransform HomeTransform;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
@@ -36,6 +36,9 @@ public:
 	
 	UPROPERTY()                                                                                                
 	TObjectPtr<UOnsetAttributeSet> AttributeSet;
+		
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	virtual void OnDeath(AActor* KillingActor = nullptr);
 	
 private:
 	bool bAbilitiesGranted = false;

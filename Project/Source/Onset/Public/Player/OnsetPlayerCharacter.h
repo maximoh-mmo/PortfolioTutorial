@@ -21,9 +21,17 @@ class ONSET_API AOnsetPlayerCharacter : public AOnsetBaseCharacter
 public:
 	AOnsetPlayerCharacter();
 
-protected:
-	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	
+	virtual void OnDeath(AActor* KillingActor = nullptr) override;
+	
+	virtual void BeginPlay() override;
+	
+	void RespawnPlayer();
+	
+protected:
 	// --- Camera ---
 
 	/** Spring arm that provides the top-down view angle and collision push-back. */
@@ -33,10 +41,4 @@ protected:
 	/** Camera attached to the spring arm socket. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> FollowCamera;
-
-public:	
-	virtual void Tick(float DeltaTime) override;
-
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 };

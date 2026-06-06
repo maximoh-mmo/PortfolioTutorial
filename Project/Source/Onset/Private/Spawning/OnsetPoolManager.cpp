@@ -78,7 +78,7 @@ void AOnsetPoolManager::ReleasePooledEnemy(AOnsetEnemy* Enemy)
 void AOnsetPoolManager::ReleasePooledController(AOnsetAIController* Controller)
 {
 	if (!Controller || Controller->IsPendingKillPending()) return;
-	Controller->ResetForPool();
+	Controller->UnPossess();
 	if (!ControllerPool.Contains(Controller)) ControllerPool.Add(Controller);    
 }
 
@@ -124,6 +124,7 @@ void AOnsetPoolManager::ReturnToPool(AOnsetEnemy* Enemy)
 	}
 	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
 	Enemy->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyProfile)
+	Enemy->OwningSpawner = nullptr;
 	Enemy->SetActorLocation(FVector::ZeroVector);
 	Enemy->SetActorHiddenInGame(true);                                                                            
 	Enemy->SetActorTickEnabled(false);                                                                            
