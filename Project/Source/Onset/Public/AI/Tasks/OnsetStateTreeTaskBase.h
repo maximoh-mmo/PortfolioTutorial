@@ -5,10 +5,13 @@
 #include "StateTreeExecutionContext.h"
 #include "StateTreeTaskBase.h"
 #include "AI/OnsetAIController.h"
+#include "Enemy/OnsetEnemy.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Player/OnsetBaseCharacter.h"
 #include "Player/TargetingComponent.h"
 #include "OnsetStateTreeTaskBase.generated.h"
+
+class AOnsetEnemy;
 
 USTRUCT()
 struct FOnsetStateTreeTaskBase : public FStateTreeTaskCommonBase
@@ -29,7 +32,16 @@ struct FOnsetStateTreeTaskBase : public FStateTreeTaskCommonBase
 		AOnsetBaseCharacter* BaseCharacter = Cast<AOnsetBaseCharacter>(AIController->GetPawn());                                                 
 		if (!BaseCharacter) UE_LOG(LogTemp, Warning, TEXT("GetSelfBaseCharacter: Pawn is not an AOnsetBaseCharacter"));                 
 		return BaseCharacter;
-	}                                                                                                           
+	}                                                                
+	
+	static AOnsetEnemy* GetSelfEnemyCharacter(const FStateTreeExecutionContext& Context)
+	{
+		const AOnsetAIController* AIController = GetController(Context);
+		if (!AIController) return nullptr;
+		AOnsetEnemy* EnemyCharacter = Cast<AOnsetEnemy>(AIController->GetPawn());
+		if (!EnemyCharacter) UE_LOG(LogTemp, Warning, TEXT("GetSelfEnemyCharacter: Pawn is not an AOnsetEnemy"))
+		return EnemyCharacter;
+	}
 	
 	static AActor* GetTarget(const FStateTreeExecutionContext& Context)
 	{

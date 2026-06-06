@@ -4,9 +4,16 @@
 #include "Combat/GameplayAbilities/OnsetGA_HitReaction.h"
 
 #include "Combat/OnsetGameplayTags.h"
+#include "UObject/ConstructorHelpers.h"
 
 UOnsetGA_HitReaction::UOnsetGA_HitReaction()
 {
+	static ConstructorHelpers::FObjectFinder<UGameplayEffect> StaggerFinder(
+		TEXT("Game/Game/Combat/GE_Stagger.GE_Stagger_C"));
+	if (StaggerFinder.Succeeded())
+	{
+		StaggerEffectClass = StaggerFinder.Object;
+	}
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	FAbilityTriggerData TriggerData;
 	TriggerData.TriggerTag = TAG_Event_HitReaction;
@@ -29,6 +36,11 @@ void UOnsetGA_HitReaction::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	{
 		// void to avoid IDE warnings for unused statement result
 		(void)ApplyGameplayEffectToOwner(Handle, ActorInfo, ActivationInfo, CooldownGameplayEffectClass, GetAbilityLevel());
+		if (StaggerEffectClass)
+		{
+			// void to avoid IDE warnings for unused statement result
+			(void)ApplyGameplayEffectToOwner(Handle, ActorInfo, ActivationInfo, StaggerEffectClass, GetAbilityLevel());
+		}
 	}
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }

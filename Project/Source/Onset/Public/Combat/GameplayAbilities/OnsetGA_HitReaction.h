@@ -16,6 +16,8 @@ class ONSET_API UOnsetGA_HitReaction : public UGameplayAbility
 public:
 	UOnsetGA_HitReaction();
 	
+	UPROPERTY()
+	TObjectPtr<UGameplayEffect> StaggerEffectClass;
 protected:
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle,
