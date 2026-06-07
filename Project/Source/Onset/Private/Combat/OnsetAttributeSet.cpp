@@ -3,7 +3,9 @@
 
 #include "GameplayEffectExtension.h"
 #include "Combat/OnsetGameplayTags.h"
+#include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
+#include "Perception/AISense_Hearing.h"
 #include "Player/OnsetBaseCharacter.h"
 
 UOnsetAttributeSet::UOnsetAttributeSet()
@@ -66,8 +68,17 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())                                       
 			{                                                                                                           
 				ASC->HandleGameplayEvent(TAG_Event_HitReaction, &Payload);                                              
-			}                                      
-			UE_LOG(LogTemp, Log, TEXT("%s Health set to: %f"), *Data.Target.GetName(),GetHealth());
+			}   
+			if (AActor* OwningActor = GetOwningActor())
+			{
+				UAISense_Hearing::ReportNoiseEvent(
+					OwningActor->GetWorld(),
+					OwningActor->GetActorLocation(),
+					FMath::Abs(Data.EvaluatedData.Magnitude),  // Loudness = damage amount
+					OwningActor,                                // Instigator
+					0.0f                                       // Max range 0 = unlimited                       
+					);
+			}           
 		}              
 	}
 }

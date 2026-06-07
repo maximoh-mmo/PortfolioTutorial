@@ -1,0 +1,72 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "AI/Tasks/OnsetStateTreeInvestigateTask.h"
+
+#include "Enemy/GroupComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
+EStateTreeRunStatus FOnsetStateTreeInvestigateTask::EnterState(FStateTreeExecutionContext& Context,
+                                                               const FStateTreeTransitionResult& Transition) const
+{
+	AOnsetAIController* Controller = GetController(Context);
+	if (!Controller) return	EStateTreeRunStatus::Failed;
+	
+	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
+	if (!Self) return	EStateTreeRunStatus::Failed;
+	
+	if (!Controller->bHasPendingNoise) return EStateTreeRunStatus::Succeeded;
+
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	InstanceData.InvestigationDestination = Controller->HeardNoiseLocation;
+	InstanceData.CachedOriginalWalkSpeed = Self->GetCharacterMovement()->MaxWalkSpeed;
+	
+	UGroupComponent* GroupComponent = Self->FindComponentByClass<UGroupComponent>();
+	bool bIsGroupMember = false;
+	if (GroupComponent && GroupComponent->IsInGroup())
+	{
+		if (AActor* InstigatorActor = Controller->HeardNoiseInstigator.Get())
+		{
+			UGroupComponent* TheirGroupComponent = InstigatorActor->FindComponentByClass<UGroupComponent>();
+			bIsGroupMember = TheirGroupComponent && TheirGroupComponent->GetGroupManager() == GroupComponent->GetGroupManager();
+		}
+	}
+	float MovementMultiplier = bIsGroupMember ? InstanceData.GroupMemberSpeedMultiplier 
+												: InstanceData.NonGroupSpeedMultiplier;
+	
+	Self->GetCharacterMovement()->MaxWalkSpeed = InstanceData.CachedOriginalWalkSpeed * MovementMultiplier;
+	
+	Controller->MoveToLocation(InstanceData.InvestigationDestination, InstanceData.AcceptanceRadius);
+	return EStateTreeRunStatus::Running;
+}
+
+EStateTreeRunStatus FOnsetStateTreeInvestigateTask::Tick(FStateTreeExecutionContext& Context,
+	const float DeltaTime) const
+{
+	AOnsetAIController* Controller = GetController(Context);
+	if (!Controller) return	EStateTreeRunStatus::Failed;
+	
+	if (GetTarget(Context) || !Controller->bHasPendingNoise) return EStateTreeRunStatus::Succeeded;
+	
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (!InstanceData.InvestigationDestination.Equals(Controller->HeardNoiseLocation))
+	{
+		InstanceData.InvestigationDestination = Controller->HeardNoiseLocation;
+		Controller->MoveToLocation(InstanceData.InvestigationDestination, InstanceData.AcceptanceRadius);
+	}
+	return HasMoveCompleted(Context) ? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
+}
+
+void FOnsetStateTreeInvestigateTask::ExitState(FStateTreeExecutionContext& Context,
+	const FStateTreeTransitionResult& Transition) const
+{
+	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))
+	{
+		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+		Self->GetCharacterMovement()->MaxWalkSpeed = InstanceData.CachedOriginalWalkSpeed;
+	}
+	if (AOnsetAIController* Controller = GetController(Context))
+	{
+		Controller->StopMovement();
+	}
+}

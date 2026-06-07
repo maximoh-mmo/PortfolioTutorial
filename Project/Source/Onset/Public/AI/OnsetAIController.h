@@ -39,6 +39,11 @@ public:
 	/** Current cached Targeting Component set in OnPossess, cleared on UnPossess. */
 	UPROPERTY()
 	TObjectPtr<UTargetingComponent> TargetingComponent;
+	
+	FVector HeardNoiseLocation = FVector::ZeroVector;                                                               
+	TWeakObjectPtr<AActor> HeardNoiseInstigator;                                                                    
+	bool bHasPendingNoise = false;                                                                                  
+	float LastNoiseHeardTime = 0.0f;        
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;

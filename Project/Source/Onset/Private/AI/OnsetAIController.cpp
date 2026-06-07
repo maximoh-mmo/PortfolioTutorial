@@ -95,6 +95,10 @@ void AOnsetAIController::OnUnPossess()
 	SetActorEnableCollision(false);
 	Super::OnUnPossess();
 	TargetingComponent = nullptr;
+	HeardNoiseLocation = FVector::ZeroVector;                                                               
+	HeardNoiseInstigator = nullptr;                                                                    
+	bHasPendingNoise = false;                                                                                  
+	LastNoiseHeardTime = 0.0f;       
 }
 
 void AOnsetAIController::BeginPlay()
@@ -112,15 +116,14 @@ void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActor
 {
 	if (GetPawn() == nullptr) return;
 	
-	TArray<AActor*> PerceivedActors;
-	PerceptionComponent->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), PerceivedActors);
-	PerceptionComponent->GetCurrentlyPerceivedActors(UAISense_Hearing::StaticClass(), PerceivedActors);
-	
+	// --- Sight: set targeting component ---
+	TArray<AActor*> SeenActors;
+	PerceptionComponent->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), SeenActors);
 	AActor* BestTarget = nullptr;
 	float BestDist = FLT_MAX;
 	FVector MyLocation = GetPawn()->GetActorLocation();
 	
-	for (AActor* Actor : PerceivedActors)
+	for (AActor* Actor : SeenActors)
 	{
 		if (Actor == nullptr) continue;
 		
@@ -135,11 +138,45 @@ void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActor
 			BestTarget = Actor;
 		}
 	}
-	if (BestTarget == nullptr)
+	if (BestTarget)
+	{
+		TargetingComponent->SetTarget(BestTarget);
+	}
+	else if (SeenActors.Num() == 0)
 	{
 		TargetingComponent->ClearTarget();
-		return;
 	}
-	TargetingComponent->SetTarget(BestTarget);
-		
+	
+	// --- Hearing: store closest noise ---
+	TArray<AActor*> HeardActors;
+	PerceptionComponent->GetCurrentlyPerceivedActors(UAISense_Hearing::StaticClass(), HeardActors);
+	
+	if (HeardActors.Num() > 0)
+	{
+		AActor* ClosestHeard = nullptr;                                                                         
+             float ClosestDistSq = FLT_MAX;                                                                            
+                                                                                                                     
+             for (AActor* Actor : HeardActors)                                                                       
+             {                                                                                                       
+                 if (Actor == nullptr) continue;                                                                     
+                 float DistSq = FVector::DistSquared(MyLocation, Actor->GetActorLocation());                           
+                 if (DistSq < ClosestDistSq)                                                                             
+                 {                                                                                                   
+                     ClosestDistSq = DistSq;                                                                             
+                     ClosestHeard = Actor;                                                                           
+                 }                                                                                                   
+             }                                                                                                       
+                                                                                                                     
+             if (ClosestHeard)                                                                                       
+             {                                                                                                       
+                 HeardNoiseLocation = ClosestHeard->GetActorLocation();                                              
+                 HeardNoiseInstigator = ClosestHeard;                                                                
+                 bHasPendingNoise = true;                                                                            
+                 LastNoiseHeardTime = GetWorld()->GetTimeSeconds();                                                       
+             }           
+	}
+	else
+	{
+		bHasPendingNoise = false;	
+	}
 }
