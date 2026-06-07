@@ -14,6 +14,7 @@ DEFINE_LOG_CATEGORY(LogPooling)
 
 void UOnsetPoolSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
+	Super::OnWorldBeginPlay(InWorld);
 	InitializePool();	
 }
 
