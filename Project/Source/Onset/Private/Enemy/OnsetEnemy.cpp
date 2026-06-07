@@ -9,8 +9,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "Corpse/OnsetCorpseSubsystem.h"
 #include "Enemy/GroupComponent.h"
-#include "Spawning/OnsetPoolManager.h"
 #include "Spawning/OnsetSpawner.h"
 
 AOnsetEnemy::AOnsetEnemy()
@@ -87,6 +87,12 @@ void AOnsetEnemy::ApplyProfile(UAIProfile* InProfile)
 
 void AOnsetEnemy::OnDeath(AActor* KillingActor)
 {
+	if (UOnsetCorpseSubsystem* CorpseSub = GetWorld()->GetSubsystem<UOnsetCorpseSubsystem>())
+	{
+		UStaticMesh* CorpseMesh = Profile->CorpseMesh.IsNull() ? nullptr : Profile->CorpseMesh.LoadSynchronous();
+		CorpseSub->SpawnCorpse(GetActorTransform(), CorpseMesh);
+	}
+
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetEnemy::DeferredDeathCleanup);
 }
 

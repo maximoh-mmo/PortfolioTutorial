@@ -8,7 +8,6 @@
 #include "GameFramework/Actor.h"
 #include "OnsetSpawner.generated.h"
 
-class AOnsetPoolManager;
 class UGroupManagerComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSpawner, Log, All);
@@ -30,10 +29,6 @@ public:
 	 *  falls back to ring scatter around the spawner location. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawning")
 	TArray<AActor*> SpawnPoints;
-
-	/** Pool manager for handling NPC pooling. Must be set in the level. */
-	UPROPERTY(EditAnywhere, Category="Spawning")
-	AOnsetPoolManager* PoolManager;
 
 	/** Group manager created automatically as a subobject. Tracks group membership. */
 	UPROPERTY(VisibleAnywhere, Category = "Spawning")

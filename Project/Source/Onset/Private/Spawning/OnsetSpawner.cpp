@@ -1,12 +1,11 @@
 ﻿#include "Spawning/OnsetSpawner.h"
 
 #include "TimerManager.h"
-#include "AI/AIProfile.h"
 #include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
 #include "Spawning/GroupManagerComponent.h"
-#include "Spawning/OnsetPoolManager.h"
+#include "Spawning/OnsetPoolSubsystem.h"
 #include "Spawning/SpawnerSlot.h"
 
 DEFINE_LOG_CATEGORY(LogSpawner);
@@ -37,9 +36,9 @@ void AOnsetSpawner::DestroyGroup()
 	{
 		if (Slots[i].Occupant == nullptr || Slots[i].Occupant->IsPendingKillPending()) continue; 
 		if (GroupManager) GroupManager->UnregisterMember(Slots[i].Occupant);
-		if (PoolManager)
+		if (GetWorld()->GetSubsystem<UOnsetPoolSubsystem>())
 		{
-			PoolManager->ReleasePooledEnemy(Slots[i].Occupant);
+			GetWorld()->GetSubsystem<UOnsetPoolSubsystem>()->ReleasePooledEnemy(Slots[i].Occupant);
 		}
 		else
 		{
@@ -88,6 +87,8 @@ void AOnsetSpawner::InitSlots()
 
 AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 {
+	UOnsetPoolSubsystem* PoolManager = GetWorld()->GetSubsystem<UOnsetPoolSubsystem>();
+	if (!PoolManager) return nullptr;
 	if (!Slots.IsValidIndex(SlotIndex)) return nullptr;
 	FSpawnerSlot& Slot = Slots[SlotIndex];
 	if (Slot.Occupant && IsValid(Slot.Occupant)) return nullptr; // already occupied
@@ -147,9 +148,9 @@ void AOnsetSpawner::DebugKillLast()
 		if (Slots[i].Occupant && IsValid(Slots[i].Occupant))
 		{
 			if (GroupManager) GroupManager->UnregisterMember(Slots[i].Occupant);
-			if (PoolManager)
+			if (GetWorld()->GetSubsystem<UOnsetPoolSubsystem>())
 			{
-				PoolManager->ReleasePooledEnemy(Slots[i].Occupant);
+				GetWorld()->GetSubsystem<UOnsetPoolSubsystem>()->ReleasePooledEnemy(Slots[i].Occupant);
 			}
 			else Slots[i].Occupant->Destroy();
 			Slots[i].Occupant = nullptr;
@@ -160,7 +161,7 @@ void AOnsetSpawner::DebugKillLast()
 
 void AOnsetSpawner::OnNPCDeath(AOnsetEnemy* Enemy)
 {
-	if (!Enemy || !PoolManager) return;
+	if (!Enemy) return;
 	
 	for (int32 i = 0; i < Slots.Num(); ++i)
 	{
@@ -176,7 +177,7 @@ void AOnsetSpawner::OnNPCDeath(AOnsetEnemy* Enemy)
 		}
 	}
 	
-	PoolManager->ReleasePooledEnemy(Enemy);
+	GetWorld()->GetSubsystem<UOnsetPoolSubsystem>()->ReleasePooledEnemy(Enemy);
 }
 
 void AOnsetSpawner::RespawnNPC(int32 SlotIndex)

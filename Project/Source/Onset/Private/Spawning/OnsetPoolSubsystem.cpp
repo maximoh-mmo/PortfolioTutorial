@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Spawning/OnsetPoolManager.h"
+#include "Spawning/OnsetPoolSubsystem.h"
 
 #include "AI/OnsetAIController.h"
 #include "Components/StateTreeAIComponent.h"
@@ -10,14 +10,15 @@
 #include "Engine/World.h"
 #include "Perception/AIPerceptionComponent.h"
 
-DEFINE_LOG_CATEGORY(LogPooling);
-// Sets default values
-AOnsetPoolManager::AOnsetPoolManager()
+DEFINE_LOG_CATEGORY(LogPooling)
+
+void UOnsetPoolSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
-	PrimaryActorTick.bCanEverTick = false;
+	InitializePool();	
 }
-	
-AOnsetEnemy* AOnsetPoolManager::GetPooledEnemy()
+
+// Sets default values	
+AOnsetEnemy* UOnsetPoolSubsystem::GetPooledEnemy()
 {
 	if (!bPoolInitialized) InitializePool();
 	for (AOnsetEnemy* Enemy : ObjectPool)
@@ -42,7 +43,7 @@ AOnsetEnemy* AOnsetPoolManager::GetPooledEnemy()
 	return nullptr;
 }
 
-AOnsetAIController* AOnsetPoolManager::GetPooledController()
+AOnsetAIController* UOnsetPoolSubsystem::GetPooledController()
 {
 	if (!bPoolInitialized) InitializePool();
 	for (AOnsetAIController* Controller : ControllerPool)
@@ -68,21 +69,21 @@ AOnsetAIController* AOnsetPoolManager::GetPooledController()
 	return nullptr;
 }
 
-void AOnsetPoolManager::ReleasePooledEnemy(AOnsetEnemy* Enemy)
+void UOnsetPoolSubsystem::ReleasePooledEnemy(AOnsetEnemy* Enemy)
 {
 	if (!Enemy || Enemy->IsPendingKillPending()) return;
 	
 	ReturnToPool(Enemy);
 }
 
-void AOnsetPoolManager::ReleasePooledController(AOnsetAIController* Controller)
+void UOnsetPoolSubsystem::ReleasePooledController(AOnsetAIController* Controller)
 {
 	if (!Controller || Controller->IsPendingKillPending()) return;
 	Controller->UnPossess();
 	if (!ControllerPool.Contains(Controller)) ControllerPool.Add(Controller);    
 }
 
-void AOnsetPoolManager::InitializePool()
+void UOnsetPoolSubsystem::InitializePool()
 {
 	if (bPoolInitialized) return;
 	bPoolInitialized = true;
@@ -105,13 +106,7 @@ void AOnsetPoolManager::InitializePool()
 	
 }
 
-void AOnsetPoolManager::BeginPlay()
-{
-	Super::BeginPlay();
-	InitializePool();	
-}
-
-void AOnsetPoolManager::ReturnToPool(AOnsetEnemy* Enemy)
+void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 {
 	if (!Enemy) return;	
 	if (UGroupComponent* GroupComp = Enemy->FindComponentByClass<UGroupComponent>())

@@ -6,6 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "AIProfile.generated.h"
 
+class UStaticMesh;
 class UStateTree;
 class UMaterialInterface;
 class USkeletalMesh;
@@ -21,7 +22,11 @@ public:
 	/** Skeletal mesh for this NPC variant. Leave null to use cube fallback. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
 	TSoftObjectPtr<USkeletalMesh> SkeletalMesh;
-
+	
+	/** Corpse mesh for this NPC variant. Leave null to use cube fallback. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	TSoftObjectPtr<UStaticMesh> CorpseMesh;
+	
 	/** Anim BP applied after the skeletal mesh is set. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
 	TSubclassOf<UAnimInstance> AnimBlueprintClass;
