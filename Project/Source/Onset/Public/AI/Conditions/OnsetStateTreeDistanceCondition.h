@@ -9,7 +9,9 @@ UENUM()
 enum class EOnsetStateTreeDistanceSource : uint8
 {
 	CurrentTarget,
-	HomeLocation
+	HomeLocation,
+	AttackRange,
+	ChaseRange
 };
 
 USTRUCT()

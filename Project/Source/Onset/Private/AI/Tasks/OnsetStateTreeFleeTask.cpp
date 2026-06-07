@@ -12,8 +12,8 @@ EStateTreeRunStatus FOnsetStateTreeFleeTask::EnterState(FStateTreeExecutionConte
                                                         const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
-	if (!AIController) return EStateTreeRunStatus::Failed;
-
+	if (!AIController) return EStateTreeRunStatus::Failed;                                                      
+	AIController->ClearFocus(EAIFocusPriority::Gameplay);
 	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;
 

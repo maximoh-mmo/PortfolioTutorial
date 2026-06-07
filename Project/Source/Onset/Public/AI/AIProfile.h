@@ -62,4 +62,10 @@ public:
 	/** Radius in which hearing a combat noise triggers assist behaviour. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behavior")
 	float AssistRadius = 600.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behavior")                                              
+	float AttackRange = 250.0f; 
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behavior")                                              
+	float ChaseRange = 1000.0f;
 };

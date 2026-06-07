@@ -1,6 +1,7 @@
 ﻿#include "AI/Conditions/OnsetStateTreeDistanceCondition.h"
 
 #include "StateTreeExecutionContext.h"
+#include "AI/AIProfile.h"
 #include "AI/OnsetAIController.h"
 #include "AI/Tasks/OnsetStateTreeTaskBase.h"
 
@@ -8,40 +9,57 @@ bool FOnsetStateTreeDistanceCondition::TestCondition(FStateTreeExecutionContext&
 {
 	FOnsetStateTreeDistanceConditionInstance& InstanceData = Context.GetInstanceData<FOnsetStateTreeDistanceConditionInstance>(*this);
 	AOnsetAIController* AIController = Cast<AOnsetAIController>(Context.GetOwner());
-	if (!AIController || AIController->GetPawn()) return false;
+	if (!AIController || !AIController->GetPawn()) return false;
 	
 	FVector SourceLocation = AIController->GetPawn()->GetActorLocation();
 	FVector TargetLocation;
 	
-	if (InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::CurrentTarget)
+	// Resolve target location
+	
+	if (InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::CurrentTarget ||
+		InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::AttackRange ||
+		InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::ChaseRange)
 	{
 		AActor* Target = FOnsetStateTreeTaskBase::GetTarget(Context);
-		if (!Target)
-		{
-			return InstanceData.bAllowNoTarget; // If no target is allowed, consider the condition true when there's no target.
-		}
+		// If no target is allowed, consider the condition true when there's no target.
+		if (!Target) return InstanceData.bAllowNoTarget;
 		TargetLocation = Target->GetActorLocation();
 	}
-	else
+	else // Home location
 	{
 		AOnsetBaseCharacter* Self = FOnsetStateTreeTaskBase::GetSelfBaseCharacter(Context);
 		if (!Self) return false;
 		TargetLocation = Self->HomeTransform.GetLocation();
 	}
 	
-	float Distance = FVector::DistSquared(SourceLocation, TargetLocation);
-	float DistanceThresholdSquared = InstanceData.DistanceThreshold * InstanceData.DistanceThreshold;
+	// Resolve threshold
 	
+	float DistanceThresholdSquared;
+	if (InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::AttackRange ||
+		InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::ChaseRange)
+	{
+		AOnsetEnemy* Self = FOnsetStateTreeTaskBase::GetSelfEnemyCharacter(Context);
+		if (!Self || !Self->Profile) return false;
+		float Threshold = InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::AttackRange 
+			                  ? Self->Profile->AttackRange 
+			                  : Self->Profile->ChaseRange;
+		DistanceThresholdSquared = Threshold * Threshold;
+	}
+	else
+	{
+		DistanceThresholdSquared = InstanceData.DistanceThreshold * InstanceData.DistanceThreshold;
+	}
+	const float DistanceSquared = FVector::DistSquared(SourceLocation, TargetLocation);
 	switch (InstanceData.Comparison)
 	{
 	case UE::StateTree::EComparisonOperator::Less:
-		return Distance < DistanceThresholdSquared;
+		return DistanceSquared < DistanceThresholdSquared;
 	case UE::StateTree::EComparisonOperator::LessOrEqual:
-		return Distance <= DistanceThresholdSquared;
+		return DistanceSquared <= DistanceThresholdSquared;
 	case UE::StateTree::EComparisonOperator::Greater:
-		return Distance > DistanceThresholdSquared;
+		return DistanceSquared > DistanceThresholdSquared;
 	case UE::StateTree::EComparisonOperator::GreaterOrEqual:
-		return Distance >= DistanceThresholdSquared;
+		return DistanceSquared >= DistanceThresholdSquared;
 	default:
 		return false;
 	}
