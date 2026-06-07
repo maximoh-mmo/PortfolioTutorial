@@ -1,7 +1,7 @@
 # 📘 **TOP‑DOWN ARPG AI SERIES — FULL EPISODE LIST**
 
 ## **Overview**
-This document contains the complete episode list for the 39‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Scope Overview](Scope_Overview.md) for context).
+This document contains the complete episode list for the 40‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Scope Overview](Scope_Overview.md) for context).
 Episodes are grouped into phases that reflect the natural progression of building the full demo.
 The [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) provides the full system design that this episode list implements.
 
@@ -137,6 +137,10 @@ Implement dash, AoE, projectile abilities, and ability bar UI.
 Extract interaction resolution from `AOnsetPlayerController` into `UInteractionComponent`, splitting the controller's responsibilities (Single Responsibility Principle). Split `UAIProfile` into `UVisualProfile`, `UAIProfile`, and `UPerceptionProfile` — three focused data assets instead of one god object. Retire `AOnsetPoolManager` in favour of `UOnsetPoolSubsystem` (subsystem pattern). Update all call sites (spawner, enemy, controller). The corpse mesh lands naturally in `UVisualProfile`. Teaches: SRP in UE5, subsystem vs. actor world management, data-oriented design for config assets.
 · [Player System](../../Docs/Player/Player_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [Pooling System](../../Docs/AI/Pooling_System.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
 
+### **Episode 22 — GAS Movement Speed Attribute**
+Replace scattered direct `MaxWalkSpeed` manipulation in StateTree tasks with a central `MovementSpeed` GAS attribute and stackable GameplayEffects. Refactor FleeTask and InvestigateTask to apply/remove tagged GEs instead of caching and restoring speed directly. Adds stacking: stagger slow + flee speed + haste buff all combine naturally through the attribute.
+· [GAS System](../../Docs/GAS/GAS_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
+
 ---
 
 # **PHASE 3.6 — Player AI (Autoplay / Testing Mode)**
@@ -144,15 +148,15 @@ Extract interaction resolution from `AOnsetPlayerController` into `UInteractionC
 
 ---
 
-### **Episode 22 — Player AI Controller**
+### **Episode 23 — Player AI Controller**
 Create a PlayerAIController and implement possession switching.
 · [Player AI System](../../Docs/AI/Player_AI_System.md) · [Player System](../../Docs/Player/Player_System.md)
 
-### **Episode 23 — Player StateTree**
+### **Episode 24 — Player StateTree**
 Implement auto‑targeting, auto‑movement, and auto‑ability usage.
 · [Player AI System](../../Docs/AI/Player_AI_System.md)
 
-### **Episode 24 — Autoplay Mode**
+### **Episode 25 — Autoplay Mode**
 Add a toggle for AI control, debug UI, and AI‑vs‑AI testing.
 · [Player AI System](../../Docs/AI/Player_AI_System.md) · [UI System](../../Docs/Gameplay/UI_System.md)
 
@@ -163,23 +167,23 @@ Add a toggle for AI control, debug UI, and AI‑vs‑AI testing.
 
 ---
 
-### **Episode 25 — Flee State**
+### **Episode 26 — Flee State**
 Implement low‑health retreat behaviour with evaluators.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 26 — Group Assist Integration**
+### **Episode 27 — Group Assist Integration**
 Wire assist events from the Group System into the StateTree so NPCs respond when nearby allies are attacked.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [Group System](../../Docs/AI/Group_System.md)
 
-### **Episode 27 — Optional Behavior Tree Integration**
+### **Episode 28 — Optional Behavior Tree Integration**
 Add a small BT/EQS subtree for advanced chase/positioning.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 28 — Dynamic Enemy Types**
+### **Episode 29 — Dynamic Enemy Types**
 Swap meshes, stats, and behaviour profiles when recycling NPCs.
 · [Spawner System](../../Docs/AI/Spawner_System.md) · [Pooling System](../../Docs/AI/Pooling_System.md)
 
-### **Episode 29 — AI Debugging Tools**
+### **Episode 30 — AI Debugging Tools**
 Use AIDebugger, StateTree debugger, GAS debugger, and on‑screen debug.
 · [UI System](../../Docs/Gameplay/UI_System.md)
 
@@ -190,27 +194,27 @@ Use AIDebugger, StateTree debugger, GAS debugger, and on‑screen debug.
 
 ---
 
-### **Episode 30 — Server/Client Architecture**
+### **Episode 31 — Server/Client Architecture**
 Explain authority, replication, RPCs, and server‑only logic.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 31 — Multiplayer‑Safe NPCs**
+### **Episode 32 — Multiplayer‑Safe NPCs**
 Replicate health, enemy type, and ensure server‑only AI.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 32 — Multiplayer‑Safe Spawner & Pool**
+### **Episode 33 — Multiplayer‑Safe Spawner & Pool**
 Make spawner/pooling server‑only with replicated activation.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
 
-### **Episode 33 — Dedicated Server Testing**
+### **Episode 34 — Dedicated Server Testing**
 Run server + client, debug replication, and simulate latency.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 34 — PvP System**
+### **Episode 35 — PvP System**
 Implement the PvP toggle with replicated state, targeting filtering, and damage-rule enforcement.
 · [PvP System](../../Docs/Gameplay/PVP_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 35 — Steam Integration**
+### **Episode 36 — Steam Integration**
 Add Steam OSS, auth tickets, server verification, and testing.
 · [Steam Integration System](../../Docs/Steam/Steam_Integration_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
@@ -221,19 +225,19 @@ Add Steam OSS, auth tickets, server verification, and testing.
 
 ---
 
-### **Episode 36 — UI & Feedback**
+### **Episode 37 — UI & Feedback**
 Add health bars, hit indicators, cooldown UI, virtual joystick widget, virtual ability buttons, gamepad cursor overlay, and target highlights.
 · [UI System](../../Docs/Gameplay/UI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
 
-### **Episode 37 — Final Gameplay Loop**
+### **Episode 38 — Final Gameplay Loop**
 Implement waves, respawn cycles, and full combat flow with all input methods supported.
 · [Spawner System](../../Docs/AI/Spawner_System.md) · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 
-### **Episode 38 — Performance Optimization**
+### **Episode 39 — Performance Optimization**
 Reduce ticks, add AI LOD, optimize pooling and networking.
 · [Pooling System](../../Docs/AI/Pooling_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 39 — Final Showcase**
+### **Episode 40 — Final Showcase**
 Record the final demo, recap architecture, and discuss next steps.
 · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 

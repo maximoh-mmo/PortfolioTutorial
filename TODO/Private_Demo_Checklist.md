@@ -191,10 +191,16 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify full behaviour loop: Idle → Roam → Agro → Chase → Attack → (repeat/retreat)
 
 ## A3.4 Group Assist Integration
+- [x] Emit FAINoiseEvent from PostGameplayEffectExecute on damage taken
+- [x] Store noise info on AOnsetAIController (HeardNoiseLocation, bHasPendingNoise, etc.)
+- [x] Split OnPerceptionUpdated: sight sets TargetingComponent, hearing stores noise info only
+- [x] Create FOnsetStateTreeHearingCondition — gates Idle→Investigate by pending noise + remembrance time
+- [x] Create FOnsetStateTreeInvestigateTask — moves to noise location, exits on sight/arrival/expiry, speed varies by group membership
 - [ ] Add assist event input to StateTree context
-- [ ] Implement **Assist** state transition (Agro on assist event)
-- [ ] Verify assist triggers when nearby ally is attacked — uses AI Perception hearing (noise event from damage)
-- [ ] Verify no assist when attacker is out of assist range — filtered by each enemy's HearingRange on profile
+- [ ] Implement **Search** state (Alerted: yaw sweep scan at noise origin)
+- [ ] Wire StateTree BP: Idle → HearingCondition → Investigate → Search → Idle
+- [ ] Verify assist triggers when nearby ally is attacked
+- [ ] Verify no assist when attacker is out of hearing range
 - [x] Assist radius testing moved here from A2.3 — assist now flows through perception hearing, not Group System
 
 ## A3.5 Player AI Autoplay

@@ -55,13 +55,13 @@ The series is divided into **8 phases** (see the full [Episode List](Episode_Lis
 1. **NPC Lifecycle** — Pooling, groups, respawn  
 2. **AI Foundations** — StateTrees, perception, behaviour  
 3. **Combat (GAS)** — Abilities, damage, death  
-3.5 **Architecture Cleanup** — Controller refactor, profile split  
+3.5 **Architecture Cleanup** — Controller refactor, profile split, GAS movement speed attribute  
 3.6 **Player AI** — Autoplay/testing mode  
 4. **Advanced AI** — Flee, group assist, dynamic types, debugging  
 5. **Multiplayer** — Replication, dedicated server, Steam, PvP  
 6. **Final Demo & Polish** — UI, gameplay loop, optimization, showcase  
 
-Total: **39 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
+Total: **40 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
 
 ---
 
