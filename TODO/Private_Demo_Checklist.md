@@ -196,9 +196,14 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Split OnPerceptionUpdated: sight sets TargetingComponent, hearing stores noise info only
 - [x] Create FOnsetStateTreeHearingCondition — gates Idle→Investigate by pending noise + remembrance time
 - [x] Create FOnsetStateTreeInvestigateTask — moves to noise location, exits on sight/arrival/expiry, speed varies by group membership
-- [ ] Add assist event input to StateTree context
+- [x] Add ChaseRange + AttackRange to AIProfile (1000 / 250)
+- [x] Update DistanceCondition with AttackRange/ChaseRange source types (reads from profile)
+- [x] Fix DistanceCondition inverted pawn check bug
+- [x] Create HasTarget + HasNoTarget conditions (shared empty instance data, inline)
+- [x] Add ClearFocus to FleeTask EnterState
+- [x] Wire full StateTree: Idle→Agro→Chase→Attack→Flee + Investigate + LostTarget
 - [ ] Implement **Search** state (Alerted: yaw sweep scan at noise origin)
-- [ ] Wire StateTree BP: Idle → HearingCondition → Investigate → Search → Idle
+- [ ] Wire StateTree Search state: Investigate → Search → Idle
 - [ ] Verify assist triggers when nearby ally is attacked
 - [ ] Verify no assist when attacker is out of hearing range
 - [x] Assist radius testing moved here from A2.3 — assist now flows through perception hearing, not Group System
