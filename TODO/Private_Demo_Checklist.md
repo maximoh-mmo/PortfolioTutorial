@@ -181,7 +181,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Implement **Agro** state (face target via `SetFocus`, facing-angle check + timer) — `FOnsetStateTreeAgroTask`
 - [x] Implement **Chase** state (MoveToActor, exit on arrival, transitions gated by DistanceCondition) — `FOnsetStateTreeChaseTask`
 - [x] Implement **Attack** state (timer-based cooldown stub, ready for GAS) — `FOnsetStateTreeAttackTask`
-- [ ] Implement **Flee** state (retreat when low health + isolated)
+- [x] Implement **Flee** state (retreat when low health + isolated)
 - [x] Implement **Lost** state (target lost → clear focus, random pause 2-4s, → Roam) — `FOnsetStateTreeLostTargetTask`
 - [x] Create **FOnsetStateTreeTaskBase** — shared helpers (GetController, GetTarget, HasMoveCompleted, GetSelfBaseCharacter, GetPathFollowingComponent); all 5 tasks migrated
 - [x] Create **FOnsetStateTreeDistanceCondition** — reusable transition condition (Target or HomeLocation, DistSquared, UE::StateTree::EComparisonOperator)
@@ -234,6 +234,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Trigger on damage received (HandleGameplayEvent in PostGameplayEffectExecute)
 - [x] Verify hit reaction plays on damage
 - [x] Verify cooldown prevents hit-reaction spam
+- [x] Apply stagger effect (GE_Stagger applied in ActivateAbility)
 
 ## A4.4 NPC Attack Integration
 - [x] Trigger `GA_Attack` from NPC StateTree Attack state (TryActivateAbilityByClass in AttackTask)
@@ -253,13 +254,15 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Create `UOnsetCheatManager` — God() toggles invulnerability tag, Heal() restores health
 - [x] Wire CheatClass in PlayerController, add god mode guard to PostGameplayEffectExecute
 
-## A4.5b — Corpse Actor System (new)
-- [ ] Create `AOnsetCorpse` — minimal actor, static mesh, timed self-destruct
-- [ ] On NPC death: spawn corpse at death location
-- [ ] Corpse despawns after configurable lifespan
-- [ ] Hard cap on active corpses (oldest evicted)
-- [ ] Verify NPC returns to pool immediately (corpse lifecycle independent)
-- [ ] Verify spawner respawn timer starts at death, not corpse despawn
+## A4.5b — Corpse Actor System
+- [x] Create `AOnsetCorpse` — minimal actor, static mesh, timed self-destruct
+- [x] Create `UOnsetCorpseSubsystem` — world subsystem with cap + lazy sweep
+- [x] On NPC death: spawn corpse at death location via subsystem
+- [x] Corpse despawns after configurable lifespan (`SetLifeSpan`)
+- [x] Hard cap on active corpses (oldest evicted via SweepDeadCorpses)
+- [x] Migrated `AOnsetPoolManager` → `UOnsetPoolSubsystem` (subsystem pattern)
+- [x] Verify NPC returns to pool immediately (corpse lifecycle independent)
+- [x] Verify spawner respawn timer starts at death, not corpse despawn
 - [ ] Verify corpse spawned for player kills and NPC-kills-NPC deaths
 - [ ] Verify no performance regression under rapid death cascade
 
@@ -393,9 +396,9 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | — | 28 | — |
-| A4 GAS Combat | 47 | 30 | 64% |
+| A3 AI Systems | — | 31 | — |
+| A4 GAS Combat | 47 | 38 | 81% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |
-| **Total** | 77 | 105 | **—** |
+| **Total** | 77 | 113 | **—** |

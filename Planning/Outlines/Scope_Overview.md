@@ -1,7 +1,7 @@
 # 📘 **TOP‑DOWN ARPG AI DEMO — SCOPE OVERVIEW**
 
 ## **Purpose of This Document**
-This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 38‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Episode List](Episode_List.md)).
+This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 39‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Episode List](Episode_List.md)).
 
 It ensures:
 

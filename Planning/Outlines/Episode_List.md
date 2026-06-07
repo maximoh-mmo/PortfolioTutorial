@@ -128,20 +128,31 @@ Implement dash, AoE, projectile abilities, and ability bar UI.
 
 ---
 
-# **PHASE 3.5 — Player AI (Autoplay / Testing Mode)**
+# **PHASE 3.5 — Architecture Cleanup**
+### *Goal: Refactor monolithic classes into focused components — a teaching moment in SOLID principles.*
+
+---
+
+### **Episode 21 — Architecture Cleanup: Interaction Component & Profile Split**
+Extract interaction resolution from `AOnsetPlayerController` into `UInteractionComponent`, splitting the controller's responsibilities (Single Responsibility Principle). Split `UAIProfile` into `UVisualProfile`, `UAIProfile`, and `UPerceptionProfile` — three focused data assets instead of one god object. Retire `AOnsetPoolManager` in favour of `UOnsetPoolSubsystem` (subsystem pattern). Update all call sites (spawner, enemy, controller). The corpse mesh lands naturally in `UVisualProfile`. Teaches: SRP in UE5, subsystem vs. actor world management, data-oriented design for config assets.
+· [Player System](../../Docs/Player/Player_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [Pooling System](../../Docs/AI/Pooling_System.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
+
+---
+
+# **PHASE 3.6 — Player AI (Autoplay / Testing Mode)**
 ### *Goal: Allow the player character to be AI‑controlled for testing.*
 
 ---
 
-### **Episode 21 — Player AI Controller**
+### **Episode 22 — Player AI Controller**
 Create a PlayerAIController and implement possession switching.
 · [Player AI System](../../Docs/AI/Player_AI_System.md) · [Player System](../../Docs/Player/Player_System.md)
 
-### **Episode 22 — Player StateTree**
+### **Episode 23 — Player StateTree**
 Implement auto‑targeting, auto‑movement, and auto‑ability usage.
 · [Player AI System](../../Docs/AI/Player_AI_System.md)
 
-### **Episode 23 — Autoplay Mode**
+### **Episode 24 — Autoplay Mode**
 Add a toggle for AI control, debug UI, and AI‑vs‑AI testing.
 · [Player AI System](../../Docs/AI/Player_AI_System.md) · [UI System](../../Docs/Gameplay/UI_System.md)
 
@@ -152,23 +163,23 @@ Add a toggle for AI control, debug UI, and AI‑vs‑AI testing.
 
 ---
 
-### **Episode 24 — Flee State**
+### **Episode 25 — Flee State**
 Implement low‑health retreat behaviour with evaluators.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 25 — Group Assist Integration**
+### **Episode 26 — Group Assist Integration**
 Wire assist events from the Group System into the StateTree so NPCs respond when nearby allies are attacked.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [Group System](../../Docs/AI/Group_System.md)
 
-### **Episode 26 — Optional Behavior Tree Integration**
+### **Episode 27 — Optional Behavior Tree Integration**
 Add a small BT/EQS subtree for advanced chase/positioning.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 27 — Dynamic Enemy Types**
+### **Episode 28 — Dynamic Enemy Types**
 Swap meshes, stats, and behaviour profiles when recycling NPCs.
 · [Spawner System](../../Docs/AI/Spawner_System.md) · [Pooling System](../../Docs/AI/Pooling_System.md)
 
-### **Episode 28 — AI Debugging Tools**
+### **Episode 29 — AI Debugging Tools**
 Use AIDebugger, StateTree debugger, GAS debugger, and on‑screen debug.
 · [UI System](../../Docs/Gameplay/UI_System.md)
 
@@ -179,27 +190,27 @@ Use AIDebugger, StateTree debugger, GAS debugger, and on‑screen debug.
 
 ---
 
-### **Episode 29 — Server/Client Architecture**
+### **Episode 30 — Server/Client Architecture**
 Explain authority, replication, RPCs, and server‑only logic.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 30 — Multiplayer‑Safe NPCs**
+### **Episode 31 — Multiplayer‑Safe NPCs**
 Replicate health, enemy type, and ensure server‑only AI.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 31 — Multiplayer‑Safe Spawner & Pool**
+### **Episode 32 — Multiplayer‑Safe Spawner & Pool**
 Make spawner/pooling server‑only with replicated activation.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
 
-### **Episode 32 — Dedicated Server Testing**
+### **Episode 33 — Dedicated Server Testing**
 Run server + client, debug replication, and simulate latency.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 33 — PvP System**
+### **Episode 34 — PvP System**
 Implement the PvP toggle with replicated state, targeting filtering, and damage-rule enforcement.
 · [PvP System](../../Docs/Gameplay/PVP_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 34 — Steam Integration**
+### **Episode 35 — Steam Integration**
 Add Steam OSS, auth tickets, server verification, and testing.
 · [Steam Integration System](../../Docs/Steam/Steam_Integration_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
@@ -210,19 +221,19 @@ Add Steam OSS, auth tickets, server verification, and testing.
 
 ---
 
-### **Episode 35 — UI & Feedback**
+### **Episode 36 — UI & Feedback**
 Add health bars, hit indicators, cooldown UI, virtual joystick widget, virtual ability buttons, gamepad cursor overlay, and target highlights.
 · [UI System](../../Docs/Gameplay/UI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
 
-### **Episode 36 — Final Gameplay Loop**
+### **Episode 37 — Final Gameplay Loop**
 Implement waves, respawn cycles, and full combat flow with all input methods supported.
 · [Spawner System](../../Docs/AI/Spawner_System.md) · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 
-### **Episode 37 — Performance Optimization**
+### **Episode 38 — Performance Optimization**
 Reduce ticks, add AI LOD, optimize pooling and networking.
 · [Pooling System](../../Docs/AI/Pooling_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 38 — Final Showcase**
+### **Episode 39 — Final Showcase**
 Record the final demo, recap architecture, and discuss next steps.
 · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 
