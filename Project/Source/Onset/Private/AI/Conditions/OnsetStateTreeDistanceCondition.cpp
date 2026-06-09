@@ -1,7 +1,7 @@
 ﻿#include "AI/Conditions/OnsetStateTreeDistanceCondition.h"
 
 #include "StateTreeExecutionContext.h"
-#include "AI/AIProfile.h"
+#include "Enemy/Profile/AIProfile.h"
 #include "AI/OnsetAIController.h"
 #include "AI/Tasks/OnsetStateTreeTaskBase.h"
 

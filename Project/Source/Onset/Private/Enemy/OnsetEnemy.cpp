@@ -1,8 +1,6 @@
 #include "Enemy/OnsetEnemy.h"
 
 #include "TimerManager.h"
-#include "AI/AIProfile.h"
-#include "AI/OnsetAIController.h"
 #include "Animation/AnimInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -11,6 +9,7 @@
 #include "Engine/StaticMesh.h"
 #include "Corpse/OnsetCorpseSubsystem.h"
 #include "Enemy/GroupComponent.h"
+#include "Enemy/Profile/VisualProfile.h"
 #include "Spawning/OnsetSpawner.h"
 
 AOnsetEnemy::AOnsetEnemy()
@@ -19,22 +18,22 @@ AOnsetEnemy::AOnsetEnemy()
 	GroupComp = CreateDefaultSubobject<UGroupComponent>(TEXT("GroupComp"));
 }
 
-void AOnsetEnemy::ApplyProfile(UAIProfile* InProfile)
+void AOnsetEnemy::ApplyProfile(UVisualProfile* InProfile)
 {
-	Profile = InProfile;
+	VisualProfile = InProfile;
 	USkeletalMeshComponent* SkeletalComp = GetMesh();
 	if (!SkeletalComp) return;
 
 	if (UStaticMeshComponent* OldCube = FindComponentByClass<UStaticMeshComponent>())
 		OldCube->DestroyComponent(false);
 
-	if (Profile)
+	if (VisualProfile)
 	{
-		const bool bHasSkeletal = !Profile->SkeletalMesh.IsNull();
+		const bool bHasSkeletal = !VisualProfile->SkeletalMesh.IsNull();
 
 		if (bHasSkeletal)
 		{
-			if (USkeletalMesh* SkeletalMesh = Profile->SkeletalMesh.LoadSynchronous())
+			if (USkeletalMesh* SkeletalMesh = VisualProfile->SkeletalMesh.LoadSynchronous())
 			{
 				SkeletalComp->SetSkeletalMesh(SkeletalMesh);
 				FBoxSphereBounds Bounds = SkeletalMesh->GetImportedBounds();
@@ -44,8 +43,8 @@ void AOnsetEnemy::ApplyProfile(UAIProfile* InProfile)
 			}
 			SkeletalComp->SetHiddenInGame(false);
 
-			if (Profile->AnimBlueprintClass)
-				SkeletalComp->SetAnimInstanceClass(Profile->AnimBlueprintClass);
+			if (VisualProfile->AnimBlueprintClass)
+				SkeletalComp->SetAnimInstanceClass(VisualProfile->AnimBlueprintClass);
 		}
 		else
 		{
@@ -64,12 +63,12 @@ void AOnsetEnemy::ApplyProfile(UAIProfile* InProfile)
 			CubeVis->SetHiddenInGame(false);
 		}
 
-		if (Profile->OverrideMaterial)
+		if (VisualProfile->OverrideMaterial)
 		{
 			if (bHasSkeletal)
-				SkeletalComp->SetMaterial(0, Profile->OverrideMaterial);
+				SkeletalComp->SetMaterial(0, VisualProfile->OverrideMaterial);
 			else if (UStaticMeshComponent* CubeVis = FindComponentByClass<UStaticMeshComponent>())
-				CubeVis->SetMaterial(0, Profile->OverrideMaterial);
+				CubeVis->SetMaterial(0, VisualProfile->OverrideMaterial);
 		}
 		else
 		{
@@ -89,7 +88,7 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 {
 	if (UOnsetCorpseSubsystem* CorpseSub = GetWorld()->GetSubsystem<UOnsetCorpseSubsystem>())
 	{
-		UStaticMesh* CorpseMesh = Profile->CorpseMesh.IsNull() ? nullptr : Profile->CorpseMesh.LoadSynchronous();
+		UStaticMesh* CorpseMesh = VisualProfile->CorpseMesh.IsNull() ? nullptr : VisualProfile->CorpseMesh.LoadSynchronous();
 		CorpseSub->SpawnCorpse(GetActorTransform(), CorpseMesh);
 	}
 

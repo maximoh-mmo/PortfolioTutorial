@@ -12,7 +12,7 @@ public class Onset : ModuleRules
 			"EnhancedInput", "AIModule", "UMG", "NavigationSystem", "StateTreeModule", "GameplayStateTreeModule",
 			"GameplayAbilities", "GameplayTags", "GameplayTasks"});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "SlateCore" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "SlateCore", "AITestSuite" });
 
 		// Uncomment if you are using Slate UI
 		//PrivateDependencyModuleNames.AddRange(new string[] { "Slate" });

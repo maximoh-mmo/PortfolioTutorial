@@ -7,6 +7,8 @@
 #include "SpawnConfig.generated.h"
 
 class UAIProfile;
+class UVisualProfile;
+class UPerceptionProfile;
 
 /** Configuration for a single spawner: which profile, group size, and placement. */
 USTRUCT(BlueprintType)
@@ -14,9 +16,17 @@ struct FSpawnConfig
 {
 	GENERATED_BODY()
 
-	/** The UAIProfile asset defining visuals and behaviour for spawned NPCs. */
+	/** The UAIProfile asset defining behaviours for spawned NPCs. */
 	UPROPERTY(EditAnywhere, Category = "Spawning")
-	TObjectPtr<UAIProfile> EnemyProfile;
+	TObjectPtr<UAIProfile> EnemyAIProfile;
+	
+	/** The UAIProfile asset defining visuals for spawned NPCs. */
+	UPROPERTY(EditAnywhere, Category = "Spawning")
+	TObjectPtr<UVisualProfile> EnemyVisualProfile;
+	
+	/** The UAIProfile asset defining perception for spawned NPCs. */
+	UPROPERTY(EditAnywhere, Category = "Spawning")
+	TObjectPtr<UPerceptionProfile> EnemyPerceptionProfile;
 
 	/** Number of enemies per spawn group. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")

@@ -6,6 +6,8 @@
 #include "Player/OnsetBaseCharacter.h"
 #include "OnsetEnemy.generated.h"
 
+class UVisualProfile;
+class UPerceptionProfile;
 class AOnsetSpawner;
 class UGroupComponent;
 class UAIProfile;
@@ -21,15 +23,21 @@ public:
 
 	/** Applies or clears the profile — sets mesh, anim BP, material, and capsule size. */
 	UFUNCTION(BlueprintCallable, Category = "AI")
-	void ApplyProfile(UAIProfile* InProfile);
+	void ApplyProfile(UVisualProfile* InProfile);
 
 	/** Group membership component. Pawn-level bridge to UGroupManagerComponent. */
 	UPROPERTY()
 	TObjectPtr<UGroupComponent> GroupComp;
 
 	/** The active profile asset. Set by ApplyProfile(). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Profile")
 	TObjectPtr<UAIProfile> Profile;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Visual Profile")
+	TObjectPtr<UVisualProfile> VisualProfile;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Perception Profile")
+	TObjectPtr<UPerceptionProfile> PerceptionProfile;
 	
 	/** */
 	UPROPERTY()

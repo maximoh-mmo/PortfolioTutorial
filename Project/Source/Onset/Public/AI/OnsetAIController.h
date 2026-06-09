@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "DetourCrowdAIController.h"
+#include "Enemy/Profile/PerceptionProfile.h"
 #include "OnsetAIController.generated.h"
 
 class UStateTreeAIComponent;
@@ -32,7 +33,8 @@ public:
 
 	/** Push a profile to this controller — sets StateTree asset and configures perception. */
 	UFUNCTION(BlueprintCallable, Category = "AI")
-	void ApplyProfile(const UAIProfile* Profile);
+	void ApplyAIProfile(const UAIProfile* Profile);
+	void ApplyPerceptionProfile(const UPerceptionProfile* Profile);
 
 	// --- Targeting ---
 

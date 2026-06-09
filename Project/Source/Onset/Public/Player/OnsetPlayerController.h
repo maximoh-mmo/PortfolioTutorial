@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "OnsetPlayerController.generated.h"
 
+class UInteractionComponent;
 class UGameplayAbility;
 class UGamepadCursorWidget;
 class UCursorManager;
@@ -102,6 +103,9 @@ private:
 	/** Stores the current targeting component via OnPossess, clear's on UnPossess. */          
 	UPROPERTY()
 	TObjectPtr<UTargetingComponent> TargetingComponent;
+	
+	UPROPERTY()
+	TObjectPtr<UInteractionComponent> InteractionComponent;
 	
 	// --- Combat ---
 	UPROPERTY()

@@ -13,7 +13,7 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "Player/InteractionComponent.h"
 #include "Player/OnsetBaseCharacter.h"
 #include "Player/OnsetCheatManager.h"
 #include "Player/OnsetPlayerState.h"
@@ -24,6 +24,7 @@ DEFINE_LOG_CATEGORY(LogGamepad);
 AOnsetPlayerController::AOnsetPlayerController()
 {
 	CursorManager = CreateDefaultSubobject<UCursorManager>(TEXT("CursorManager"));
+	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
 	if (!BasicAttackAbility)
 	{
 		BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
@@ -157,40 +158,9 @@ void AOnsetPlayerController::HideGamepadCursor()
 
 void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value)
 {
-	if (!TargetingComponent) return;
-	
 	FVector2D ScreenPos;
 	if (!CursorManager->GetCursorPosition(ScreenPos)) return;
-	
-	FHitResult HitResult;
-	if (!GetHitResultAtScreenPosition(ScreenPos, ECC_Visibility, false, HitResult)) return;
-	
-	AActor* HitActor = HitResult.GetActor();
-	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
-	FNavLocation NavLoc;
-	bool bIsHostile = false;                                                                                        
-	if (HitActor)
-	{
-		if (HitActor->ActorHasTag("Enemy") || TargetingComponent->IsActorTargetPVPValid(HitActor, GetPawn()))
-		{
-			TargetingComponent->SetTarget(HitActor);
-			StartAutoAttack();
-			bIsHostile = true;
-		}
-	}                
-	if (NavSys && NavSys->ProjectPointToNavigation(HitResult.Location, NavLoc))
-	{
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, NavLoc.Location);
-	}
-	else if (HitActor)
-	{
-		UAIBlueprintHelperLibrary::SimpleMoveToActor(this, HitActor);
-	}                                         
-	if (!bIsHostile)
-	{
-		TargetingComponent->ClearTarget();                                                                          
-		StopAutoAttack();
-	}
+	if (InteractionComponent) InteractionComponent->ProcessPrimaryInteraction(ScreenPos);
 }	
 
 

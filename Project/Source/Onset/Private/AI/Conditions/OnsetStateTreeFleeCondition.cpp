@@ -1,6 +1,6 @@
 ﻿#include "AI/Conditions/OnsetStateTreeFleeCondition.h"                                                                  
 #include "StateTreeExecutionContext.h"
-#include "AI/AIProfile.h"
+#include "Enemy/Profile/AIProfile.h"
 #include "AI/Tasks/OnsetStateTreeTaskBase.h"
 #include "Combat/OnsetAttributeSet.h"
 #include "Enemy/GroupComponent.h"

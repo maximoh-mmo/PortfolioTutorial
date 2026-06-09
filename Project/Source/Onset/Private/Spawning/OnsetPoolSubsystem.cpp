@@ -119,7 +119,7 @@ void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 		ReleasePooledController(Controller);
 	}
 	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
-	Enemy->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyProfile)
+	Enemy->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyAIProfile)
 	Enemy->OwningSpawner = nullptr;
 	Enemy->SetActorLocation(FVector::ZeroVector);
 	Enemy->SetActorHiddenInGame(true);                                                                            

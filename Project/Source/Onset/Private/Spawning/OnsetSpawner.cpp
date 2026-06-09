@@ -17,7 +17,7 @@ AOnsetSpawner::AOnsetSpawner()
 
 void AOnsetSpawner::SpawnGroup()
 {
-	if (Config.EnemyProfile == nullptr || Config.GroupSize <= 0) return;     
+	if (Config.EnemyAIProfile == nullptr || Config.GroupSize <= 0) return;     
 	if (Slots.Num() == 0) InitSlots();                                                                          
                                                                                                                      
 	for (int32 i = 0; i < Slots.Num(); i++)                                                                     
@@ -105,7 +105,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	}
 	if (Spawned)
 	{
-		Spawned->ApplyProfile(Config.EnemyProfile);
+		Spawned->ApplyProfile(Config.EnemyVisualProfile);
 		Spawned->OwningSpawner = this;
 		AOnsetAIController* AIController = PoolManager->GetPooledController();
 		if (!AIController)
@@ -114,7 +114,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 			return nullptr;
 		}
 		
-		AIController->ApplyProfile(Config.EnemyProfile);
+		AIController->ApplyAIProfile(Config.EnemyAIProfile);
 		AIController->Possess(Spawned);
 		Slot.Occupant = Spawned;
 		if (GroupManager) GroupManager->RegisterMember(Spawned);

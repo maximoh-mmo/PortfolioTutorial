@@ -1,6 +1,6 @@
 #include "AI/OnsetAIController.h"
 
-#include "AI/AIProfile.h"
+#include "Enemy/Profile/AIProfile.h"
 #include "AI/OnsetStateTreeSchema.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Enemy/OnsetEnemy.h"
@@ -39,7 +39,7 @@ AOnsetAIController::AOnsetAIController()
 	}         
 }
 
-void AOnsetAIController::ApplyProfile(const UAIProfile* Profile)
+void AOnsetAIController::ApplyAIProfile(const UAIProfile* Profile)
 {
 	if (Profile == nullptr)
 	{
@@ -53,7 +53,9 @@ void AOnsetAIController::ApplyProfile(const UAIProfile* Profile)
 		StateTreeComponent->StopLogic(TEXT("Applying new profile"));
 		StateTreeComponent->SetStateTree(Profile->StateTreeAsset);
 	}
-
+}
+void AOnsetAIController::ApplyPerceptionProfile(const UPerceptionProfile* Profile)
+{
 	if (SightConfig)
 	{
 		SightConfig->SightRadius = Profile->SightRange;
@@ -87,7 +89,7 @@ void AOnsetAIController::OnUnPossess()
 {
 	bInUse = false;
 	StateTreeComponent->StopLogic(TEXT("Unpossessed"));
-	ApplyProfile(nullptr);                                                                                        
+	ApplyAIProfile(nullptr);                                                                                        
 	SetActorHiddenInGame(true);                                                                                   
 	SetActorTickEnabled(false);                                                                                   
 	StateTreeComponent->SetComponentTickEnabled(false);                                                           
