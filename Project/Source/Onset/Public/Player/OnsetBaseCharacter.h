@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "OnsetBaseCharacter.generated.h"
 
+class UOnsetMovementAttributeSet;
 class UTargetingComponent;
 class UOnsetAttributeSet;
 class UAbilitySystemComponent;
@@ -25,7 +26,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
-	
+
 	void GrantDefaultAbilities();
 	
 	// --- Targeting ---
@@ -36,6 +37,9 @@ public:
 	
 	UPROPERTY()                                                                                                
 	TObjectPtr<UOnsetAttributeSet> AttributeSet;
+	
+	UPROPERTY()                                                                                                
+	TObjectPtr<UOnsetMovementAttributeSet> MovementAttributes;
 		
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void OnDeath(AActor* KillingActor = nullptr);

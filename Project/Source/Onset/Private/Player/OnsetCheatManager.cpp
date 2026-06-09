@@ -4,8 +4,8 @@
 #include "Player/OnsetCheatManager.h"
 
 #include "AbilitySystemComponent.h"
-#include "Combat/OnsetAttributeSet.h"
-#include "Combat/OnsetGameplayTags.h"
+#include "GAS/OnsetAttributeSet.h"
+#include "GAS/OnsetGameplayTags.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Widgets/Text/ISlateEditableTextWidget.h"

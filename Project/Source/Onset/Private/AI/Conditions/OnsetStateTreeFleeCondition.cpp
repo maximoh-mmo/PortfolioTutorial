@@ -2,7 +2,7 @@
 #include "StateTreeExecutionContext.h"
 #include "Enemy/Profile/AIProfile.h"
 #include "AI/Tasks/OnsetStateTreeTaskBase.h"
-#include "Combat/OnsetAttributeSet.h"
+#include "GAS/OnsetAttributeSet.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/OnsetEnemy.h"
 

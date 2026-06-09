@@ -1,13 +1,11 @@
 ﻿#include "AI/Tasks/OnsetStateTreeFleeTask.h"
-
-#include "GameFramework/CharacterMovementComponent.h"
 #include "NavigationSystem.h"
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
-#include "Combat/OnsetAttributeSet.h"
+#include "GAS/OnsetAttributeSet.h"
 #include "Navigation/PathFollowingComponent.h"
-#include "Player/OnsetBaseCharacter.h"
-
+#include "Player/OnsetBaseCharacter.h"                                                            
+                                                         
 EStateTreeRunStatus FOnsetStateTreeFleeTask::EnterState(FStateTreeExecutionContext& Context,
                                                         const FStateTreeTransitionResult& Transition) const
 {
@@ -40,7 +38,10 @@ EStateTreeRunStatus FOnsetStateTreeFleeTask::EnterState(FStateTreeExecutionConte
 	if (NavSys->ProjectPointToNavigation(Desired, Projected, FVector(500.0f)))
 	{
 		InstanceData.FleeDestination = Projected.Location;
-		InstanceData.CachedOriginalWalkSpeed = Self->GetCharacterMovement()->MaxWalkSpeed;
+		float InitialHealthRatio = Self->AttributeSet->GetHealth() / Self->AttributeSet->GetMaxHealth();                
+		float InitialSpeedMod = FMath::Lerp(InstanceData.MinSpeedMultiplier, 1.0f, InitialHealthRatio);                 
+		InstanceData.SpeedEffectHandle = FOnsetStateTreeTaskBase::ApplyMovementSpeedModifier(                           
+			Self, InitialSpeedMod);
 		AIController->MoveToLocation(InstanceData.FleeDestination, InstanceData.AcceptanceRadius);
 		return EStateTreeRunStatus::Running;
 	}
@@ -60,7 +61,12 @@ EStateTreeRunStatus FOnsetStateTreeFleeTask::Tick(FStateTreeExecutionContext& Co
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 		float HealthRatio = Self->AttributeSet->GetHealth() / Self->AttributeSet->GetMaxHealth();
 		float SpeedMod = FMath::Lerp(InstanceData.MinSpeedMultiplier, 1.0f, HealthRatio);
-		Self->GetCharacterMovement()->MaxWalkSpeed = InstanceData.CachedOriginalWalkSpeed * SpeedMod;
+		if (InstanceData.SpeedEffectHandle.IsValid())                                                                   
+		{                                                                                                               
+			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);                   
+		}                                                                                                               
+		InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(                           
+			Self, SpeedMod);    
 	}
 
 	return HasMoveCompleted(Context) ? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
@@ -72,7 +78,11 @@ void FOnsetStateTreeFleeTask::ExitState(FStateTreeExecutionContext& Context,
 	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))
 	{
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-		Self->GetCharacterMovement()->MaxWalkSpeed = InstanceData.CachedOriginalWalkSpeed;
+		if (InstanceData.SpeedEffectHandle.IsValid())                                                                   
+		{                                                                                                               
+			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);                   
+			InstanceData.SpeedEffectHandle.Invalidate();                                                                
+		}        
 	}
 
 	AOnsetAIController* AIController = GetController(Context);

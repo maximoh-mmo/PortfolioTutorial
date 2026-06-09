@@ -1,8 +1,8 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
-#include "Combat/OnsetAttributeSet.h"
+#include "GAS/OnsetAttributeSet.h"
 
 #include "GameplayEffectExtension.h"
-#include "Combat/OnsetGameplayTags.h"
+#include "GAS/OnsetGameplayTags.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
 #include "Perception/AISense_Hearing.h"
@@ -99,4 +99,3 @@ void UOnsetAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UOnsetAttributeSet, Health, OldHealth);
 }
-

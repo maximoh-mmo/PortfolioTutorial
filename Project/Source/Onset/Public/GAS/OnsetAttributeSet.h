@@ -44,4 +44,6 @@ public:
 	
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
+	
+	
 };

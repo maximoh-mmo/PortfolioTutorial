@@ -2,8 +2,12 @@
 
 
 #include "AI/Tasks/OnsetStateTreeSearchTask.h"
+
+#include "AbilitySystemComponent.h"
 #include "NavigationSystem.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "StateTreeExecutionContext.h"
+#include "AI/OnsetAIController.h"
+#include "Player/OnsetBaseCharacter.h"
 
 EStateTreeRunStatus FOnsetStateTreeSearchTask::EnterState(FStateTreeExecutionContext& Context,
                                                           const FStateTreeTransitionResult& Transition) const
@@ -24,14 +28,11 @@ EStateTreeRunStatus FOnsetStateTreeSearchTask::EnterState(FStateTreeExecutionCon
 		InstanceData.SearchCenter = Self->GetActorLocation();
 	}
 	
-	UCharacterMovementComponent* CharacterMovement = Self->GetCharacterMovement();
-	if (!CharacterMovement) return EStateTreeRunStatus::Failed;
-	InstanceData.InitialForward = Self->GetActorForwardVector();                                                
-	InstanceData.CachedMovementSpeed = CharacterMovement->MaxWalkSpeed;                          
-	InstanceData.CurrentCycle = 0;                                                                              
-	InstanceData.ElapsedTime = 0.0f;   
+	InstanceData.InitialForward = Self->GetActorForwardVector();
+	InstanceData.CurrentCycle = 0;
+	InstanceData.ElapsedTime = 0.0f;
 	
-	CharacterMovement->MaxWalkSpeed = InstanceData.CachedMovementSpeed * InstanceData.SearchMovementSpeedMultiplier;
+	InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(Self, InstanceData.SearchMovementSpeedMultiplier);
 	
 	InstanceData.CurrentSearchPoint = PickSearchPoint(InstanceData, Self->GetActorLocation(), Self->GetWorld());
 	Controller->MoveToLocation(InstanceData.CurrentSearchPoint, InstanceData.AcceptanceRadius);
@@ -71,8 +72,15 @@ EStateTreeRunStatus FOnsetStateTreeSearchTask::Tick(FStateTreeExecutionContext& 
 void FOnsetStateTreeSearchTask::ExitState(FStateTreeExecutionContext& Context,
 	const FStateTreeTransitionResult& Transition) const
 {
-	FOnsetStateTreeTaskBase::ExitState(Context, Transition);
-}
+	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))                                                
+	{                                                                                                             
+		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);                                           
+		if (InstanceData.SpeedEffectHandle.IsValid())                                                               
+		{                                                                                                           
+			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);                 
+			InstanceData.SpeedEffectHandle.Invalidate();                                                              
+		}                                                                                                           
+	}             }
 
 FVector FOnsetStateTreeSearchTask::PickSearchPoint(const FInstanceDataType& InstanceData, const FVector& Vector, UWorld* World) const
 {

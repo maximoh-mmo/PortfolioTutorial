@@ -20,8 +20,8 @@ struct FOnsetStateTreeInvestigateTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Investigation")                                                         
 	float AcceptanceRadius = 100.0f;                                                                            
                                                                                                                      
-	FVector InvestigationDestination = FVector::ZeroVector;                                                     
-	float CachedOriginalWalkSpeed = 0.0f;
+	FVector InvestigationDestination = FVector::ZeroVector;
+	FActiveGameplayEffectHandle SpeedEffectHandle;
 };                                                                                                              
                 
 USTRUCT()

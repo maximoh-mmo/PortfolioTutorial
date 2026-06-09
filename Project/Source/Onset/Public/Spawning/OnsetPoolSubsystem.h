@@ -36,8 +36,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Pooling")
 	int32 PoolSize = 10;
 
-protected:
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+	
+protected:
 
 	/** All pool members. Hidden and deactivated when idle. */
 	UPROPERTY()

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "ActiveGameplayEffectHandle.h"
 #include "OnsetStateTreeTaskBase.h"
 #include "OnsetStateTreeFleeTask.generated.h"
 
@@ -21,8 +22,8 @@ struct FOnsetStateTreeFleeTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = "Flee", meta = (ClampMin = "0.0", ClampMax = "180.0"))
 	float FleeAngleVariance = 60.0f;
 
+	FActiveGameplayEffectHandle SpeedEffectHandle;                                                                  
 	FVector FleeDestination = FVector::ZeroVector;
-	float CachedOriginalWalkSpeed = 0.0f;
 };
 
 USTRUCT()

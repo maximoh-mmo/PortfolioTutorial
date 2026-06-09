@@ -4,9 +4,11 @@
 #include "Player/OnsetBaseCharacter.h"
 
 #include "AbilitySystemComponent.h"
-#include "Combat/OnsetAttributeSet.h"
+#include "GAS/OnsetAttributeSet.h"
 #include "Combat/GameplayAbilities/OnsetGA_BasicAttack.h"
 #include "Combat/GameplayAbilities/OnsetGA_HitReaction.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GAS/OnsetMovementAttributeSet.h"
 #include "Player/TargetingComponent.h"
 
 AOnsetBaseCharacter::AOnsetBaseCharacter()
@@ -15,6 +17,7 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent"));
 	AttributeSet = CreateDefaultSubobject<UOnsetAttributeSet>(TEXT("AttributeSet"));
+	MovementAttributes = CreateDefaultSubobject<UOnsetMovementAttributeSet>(TEXT("MovementAttributes"));
 }
 
 void AOnsetBaseCharacter::InitAbilityActorInfo()

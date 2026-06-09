@@ -1,8 +1,12 @@
 ﻿#include "AI/Tasks/OnsetStateTreeAttackTask.h"
 
 #include "AbilitySystemComponent.h"
+#include "StateTreeExecutionContext.h"
+#include "AI/OnsetAIController.h"
 #include "Combat/GameplayAbilities/OnsetGA_BasicAttack.h"
-#include "Combat/OnsetGameplayTags.h"
+#include "GAS/OnsetGameplayTags.h"
+#include "Player/OnsetBaseCharacter.h"
+#include "Player/TargetingComponent.h"
 
 EStateTreeRunStatus FOnsetStateTreeAttackTask::EnterState(FStateTreeExecutionContext& Context,
                                                           const FStateTreeTransitionResult& Transition) const

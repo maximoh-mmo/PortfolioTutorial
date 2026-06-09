@@ -4,7 +4,7 @@
 
 #include "TimerManager.h"
 #include "Camera/CameraComponent.h"
-#include "Combat/OnsetAttributeSet.h"
+#include "GAS/OnsetAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
 
 AOnsetPlayerCharacter::AOnsetPlayerCharacter()

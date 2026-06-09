@@ -115,6 +115,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 		}
 		
 		AIController->ApplyAIProfile(Config.EnemyAIProfile);
+		AIController->ApplyPerceptionProfile(Config.EnemyPerceptionProfile);
 		AIController->Possess(Spawned);
 		Slot.Occupant = Spawned;
 		if (GroupManager) GroupManager->RegisterMember(Spawned);

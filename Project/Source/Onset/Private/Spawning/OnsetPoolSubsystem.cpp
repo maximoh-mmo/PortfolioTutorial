@@ -3,6 +3,8 @@
 
 #include "Spawning/OnsetPoolSubsystem.h"
 
+#include "AbilitySystemComponent.h"
+#include "GameplayEffect.h"
 #include "AI/OnsetAIController.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Enemy/GroupComponent.h"
@@ -118,7 +120,11 @@ void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 	{
 		ReleasePooledController(Controller);
 	}
-	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
+	if (Enemy->AbilitySystemComponent)                                                                              
+	{                                                                                                               
+		Enemy->AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery(), -1);                             
+	}    
+	
 	Enemy->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyAIProfile)
 	Enemy->OwningSpawner = nullptr;
 	Enemy->SetActorLocation(FVector::ZeroVector);
@@ -126,4 +132,6 @@ void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 	Enemy->SetActorTickEnabled(false);                                                                            
 	Enemy->DisableInput(nullptr);
 	Enemy->SetActorEnableCollision(false);
+	
+	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
 }

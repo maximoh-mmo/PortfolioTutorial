@@ -3,8 +3,11 @@
 
 #include "AI/Tasks/OnsetStateTreeInvestigateTask.h"
 
+#include "AbilitySystemComponent.h"
+#include "StateTreeExecutionContext.h"
+#include "AI/OnsetAIController.h"
 #include "Enemy/GroupComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "Player/OnsetBaseCharacter.h"
 
 EStateTreeRunStatus FOnsetStateTreeInvestigateTask::EnterState(FStateTreeExecutionContext& Context,
                                                                const FStateTreeTransitionResult& Transition) const
@@ -19,7 +22,6 @@ EStateTreeRunStatus FOnsetStateTreeInvestigateTask::EnterState(FStateTreeExecuti
 
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	InstanceData.InvestigationDestination = Controller->HeardNoiseLocation;
-	InstanceData.CachedOriginalWalkSpeed = Self->GetCharacterMovement()->MaxWalkSpeed;
 	
 	UGroupComponent* GroupComponent = Self->FindComponentByClass<UGroupComponent>();
 	bool bIsGroupMember = false;
@@ -34,8 +36,8 @@ EStateTreeRunStatus FOnsetStateTreeInvestigateTask::EnterState(FStateTreeExecuti
 	float MovementMultiplier = bIsGroupMember ? InstanceData.GroupMemberSpeedMultiplier 
 												: InstanceData.NonGroupSpeedMultiplier;
 	
-	Self->GetCharacterMovement()->MaxWalkSpeed = InstanceData.CachedOriginalWalkSpeed * MovementMultiplier;
-	
+	InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(                           
+         Self, MovementMultiplier);  	
 	Controller->MoveToLocation(InstanceData.InvestigationDestination, InstanceData.AcceptanceRadius);
 	return EStateTreeRunStatus::Running;
 }
@@ -63,7 +65,11 @@ void FOnsetStateTreeInvestigateTask::ExitState(FStateTreeExecutionContext& Conte
 	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))
 	{
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-		Self->GetCharacterMovement()->MaxWalkSpeed = InstanceData.CachedOriginalWalkSpeed;
+		if (InstanceData.SpeedEffectHandle.IsValid())
+		{
+			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);
+			InstanceData.SpeedEffectHandle.Invalidate();
+		}
 	}
 	if (AOnsetAIController* Controller = GetController(Context))
 	{

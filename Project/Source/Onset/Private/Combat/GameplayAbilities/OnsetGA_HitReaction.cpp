@@ -3,7 +3,7 @@
 
 #include "Combat/GameplayAbilities/OnsetGA_HitReaction.h"
 
-#include "Combat/OnsetGameplayTags.h"
+#include "GAS/OnsetGameplayTags.h"
 #include "UObject/ConstructorHelpers.h"
 
 UOnsetGA_HitReaction::UOnsetGA_HitReaction()

@@ -36,7 +36,7 @@ struct FOnsetStateTreeSearchInstanceData
 	FVector SearchCenter = FVector(0.0f, 0.0f, 0.0f);
 	FVector InitialForward = FVector(0.0f, 0.0f, 0.0f);
 	FVector CurrentSearchPoint = FVector(0.0f, 0.0f, 0.0f);
-	float CachedMovementSpeed = 0.0f;
+	FActiveGameplayEffectHandle SpeedEffectHandle;
 	int32 CurrentCycle = 0;
 	float  ElapsedTime = 0.0f;
 };

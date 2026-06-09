@@ -1,6 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Combat/OnsetGameplayTags.h"
+#include "GAS/OnsetGameplayTags.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical, "Damage.Physical");                                                 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Magical, "Damage.Magical");                                                  
