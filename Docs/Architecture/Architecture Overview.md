@@ -126,17 +126,19 @@ This document is the technical map for the entire project.
 - `AOnsetBaseCharacter` as shared base (player + NPC)  
 - `AOnsetPlayerCharacter` as player-specific class (camera)  
 - `AOnsetPlayerController` handles all input, cursor, and targeting  
+- `UInteractionComponent` — click resolution extracted from controller (SRP), handles raycast → enemy/ground branching  
 - Input handling (mouse + touch + gamepad)  
 - Tap/click‑to‑move + WASD + gamepad L-Stick movement  
-- Tap/click‑to‑target  
+- Tap/click‑to‑target via `UInteractionComponent`  
 - Gamepad R-Stick software cursor  
 - Ability activation (keyboard + touch buttons + gamepad) *(future)*  
 - PvP toggle UI → PlayerState *(future)*  
 - Autoplay handoff *(future)*  
 
 ### **2. [NPC AI System](../AI/NPC_AI_System.md)**
-- Data‑driven via `UAIProfile` — profiles define StateTree, perception config, and combat params  
-- `AOnsetAIController` reads the profile on `OnPossess` and self‑configures  
+- Data‑driven via three focused profiles — `UVisualProfile` (mesh, anim, material), `UAIProfile` (StateTree + behaviour params), `UPerceptionProfile` (sight/hearing ranges)
+- `AOnsetAIController` reads `UAIProfile` + `UPerceptionProfile` on possess and self‑configures  
+- `AOnsetEnemy` reads `UVisualProfile` on spawn for mesh, anim BP, material  
 - StateTree‑driven behaviour (owned by the controller, not the pawn)  
 - Perception (sight/hearing) via component on the controller  
 - Target selection  

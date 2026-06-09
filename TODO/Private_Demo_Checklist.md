@@ -187,8 +187,8 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Create **FOnsetStateTreeDistanceCondition** — reusable transition condition (Target or HomeLocation, DistSquared, UE::StateTree::EComparisonOperator)
 - [x] Create **Marooned** state — same ChaseTask in asset, no leash transition
 - [x] Move **HomeLocation** from AOnsetEnemy → AOnsetBaseCharacter (shared with player for respawn)
-- [ ] Wire up StateTree transitions between all states
-- [ ] Verify full behaviour loop: Idle → Roam → Agro → Chase → Attack → (repeat/retreat)
+- [x] Wire up StateTree transitions between all states
+- [x] Verify full behaviour loop: Idle → Roam → Agro → Chase → Attack → (repeat/retreat)
 
 ## A3.4 Group Assist Integration
 - [x] Emit FAINoiseEvent from PostGameplayEffectExecute on damage taken
@@ -202,8 +202,8 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Create HasTarget + HasNoTarget conditions (shared empty instance data, inline)
 - [x] Add ClearFocus to FleeTask EnterState
 - [x] Wire full StateTree: Idle→Agro→Chase→Attack→Flee + Investigate + LostTarget
-- [ ] Implement **Search** state (Alerted: yaw sweep scan at noise origin)
-- [ ] Wire StateTree Search state: Investigate → Search → Idle
+- [x] Implement **Search** state (Alerted: yaw sweep scan at noise origin)
+- [x] Wire StateTree Search state: Investigate → Search → Idle
 - [ ] Verify assist triggers when nearby ally is attacked
 - [ ] Verify no assist when attacker is out of hearing range
 - [x] Assist radius testing moved here from A2.3 — assist now flows through perception hearing, not Group System
@@ -278,13 +278,17 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify no performance regression under rapid death cascade
 
 ## A4.6 Multiple Abilities
-- [ ] Create dash ability (movement-based GA)
-- [ ] Create AoE ground-target ability
-- [ ] Create projectile ability
+- [ ] Create **AoE** ability (target-centered damage volume) — activated GA, slot 1
+- [ ] Create **Cone** ability (directional frontal cone) — activated GA, slot 2
+- [ ] Create **Shadowstep** passive (on-kill blink behind nearest enemy, cooldown-gated) — replaces dash
+- [ ] Wire `OnAbility1` → AoE, `OnAbility2` → Cone in PlayerController
 - [ ] Create ability bar UI stub (for testing)
 - [ ] Verify all abilities activate from input
 - [ ] Verify AoE respects PvP rules (per-target filtering)
-- [ ] Verify projectile spawns and hits
+- [ ] Verify Cone respects PvP rules (per-target filtering)
+- [ ] Verify Shadowstep triggers on kill
+- [ ] Verify Shadowstep respects distance gate
+- [ ] Verify Shadowstep cooldown prevents spam
 
 ---
 
@@ -407,9 +411,9 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | — | 31 | — |
-| A4 GAS Combat | 47 | 38 | 81% |
+| A3 AI Systems | — | 36 | — |
+| A4 GAS Combat | 51 | 38 | 75% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |
-| **Total** | 77 | 113 | **—** |
+| **Total** | — | — | **—** |

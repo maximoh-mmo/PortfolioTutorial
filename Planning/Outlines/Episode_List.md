@@ -23,23 +23,23 @@ This is the master outline for the entire series. Drafted scripts follow the [Ep
 
 ### **Episode 1 — Project Setup & Enhanced Input Architecture**
 Set up the Unreal project, folder structure, C++ base classes, and Enhanced Input system (Input Actions, Mapping Contexts for Touch/Desktop/Gamepad), and explain the final demo.
-→ [Script](../Scripts/Episode01_Project_Setup.md) · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
+→ [Script](Episode01_Project_Setup.md) · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 
 ### **Episode 2 — Top‑Down Camera Setup**
 Implement a fixed top‑down camera with smoothing and collision handling.
-→ [Script](../Scripts/Episode02_TopDown_Camera.md)
+→ [Script](Episode02_TopDown_Camera.md)
 
 ### **Episode 3 — Movement System (Virtual Joystick + Tap-to-Move + WASD + Gamepad)**
 Implement multi-device movement: touch virtual joystick + tap-to-move, mouse click-to-move, WASD keys, and gamepad left stick. Build the cursor abstraction layer (mouse cursor, touch pointer, gamepad R-Stick software cursor).
-→ [Script](../Scripts/Episode03_Movement_System.md)
+→ [Script](Episode03_Movement_System.md)
 
 ### **Episode 4 — Click‑to‑Target System**
 Implement target selection (mouse + touch + gamepad cursor), highlighting, and basic attack input routing via Enhanced Input.
-→ [Script](../Scripts/Episode04_ClickToTarget.md) · [Targeting System](../../Docs/Gameplay/Targeting_System.md)
+→ [Script](Episode04_ClickToTarget.md) · [Targeting System](../../Docs/Gameplay/Targeting_System.md)
 
 ### **Episode 5 — Enemy Spawner (C++)**
 Create a spawner that generates groups of NPCs at defined points.
-→ [Script](../Scripts/Episode05_Enemy_Spawner.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
+→ [Script](Episode05_Enemy_Spawner.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
 
 ---
 
@@ -123,7 +123,7 @@ Add single‑target, AoE, and directional targeting with screen indicators (mous
 · [Ability Targeting System](../../Docs/Gameplay/Ability_Targeting_System.md) · [UI System](../../Docs/Gameplay/UI_System.md)
 
 ### **Episode 20 — Adding Multiple Abilities**
-Implement dash, AoE, projectile abilities, and ability bar UI.
+Implement three new abilities: AoE (target-centered damage volume), Cone (directional frontal cone), and Shadowstep (passive on-kill teleport behind nearest enemy). Wire ability slots 1 and 2 to AoE and Cone, shadowstep triggers automatically. Add ability bar UI stub.
 · [GAS System](../../Docs/GAS/GAS_System.md) · [UI System](../../Docs/Gameplay/UI_System.md)
 
 ---
