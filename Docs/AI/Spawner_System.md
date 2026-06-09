@@ -8,7 +8,7 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 ## Responsibilities
 - Spawn NPCs in groups at predefined slot locations  
 - Assign NPCs to Group System  
-- Configure enemy types per slot via `UAIProfile`  
+- Configure enemy types per slot via three profiles: `UVisualProfile` (mesh/anim), `UAIProfile` (behaviour), `UPerceptionProfile` (sight/hearing)  
 - Assign a per-NPC respawn rate; each killed NPC respawns independently on its own timer  
 - On NPC death, receive notification and start respawn timer (independent of corpse lifecycle)  
 - Expose simple controls (enable/disable, wave count, etc.)
@@ -27,7 +27,7 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 ## Key Functions
 - `InitSlots()` — pre‑computes slot transforms from `SpawnPoints` or fallback ring scatter on `BeginPlay`  
 - `SpawnGroup()` — fills all empty slots; calls `SpawnEnemyAtSlot()` for each  
-- `SpawnEnemyAtSlot(int32 SlotIndex)` — retrieves an NPC from `PoolManager`, calls `ApplyProfile()` with the configured `UAIProfile`, registers it with the Group System. Requires a `PoolManager` — no direct `SpawnActor` fallback.  
+- `SpawnEnemyAtSlot(int32 SlotIndex)` — retrieves an NPC from `UOnsetPoolSubsystem.GetPooledEnemy()`, calls `ApplyProfile(Config.EnemyVisualProfile)` on the pawn, calls `ApplyAIProfile(Config.EnemyAIProfile)` + `ApplyPerceptionProfile(Config.EnemyPerceptionProfile)` on the controller, then possesses. Registers with Group System.  
 - `DestroyGroup()` — iterates all slots, destroys any occupant, clears slot references  
 - `DebugKillLast()` — kills the most recently spawned occupant (test helper)  
 - `OnNPCDeath(AOnsetEnemy*)` — called when any single NPC dies; starts its individual respawn timer (future)  
@@ -55,21 +55,21 @@ flowchart TD
     StartTimer --> ClearSlot
     ClearSlot --> SpawnGroup
 
-`AOnsetSpawner.InitSlots()` → `FSpawnerSlot[]` → `SpawnEnemyAtSlot(i)` → `PoolManager.GetPooledEnemy()` → `ApplyProfile(UAIProfile)` → `UGroupManagerComponent.RegisterMember()`
+`AOnsetSpawner.InitSlots()` → `FSpawnerSlot[]` → `SpawnEnemyAtSlot(i)` → `UOnsetPoolSubsystem.GetPooledEnemy()` → `AIController->ApplyAIProfile(UAIProfile)` → `AIController->ApplyPerceptionProfile(UPerceptionProfile)` → `AIController->Possess(Enemy)` → `UGroupManagerComponent.RegisterMember()`
 
 ## Death Flow
 When an NPC dies (health ≤ 0), three parallel paths execute:
-1. **Pool Return** — NPC immediately returns to the pool (hidden, collision off, tick off). The AI actor is recycled.
+1. **Pool Return** — `UOnsetPoolSubsystem.ReturnToPool()`: ungroup → unpossess → remove GEs → clear visuals → hide.
 2. **Corpse Spawn** — A lightweight `AOnsetCorpse` appears at the death location for visual persistence. See the [Corpse System](Corpse_System.md).
 3. **Respawn Timer** — The spawner starts a per-slot timer. When it fires, `SpawnEnemyAtSlot()` reuses the same slot.
 
 The respawn timer is **independent** of the corpse despawn timer. The slot can refill even if the corpse from the previous occupant is still visible.
 
 ## Interactions
-- **[Pooling System](Pooling_System.md):** requests NPC instances via `PoolManager->GetPooledEnemy()`; pool handles pre-allocation and exhaustion fallback  
+- **[Pooling System](Pooling_System.md):** requests NPC+controller instances via `UOnsetPoolSubsystem.GetPooledEnemy()` / `GetPooledController()`; `ReturnToPool` handles full reset  
 - **[Corpse System](Corpse_System.md):** spawner's death notification is sent at the same time as the corpse spawn — the two are parallel, not sequential  
 - **[Group System](Group_System.md):** registers members into groups via `UGroupManagerComponent`  
-- **[NPC AI System](NPC_AI_System.md):** pawn's `UAIProfile` configures controller on possess  
+- **[NPC AI System](NPC_AI_System.md):** three profiles (`UVisualProfile`, `UAIProfile`, `UPerceptionProfile`) configure pawn visuals, controller StateTree, and perception  
 - **Final Demo Loop:** may trigger waves via spawners  
 
 ## Replication

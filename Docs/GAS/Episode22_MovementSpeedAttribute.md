@@ -1,170 +1,92 @@
 # 🏗 Episode 22 — GAS Movement Speed Attribute
 
 **Phase:** 3.5 — Architecture Cleanup
-**Prerequisites:** Episode 15 (Basic Attack), Episode 21 (Architecture Cleanup), Episodes 25-26 (Flee + Group Assist)
-**Core teach:** Replace scattered direct `MaxWalkSpeed` writes with a central GAS attribute — demonstrating stacking, SRP, and data-oriented speed control.
+**Prerequisites:** Episode 15 (Basic Attack), Episode 21 (Architecture Cleanup)
+**Core teach:** Replace scattered direct `MaxWalkSpeed` writes with a dedicated `UOnsetMovementAttributeSet` and stackable GEs.
 
 ---
 
 ## The Problem
 
-Currently, any system that changes movement speed writes directly to `UCharacterMovementComponent::MaxWalkSpeed`:
+Three StateTree tasks wrote directly to `UCharacterMovementComponent::MaxWalkSpeed`:
 
-- `FOnsetStateTreeFleeTask` — caches original, applies multiplier, restores on exit
-- `FOnsetStateTreeInvestigateTask` — same pattern duplicated
+- `FOnsetStateTreeFleeTask` — caches original, multiplier per tick, restores on exit
+- `FOnsetStateTreeInvestigateTask` — same cache/restore pattern
+- `FOnsetStateTreeSearchTask` — caches but **never restores** (speed leak bug)
 
-This has three issues:
+Issues:
 1. **No stacking** — stagger slow + flee slow clobber each other, last write wins
-2. **Scattered responsibility** — every task has a `CachedOriginalWalkSpeed` + restore logic
-3. **Bypasses GAS** — GAS effects can't interact with NPC movement speed
+2. **Scattered responsibility** — every task duplicates cache/restore logic
+3. **Bypasses GAS** — effects can't interact with NPC movement speed
+4. **Speed leak** — SearchTask's `ExitState` called base method that did nothing, leaving speed permanently multiplied
 
 ---
 
-## Solution: `MovementSpeed` GAS Attribute
+## Solution: `UOnsetMovementAttributeSet` + GE-based Modifiers
 
-Add a new `MovementSpeed` attribute to `UOnsetAttributeSet`. Wire its `PostGameplayEffectExecute` to sync with `MaxWalkSpeed`. All speed changes flow through GAS gameplay effects — they stack naturally by modifier operation (Add, Multiply, Override).
+Separate dedicated attribute set (industry pattern — Fortnite, Paragon). All speed changes flow through GEs with `MultiplyCompound` operation — they stack multiplicatively by default.
 
-### Stacking Diagram
+### Stacking
 
 ```
-   Base MovementSpeed (300)
+   Base MovementSpeed (600)
         │
-        ├── GE_InvestigationSpeed (×0.5) ─────────┐
-        │                                          │
-        ├── GE_StaggerSlow (×0.5) ─────────────────┤
-        │                                          │
-        └── GE_HasteBuff (+100) ───────────────────┤
-                                                   │
-                              MovementSpeed = (300 × 0.5 × 0.5) + 100 = 175
-                                                   │
-                                                   ▼
-                                         MaxWalkSpeed = 175
+        ├── Flee GE (×0.35) ─────────────────────────┐
+        │                                              │
+        ├── Search GE (×0.5) ─────────────────────────┤
+        │                                              │
+        └── Stagger GE (×0.5) ────────────────────────┤
+                                                       │
+                    MovementSpeed = 600 × 0.35 × 0.5 × 0.5 = 52.5
+                                                       │
+                                                       ▼
+                                             MaxWalkSpeed = 52.5
 ```
 
 ---
 
-## Files Created
+## Implementation
+
+### Files Created
 
 | File | Purpose |
 |------|---------|
-| `Content/Game/Combat/GE_SpeedModifier.uasset` | Reusable infinite GE with tagged application |
+| `GAS/OnsetMovementAttributeSet.h/.cpp` | New dedicated set with `MovementSpeed` attribute + `PostGameplayEffectExecute` |
 
-## Files Modified
+### Files Modified
 
 | File | Change |
 |------|--------|
-| `OnsetAttributeSet.h` | Add `MovementSpeed` attribute property + getter/setter/initter + `OnRep` |
-| `OnsetAttributeSet.cpp` | Wire `PostGameplayEffectExecute` → `MaxWalkSpeed`; add rep notify |
-| `OnsetBaseCharacter.h/.cpp` | Init `MovementSpeed` from `MaxWalkSpeed` in `BeginPlay`/`PossessedBy` |
-| `OnsetStateTreeFleeTask.h/.cpp` | Remove `CachedOriginalWalkSpeed`, apply/remove `GE_SpeedModifier` by tag |
-| `OnsetStateTreeInvestigateTask.h/.cpp` | Same refactor as FleeTask |
-| `OnsetGameplayTags.h/.cpp` | Add `TAG_State_InvestigationSpeed`, `TAG_State_FleeSpeed`, `TAG_State_StaggerSlow` |
+| `Player/OnsetBaseCharacter.h/.cpp` | Add `UOnsetMovementAttributeSet* MovementAttributes` subobject |
+| `AI/Tasks/OnsetStateTreeTaskBase.h/.cpp` | Add `ApplyMovementSpeedModifier` helper; moved all helpers from inline header to `.cpp` |
+| `AI/Tasks/OnsetStateTreeFleeTask.h/.cpp` | Remove `CachedOriginalWalkSpeed`, apply/remove GE by handle |
+| `AI/Tasks/OnsetStateTreeInvestigateTask.h/.cpp` | Same refactor as FleeTask |
+| `AI/Tasks/OnsetStateTreeSearchTask.h/.cpp` | Same refactor + **fixes speed leak bug** (ExitState now removes GE) |
+| `Spawning/OnsetPoolSubsystem.cpp` | `RemoveActiveEffects` in `ReturnToPool` clears leftover GEs |
+| `Spawning/OnsetSpawner.cpp` | Added missing `ApplyPerceptionProfile` call |
 
----
+### Directory Migration
 
-## Step-by-Step
+All GAS files moved from `Combat/` to `GAS/`: `OnsetAttributeSet`, `OnsetMovementAttributeSet`, `OnsetGameplayTags`.
 
-### Step 1 — Add `MovementSpeed` Attribute
+### Architecture
 
-**`OnsetAttributeSet.h`** — add to the attribute block:
-```cpp
-UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MovementSpeed, Category = "Movement")
-FGameplayAttributeData MovementSpeed;
-GAMEPLAYATTRIBUTE_VALUE_GETTER(MovementSpeed);
-GAMEPLAYATTRIBUTE_VALUE_SETTER(MovementSpeed);
-GAMEPLAYATTRIBUTE_VALUE_INITTER(MovementSpeed);
-```
+- **`UOnsetMovementAttributeSet`** — owns `MovementSpeed` as a replicated attribute
+- **`PostGameplayEffectExecute`** — clamps ≥ 0, writes to `CharacterMovement->MaxWalkSpeed`
+- **Base value** — initialises from CDO default (`InitMovementSpeed(600.0f)`), overridable per BP Class Defaults
+- **`ApplyMovementSpeedModifier(Self, Magnitude)`** — shared helper on `FOnsetStateTreeTaskBase`:
+  - Creates infinite GE via `NewObject<UGameplayEffect>` (dynamic, no BP asset needed)
+  - Sets `MultiplyCompound` on `MovementSpeed` attribute with given magnitude
+  - Applies via ASC, returns `FActiveGameplayEffectHandle`
+- **Pool cleanup** — `ReturnToPool` calls `RemoveActiveEffects` to clear all GEs, preventing speed leaks across cycles
 
-Add `OnRep_MovementSpeed` and `GetMovementSpeedAttribute()` static.
+### Task Refactors
 
-**`OnsetAttributeSet.cpp`** — add replication + rep notify:
-```cpp
-DOREPLIFETIME_CONDITION_NOTIFY(UOnsetAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always);
-
-void UOnsetAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed)
-{
-    GAMEPLAYATTRIBUTE_REPNOTIFY(UOnsetAttributeSet, MovementSpeed, OldMovementSpeed);
-}
-```
-
-### Step 2 — Wire to MaxWalkSpeed
-
-In `PostGameplayEffectExecute`, add a new block:
-```cpp
-if (Data.EvaluatedData.Attribute == GetMovementSpeedAttribute())
-{
-    float Clamped = FMath::Max(GetMovementSpeed(), 0.0f);
-    SetMovementSpeed(Clamped);
-    if (AOnsetBaseCharacter* Character = Cast<AOnsetBaseCharacter>(GetOwningActor()))
-    {
-        Character->GetCharacterMovement()->MaxWalkSpeed = Clamped;
-    }
-}
-```
-
-### Step 3 — Init Base Value
-
-In `AOnsetBaseCharacter::PossessedBy` (or `BeginPlay`), after `InitAbilityActorInfo`:
-```cpp
-if (AbilitySystemComponent && AttributeSet)
-{
-    float DefaultSpeed = GetCharacterMovement()->MaxWalkSpeed;
-    AbilitySystemComponent->SetNumericAttributeBase(
-        UOnsetAttributeSet::GetMovementSpeedAttribute(), DefaultSpeed);
-}
-```
-
-### Step 4 — Create GE_SpeedModifier
-
-BP asset at `/Game/Game/Combat/GE_SpeedModifier`:
-- **Duration Policy:** Infinite
-- **Modifier:** `MovementSpeed` × `Scalar` (or Override, per use case)
-- **Tags:** Add `TAG_State_SpeedModifier` (or per-system tag)
-
-### Step 5 — Add System Tags
-
-```cpp
-UE_DEFINE_GAMEPLAY_TAG(TAG_State_InvestigationSpeed, "State.InvestigationSpeed");
-UE_DEFINE_GAMEPLAY_TAG(TAG_State_FleeSpeed, "State.FleeSpeed");
-UE_DEFINE_GAMEPLAY_TAG(TAG_State_StaggerSlow, "State.StaggerSlow");
-```
-
-### Step 6 — Refactor FleeTask
-
-**Before (direct):**
-```cpp
-CachedOriginalWalkSpeed = Self->GetCharacterMovement()->MaxWalkSpeed;
-Self->GetCharacterMovement()->MaxWalkSpeed = CachedOriginalWalkSpeed * SpeedMod;
-// ExitState:
-Self->GetCharacterMovement()->MaxWalkSpeed = CachedOriginalWalkSpeed;
-```
-
-**After (GAS):**
-```cpp
-UGameplayEffect* SpeedGE = NewObject<UGameplayEffect>(GetTransientPackage(), TEXT("DynamicSpeedGE"));
-SpeedGE->DurationPolicy = EGameplayEffectDurationType::Infinite;
-// Add modifier: MovementSpeed × SpeedMod
-// Tag: TAG_State_FleeSpeed
-FActiveGameplayEffectHandle Handle = ASC->ApplyGameplayEffectToSelf(SpeedGE, 1.0f, ASC->MakeEffectContext());
-// In instance data, store the handle
-// ExitState:
-ASC->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);
-```
-
-Or cleaner: pre-create reusable `GE_SpeedModifier` BPs, apply by class with `SetByCaller` magnitude.
-
-### Step 7 — Refactor InvestiageTask
-
-Identical pattern to FleeTask but applies `GE_SpeedModifier` with `TAG_State_InvestigationSpeed`.
-
-### Step 8 — Verify Stacking
-
-In PIE:
-1. Stagger an NPC (applies ×0.5)
-2. While staggered, NPC flees (applies ×0.35)
-3. Result: speed = base × 0.5 × 0.35 (stacked multiplicatively)
-4. Stagger expires → speed = base × 0.35 (only flee remains)
-5. NPC stops fleeing → speed returns to base
+| Task | EnterState | Tick | ExitState |
+|------|-----------|------|-----------|
+| Flee | Apply GE with health-ratio lerp | Remove old handle, re-apply with updated magnitude | Remove handle |
+| Investigate | Apply GE with group/non-group multiplier | N/A (static) | Remove handle |
+| Search | Apply GE with `SearchMovementSpeedMultiplier` | N/A (static) | **Remove handle** (was missing — speed leak fix) |
 
 ---
 
@@ -172,9 +94,9 @@ In PIE:
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| GE duration | Infinite with tag removal | Clean activate/deactivate cycle, no duration tracking |
-| Modifier op | Multiply for speed scaling | Natural for percentages; add for flat buffs (haste) |
-| Per-system tagged GEs | One GE class + per-system source tag | Single BP asset, clean removal by tag |
-| Handle tracking | `FActiveGameplayEffectHandle` per task | Precise removal, no tag collisions |
-| Replication | COND_None + OnRep | Server-authoritative, client visually syncs |
-
+| Dedicated set | `UOnsetMovementAttributeSet` | Industry pattern; separate concerns from combat attributes |
+| GE creation | Dynamic via `NewObject` | No BP asset dependency; helper encapsulates all GE setup |
+| No speed tags | `FActiveGameplayEffectHandle` only | Removal-by-handle is simpler and sufficient without tag-based queries |
+| Modifier op | `MultiplyCompound` | Correct compounding (×0.5 flee × ×0.5 stagger = ×0.25) |
+| Pool GE cleanup | `RemoveActiveEffects` in `ReturnToPool` | Best point — not OnPossess (avoids killing buffs during autoplay swaps) |
+| No PossessedBy init | CDO default only | BP Class Defaults override for per-class variation; avoids init-ordering issues |

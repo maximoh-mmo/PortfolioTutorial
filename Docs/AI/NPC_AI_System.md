@@ -50,28 +50,36 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 
 ### **`AOnsetEnemy`** (inherits `AOnsetBaseCharacter` — shared base with `AOnsetPlayerCharacter`)
 - Base NPC pawn (`Onset/Source/Onset/Public/Enemy/`)
-- Holds ASC, AttributeSet *(future)*
+- Holds `UAbilitySystemComponent`, `UOnsetAttributeSet`, `UOnsetMovementAttributeSet` (on shared base)
 - Holds `UGroupComponent`
-- `HomeLocation` inherited from `AOnsetBaseCharacter` — anchor point for territory-based Roam AI (set from spawn slot transform in `SpawnEnemyAtSlot`); also usable for player respawn
-- Stores a `UAIProfile` reference, read by the controller on possession
-- `ApplyProfile(UAIProfile*)` applies profile-driven visual/config to the pawn:
-  - **Skeletal mesh path** — loads `SkeletalMesh` synchronously, sets mesh + anim BP + material; auto-sizes the capsule to `GetImportedBounds()` so targeting (`ECC_Visibility` traces) hits the capsule regardless of physics assets
-  - **Cube fallback path** — when the profile has no `SkeletalMesh`, creates a `UStaticMeshComponent` (CubeVis) with `/Engine/BasicShapes/Cube.Cube`, sets `QueryAndPhysics` + `ECR_Block` on all channels so the cube itself blocks targeting traces and physics movement
-  - **Pool return** — called with `nullptr`; destroys any existing CubeVis via `FindComponentByClass` + `DestroyComponent`, clears skeletal mesh/anim/material, hides the actor
+- `HomeTransform` inherited from `AOnsetBaseCharacter` — anchor for territory-based Roam AI (set from spawn slot transform in `SpawnEnemyAtSlot`); also usable for player respawn
+- Stores three profile references: `UAIProfile* Profile`, `UVisualProfile* VisualProfile`, `UPerceptionProfile* PerceptionProfile`
+- `ApplyProfile(UVisualProfile*)` applies visual profile to the pawn:
+  - **Skeletal mesh path** — loads `SkeletalMesh` synchronously, sets mesh + anim BP + material; auto-sizes the capsule to `GetImportedBounds()`
+  - **Cube fallback path** — when no `SkeletalMesh`, creates a `UStaticMeshComponent` (CubeVis) with `/Engine/BasicShapes/Cube.Cube`
+  - **Pool return** — called with `nullptr`; clears all visuals, hides the actor
 
 ### **`AOnsetAIController`** (`Onset/Source/Onset/Public/AI/`)
 - Data‑driven base controller — no hardcoded enemy/player logic
-- Owns `UStateTreeAIComponent`, `UAIPerceptionComponent`, and `UTargetingComponent` as subobjects
-- On `OnPossess`, calls `StateTreeComp->StartLogic()` (profile-driven config applied by the spawner before possession)
-- `ApplyProfile(const UAIProfile*)` loads the profile's StateTree asset and configures sight radius/angle and hearing range
+- Owns `UStateTreeAIComponent`, `UAIPerceptionComponent`, `USightConfig`, `UHearingConfig` as subobjects
+- `UTargetingComponent` cached from pawn on `OnPossess`
+- `ApplyAIProfile(const UAIProfile*)` — loads the profile's `StateTreeAsset`, stops/restarts StateTree logic
+- `ApplyPerceptionProfile(const UPerceptionProfile*)` — configures `SightConfig.SightRadius`, `LoseSightRadius`, `PeripheralVisionAngleDegrees`, and `HearingConfig.HearingRange`
 - Includes authority guard — stops the StateTree on clients
-- `bStartAILogicOnPossess = false` — lifecycle is manual (Spawner → ApplyProfile → Possess → StartLogic)
+- `bStartAILogicOnPossess = false` — lifecycle is manual (Spawner → ApplyAIProfile → ApplyPerceptionProfile → Possess → StartLogic)
 
-### **`UAIProfile`** (`Onset/Source/Onset/Public/AI/AIProfile.h`)
+### **`UAIProfile`** (`Onset/Source/Onset/Public/Enemy/Profile/AIProfile.h`)
 - `UDataAsset` subclass — created per enemy type in-editor
-- Contains: `SkeletalMesh`, `AnimBlueprintClass`, `OverrideMaterial`, `StateTreeAsset`, sight range/angle, hearing range (acts as assist response radius), aggression, flee threshold  
-- Designers create new enemy types without C++ changes
-- All visual variation (mesh, animation, material) driven by profile — no Blueprint subclassing needed
+- Behaviour-only: `StateTreeAsset`, `Aggression`, `FleeThreshold`, `AssistRadius`, `AttackRange`, `ChaseRange`
+- One of three focused data assets (`UAIProfile`, `UVisualProfile`, `UPerceptionProfile`) replacing the original monolithic `UAIProfile`
+
+### **`UVisualProfile`** (`Onset/Source/Onset/Public/Enemy/Profile/VisualProfile.h`)
+- `UDataAsset` subclass — visual configuration for the pawn
+- Contains: `SkeletalMesh`, `CorpseMesh`, `AnimBlueprintClass`, `OverrideMaterial`
+
+### **`UPerceptionProfile`** (`Onset/Source/Onset/Public/Enemy/Profile/PerceptionProfile.h`)
+- `UDataAsset` subclass — perception configuration for the controller
+- Contains: `SightRange`, `SightAngle`, `HearingRange`
 
 ### **`UOnsetStateTreeSchema`** (`Onset/Source/Onset/Public/AI/OnsetStateTreeSchema.h`)
 - Defines context data (`FOnsetStateTreeContextData`) and the Global Task (`FOnsetStateTreeContextTask`) for the StateTree
@@ -81,21 +89,37 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Shared base for `AOnsetEnemy` and `AOnsetPlayerCharacter`
 - Stores `FVector HomeLocation` — spawn anchor for territory-based AI and player respawn
 
+### **StateTree Task Base** (`Onset/Source/Onset/Public/AI/Tasks/OnsetStateTreeTaskBase.h`)
+- **`FOnsetStateTreeTaskBase`** — shared base struct, implements moved to `.cpp`. Provides static helpers accessed by every task:
+  - `GetController(Context)` — `Cast<AOnsetAIController>(Context.GetOwner())`
+  - `GetTarget(Context)` — `AIC->TargetingComponent->GetTarget()`
+  - `GetSelfBaseCharacter(Context)` — `Cast<AOnsetBaseCharacter>(AIC->GetPawn())`
+  - `GetSelfEnemyCharacter(Context)` — `Cast<AOnsetEnemy>(AIC->GetPawn())`
+  - `GetPathFollowingComponent(Context)` / `HasMoveCompleted(Context)`
+  - `ApplyMovementSpeedModifier(Self, Magnitude)` — applies infinite `MultiplyCompound` GE on `MovementSpeed` attribute, returns `FActiveGameplayEffectHandle`
+
 ### **StateTree Tasks** (`Onset/Source/Onset/Public/AI/Tasks/`)
-- **`FOnsetStateTreeTaskBase`** — shared base struct for all task implementations. Provides static helpers accessed by every task:
-  - `GetController(Context)` — `Cast<AOnsetAIController>(Context.GetOwner())` with logged null guard
-  - `GetTarget(Context)` — gets target from `AIC->TargetingComponent->GetTarget()` with logged null guard
-  - `GetSelfBaseCharacter(Context)` — `Cast<AOnsetBaseCharacter>(AIC->GetPawn())` with logged null guard
-  - `GetPathFollowingComponent(Context)` — gets `UPathFollowingComponent` with logged null guard
-  - `HasMoveCompleted(Context)` — guards + `DidMoveReachGoal()`
-- **`FOnsetStateTreeIdleTask`** — timer-based idle (3-8s), `FOnsetStateTreeIdleInstanceData` holds MinDuration/MaxDuration/RemainingTime
-- **`FOnsetStateTreeRoamTask`** — territory patrol using `UNavigationSystemV1::GetRandomReachablePointInRadius()` anchored at `HomeLocation` (on `AOnsetBaseCharacter`, set from spawn slot transform in `SpawnEnemyAtSlot`), with crowd avoidance enabled
-- **`FOnsetStateTreeAgroTask`** — face target via `AAIController::SetFocus()`, checks facing angle against threshold (15°) and minimum duration (0.5s) before succeeding; early-succeeds if target is lost
-- **`FOnsetStateTreeChaseTask`** — `MoveToActor` on enter state, re-follows target continuously (native `MoveToActor` auto-repath). Tick returns `Succeeded` on arrival (transition conditions route to Attack/Lost/Marooned). `ExitState` calls `StopMovement()`. Used by both Chase and Marooned asset states.
-- **`FOnsetStateTreeLostTargetTask`** — clear focus via `AAIController::ClearFocus()`, random pause 2-4s, then succeeds → transitions back to Roam
+- **`FOnsetStateTreeIdleTask`** — timer-based idle (3-8s)
+- **`FOnsetStateTreeRoamTask`** — territory patrol via `GetRandomReachablePointInRadius()` anchored at `HomeTransform`
+- **`FOnsetStateTreeAgroTask`** — face target via `SetFocus()`, succeeds on facing angle ≤ 15° + 0.5s duration
+- **`FOnsetStateTreeChaseTask`** — `MoveToActor` with auto-repath; succeeds on arrival
+- **`FOnsetStateTreeAttackTask`** — activates `GA_BasicAttack` on target via ASC, exits on cooldown
+- **`FOnsetStateTreeFleeTask`** — projects flee point away from target (angle variance), applies `MovementSpeed` GE (health-ratio lerp, removed/re-applied per tick for dynamic speed), succeeds on arrival
+- **`FOnsetStateTreeLostTargetTask`** — clear focus, random pause 2-4s
+- **`FOnsetStateTreeInvestigateTask`** — moves to `HeardNoiseLocation`, applies `MovementSpeed` GE (group member vs non-group multiplier), succeeds on arrival or target sighted
+- **`FOnsetStateTreeSearchTask`** — cone-restricted yaw sweep, oscillating focal point, MinCycles + MinSearchDuration dual exit, applies `MovementSpeed` GE (fixes speed leak — ExitState properly removes the GE)
 
 ### **StateTree Conditions** (`Onset/Source/Onset/Public/AI/Conditions/`)
-- **`FOnsetStateTreeDistanceCondition`** — reusable transition condition. Compares distance between the pawn and either its `CurrentTarget` or `HomeLocation` using `DistSquared` + squared threshold (avoids `sqrt`). Supports `UE::StateTree::EComparisonOperator` (Less, LessOrEqual, Greater, GreaterOrEqual). `bAllowNoTarget` flag: when true, no target passes as "target lost" for Lost-range fallback. Used for AttackRange, LostRange, and LeashRadius gating.
+- **`FOnsetStateTreeDistanceCondition`** — compares `DistSquared` between pawn and `CurrentTarget`/`HomeLocation` against squared threshold. Supports `EOnsetStateTreeDistanceSource` (AttackRange / ChaseRange) reading from `UAIProfile`. `bAllowNoTarget` flag for Lost-range fallback.
+- **`FOnsetStateTreeFleeCondition`** — multi-factor: health ratio `<` flee threshold, group courage (allies within `AssistRadius` raise threshold), `FleeProbability` gate
+- **`FOnsetStateTreeHearingCondition`** — gates Idle/Investigate by `bHasPendingNoise` + `MaxTimeSinceLastNoise` timeout
+- **`FOnsetStateTreeTargetConditions`** — `HasTarget` / `HasNoTarget` shared empty instance data struct, inline implementations
+
+### **Noise Event Flow**
+Damage fires `UAISense_Hearing::ReportNoiseEvent` in `PostGameplayEffectExecute`. The controller stores:
+- `HeardNoiseLocation`, `HeardNoiseInstigator`, `bHasPendingNoise`, `LastNoiseHeardTime`
+- `OnPerceptionUpdated` sight branch sets `TargetingComponent`, hearing branch stores noise metadata
+- `bHasPendingNoise` cleared on empty hearing array and on `SearchTask::EnterState` (enables re-investigation)
 
 ---
 
@@ -118,30 +142,39 @@ Notifies spawner/pool.
 
 ## **StateTree Diagram**
 
-Implemented tasks: `FOnsetStateTreeIdleTask`, `FOnsetStateTreeRoamTask`, `FOnsetStateTreeAgroTask`, `FOnsetStateTreeChaseTask`, `FOnsetStateTreeLostTargetTask`.  
-Remaining tasks: Attack, Flee, RoamWander (all A3.3 — see `TODO/Private_Demo_Checklist.md`).
+All tasks implemented. Health, perception hearing, and noise events handle assist/investigate/search logic.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
 
     Idle --> Roam: Timer
-    Roam --> Agro: Perception sees player
+    Idle --> Investigate: HearingCondition (pending noise)
+
+    Roam --> Agro: HasTarget (perception)
+    Roam --> Investigate: HearingCondition
+
     Agro --> Chase: Target acquired
+    Agro --> Flee: FleeCondition (low health, isolated)
+
     Chase --> Attack: DistanceCondition ≤ AttackRange
-    Attack --> Chase: Cooldown finished
-    Chase --> Lost: DistanceCondition > LostRange / no target
-    Lost --> Roam: Timer (2-4s)
+    Chase --> Lost: !HasTarget
+    Chase --> Flee: FleeCondition
 
-    Chase --> Marooned: DistanceCondition > LeashRadius
-    Marooned --> Attack: DistanceCondition ≤ AttackRange
-    Marooned --> Lost: DistanceCondition > LostRange / no target
+    Attack --> Chase: Cooldown / out of range
+    Attack --> Lost: !HasTarget
+    Attack --> Flee: FleeCondition
 
-    Agro --> Assist: Perception (hears ally attacked)  
-    Assist --> Chase
+    Lost --> Idle: OnCompleted
+    Lost --> Agro: HasTarget (re-acquired)
 
-    Any --> Flee: Low health + isolated
-    Flee --> Idle: Safe
+    Flee --> Idle: OnCompleted (safe distance)
+
+    Investigate --> Agro: HasTarget (spotted enemy)
+    Investigate --> Search: OnCompleted + !HasTarget (noise only)
+
+    Search --> Agro: HasTarget (spotted enemy)
+    Search --> Idle: OnCompleted (search exhausted)
 ```
 
 ## **Data Flow Diagram**

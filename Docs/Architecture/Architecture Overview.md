@@ -42,19 +42,25 @@ flowchart TD
 
     subgraph AI
         NPC[NPC Character<br/>AOnsetBaseCharacter → AOnsetEnemy]
-        AIC[AOnsetAIController<br/>owns StateTreeAIComp + PerceptionComp + TargetingComp]
-        STC[UStateTreeComponent]
-        Profile[UAIProfile<br/>Data Asset]
+        AIC[AOnsetAIController<br/>owns StateTreeAIComp + PerceptionComp]
+        STC[UStateTreeAIComponent]
+        VisProfile[UVisualProfile<br/>mesh / anim / material]
+        AIProfile[UAIProfile<br/>behaviour params]
+        PercProfile[UPerceptionProfile<br/>sight / hearing]
         GComp[UGroupComponent]
     end
 
     Spawner --> Pooling
     Pooling --> NPC
+    NPC --> VisProfile
+    NPC --> AIProfile
+    NPC --> PercProfile
     NPC --> GComp
-    NPC --> Profile
     GComp --> GManager[UGroupManagerComponent]
 
-    Profile --> AIC
+    VisProfile --> NPC
+    AIProfile --> AIC
+    PercProfile --> AIC
     AIC --> STC
     STC --> AIC
     AIC --> NPC
@@ -274,14 +280,16 @@ This document is the technical map for the entire project.
 - NPC AI uses Group System for ally identification in `OnPerceptionUpdated`; assist response is triggered via AI Perception hearing, not directly from the Group System  
 
 ### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Spawner System](../AI/Spawner_System.md) & [Pooling System](../AI/Pooling_System.md)**
-- Spawner sets `AOnsetEnemy.Profile` on spawn; controller reads it on `OnPossess`
-- Resets AI state on respawn; reinitializes StateTree on reuse (future)  
+- Spawner applies all three profiles (`UVisualProfile`, `UAIProfile`, `UPerceptionProfile`) on spawn  
+- Controller reads profiles on `OnPossess`, configures StateTree and perception  
+- `ReturnToPool` resets AI state, removes GEs, clears visuals, hides actor  
 
 ### **[NPC AI System](../AI/NPC_AI_System.md) ↔ [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - AI runs server‑only; clients receive replicated movement + effects  
 
 ### **[Spawner System](../AI/Spawner_System.md) ↔ [Pooling System](../AI/Pooling_System.md)**
-- Requests NPC instances on respawn (future — slot‑based spawner uses direct SpawnActor for now)  
+- Spawner requests pooled NPC + controller via `UOnsetPoolSubsystem.GetPooledEnemy()` / `GetPooledController()`  
+- `ReturnToPool` returns NPC to inactive object pool after full state reset  
 
 ### **[Spawner System](../AI/Spawner_System.md) ↔ [Group System](../AI/Group_System.md)**
 - Registers members into groups via `UGroupManagerComponent.RegisterMember()` in `SpawnEnemyAtSlot()`  

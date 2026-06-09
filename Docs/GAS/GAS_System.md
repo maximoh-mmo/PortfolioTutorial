@@ -79,9 +79,21 @@ If [Targeting System](../Gameplay/Targeting_System.md) rejects a player target d
 - **`UAbilitySystemComponent`** — executes abilities, manages tags and effects  
 - **`UGameplayAbility`** — base class for all abilities  
 - **`UGameplayEffect`** — applies modifiers, damage, and cooldowns  
-- **`UAttributeSet`** — defines attributes (Health, MaxHealth, Damage)  
+- **`UOnsetAttributeSet`** — defines combat attributes (Health, MaxHealth) — lives at `GAS/`  
+- **`UOnsetMovementAttributeSet`** — defines movement attributes (MovementSpeed) with own `PostGameplayEffectExecute` — clamps ≥ 0 and syncs `MaxWalkSpeed` on `GetCharacterMovement()`. Dedicated set keeps movement concerns separate from combat. All speed modifiers apply via `MultiplyCompound` GEs.  
 
 ---
+
+## **Source Location**
+- All GAS files migrated from `Combat/` to `GAS/` directory: `OnsetAttributeSet.h/.cpp`, `OnsetMovementAttributeSet.h/.cpp`, `OnsetGameplayTags.h/.cpp`  
+
+## **MovementSpeed Attribute (E22)**
+- `UOnsetMovementAttributeSet` owns `MovementSpeed` as a replicated attribute  
+- `PostGameplayEffectExecute` clamps ≥ 0 and writes to `CharacterMovement->MaxWalkSpeed`  
+- Base value initialises from CDO default (`InitMovementSpeed(600.0f)`), overridable per BP Class Defaults  
+- All StateTree tasks apply speed modifiers via `ApplyMovementSpeedModifier` helper (creates infinite GE with `MultiplyCompound` op, returns `FActiveGameplayEffectHandle`)  
+- Speed effects stack multiplicatively by default (flee × stagger × search = compound)  
+- Pool return clears all active GEs via `RemoveActiveEffects`, preventing speed leaks  
 
 ## **Replication**
 - Damage filtering occurs **server‑side only** via the [Multiplayer System](../Multiplayer/Multiplayer_System.md)  
@@ -98,6 +110,11 @@ If [Targeting System](../Gameplay/Targeting_System.md) rejects a player target d
 - [ ] Cooldowns work and replicate  
 - [ ] Death triggers correctly (health ≤ 0)  
 - [ ] Death fires both pool return and corpse spawn (two parallel paths)  
+- [ ] MovementSpeed attribute initialises correctly at CDO default (600)  
+- [ ] Flee/Investigate/Search tasks apply MovementSpeed GE correctly  
+- [ ] Flee speed is dynamic — varies by health ratio each tick  
+- [ ] MovementSpeed GEs stack multiplicatively (flee × stagger)  
+- [ ] No speed leak on pool return — `RemoveActiveEffects` clears GEs  
 
 ---
 

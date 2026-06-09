@@ -147,18 +147,21 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 # A3 — AI SYSTEMS (est. 10 days)
 
-## A3.0 AI Profile System (data-driven controller)
-- [x] Create `UAIProfile` — `UDataAsset` subclass (`Onset/Source/Onset/Public/AI/AIProfile.h`)
-- [x] Add profile fields: `SkeletalMesh`, `AnimBlueprintClass`, `OverrideMaterial`, `StateTreeAsset`, sight range/angle, hearing range, aggression, flee threshold, assist radius
-- [x] Create `AIProfile.cpp` with default values
-- [x] Add `UPROPERTY(EditAnywhere) UAIProfile* Profile` to `AOnsetEnemy`
-- [x] Add `ApplyProfile(UAIProfile*)` to `AOnsetEnemy` — sets mesh, anim BP, material from profile on spawn; clears all on `nullptr`
-- [x] Refactor `AOnsetAIController` to be data‑driven:
-  - [x] Add `UStateTreeComponent` and `UAIPerceptionComponent` as subobjects
-  - [x] Implement `ApplyProfile(const UAIProfile*)` — loads StateTree asset, configures perception
-  - [x] On `OnPossess(APawn*)`, read pawn's `UAIProfile` and call `ApplyProfile()`
-  - [x] Add `HasAuthority()` guard in `BeginPlay()` — stop tree on clients
-- [x] Update `FSpawnConfig.EnemyClass` → `EnemyProfile` (profile reference)
+## A3.0 AI Profile System (data-driven controller) — Refactored E21
+- [x] Create `UAIProfile` — `UDataAsset` subclass (`Enemy/Profile/AIProfile.h`), behaviour-only: `StateTreeAsset`, `Aggression`, `FleeThreshold`, `AssistRadius`, `AttackRange`, `ChaseRange`
+- [x] Create `UVisualProfile` — `UDataAsset` (`Enemy/Profile/VisualProfile.h`): `SkeletalMesh`, `CorpseMesh`, `AnimBlueprintClass`, `OverrideMaterial`
+- [x] Create `UPerceptionProfile` — `UDataAsset` (`Enemy/Profile/PerceptionProfile.h`): `SightRange`, `SightAngle`, `HearingRange`
+- [x] Split old monolithic `UAIProfile` into three focused data assets (Single Responsibility Principle)
+- [x] Move profiles from `AI/` to `Enemy/Profile/` directory
+- [x] Add three `UPROPERTY` profile refs to `AOnsetEnemy`: `UAIProfile* Profile`, `UVisualProfile* VisualProfile`, `UPerceptionProfile* PerceptionProfile`
+- [x] Add `ApplyProfile(UVisualProfile*)` to `AOnsetEnemy` — sets mesh, anim BP, material on spawn; clears on `nullptr`
+- [x] Add `ApplyAIProfile(const UAIProfile*)` to `AOnsetAIController` — loads StateTree asset, stops/restarts logic
+- [x] Add `ApplyPerceptionProfile(const UPerceptionProfile*)` to `AOnsetAIController` — configures sight/hearing configs
+- [x] On `OnPossess(APawn*)`, caches `TargetingComponent` from pawn (not owned by controller)
+- [x] Update `FSpawnConfig` with `EnemyAIProfile`, `EnemyVisualProfile`, `EnemyPerceptionProfile`
+- [x] Update `SpawnEnemyAtSlot` to apply all three profiles on spawn + possess
+- [x] Add `HasAuthority()` guard in `BeginPlay()` — stop tree on clients
+- [x] **Bug fix (E22):** `ApplyPerceptionProfile` was missing from `SpawnEnemyAtSlot` — targeting was broken
 
 ## A3.1 StateTree Setup + Schema
 - [x] Create `UNPCStateTreeSchema` with context data *(created as `UOnsetStateTreeSchema`)*
@@ -182,8 +185,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Implement **Chase** state (MoveToActor, exit on arrival, transitions gated by DistanceCondition) — `FOnsetStateTreeChaseTask`
 - [x] Implement **Attack** state (timer-based cooldown stub, ready for GAS) — `FOnsetStateTreeAttackTask`
 - [x] Implement **Flee** state (retreat when low health + isolated)
+- [x] **E22:** FleeTask refactored — replaced direct `MaxWalkSpeed` with GAS GE (`ApplyMovementSpeedModifier` handle), remove/re-apply per tick for dynamic health-ratio speed
 - [x] Implement **Lost** state (target lost → clear focus, random pause 2-4s, → Roam) — `FOnsetStateTreeLostTargetTask`
-- [x] Create **FOnsetStateTreeTaskBase** — shared helpers (GetController, GetTarget, HasMoveCompleted, GetSelfBaseCharacter, GetPathFollowingComponent); all 5 tasks migrated
+- [x] Create **FOnsetStateTreeTaskBase** — shared helpers (GetController, GetTarget, HasMoveCompleted, GetSelfBaseCharacter, GetSelfEnemyCharacter, GetPathFollowingComponent); all helpers moved from inline header to `.cpp`
+- [x] **E22:** Add `ApplyMovementSpeedModifier(Self, Magnitude)` to base — creates infinite GE with `MultiplyCompound` on `MovementSpeed`, returns `FActiveGameplayEffectHandle`
 - [x] Create **FOnsetStateTreeDistanceCondition** — reusable transition condition (Target or HomeLocation, DistSquared, UE::StateTree::EComparisonOperator)
 - [x] Create **Marooned** state — same ChaseTask in asset, no leash transition
 - [x] Move **HomeLocation** from AOnsetEnemy → AOnsetBaseCharacter (shared with player for respawn)
@@ -196,6 +201,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Split OnPerceptionUpdated: sight sets TargetingComponent, hearing stores noise info only
 - [x] Create FOnsetStateTreeHearingCondition — gates Idle→Investigate by pending noise + remembrance time
 - [x] Create FOnsetStateTreeInvestigateTask — moves to noise location, exits on sight/arrival/expiry, speed varies by group membership
+- [x] **E22:** InvestigateTask refactored — replaced direct `MaxWalkSpeed` with GAS GE (apply on EnterState, remove on ExitState)
 - [x] Add ChaseRange + AttackRange to AIProfile (1000 / 250)
 - [x] Update DistanceCondition with AttackRange/ChaseRange source types (reads from profile)
 - [x] Fix DistanceCondition inverted pawn check bug
@@ -203,6 +209,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Add ClearFocus to FleeTask EnterState
 - [x] Wire full StateTree: Idle→Agro→Chase→Attack→Flee + Investigate + LostTarget
 - [x] Implement **Search** state (Alerted: yaw sweep scan at noise origin)
+- [x] **E22:** SearchTask refactored — replaced direct `MaxWalkSpeed` with GAS GE (**fixes speed leak:** ExitState previously called base which did nothing)
 - [x] Wire StateTree Search state: Investigate → Search → Idle
 - [ ] Verify assist triggers when nearby ally is attacked
 - [ ] Verify no assist when attacker is out of hearing range
@@ -223,13 +230,16 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 # A4 — GAS COMBAT (est. 10 days)
 
 ## A4.1 GAS Setup
-- [x] Add `AbilitySystemComponent` to player and NPC — `CreateDefaultSubobject` on `AOnsetBaseCharacter` (was already done)
+- [x] Add `AbilitySystemComponent` to player and NPC — `CreateDefaultSubobject` on `AOnsetBaseCharacter`
 - [x] Create `UOnsetAttributeSet` (Health, MaxHealth, clamp in PostGameplayEffectExecute)
-- [x] Set up `GameplayTags` (Damage.Physical, Damage.Magical, State.Dead, State.Staggered, State.Invulnerable, Cooldown.Melee) — native tags via UE_DEFINE_GAMEPLAY_TAG macros
+- [x] Set up `GameplayTags` (Damage.Physical, Damage.Magical, State.Dead, State.Staggered, State.Invulnerable, Cooldown.BasicAttack) — native tags via UE_DEFINE_GAMEPLAY_TAG macros
 - [x] Initialize attributes on BeginPlay/PossessedBy — `InitAbilityActorInfo` in PossessedBy
 - [x] Verify attributes replicate — `DOREPLIFETIME_CONDITION_NOTIFY` + `GAMEPLAYATTRIBUTE_REPNOTIFY` in OnRep
 - [x] Verify ASC initializes correctly on both player and NPC — PossessedBy fires for both
 - [x] Actually verify via runtime test
+- [x] **E22:** Create `UOnsetMovementAttributeSet` (dedicated movement set, industry pattern) — `MovementSpeed` attribute with own `PostGameplayEffectExecute` (clamp ≥ 0, sync `MaxWalkSpeed`)
+- [x] **E22:** All GAS files migrated from `Combat/` to `GAS/` directory
+- [x] **E22:** Base value initialises from CDO default (`InitMovementSpeed(600.0f)`), overridable per BP Class Defaults
 
 ## A4.2 Basic Attack Ability
 - [x] Create `UOnsetGA_BasicAttack` (C++ GA)
@@ -272,6 +282,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Corpse despawns after configurable lifespan (`SetLifeSpan`)
 - [x] Hard cap on active corpses (oldest evicted via SweepDeadCorpses)
 - [x] Migrated `AOnsetPoolManager` → `UOnsetPoolSubsystem` (subsystem pattern)
+- [x] **E22:** Pool `ReturnToPool` now calls `RemoveActiveEffects` to clear all GEs on return (prevents speed leak across pool cycles)
 - [x] Verify NPC returns to pool immediately (corpse lifecycle independent)
 - [x] Verify spawner respawn timer starts at death, not corpse despawn
 - [ ] Verify corpse spawned for player kills and NPC-kills-NPC deaths
@@ -411,8 +422,8 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | — | 36 | — |
-| A4 GAS Combat | 51 | 38 | 75% |
+| A3 AI Systems | 66 | 54 | 82% |
+| A4 GAS Combat | 58 | 43 | 74% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |

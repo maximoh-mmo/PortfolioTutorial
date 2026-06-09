@@ -31,10 +31,11 @@ Provide top‑down ARPG controls (mouse + touch) and a UI‑driven PvP toggle th
 ## **Key Classes**
 - **`AOnsetBaseCharacter`** — shared base for player and NPC, inherits `ACharacter`  
 - **`AOnsetPlayerCharacter`** — player character, inherits `AOnsetBaseCharacter`, camera lives here  
-- **`AOnsetPlayerController`** — routes input, cursor management, targeting, PvP toggle  
+- **`AOnsetPlayerController`** — routes input, cursor management, targeting, PvP toggle; owns `UInteractionComponent`  
 - **`AOnsetPlayerState`** — stores and replicates `bIsPvPEnabled` (future)  
 - **`UCursorManager`** — provides unified cursor position from mouse, touch, or gamepad R-Stick  
-- **`UTargetingComponent`** — data holder for `CurrentTarget`, target validation stub (`IsActorValidTarget`)  
+- **`UTargetingComponent`** — data holder for `CurrentTarget`, target validation — lives on pawn (shared base)  
+- **`UInteractionComponent`** — click resolution extracted from controller (SRP): raycast → enemy targeting or ground movement; resolves pawn via `GetPawn()`; no-op under AI control  
 - **`UJoystickWidget`** — touch virtual joystick, injects axis into `IA_Move`  
 - **`UGamepadCursorWidget`** — software crosshair overlay for gamepad R-Stick cursor  
 
@@ -47,9 +48,13 @@ Provide top‑down ARPG controls (mouse + touch) and a UI‑driven PvP toggle th
 ```mermaid
 flowchart TD
     Input[IA_Primary: Tap / Click / A-Button] --> Cursor[UCursorManager<br/>GetCursorPosition]
-    Cursor --> Raycast[Screen → World Raycast]
+    Cursor --> Interaction[UInteractionComponent<br/>ProcessPrimaryInteraction]
+    Interaction --> Raycast[Screen → World Raycast]
     Raycast --> Branch{Hit what?}
-    Branch -->|Enemy tag| Target[SetCurrentTarget]
+    Branch -->|Enemy tag| Target[SetCurrentTarget via TargetingComponent]
+    Branch -->|Player tag| TargetPVP{PVP On?}
+    TargetPVP -->|Yes| Target
+    TargetPVP -->|No| MoveTo
     Branch -->|Ground| MoveTo[MoveToLocation]
 ```
 
