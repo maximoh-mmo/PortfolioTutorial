@@ -34,7 +34,7 @@ AOnsetAIController::AOnsetAIController()
 	if (CrowdComp)                                                                                                  
 	{                                                                                                               
 		CrowdComp->SetCrowdSeparation(true);                                                                        
-		CrowdComp->SetCrowdSeparationWeight(2.0f);                                                                       
+		CrowdComp->SetCrowdSeparationWeight(8.0f);                                                                       
 		CrowdComp->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::Good);
 	}         
 }
