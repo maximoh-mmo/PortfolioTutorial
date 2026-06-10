@@ -24,7 +24,7 @@ public:
 	/** Applies or clears the profile — sets mesh, anim BP, material, and capsule size. */
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void ApplyProfile(UVisualProfile* InProfile);
-
+	
 	/** Group membership component. Pawn-level bridge to UGroupManagerComponent. */
 	UPROPERTY()
 	TObjectPtr<UGroupComponent> GroupComp;
