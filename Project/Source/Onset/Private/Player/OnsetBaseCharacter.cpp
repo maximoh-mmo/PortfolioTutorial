@@ -18,17 +18,6 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent"));
 	AttributeSet = CreateDefaultSubobject<UOnsetAttributeSet>(TEXT("AttributeSet"));
 	MovementAttributes = CreateDefaultSubobject<UOnsetMovementAttributeSet>(TEXT("MovementAttributes"));
-	if (AbilitySystemComponent)
-	{
-		if (AttributeSet)
-		{
-			AbilitySystemComponent->AddSpawnedAttribute(AttributeSet);
-		}
-		if (MovementAttributes)
-		{
-			AbilitySystemComponent->AddSpawnedAttribute(MovementAttributes);
-		}
-	}
 }
 
 void AOnsetBaseCharacter::InitAbilityActorInfo()
@@ -43,12 +32,6 @@ void AOnsetBaseCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	InitAbilityActorInfo();
-	                                                                                                            
-	if (AbilitySystemComponent && MovementAttributes)                                                           
-	{                                                                                                           
-		AbilitySystemComponent->AddSpawnedAttribute(MovementAttributes);                                        
-	}                                                                                                           
-               
 	GrantDefaultAbilities();
 }
 
@@ -65,6 +48,14 @@ void AOnsetBaseCharacter::GrantDefaultAbilities()
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(HitReaction, 1, INDEX_NONE, this));
 	
 	bAbilitiesGranted = true;
+}
+
+void AOnsetBaseCharacter::ResetAttributes()
+{
+	if (!AbilitySystemComponent) return;
+	AttributeSet->InitHealth(AttributeSet->GetMaxHealth());
+	AttributeSet->InitMaxHealth(100.0f);
+	MovementAttributes->InitMovementSpeed(600.0f);
 }
 
 void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)

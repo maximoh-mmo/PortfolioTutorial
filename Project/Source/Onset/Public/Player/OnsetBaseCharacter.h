@@ -29,6 +29,9 @@ public:
 
 	void GrantDefaultAbilities();
 	
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ResetAttributes();
+
 	// --- Targeting ---
 
 	/** Current target actor. Set by OnPerceptionUpdated for NPCs, by input for Player AI. */

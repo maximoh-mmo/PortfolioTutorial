@@ -10,6 +10,8 @@
 #include "Enemy/GroupComponent.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
+#include "GAS/OnsetAttributeSet.h"
+#include "GAS/OnsetMovementAttributeSet.h"
 #include "Perception/AIPerceptionComponent.h"
 
 DEFINE_LOG_CATEGORY(LogPooling)
@@ -122,9 +124,9 @@ void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 	}
 	if (Enemy->AbilitySystemComponent)                                                                              
 	{                                                                                                               
-		Enemy->AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery(), -1);                             
+		Enemy->AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery(), -1);  
 	}    
-	
+	Enemy->ResetAttributes();
 	Enemy->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyAIProfile)
 	Enemy->OwningSpawner = nullptr;
 	Enemy->SetActorLocation(FVector::ZeroVector);
