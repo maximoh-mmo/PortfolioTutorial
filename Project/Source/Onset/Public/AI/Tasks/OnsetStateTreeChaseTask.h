@@ -12,6 +12,11 @@ struct FOnsetStateTreeChaseTaskInstanceData
 	
 	UPROPERTY(EditAnywhere, Category = "Chase")
 	float AcceptanceRadius = 50.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Chase")
+	float MaxChaseDuration = 3.0f;
+
+	float ChaseStartTime = 0.0f;
 };
 
 USTRUCT()
