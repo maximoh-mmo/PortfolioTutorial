@@ -1,5 +1,6 @@
 ﻿#include "AI/Conditions/OnsetStateTreeFleeCondition.h"                                                                  
 #include "StateTreeExecutionContext.h"
+#include "AI/OnsetAIController.h"
 #include "Enemy/Profile/AIProfile.h"
 #include "AI/Tasks/OnsetStateTreeTaskBase.h"
 #include "GAS/OnsetAttributeSet.h"
@@ -9,15 +10,16 @@
 bool FOnsetStateTreeFleeCondition::TestCondition(FStateTreeExecutionContext& Context) const
 {
 	FOnsetFleeConditionInstanceData& InstanceData = Context.GetInstanceData<FOnsetFleeConditionInstanceData>(*this);
-	
+	AOnsetAIController* AIController = FOnsetStateTreeTaskBase::GetController(Context); 
+	if (!AIController->GetAIProfile()) return false;
 	AOnsetEnemy* Self = FOnsetStateTreeTaskBase::GetSelfEnemyCharacter(Context);
-	if (!Self || !Self->Profile || !Self->AbilitySystemComponent) return false;
+	if (!Self || !Self->AbilitySystemComponent) return false;
 	
 	float MaxHealth = Self->AttributeSet->GetMaxHealth();
 	if (MaxHealth <= 0.0f) return false;
 	
 	float HealthRatio = Self->AttributeSet->GetHealth() / MaxHealth;
-	float Threshold = Self->Profile->FleeThreshold;
+	float Threshold = AIController->GetAIProfile()->FleeThreshold;
 	if (Threshold <= 0.0f) return false;
 	
 	if (Self->GroupComp && Self->GroupComp->IsInGroup())

@@ -46,12 +46,14 @@ void AOnsetAIController::ApplyAIProfile(const UAIProfile* Profile)
 		if (StateTreeComponent->IsRunning())
 			StateTreeComponent->StopLogic(TEXT("Pooled"));
 		StateTreeComponent->SetStateTree(nullptr);
+		AIProfile = nullptr;
 		return;
 	}
 	if (Profile != nullptr)
 	{
 		StateTreeComponent->StopLogic(TEXT("Applying new profile"));
 		StateTreeComponent->SetStateTree(Profile->StateTreeAsset);
+		AIProfile = Profile;
 	}
 }
 void AOnsetAIController::ApplyPerceptionProfile(const UPerceptionProfile* Profile)

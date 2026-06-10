@@ -13,18 +13,19 @@ UOnsetMovementAttributeSet::UOnsetMovementAttributeSet()
 	InitMovementSpeed(600.0f);
 }
 
-void UOnsetMovementAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
+void UOnsetMovementAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue,
+	float NewValue)
 {
-	if (Data.EvaluatedData.Attribute == GetMovementSpeedAttribute())
+	if (Attribute == GetMovementSpeedAttribute())
 	{
-		float ClampedSpeed = FMath::Max(GetMovementSpeed(), 0.0f);
-		SetMovementSpeed(ClampedSpeed);
+		float ClampedSpeed = FMath::Max(NewValue, 0.0f);
 		if (AOnsetBaseCharacter* Character = Cast<AOnsetBaseCharacter>(GetOwningActor()))
 		{
 			Character->GetCharacterMovement()->MaxWalkSpeed = ClampedSpeed;
 		}
 	}
 }
+
 
 void UOnsetMovementAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {

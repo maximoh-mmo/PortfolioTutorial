@@ -29,8 +29,9 @@ public:
 	
 	ATTRIBUTE_ACCESSORS(UOnsetMovementAttributeSet, MovementSpeed)
 	
-	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	UFUNCTION()
 	virtual void OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed);

@@ -2,6 +2,7 @@
 #include "GAS/OnsetAttributeSet.h"
 
 #include "GameplayEffectExtension.h"
+#include "Chaos/GeometryParticlesfwd.h"
 #include "GAS/OnsetGameplayTags.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"

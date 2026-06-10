@@ -34,6 +34,8 @@ public:
 	/** Push a profile to this controller — sets StateTree asset and configures perception. */
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void ApplyAIProfile(const UAIProfile* Profile);
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	const UAIProfile* GetAIProfile() const { return AIProfile; } 
 	void ApplyPerceptionProfile(const UPerceptionProfile* Profile);
 
 	// --- Targeting ---
@@ -68,4 +70,6 @@ protected:
 	
 private:
 	bool bInUse;
+	UPROPERTY()
+	const UAIProfile* AIProfile;
 };

@@ -4,6 +4,7 @@
 #include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
 #include "GAS/OnsetMovementAttributeSet.h"
+#include "Math/UnitConversion.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Player/OnsetBaseCharacter.h"
 #include "Player/TargetingComponent.h"
@@ -59,18 +60,27 @@ UPathFollowingComponent* FOnsetStateTreeTaskBase::GetPathFollowingComponent(cons
 	return nullptr;
 }
 
-struct FActiveGameplayEffectHandle FOnsetStateTreeTaskBase::ApplyMovementSpeedModifier(const AOnsetBaseCharacter* Self,
+FActiveGameplayEffectHandle FOnsetStateTreeTaskBase::ApplyMovementSpeedModifier(const AOnsetBaseCharacter* Self,
 	const float Magnitude)
 {
-	if (!Self || !Self->AbilitySystemComponent) return FActiveGameplayEffectHandle();
+	if (!Self || !Self->AbilitySystemComponent)	return FActiveGameplayEffectHandle();
 		
 	UGameplayEffect* SpeedGE = NewObject<UGameplayEffect>(GetTransientPackageAsObject(),FName("DynamicSpeedModifier"));
 	SpeedGE->DurationPolicy = EGameplayEffectDurationType::Infinite;
-	FGameplayModifierInfo ModifierInfo;
-	ModifierInfo.Attribute = UOnsetMovementAttributeSet::GetMovementSpeedAttribute();
-	ModifierInfo.ModifierOp = EGameplayModOp::MultiplyCompound;
-	ModifierInfo.ModifierMagnitude = FScalableFloat(Magnitude);
-	SpeedGE->Modifiers.Add(ModifierInfo);
+	if (SpeedGE->Modifiers.Num()==0)
+	{
+		FGameplayModifierInfo ModifierInfo;
+		ModifierInfo.Attribute = UOnsetMovementAttributeSet::GetMovementSpeedAttribute();
+		ModifierInfo.ModifierOp = EGameplayModOp::MultiplyCompound;
+		ModifierInfo.ModifierMagnitude = FScalableFloat(Magnitude);
+		SpeedGE->Modifiers.Add(ModifierInfo);
+	}
+	else
+	{
+		SpeedGE->Modifiers[0].Attribute = UOnsetMovementAttributeSet::GetMovementSpeedAttribute();
+		SpeedGE->Modifiers[0].ModifierOp = EGameplayModOp::MultiplyCompound;
+		SpeedGE->Modifiers[0].ModifierMagnitude = FScalableFloat(Magnitude);
+	}
 		
 	return Self->AbilitySystemComponent->ApplyGameplayEffectToSelf(
 		SpeedGE,1.0f,Self->AbilitySystemComponent->MakeEffectContext());

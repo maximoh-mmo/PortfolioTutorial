@@ -4,6 +4,7 @@
 #include "Enemy/Profile/AIProfile.h"
 #include "AI/OnsetAIController.h"
 #include "AI/Tasks/OnsetStateTreeTaskBase.h"
+#include "Player/OnsetBaseCharacter.h"
 
 bool FOnsetStateTreeDistanceCondition::TestCondition(FStateTreeExecutionContext& Context) const
 {
@@ -38,11 +39,10 @@ bool FOnsetStateTreeDistanceCondition::TestCondition(FStateTreeExecutionContext&
 	if (InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::AttackRange ||
 		InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::ChaseRange)
 	{
-		AOnsetEnemy* Self = FOnsetStateTreeTaskBase::GetSelfEnemyCharacter(Context);
-		if (!Self || !Self->Profile) return false;
+		if (!AIController->GetAIProfile()) return false;
 		float Threshold = InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::AttackRange 
-			                  ? Self->Profile->AttackRange 
-			                  : Self->Profile->ChaseRange;
+			                  ? AIController->GetAIProfile()->AttackRange 
+			                  : AIController->GetAIProfile()->ChaseRange;
 		DistanceThresholdSquared = Threshold * Threshold;
 	}
 	else

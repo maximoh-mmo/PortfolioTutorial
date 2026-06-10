@@ -28,16 +28,9 @@ public:
 	/** Group membership component. Pawn-level bridge to UGroupManagerComponent. */
 	UPROPERTY()
 	TObjectPtr<UGroupComponent> GroupComp;
-
-	/** The active profile asset. Set by ApplyProfile(). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Profile")
-	TObjectPtr<UAIProfile> Profile;
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Visual Profile")
 	TObjectPtr<UVisualProfile> VisualProfile;
-	
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Perception Profile")
-	TObjectPtr<UPerceptionProfile> PerceptionProfile;
 	
 	/** */
 	UPROPERTY()

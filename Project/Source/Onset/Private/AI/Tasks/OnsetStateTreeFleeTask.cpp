@@ -40,7 +40,7 @@ EStateTreeRunStatus FOnsetStateTreeFleeTask::EnterState(FStateTreeExecutionConte
 		InstanceData.FleeDestination = Projected.Location;
 		float InitialHealthRatio = Self->AttributeSet->GetHealth() / Self->AttributeSet->GetMaxHealth();                
 		float InitialSpeedMod = FMath::Lerp(InstanceData.MinSpeedMultiplier, 1.0f, InitialHealthRatio);                 
-		InstanceData.SpeedEffectHandle = FOnsetStateTreeTaskBase::ApplyMovementSpeedModifier(                           
+		InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(                           
 			Self, InitialSpeedMod);
 		AIController->MoveToLocation(InstanceData.FleeDestination, InstanceData.AcceptanceRadius);
 		return EStateTreeRunStatus::Running;
@@ -64,9 +64,10 @@ EStateTreeRunStatus FOnsetStateTreeFleeTask::Tick(FStateTreeExecutionContext& Co
 		if (InstanceData.SpeedEffectHandle.IsValid())                                                                   
 		{                                                                                                               
 			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);                   
-		}                                                                                                               
+		}  
+		
 		InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(                           
-			Self, SpeedMod);    
+			Self, SpeedMod);
 	}
 
 	return HasMoveCompleted(Context) ? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;

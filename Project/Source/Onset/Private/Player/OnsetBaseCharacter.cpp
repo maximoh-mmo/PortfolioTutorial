@@ -18,6 +18,17 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent"));
 	AttributeSet = CreateDefaultSubobject<UOnsetAttributeSet>(TEXT("AttributeSet"));
 	MovementAttributes = CreateDefaultSubobject<UOnsetMovementAttributeSet>(TEXT("MovementAttributes"));
+	if (AbilitySystemComponent)
+	{
+		if (AttributeSet)
+		{
+			AbilitySystemComponent->AddSpawnedAttribute(AttributeSet);
+		}
+		if (MovementAttributes)
+		{
+			AbilitySystemComponent->AddSpawnedAttribute(MovementAttributes);
+		}
+	}
 }
 
 void AOnsetBaseCharacter::InitAbilityActorInfo()
@@ -32,6 +43,12 @@ void AOnsetBaseCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	InitAbilityActorInfo();
+	                                                                                                            
+	if (AbilitySystemComponent && MovementAttributes)                                                           
+	{                                                                                                           
+		AbilitySystemComponent->AddSpawnedAttribute(MovementAttributes);                                        
+	}                                                                                                           
+               
 	GrantDefaultAbilities();
 }
 
