@@ -16,6 +16,7 @@
 #include "Player/InteractionComponent.h"
 #include "Player/OnsetBaseCharacter.h"
 #include "Player/OnsetCheatManager.h"
+#include "Player/OnsetPlayerAIController.h"
 #include "Player/OnsetPlayerState.h"
 #include "UI/GamepadCursorWidget.h"
 
@@ -30,24 +31,6 @@ AOnsetPlayerController::AOnsetPlayerController()
 		BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
 	}
 	CheatClass = UOnsetCheatManager::StaticClass();
-}
-
-void AOnsetPlayerController::StartAutoAttack()
-{
-	// Ensure we have a valid world context before setting the timer
-	if (!GetWorld()) return;
-	GetWorldTimerManager().SetTimer(
-		AutoAttackTimerHandle,
-		this,
-		&AOnsetPlayerController::OnAutoAttackTick,
-		AutoAttackInterval,
-		true,
-		0.0f);
-}
-
-void AOnsetPlayerController::StopAutoAttack()
-{
-	GetWorldTimerManager().ClearTimer(AutoAttackTimerHandle);
 }
 
 void AOnsetPlayerController::BeginPlay()
@@ -74,11 +57,17 @@ void AOnsetPlayerController::BeginPlay()
 		GamepadCursorWidget->HideCursor();
 	}                      
 	CursorManager->ResetGamepadCursor();
+	
 	FVector2D CenterPos;
 	if (CursorManager->GetCursorPosition(CenterPos))
 	{
-		GamepadCursorWidget->SetCursorPosition(CenterPos);
+		if (GamepadCursorWidget)
+		{
+			GamepadCursorWidget->SetCursorPosition(CenterPos);
+		}
 	}
+	
+	AutoCombatController = GetWorld()->SpawnActor<AOnsetPlayerAIController>(AOnsetPlayerAIController::StaticClass());
 }
 
 void AOnsetPlayerController::SetupInputComponent()
@@ -101,6 +90,36 @@ void AOnsetPlayerController::SetupInputComponent()
 	}
 }
 
+void AOnsetPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	TargetingComponent = GetPawn()->FindComponentByClass<UTargetingComponent>();
+}
+
+void AOnsetPlayerController::OnUnPossess()
+{
+	Super::OnUnPossess();
+	TargetingComponent = nullptr;
+}
+
+void AOnsetPlayerController::StartAutoAttack()
+{
+	// Ensure we have a valid world context before setting the timer
+	if (!GetWorld()) return;
+	GetWorldTimerManager().SetTimer(
+		AutoAttackTimerHandle,
+		this,
+		&AOnsetPlayerController::OnAutoAttackTick,
+		AutoAttackInterval,
+		true,
+		0.0f);
+}
+
+void AOnsetPlayerController::StopAutoAttack()
+{
+	GetWorldTimerManager().ClearTimer(AutoAttackTimerHandle);
+}
+
 void AOnsetPlayerController::OnAutoAttackTick()
 {
 	const AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
@@ -114,6 +133,7 @@ void AOnsetPlayerController::OnAutoAttackTick()
 
 void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 {
+	if (bAutoCombatEnabled) DisableAutoCombat();
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (MovementVector.IsZero()) return;	
 	StopMovement();
@@ -158,26 +178,30 @@ void AOnsetPlayerController::HideGamepadCursor()
 
 void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value)
 {
+	if (bAutoCombatEnabled) DisableAutoCombat();
 	FVector2D ScreenPos;
 	if (!CursorManager->GetCursorPosition(ScreenPos)) return;
 	if (InteractionComponent) InteractionComponent->ProcessPrimaryInteraction(ScreenPos);
 }	
 
-
 void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
+	if (bAutoCombatEnabled) DisableAutoCombat();
 }
 
 void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
-{
+{	
+	if (bAutoCombatEnabled) DisableAutoCombat();
 }
 
 void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
 {
+	if (bAutoCombatEnabled) DisableAutoCombat();
 }
 
 void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 {
+	if (bAutoCombatEnabled) DisableAutoCombat();
 }
 
 void AOnsetPlayerController::InjectAbilityInput(int32 AbilityIndex, bool bPressed)
@@ -200,23 +224,12 @@ void AOnsetPlayerController::InjectAbilityInput(int32 AbilityIndex, bool bPresse
 }
 
 void AOnsetPlayerController::OnPvPToggleTriggered(const FInputActionValue& Value)                               
-{                                                                                                               
+{
 	AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
 	if (!OnsetPlayerState) return;                                                                                            
 	Server_SetPvPEnabled(!OnsetPlayerState->bIsPvPEnabled);                                                                   
 }
 
-void AOnsetPlayerController::OnPossess(APawn* InPawn)
-{
-	Super::OnPossess(InPawn);
-	TargetingComponent = GetPawn()->FindComponentByClass<UTargetingComponent>();
-}
-
-void AOnsetPlayerController::OnUnPossess()
-{
-	Super::OnUnPossess();
-	TargetingComponent = nullptr;
-}
 
 void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(bool bEnabled)                                 
 {                                                                                                               
@@ -224,4 +237,34 @@ void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(bool bEnabled)
 	if(OnsetPlayerState) {
 		OnsetPlayerState->bIsPvPEnabled = bEnabled;
 	}
-}   
+}
+
+void AOnsetPlayerController::EnableAutoCombat()
+{
+	if (!AutoCombatController || bAutoCombatEnabled) return;
+	if (APawn* MyPawn = GetPawn())
+	{
+		AutoCombatController->Possess(MyPawn);
+		UnPossess();
+		bAutoCombatEnabled = true;
+	}
+}
+
+void AOnsetPlayerController::DisableAutoCombat()
+{
+	if (!AutoCombatController || !bAutoCombatEnabled) return;
+	APawn* AIPawn = AutoCombatController->GetPawn();
+	AutoCombatController->UnPossess();
+	if (AIPawn) Possess(AIPawn);
+	bAutoCombatEnabled = false;
+}
+
+void AOnsetPlayerController::ResetIdleTimer()
+{
+	GetWorldTimerManager().ClearTimer(IdleAutoCombatTimerHandle);
+	if (IdleAutoCombatDelay > 0.0f)
+	{	
+		GetWorld()->GetTimerManager().SetTimer(IdleAutoCombatTimerHandle, this,
+			&AOnsetPlayerController::EnableAutoCombat, IdleAutoCombatDelay,false);
+	}
+}

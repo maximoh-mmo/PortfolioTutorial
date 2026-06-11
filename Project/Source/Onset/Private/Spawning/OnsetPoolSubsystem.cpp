@@ -5,13 +5,11 @@
 
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
-#include "AI/OnsetAIController.h"
+#include "Enemy/OnsetAIController.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
-#include "GAS/OnsetAttributeSet.h"
-#include "GAS/OnsetMovementAttributeSet.h"
 #include "Perception/AIPerceptionComponent.h"
 
 DEFINE_LOG_CATEGORY(LogPooling)
@@ -33,6 +31,7 @@ AOnsetEnemy* UOnsetPoolSubsystem::GetPooledEnemy()
 			Enemy->SetActorHiddenInGame(false);                                                                   
 			Enemy->SetActorTickEnabled(true);
 			Enemy->SetActorEnableCollision(true);
+			ActiveEnemies.Add(Enemy);
 			return Enemy;
 		}
 	}
@@ -43,6 +42,7 @@ AOnsetEnemy* UOnsetPoolSubsystem::GetPooledEnemy()
 	if (AOnsetEnemy* Enemy = GetWorld()->SpawnActor<AOnsetEnemy>(AOnsetEnemy::StaticClass(), FTransform::Identity, Params))
 	{
 		ReleasePooledEnemy(Enemy);
+		ActiveEnemies.Add(Enemy);
 		return Enemy;                                                                                         
 	}
 	return nullptr;
@@ -114,6 +114,7 @@ void UOnsetPoolSubsystem::InitializePool()
 void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 {
 	if (!Enemy) return;	
+	if (ActiveEnemies.Contains(Enemy)) ActiveEnemies.Remove(Enemy);
 	if (UGroupComponent* GroupComp = Enemy->FindComponentByClass<UGroupComponent>())
 	{
 		GroupComp->UnregisterFromGroup();

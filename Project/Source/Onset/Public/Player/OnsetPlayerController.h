@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "OnsetPlayerController.generated.h"
 
+class AOnsetPlayerAIController;
 class UInteractionComponent;
 class UGameplayAbility;
 class UGamepadCursorWidget;
@@ -31,6 +32,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Combat")
 	void StopAutoAttack();
 	
+	void EnableAutoCombat();
+	void DisableAutoCombat();
 	
 protected:
 	virtual void BeginPlay() override;
@@ -42,6 +45,22 @@ protected:
 	virtual void OnUnPossess() override;
 	
 private:
+	// --- Auto Combat ---
+	
+	/** PlayerAIC, spawned as world actor on Begin Play, responsible for it's own destruction */
+	UPROPERTY()
+	TObjectPtr<AOnsetPlayerAIController> AutoCombatController;
+	
+	bool bAutoCombatEnabled = false;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Auto Combat")
+	float IdleAutoCombatDelay = 5.0f;
+	
+	FTimerHandle IdleAutoCombatTimerHandle;
+	
+	void ResetIdleTimer();
+	
+	
 	//  --- Input Mapping Contexts ---
 	
 	/** Virtual joystick + tap + virtual ability buttons for touch input. */                                      
@@ -118,6 +137,7 @@ private:
 	TSubclassOf<UGameplayAbility> BasicAttackAbility;
 	
 	void OnAutoAttackTick();	
+	
 	
 	// --- Input Handlers ---                                                                                     
                                                                                                                      
