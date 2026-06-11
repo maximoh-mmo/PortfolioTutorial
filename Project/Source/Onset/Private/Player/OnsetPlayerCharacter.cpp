@@ -13,7 +13,7 @@ AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 1000.f;
+	CameraBoom->TargetArmLength = 2000.f;
 	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
 	CameraBoom->bDoCollisionTest = true;
 	CameraBoom->bEnableCameraLag = true;

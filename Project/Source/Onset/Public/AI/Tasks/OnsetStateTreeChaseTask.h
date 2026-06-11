@@ -15,7 +15,11 @@ struct FOnsetStateTreeChaseTaskInstanceData
 
 	UPROPERTY(EditAnywhere, Category = "Chase")
 	float MaxChaseDuration = 3.0f;
-
+	
+	UPROPERTY(EditAnywhere, Category = "Chase")
+	float SpreadRadius = 280.0f;
+	
+	FVector OffsetLocation = FVector::ZeroVector;
 	float ChaseStartTime = 0.0f;
 };
 

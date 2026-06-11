@@ -2,6 +2,7 @@
 
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
+#include "Engine/World.h"
 
 EStateTreeRunStatus FOnsetStateTreeChaseTask::EnterState(FStateTreeExecutionContext& Context,
                                                          const FStateTreeTransitionResult& Transition) const
@@ -14,7 +15,14 @@ EStateTreeRunStatus FOnsetStateTreeChaseTask::EnterState(FStateTreeExecutionCont
 	
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	InstanceData.ChaseStartTime = AIController->GetWorld()->GetTimeSeconds();
-	AIController->MoveToActor(TargetActor, InstanceData.AcceptanceRadius);
+	const FVector TargetLoc = TargetActor->GetActorLocation();
+	const FVector SelfLoc = AIController->GetPawn()->GetActorLocation();
+	const FVector ApproachDir = (SelfLoc - TargetLoc).GetSafeNormal2D();
+	const FVector Right = FVector::CrossProduct(ApproachDir, FVector::UpVector).GetSafeNormal();
+	const float Spread = FMath::RandRange(InstanceData.SpreadRadius * 0.5f, InstanceData.SpreadRadius);
+	const float LateralT = FMath::RandRange(-1.0f, 1.0f);
+	InstanceData.OffsetLocation = TargetLoc + Right * LateralT * Spread;      
+	AIController->MoveToLocation(InstanceData.OffsetLocation, InstanceData.AcceptanceRadius); 
 	return EStateTreeRunStatus::Running;
 }
 
