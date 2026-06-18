@@ -14,27 +14,40 @@ AOnsetPlayerAIController::AOnsetPlayerAIController()
 {
 	bStartAILogicOnPossess = true;
 	StateTreeComponent = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeComponent"));
-	// Load shared auto-combat tree
-	static ConstructorHelpers::FObjectFinder<UStateTree> TreeFinder(
-		TEXT("/Game/Game/AI/PlayerAutoCombat.PlayerAutoCombat"));
-	if (TreeFinder.Succeeded())                                                                                          
-	{                                                                                                           
-		StateTreeComponent->SetStateTree(TreeFinder.Object);                                                    
-	}       
 	StateTreeComponent->SetComponentTickEnabled(false);
+	StateTree = LoadObject<UStateTree>(nullptr, TEXT("/Game/AI/PlayerAutoCombat.PlayerAutoCombat"));
 }
 
 void AOnsetPlayerAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
+	if (StateTree)
+	{
+		StateTreeComponent->SetStateTree(StateTree);
+	}
+	else
+	{		
+		StateTree = LoadObject<UStateTree>(nullptr, TEXT("/Game/AI/PlayerAutoCombat.PlayerAutoCombat"));
+		if (StateTree)
+		{
+			StateTreeComponent->SetStateTree(StateTree);
+		}
+		else
+		{
+			UE_LOG(LogController, Warning, TEXT("AOnsetPlayerAIController::OnPossess: No tree component"));
+		}
+	}
 	StateTreeComponent->SetComponentTickEnabled(true);
 	StateTreeComponent->StartLogic();
+	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Possessed player"));
 }
 
 void AOnsetPlayerAIController::OnUnPossess()
 {
 	StateTreeComponent->StopLogic(TEXT("PlayerOverride"));
 	StateTreeComponent->SetComponentTickEnabled(false);
+	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Returned control to player"));
+
 	Super::OnUnPossess();
 }

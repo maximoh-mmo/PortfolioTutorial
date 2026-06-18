@@ -31,9 +31,11 @@ public:
 	
 	void RespawnPlayer();
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	float AttackRange = 250.0f;
 protected:
 	// --- Camera ---
-
+	
 	/** Spring arm that provides the top-down view angle and collision push-back. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<USpringArmComponent> CameraBoom;

@@ -60,6 +60,9 @@ private:
 	
 	void ResetIdleTimer();
 	
+	UFUNCTION()
+	void DelayedSetViewTarget();       
+	
 	
 	//  --- Input Mapping Contexts ---
 	

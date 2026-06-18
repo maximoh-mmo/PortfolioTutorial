@@ -69,7 +69,7 @@ void AOnsetPlayerController::BeginPlay()
 	
 	AutoCombatController = GetWorld()->SpawnActor<AOnsetPlayerAIController>(AOnsetPlayerAIController::StaticClass());
 	if (AutoCombatController)                                                                                       
-		AutoCombatController->SetActorLabel(TEXT("PlayerAI"));           
+		AutoCombatController->Rename(TEXT("PlayerAI"));           
 	ResetIdleTimer();
 }
 
@@ -255,6 +255,7 @@ void AOnsetPlayerController::EnableAutoCombat()
 	{
 		AutoCombatController->Possess(MyPawn);
 		UnPossess();
+        GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerController::DelayedSetViewTarget);            
 		bAutoCombatEnabled = true;
 	}
 }
@@ -276,4 +277,10 @@ void AOnsetPlayerController::ResetIdleTimer()
 		GetWorld()->GetTimerManager().SetTimer(IdleAutoCombatTimerHandle, this,
 			&AOnsetPlayerController::EnableAutoCombat, IdleAutoCombatDelay,false);
 	}
+}
+
+void AOnsetPlayerController::DelayedSetViewTarget()
+{
+	if (APawn* MyPawn = AutoCombatController ? AutoCombatController->GetPawn() : nullptr)
+		SetViewTarget(MyPawn);
 }
