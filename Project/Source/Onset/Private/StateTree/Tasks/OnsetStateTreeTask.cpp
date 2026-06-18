@@ -7,12 +7,20 @@
 #include "Math/UnitConversion.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Player/OnsetBaseCharacter.h"
+#include "Player/OnsetPlayerAIController.h"
 #include "Player/TargetingComponent.h"
 
 AOnsetAIController* FOnsetStateTreeTask::GetController(const FStateTreeExecutionContext& Context)
 {
 	AOnsetAIController* AIController = Cast<AOnsetAIController>(Context.GetOwner());
 	if (!AIController) UE_LOG(LogTemp, Warning, TEXT("GetController: Context owner is not an AOnsetAIController"));
+	return AIController;
+}
+
+AOnsetPlayerAIController* FOnsetStateTreeTask::GetPlayerController(const FStateTreeExecutionContext& Context)
+{
+	AOnsetPlayerAIController* AIController = Cast<AOnsetPlayerAIController>(Context.GetOwner());
+	if (!AIController) UE_LOG(LogTemp, Warning, TEXT("GetController: Context owner is not an AOnsetPlayerAIController"));
 	return AIController;
 }
 
@@ -34,13 +42,30 @@ AOnsetEnemy* FOnsetStateTreeTask::GetSelfEnemyCharacter(const FStateTreeExecutio
 	return EnemyCharacter;
 }
 
+UTargetingComponent* FOnsetStateTreeTask::GetTargetingComponent(const FStateTreeExecutionContext& Context)
+{
+	AAIController* Controller = Cast<AAIController>(Context.GetOwner());                                                                                                               
+	if (!Controller) return nullptr;                                                                                                                                                   
+                                                                                                                                                                                            
+	if (const AOnsetAIController* OnsetAIController = Cast<AOnsetAIController>(Controller))                                                                                                    
+		return OnsetAIController->TargetingComponent;                                                                                                                                          
+                                                                                                                                                                                            
+	if (APawn* Pawn = Controller->GetPawn())                                                                                                                                           
+		return Pawn->FindComponentByClass<UTargetingComponent>();                                                                                                                      
+                                                                                                                                                                                            
+	return nullptr;      
+}
+
 AActor* FOnsetStateTreeTask::GetTarget(const FStateTreeExecutionContext& Context)
 {
-	const AOnsetAIController* AIController = GetController(Context);
-	if (!AIController) return nullptr;       
-	if (AIController->TargetingComponent) return AIController->TargetingComponent->GetTarget();
-	UE_LOG(LogTemp, Warning, TEXT("GetTarget: No targeting component"));
-	return nullptr;
+	if (GetTargetingComponent(Context) == nullptr) return nullptr;
+	return GetTargetingComponent(Context)->GetTarget();
+}
+
+void FOnsetStateTreeTask::SetTarget(const FStateTreeExecutionContext& Context, AActor* NewTarget)
+{	
+	if (GetTargetingComponent(Context) == nullptr) return;
+	GetTargetingComponent(Context)->SetTarget(NewTarget);
 }
 
 bool FOnsetStateTreeTask::HasMoveCompleted(const FStateTreeExecutionContext& Context)

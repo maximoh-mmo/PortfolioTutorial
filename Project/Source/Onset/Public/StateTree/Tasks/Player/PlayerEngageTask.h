@@ -1,23 +1,30 @@
 ﻿#pragma once
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
-#include "PlayerAttackTask.generated.h"
+#include "PlayerEngageTask.generated.h"
 
 USTRUCT()                                                                                                                                                                    
-struct FPlayerAttackTaskInstanceData                                                                                                                                         
+struct FPlayerEngageTaskInstanceData                                                                                                                                         
 {                                                                                                                                                                            
 	GENERATED_BODY()                                                                                                                                                         
-	UPROPERTY(EditAnywhere, Category = "Attack")                                                                                                                             
-	float TickInterval = 0.25f;                                                                                                                                              
-	float LastTickTime = 0.0f;                                                                                                                                               
-	// For tracking cooldown-aware ability selection                                                                                                                         
+	UPROPERTY(EditAnywhere, Category = "Engage")                                                                
+	float AcceptanceRadius = 50.0f;                                                                             
+	UPROPERTY(EditAnywhere, Category = "Engage")                                                                
+	float MaxEngageDuration = 8.0f;                                                                             
+	UPROPERTY(EditAnywhere, Category = "Engage")                                                                
+	float AoEOverlapRadius = 400.0f;                                                                            
+	UPROPERTY(EditAnywhere, Category = "Engage")                                                                
+	float AttackTickInterval = 0.25f;                                                                            
+                                                                                                                      
+	float EngageStartTime = 0.0f;                                                                               
+	float LastAttackTick = 0.0f;
 };                    
 
 USTRUCT()
-struct FPlayerAttackTask : public FOnsetStateTreeTask
+struct FPlayerEngageTask : public FOnsetStateTreeTask
 {
 	GENERATED_BODY()
 	
-	using FInstanceDataType = FPlayerAttackTaskInstanceData;
+	using FInstanceDataType = FPlayerEngageTaskInstanceData;
 	
 	virtual const UStruct* GetInstanceDataType() const override
 	{
@@ -29,4 +36,7 @@ struct FPlayerAttackTask : public FOnsetStateTreeTask
 	
 	virtual EStateTreeRunStatus Tick(
 		FStateTreeExecutionContext& Context, const float DeltaTime) const override;
+	
+	virtual void ExitState(
+		FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 };
