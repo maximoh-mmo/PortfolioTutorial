@@ -68,6 +68,9 @@ void AOnsetPlayerController::BeginPlay()
 	}
 	
 	AutoCombatController = GetWorld()->SpawnActor<AOnsetPlayerAIController>(AOnsetPlayerAIController::StaticClass());
+	if (AutoCombatController)                                                                                       
+		AutoCombatController->SetActorLabel(TEXT("PlayerAI"));           
+	ResetIdleTimer();
 }
 
 void AOnsetPlayerController::SetupInputComponent()
@@ -134,6 +137,7 @@ void AOnsetPlayerController::OnAutoAttackTick()
 void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 {
 	if (bAutoCombatEnabled) DisableAutoCombat();
+	ResetIdleTimer();
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (MovementVector.IsZero()) return;	
 	StopMovement();
@@ -179,6 +183,7 @@ void AOnsetPlayerController::HideGamepadCursor()
 void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value)
 {
 	if (bAutoCombatEnabled) DisableAutoCombat();
+	ResetIdleTimer();
 	FVector2D ScreenPos;
 	if (!CursorManager->GetCursorPosition(ScreenPos)) return;
 	if (InteractionComponent) InteractionComponent->ProcessPrimaryInteraction(ScreenPos);
@@ -187,21 +192,25 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
 	if (bAutoCombatEnabled) DisableAutoCombat();
+	ResetIdleTimer();
 }
 
 void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
 {	
 	if (bAutoCombatEnabled) DisableAutoCombat();
+	ResetIdleTimer();
 }
 
 void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
 {
 	if (bAutoCombatEnabled) DisableAutoCombat();
+	ResetIdleTimer();
 }
 
 void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 {
 	if (bAutoCombatEnabled) DisableAutoCombat();
+	ResetIdleTimer();
 }
 
 void AOnsetPlayerController::InjectAbilityInput(int32 AbilityIndex, bool bPressed)

@@ -58,6 +58,7 @@ void AOnsetPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 void AOnsetPlayerCharacter::OnDeath(AActor* KillingActor)
 {
+	Super::OnDeath(KillingActor);
 	DisableInput(nullptr);
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerCharacter::RespawnPlayer);
 }

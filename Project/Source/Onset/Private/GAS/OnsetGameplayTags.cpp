@@ -10,3 +10,7 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_State_Invulnerable,"State.Invulnerable");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Cooldown_BasicAttack, "Cooldown.BasicAttack");  
 UE_DEFINE_GAMEPLAY_TAG(TAG_Event_HitReaction, "Event.HitReaction");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Event_Death, "Event.Death");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Attack, "Ability.Type.Attack");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Buff, "Ability.Type.Buff");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Debuff, "Ability.Type.Debuff");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Heal, "Ability.Type.Heal");

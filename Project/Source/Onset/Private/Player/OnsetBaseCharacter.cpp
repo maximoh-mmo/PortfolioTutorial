@@ -56,9 +56,23 @@ void AOnsetBaseCharacter::ResetAttributes()
 	AttributeSet->InitHealth(AttributeSet->GetMaxHealth());
 	AttributeSet->InitMaxHealth(100.0f);
 	MovementAttributes->InitMovementSpeed(600.0f);
+	bIsAlive = false;
 }
 
 void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)
 {
-	checkf(false, TEXT("OnDeath : Must be overriden by subclass."));
+	bIsAlive = false;	
+}
+
+bool AOnsetBaseCharacter::IsAlive() const
+{
+	return bIsAlive && AttributeSet && AttributeSet->GetHealth() > 0.0f;
+}
+
+void AOnsetBaseCharacter::OnRespawn()
+{
+	bIsAlive = true;
+	SetActorHiddenInGame(false);                                                                   
+	SetActorTickEnabled(true);
+	SetActorEnableCollision(true);
 }

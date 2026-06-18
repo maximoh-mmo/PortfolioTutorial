@@ -47,6 +47,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void OnDeath(AActor* KillingActor = nullptr);
 	
-private:
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	bool IsAlive() const;
+		
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	virtual void OnRespawn();
+	
+protected:
 	bool bAbilitiesGranted = false;
+	
+	bool bIsAlive = true;
 };

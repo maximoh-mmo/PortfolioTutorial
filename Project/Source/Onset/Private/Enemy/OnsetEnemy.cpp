@@ -86,6 +86,7 @@ void AOnsetEnemy::ApplyProfile(UVisualProfile* InProfile)
 
 void AOnsetEnemy::OnDeath(AActor* KillingActor)
 {
+	Super::OnDeath(KillingActor);
 	if (UOnsetCorpseSubsystem* CorpseSub = GetWorld()->GetSubsystem<UOnsetCorpseSubsystem>())
 	{
 		UStaticMesh* CorpseMesh = VisualProfile->CorpseMesh.IsNull() ? nullptr : VisualProfile->CorpseMesh.LoadSynchronous();

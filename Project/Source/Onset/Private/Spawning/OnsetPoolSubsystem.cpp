@@ -28,10 +28,8 @@ AOnsetEnemy* UOnsetPoolSubsystem::GetPooledEnemy()
 	{
 		if (Enemy && Enemy->IsHidden())
 		{                          
-			Enemy->SetActorHiddenInGame(false);                                                                   
-			Enemy->SetActorTickEnabled(true);
-			Enemy->SetActorEnableCollision(true);
 			ActiveEnemies.Add(Enemy);
+			Enemy->OnRespawn();
 			return Enemy;
 		}
 	}
@@ -132,9 +130,8 @@ void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 	Enemy->OwningSpawner = nullptr;
 	Enemy->SetActorLocation(FVector::ZeroVector);
 	Enemy->SetActorHiddenInGame(true);                                                                            
-	Enemy->SetActorTickEnabled(false);                                                                            
+	Enemy->SetActorTickEnabled(false);                                                    
 	Enemy->DisableInput(nullptr);
 	Enemy->SetActorEnableCollision(false);
-	
 	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
 }

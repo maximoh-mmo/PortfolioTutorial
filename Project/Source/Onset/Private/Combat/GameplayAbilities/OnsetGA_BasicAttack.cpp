@@ -3,6 +3,7 @@
 
 #include "Combat/GameplayAbilities/OnsetGA_BasicAttack.h"
 #include "AbilitySystemComponent.h"
+#include "GAS/OnsetGameplayTags.h"
 #include "Player/OnsetBaseCharacter.h"
 #include "Player/TargetingComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -23,7 +24,9 @@ UOnsetGA_BasicAttack::UOnsetGA_BasicAttack()
 	{
 		DamageEffectClass = DamageFinder.Class;
 	}
-	
+	FGameplayTagContainer AssetTags = GetAssetTags();
+	AssetTags.AddTag(TAG_Ability_Attack);
+	SetAssetTags(AssetTags);
 }
 
 void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,

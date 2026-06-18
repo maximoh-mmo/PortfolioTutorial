@@ -44,6 +44,6 @@ public:
 
 private:
 	/** The currently targeted actor. Updated by PlayerController context resolution. */
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, Category = "Targeting")
 	AActor* CurrentTarget;	
 };
