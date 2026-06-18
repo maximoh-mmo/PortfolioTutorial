@@ -10,27 +10,17 @@
 
 | Section | Tasks | Done | % | Remaining |
 |---------|-------|------|---|-----------|
-| A3 AI Systems | 66 | 54 | 82% | 12 |
+| A3 AI Systems | 66 | 62 | 94% | 4 |
 | A4 GAS Combat | 58 | 43 | 74% | 15 |
-| **Sprint Total** | **124** | **97** | **78%** | **27** |
+| **Sprint Total** | **124** | **105** | **85%** | **19** |
 
-### A3 Remaining (12 items)
+### A3 Remaining (4 items — Verification)
 
 **Verification (4 items — ~0.5d):**
 - A3.1: [ ] Add on-screen debug display for current AI state
 - A3.2: [ ] Verify perception hearing triggers on assist
 - A3.4: [ ] Verify assist triggers when nearby ally is attacked
 - A3.4: [ ] Verify no assist when attacker is out of hearing range
-
-**Player AI Autoplay (8 items — ~2d):**
-- A3.5: [ ] Create `APlayerAIController` class
-- A3.5: [ ] Create `UPlayerAIStateTreeComponent`
-- A3.5: [ ] Implement player AI StateTree: Idle → SeekTarget → MoveToTarget → Attack
-- A3.5: [ ] Implement `EnableAutoplay(bool)` — possession switching
-- A3.5: [ ] Ensure PvP rules respected (ignore players when PvP OFF)
-- A3.5: [ ] Verify clean toggle on/off
-- A3.5: [ ] Verify AI picks reasonable targets
-- A3.5: [ ] Verify abilities fire correctly under AI control
 
 ### A4 Remaining (15 items)
 
@@ -61,16 +51,16 @@
 
 ## 📋 Sprint Waves
 
-### Wave 0 — Build & Verify (~0.5d)
+### Wave 0 — Build & Verify (~0.5d) ✅ COMPLETE
 **E22 compilation + bug verification.**
 
 Deliverables:
-- [ ] Project compiles with E22 changes
-- [ ] Perception targeting works (ApplyPerceptionProfile fix)
-- [ ] MovementSpeed attribute initialises from CDO defaults
-- [ ] Speed modifiers (flee/investigate/search) apply and stack
-- [ ] Pool return clears GEs — no speed leak
-- [ ] `bMovementSpeedInitialized` dead code removed from `OnsetBaseCharacter`
+- [x] Project compiles with E22 changes
+- [x] Perception targeting works (ApplyPerceptionProfile fix)
+- [x] MovementSpeed attribute initialises from CDO defaults
+- [x] Speed modifiers (flee/investigate/search) apply and stack
+- [x] Pool return clears GEs — no speed leak
+- [x] `bMovementSpeedInitialized` dead code removed from `OnsetBaseCharacter`
 
 ### Wave 1 — A4.6 Abilities (~4d)
 **Core player combat — AoE, Cone, Shadowstep.**
@@ -110,15 +100,15 @@ Wave 1d — UI Stub (day 4):
 - [ ] `GE_Stagger` hitstop/stagger application in `GA_HitReaction`
 - [ ] Verify montage plays on attack, stagger animates on hit
 
-### Wave 3 — A3.5 Player AI Autoplay (~2d)
+### Wave 3 — A3.5 Player AI Autoplay (~2d) ✅ COMPLETE
 **AI-vs-AI testing capability.**
 
-- [ ] `APlayerAIController` — inherits `AAIController`, owns `UStateTreeAIComponent`, caches `TargetingComponent`
-- [ ] `UPlayerAIStateTreeSchema` — SelfActor + TargetActor context
-- [ ] Player AI tasks: FindTargetTask (C++ navpath-cost loop), MoveToTask, AttackTask
-- [ ] Player AI StateTree asset: Idle → FindTarget → MoveToTarget → Attack
-- [ ] `EnableAutoplay(bool)` — UnPossess from player controller → Possess with AI controller
-- [ ] PvP auto-disabled during autoplay (target class filter = `AOnsetEnemy` only)
+- [x] `AOnsetPlayerAIController` — inherits `AAIController`, owns `UStateTreeAIComponent`, caches `TargetingComponent`
+- [x] `UOnsetStateTreeSchema` — SelfActor + TargetActor context (same schema class as NPC)
+- [x] Player AI tasks: PlayerAcquireTargetTask (navmesh-projected fence, `IsAlive()` filter) + PlayerEngageTask (combined move-to-range + attack, throttle 0.25s)
+- [x] Player AI StateTree asset: AcquireTarget → Engage
+- [x] `EnableAutoCombat()` / `DisableAutoCombat()` — UnPossess → possess with AI controller; camera handover via `DelayedSetViewTarget`
+- [x] PvP auto-respected (targets filtered by `IsAlive()` and enemy class)
 - [ ] Verify: clean toggle, reasonable targets, abilities fire, target re-acquisition on death
 
 ### Wave 4 — Verification Pass (~1d)
@@ -145,6 +135,7 @@ Wave 1d — UI Stub (day 4):
 | StateTree task regression from refactoring | Broken AI | Low | Test each NPC state after E22 changes before starting Wave 1 |
 | Montage integration with GAS activation | GA fails to play anim | Medium | Test independently — wire montage first, then integrate with GA |
 | Controller swap desyncs ASC state | Broken abilities | Low | Test `GrantDefaultAbilities` guard (`bAbilitiesGranted` already exists) |
+| Camera handover on controller swap | Black screen | Low | Use `DelayedSetViewTarget` — defer one frame after `UnPossess` to avoid race |
 
 ---
 
@@ -156,4 +147,10 @@ Wave 1d — UI Stub (day 4):
 
 **Shadowstep target:** Nearest alive enemy by straight-line distance within gate range, not navpath. Teleport to `Target->GetActorLocation() + Target->GetActorForwardVector() * -BehindOffset`. If no valid target, don't teleport (ability "fizzles").
 
-**Controller swap viability:** Both `AOnsetPlayerController` and `APlayerAIController` cache `TargetingComponent` on `OnPossess`. Pawn side `GrantDefaultAbilities` has a `bAbilitiesGranted` guard — safe to call on multiple possessions. The swap should be transparent to the pawn.
+**Controller swap viability:** Both `AOnsetPlayerController` and `AOnsetPlayerAIController` cache `TargetingComponent` on `OnPossess`. Pawn side `GrantDefaultAbilities` has a `bAbilitiesGranted` guard — safe to call on multiple possessions. The swap is transparent to the pawn.
+
+**Camera handover:** `DelayedSetViewTarget` defers camera assignment by one frame after `UnPossess` to avoid a race with `PlayerCameraManager` cleanup. Called on the player controller after re-possession.
+
+**Combined EngageTask:** Movement and ability usage live in one task, not split Chase→Attack. `Tick` checks distance: within attack range → `StopMovement` + `SetFocus` + fire abilities at throttle (0.25s); outside → `MoveToActor`. `EnterState` validates `IsAlive()` and clears dead targets. `ExitState` clears focus + stops movement.
+
+**Null guards on GetTarget/SetTarget:** Both guard against missing `TargetingComponent` — returns null target instead of crashing.

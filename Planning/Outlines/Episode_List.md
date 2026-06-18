@@ -148,12 +148,12 @@ Replace scattered direct `MaxWalkSpeed` manipulation in StateTree tasks with a c
 
 ---
 
-### **Episode 23 — Player AI Controller**
-Create a PlayerAIController and implement possession switching.
+### **Episode 23 — Player AI Controller (`AOnsetPlayerAIController`)**
+Create an AI controller for the player pawn (`AOnsetPlayerAIController`, inherits `AAIController`), implement possession switching via `EnableAutoCombat()`/`DisableAutoCombat()`, and handle camera handover with `DelayedSetViewTarget`.
 · [Player AI System](../../Docs/AI/Player_AI_System.md) · [Player System](../../Docs/Player/Player_System.md)
 
-### **Episode 24 — Player StateTree**
-Implement auto‑targeting, auto‑movement, and auto‑ability usage.
+### **Episode 24 — Player StateTree (`PlayerAutoCombat`)**
+Implement the StateTree asset using `UOnsetStateTreeSchema` (shared with NPCs). Tasks: `PlayerAcquireTargetTask` (navmesh-projected target selection with `IsAlive()` filter) and `PlayerEngageTask` (combined approach + attack, throttle-gated ability activation filtered by `TAG_Ability_Attack`).
 · [Player AI System](../../Docs/AI/Player_AI_System.md)
 
 ### **Episode 25 — Autoplay Mode**

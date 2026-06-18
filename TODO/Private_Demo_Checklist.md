@@ -216,11 +216,11 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Assist radius testing moved here from A2.3 — assist now flows through perception hearing, not Group System
 
 ## A3.5 Player AI Autoplay
-- [ ] Create `APlayerAIController` class
-- [ ] Create `UPlayerAIStateTreeComponent`
-- [ ] Implement player AI StateTree: Idle → SeekTarget → MoveToTarget → Attack
-- [ ] Implement `EnableAutoplay(bool)` — possession switching
-- [ ] Ensure PvP rules respected (ignore players when PvP OFF)
+- [x] Create `AOnsetPlayerAIController` class (created as `APlayerAIController.h/.cpp`)
+- [x] ~~Create `UPlayerAIStateTreeComponent`~~ — N/A, uses `UStateTreeAIComponent` (same component as NPCs)
+- [x] Implement player AI StateTree: AcquireTargetTask → EngageTask (combined movement+attack)
+- [x] Implement `EnableAutoCombat()` / `DisableAutoCombat()` — possession switching
+- [x] Ensure PvP rules respected (targets filtered by `IsAlive()`, ignores players)
 - [ ] Verify clean toggle on/off
 - [ ] Verify AI picks reasonable targets
 - [ ] Verify abilities fire correctly under AI control
@@ -422,7 +422,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | 66 | 54 | 82% |
+| A3 AI Systems | 66 | 60 | 91% |
 | A4 GAS Combat | 58 | 43 | 74% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |

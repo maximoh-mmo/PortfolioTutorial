@@ -1,7 +1,7 @@
 # 📘 **TOP‑DOWN ARPG AI DEMO — SCOPE OVERVIEW**
 
 ## **Purpose of This Document**
-This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 39‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Episode List](Episode_List.md)).
+This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 40‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Episode List](Episode_List.md)).
 
 It ensures:
 
@@ -44,7 +44,7 @@ The final result is a polished, self‑contained demo suitable for:
 - Multi-device movement: virtual joystick (touch), tap-to-move (touch/mouse), WASD (keyboard), left stick (gamepad)  
 - Click‑to‑target selection via [Targeting System](../../Docs/Gameplay/Targeting_System.md)  
 - Basic attack  
-- Multiple abilities (dash, AoE, projectile) via [GAS System](../../Docs/GAS/GAS_System.md)  
+- Multiple abilities (basic attack, AoE, Cone, Shadowstep passive) via [GAS System](../../Docs/GAS/GAS_System.md)  
 - Ability targeting indicators via [Ability Targeting System](../../Docs/Gameplay/Ability_Targeting_System.md)  
 - [Player AI autoplay mode](../../Docs/AI/Player_AI_System.md)  
 - [PvP toggle](../../Docs/Gameplay/PVP_System.md) — player‑controlled PvP/PvE mode affecting targeting and damage rules  
@@ -198,7 +198,7 @@ This ensures the project remains a **focused technical demo**, not a full game.
 ---
 
 ## **2. Public Repo Deliverables**
-- 38 episode branches  
+- 40 episode branches  
 - Clean code snapshots  
 - Episode READMEs  
 - Final demo branch (optional)  
@@ -206,7 +206,8 @@ This ensures the project remains a **focused technical demo**, not a full game.
 ---
 
 ## **3. Tutorial Series Deliverables**
-- 38 recorded episodes  
+
+- 40 recorded episodes
 - Supporting diagrams  
 - Code snippets  
 - Explanations and breakdowns  
