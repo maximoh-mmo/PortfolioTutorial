@@ -269,6 +269,12 @@ void AOnsetPlayerController::DisableAutoCombat()
 	bAutoCombatEnabled = false;
 }
 
+AController* AOnsetPlayerController::GetActiveController()
+{
+	AController* AutoController = AutoCombatController;
+	return bAutoCombatEnabled ? AutoController : this;
+}
+
 void AOnsetPlayerController::ResetIdleTimer()
 {
 	GetWorldTimerManager().ClearTimer(IdleAutoCombatTimerHandle);

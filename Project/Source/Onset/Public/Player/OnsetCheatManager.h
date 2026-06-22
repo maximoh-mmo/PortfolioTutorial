@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OnsetBaseCharacter.h"
+#include "Core/OnsetBaseCharacter.h"
 #include "OnsetPlayerController.h"
 #include "GameFramework/CheatManager.h"
 #include "OnsetCheatManager.generated.h"
@@ -21,7 +21,7 @@ public:
 	
 	UFUNCTION(exec)
 	void Heal();
-	AOnsetPlayerController* GetOnsetPlayerController() const;
+	AController* GetController() const;
 	AOnsetBaseCharacter* GetOnsetCharacter() const;
 	UAbilitySystemComponent* GetAbilitySystemComponent() const;
 

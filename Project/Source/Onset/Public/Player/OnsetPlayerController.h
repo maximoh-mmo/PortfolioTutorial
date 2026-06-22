@@ -34,7 +34,7 @@ public:
 	
 	void EnableAutoCombat();
 	void DisableAutoCombat();
-	
+	AController* GetActiveController();    
 protected:
 	virtual void BeginPlay() override;
 

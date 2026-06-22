@@ -34,20 +34,24 @@ void UOnsetCheatManager::Heal()
 	Character->AttributeSet->SetHealth(Character->AttributeSet->GetMaxHealth());
 }
 
-AOnsetPlayerController* UOnsetCheatManager::GetOnsetPlayerController() const
-{                                                                                                               
-	return Cast<AOnsetPlayerController>(GetPlayerController());                                                 
+AController* UOnsetCheatManager::GetController() const
+{
+	APlayerController* PlayerController =  GetPlayerController();
+	if (!PlayerController) return nullptr;
+	AOnsetPlayerController* OnsetPlayerController = Cast<AOnsetPlayerController>(PlayerController);
+	return OnsetPlayerController ? OnsetPlayerController->GetActiveController() : PlayerController;
 }
 
 AOnsetBaseCharacter* UOnsetCheatManager::GetOnsetCharacter() const
 {
-	AOnsetPlayerController* Controller = GetOnsetPlayerController();
+	AController* Controller = GetController();
 	if (!Controller) return nullptr;
 	return Controller->GetPawn<AOnsetBaseCharacter>();
 }
 
 UAbilitySystemComponent* UOnsetCheatManager::GetAbilitySystemComponent() const
 {
-	UAbilitySystemComponent* AbilitySystemComponent = GetOnsetCharacter()->AbilitySystemComponent;
-	return AbilitySystemComponent;
+	AOnsetBaseCharacter* Character = GetOnsetCharacter();
+	if (!Character) return nullptr;
+	return Character->AbilitySystemComponent;
 }
