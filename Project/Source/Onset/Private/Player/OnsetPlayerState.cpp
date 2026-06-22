@@ -6,7 +6,7 @@
 #include "GameFramework/Controller.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/OnsetPlayerController.h"
-#include "Player/TargetingComponent.h"
+#include "Core/TargetingComponent.h"
 
 void AOnsetPlayerState::OnRep_PvPEnabled()
 {

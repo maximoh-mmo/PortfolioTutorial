@@ -5,7 +5,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/OnsetEnemy.h"

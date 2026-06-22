@@ -1,7 +1,7 @@
-﻿#include "Spawning/OnsetSpawner.h"
+#include "Spawning/OnsetSpawner.h"
 
 #include "TimerManager.h"
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
 #include "Spawning/GroupManagerComponent.h"

@@ -1,10 +1,10 @@
-﻿#include "StateTree/Conditions/OnsetStateTreeDistanceCondition.h"
+#include "StateTree/Conditions/OnsetStateTreeDistanceCondition.h"
 
 #include "StateTreeExecutionContext.h"
 #include "Enemy/Profile/AIProfile.h"
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
-#include "Player/OnsetBaseCharacter.h"
+#include "Core/OnsetBaseCharacter.h"
 
 bool FOnsetStateTreeDistanceCondition::TestCondition(FStateTreeExecutionContext& Context) const
 {

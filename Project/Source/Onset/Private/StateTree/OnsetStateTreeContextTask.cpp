@@ -1,13 +1,13 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "StateTree/OnsetStateTreeContextTask.h"
 #include "StateTreeExecutionContext.h"
 #include "StateTree/OnsetStateTreeContext.h"
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Components/StateTreeAIComponent.h"
-#include "Player/TargetingComponent.h"
+#include "Core/TargetingComponent.h"
 
 EStateTreeRunStatus FOnsetStateTreeContextTask::EnterState(FStateTreeExecutionContext& Context,
                                                            const FStateTreeTransitionResult& TransitionResult) const

@@ -1,6 +1,6 @@
-﻿#include "StateTree/Conditions/OnsetStateTreeHearingCondition.h"
+#include "StateTree/Conditions/OnsetStateTreeHearingCondition.h"
 #include "StateTreeExecutionContext.h"
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
 #include "Engine/World.h"
 

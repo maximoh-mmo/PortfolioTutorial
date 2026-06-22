@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Player/OnsetBaseCharacter.h"
+#include "Core/OnsetBaseCharacter.h"
 #include "OnsetEnemy.generated.h"
 
 class UVisualProfile;

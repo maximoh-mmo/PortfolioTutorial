@@ -1,13 +1,13 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "StateTree/Tasks/Enemy/InvestigateTask.h"
 
 #include "AbilitySystemComponent.h"
 #include "StateTreeExecutionContext.h"
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 #include "Enemy/GroupComponent.h"
-#include "Player/OnsetBaseCharacter.h"
+#include "Core/OnsetBaseCharacter.h"
 
 EStateTreeRunStatus FInvestigateTask::EnterState(FStateTreeExecutionContext& Context,
                                                                const FStateTreeTransitionResult& Transition) const

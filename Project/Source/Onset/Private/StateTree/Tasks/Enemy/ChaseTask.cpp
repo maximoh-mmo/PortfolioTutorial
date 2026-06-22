@@ -1,7 +1,7 @@
-﻿#include "StateTree/Tasks/Enemy/ChaseTask.h"
+#include "StateTree/Tasks/Enemy/ChaseTask.h"
 
 #include "StateTreeExecutionContext.h"
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 #include "Engine/World.h"
 
 EStateTreeRunStatus FChaseTask::EnterState(FStateTreeExecutionContext& Context,

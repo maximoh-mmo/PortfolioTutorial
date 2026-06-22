@@ -1,5 +1,5 @@
 #include "Combat/AbilityTargetingLibrary.h"
-#include "Player/TargetingComponent.h"
+#include "Core/TargetingComponent.h"
 #include "GameFramework/Actor.h"
 
 FOnsetTargetData UAbilityTargetingLibrary::GetTargetData(UTargetingComponent* TargetingComponent, AActor* SourceActor)

@@ -1,11 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Combat/GameplayAbilities/OnsetGA_BasicAttack.h"
+#include "Combat/OnsetGA_BasicAttack.h"
 #include "AbilitySystemComponent.h"
 #include "GAS/OnsetGameplayTags.h"
-#include "Player/OnsetBaseCharacter.h"
-#include "Player/TargetingComponent.h"
+#include "Core/OnsetBaseCharacter.h"
+#include "Core/TargetingComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 UOnsetGA_BasicAttack::UOnsetGA_BasicAttack()

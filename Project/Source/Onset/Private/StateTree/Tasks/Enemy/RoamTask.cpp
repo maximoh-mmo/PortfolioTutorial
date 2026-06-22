@@ -1,11 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "StateTree/Tasks/Enemy/RoamTask.h"
 
 #include "NavigationSystem.h"
 #include "StateTreeExecutionContext.h"
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Navigation/PathFollowingComponent.h"
 

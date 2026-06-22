@@ -1,15 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Player/OnsetBaseCharacter.h"
+#include "Core/OnsetBaseCharacter.h"
 
 #include "AbilitySystemComponent.h"
 #include "GAS/OnsetAttributeSet.h"
-#include "Combat/GameplayAbilities/OnsetGA_BasicAttack.h"
-#include "Combat/GameplayAbilities/OnsetGA_HitReaction.h"
+#include "Combat/OnsetGA_BasicAttack.h"
+#include "Combat/OnsetGA_HitReaction.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GAS/OnsetMovementAttributeSet.h"
-#include "Player/TargetingComponent.h"
+#include "Core/TargetingComponent.h"
 
 AOnsetBaseCharacter::AOnsetBaseCharacter()
 {

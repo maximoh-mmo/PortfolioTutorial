@@ -1,4 +1,4 @@
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 
 #include "Enemy/Profile/AIProfile.h"
 #include "StateTree/OnsetStateTreeSchema.h"
@@ -8,7 +8,7 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
-#include "Player/TargetingComponent.h"
+#include "Core/TargetingComponent.h"
 
 AOnsetAIController::AOnsetAIController()
 {

@@ -1,14 +1,14 @@
-﻿#include "StateTree/Tasks/OnsetStateTreeTask.h"
+#include "StateTree/Tasks/OnsetStateTreeTask.h"
 #include "GameplayEffect.h"
 #include "StateTreeExecutionContext.h"
-#include "Enemy/OnsetAIController.h"
+#include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
 #include "GAS/OnsetMovementAttributeSet.h"
 #include "Math/UnitConversion.h"
 #include "Navigation/PathFollowingComponent.h"
-#include "Player/OnsetBaseCharacter.h"
+#include "Core/OnsetBaseCharacter.h"
 #include "Player/OnsetPlayerAIController.h"
-#include "Player/TargetingComponent.h"
+#include "Core/TargetingComponent.h"
 
 AOnsetAIController* FOnsetStateTreeTask::GetController(const FStateTreeExecutionContext& Context)
 {

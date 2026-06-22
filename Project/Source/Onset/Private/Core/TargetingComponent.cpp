@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Player/TargetingComponent.h"
+#include "Core/TargetingComponent.h"
 
 #include "GameFramework/Actor.h"
 #include "Player/OnsetPlayerCharacter.h"

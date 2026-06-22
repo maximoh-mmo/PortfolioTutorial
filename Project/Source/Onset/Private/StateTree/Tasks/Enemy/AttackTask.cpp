@@ -1,12 +1,12 @@
-﻿#include "StateTree/Tasks/Enemy/AttackTask.h"
+#include "StateTree/Tasks/Enemy/AttackTask.h"
 
 #include "AbilitySystemComponent.h"
 #include "StateTreeExecutionContext.h"
-#include "Enemy/OnsetAIController.h"
-#include "Combat/GameplayAbilities/OnsetGA_BasicAttack.h"
+#include "AI/OnsetAIController.h"
+#include "Combat/OnsetGA_BasicAttack.h"
 #include "GAS/OnsetGameplayTags.h"
-#include "Player/OnsetBaseCharacter.h"
-#include "Player/TargetingComponent.h"
+#include "Core/OnsetBaseCharacter.h"
+#include "Core/TargetingComponent.h"
 
 EStateTreeRunStatus FAttackTask::EnterState(FStateTreeExecutionContext& Context,
                                                           const FStateTreeTransitionResult& Transition) const
