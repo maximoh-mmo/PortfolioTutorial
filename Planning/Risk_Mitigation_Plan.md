@@ -233,6 +233,21 @@ Mitigation strategies for all 37 identified risks (see [Risk_Identification](Ris
 - **Simplify:** If debugger is insufficient, fall back to UE_LOG with verbosity levels for AI state transitions
 
 ## R37 — Pooled NPC Death During StateTree Evaluation
+
+## R38 — Aggro Angular Spread vs Navmesh Obstacles
+**Strategy:** Nav-Project + Fallback
+- **Mitigation:** Always call `UNavigationSystemV1::ProjectPointToNavigation` on the offset position before `MoveToLocation`. If projection fails after 5 attempts with varied angles, default to the player's current location at `AttackRange`.
+- **Testing:** Place obstacles near a player in test map, send 5+ NPCs to attack, verify no NPCs get stuck.
+
+## R39 — Aggro Table Memory Leak
+**Strategy:** Cleanup on Pool Return + Level Transition
+- **Mitigation:** `RemoveEnemy()` is called in both `DeferredDeathCleanup` and `ReturnToPool`. Add a period sweep on a 60s timer that removes dead weak-ptr entries. `ClearAll()` on level transition.
+- **Simplify:** 60s sweep is optional — NPC death rate makes this a non-issue for demo-level play (10-20 NPCs, not thousands).
+
+## R40 — Aggro Override vs Assist Flow
+**Strategy:** Threat-Only Override
+- **Mitigation:** Aggro target only overrides perception target when `GetPrimaryTarget()` returns non-null AND the threat value is > 0. Assist NPCs start with zero threat, so they investigate normally. Threat is only generated on dealing damage, so the first attack against the investigated target generates the first threat entry.
+- **Testing:** Verify assist NPC investigates noise, attacks, then transitions to aggro-driven targeting.
 **Strategy:** Deferred Pool Release
 - **Mitigation:** `OnDeath` does not immediately return NPC to pool. It sets a "pending return" flag. The pool collects pending NPCs at the end of the frame
 - **Simplify:** Use a timer (0s, next tick) to defer pool return by one frame, ensuring StateTree evaluation completes
@@ -294,5 +309,5 @@ These systems should be built and validated in private (Episode 0 / prep work) b
 
 ---
 
-**Total: 42 risks with mitigation strategies**
+**Total: 45 risks with mitigation strategies**
 **Next step:** Create Production Timeline

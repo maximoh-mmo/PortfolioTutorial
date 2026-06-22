@@ -1,7 +1,7 @@
 # 📘 **TOP‑DOWN ARPG AI DEMO — SCOPE OVERVIEW**
 
 ## **Purpose of This Document**
-This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 40‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Episode List](Episode_List.md)).
+This Scope Overview defines the **boundaries**, **deliverables**, and **intended scale** of the Top‑Down ARPG AI Demo and the accompanying 46‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Episode List](Episode_List.md)).
 
 It ensures:
 
@@ -63,6 +63,7 @@ The final result is a polished, self‑contained demo suitable for:
   - Flee  
 - Dynamic enemy types (mesh, stats, behaviour)
 - [Assist behaviour via Group System](../../Docs/AI/Group_System.md): allies respond when a group member is attacked
+- [Aggro System](../../Docs/AI/Aggro_System.md): threat-driven target selection, angular combat spread, AI LOD
 
 ---
 
@@ -198,7 +199,7 @@ This ensures the project remains a **focused technical demo**, not a full game.
 ---
 
 ## **2. Public Repo Deliverables**
-- 40 episode branches  
+- 46 episode branches  
 - Clean code snapshots  
 - Episode READMEs  
 - Final demo branch (optional)  
@@ -207,7 +208,7 @@ This ensures the project remains a **focused technical demo**, not a full game.
 
 ## **3. Tutorial Series Deliverables**
 
-- 40 recorded episodes
+- 46 recorded episodes
 - Supporting diagrams  
 - Code snippets  
 - Explanations and breakdowns  

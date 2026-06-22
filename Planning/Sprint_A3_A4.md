@@ -10,17 +10,29 @@
 
 | Section | Tasks | Done | % | Remaining |
 |---------|-------|------|---|-----------|
-| A3 AI Systems | 66 | 62 | 94% | 4 |
+| A3 AI Systems | 75 | 62 | 83% | 13 |
 | A4 GAS Combat | 58 | 43 | 74% | 15 |
-| **Sprint Total** | **124** | **105** | **85%** | **19** |
+| **Sprint Total** | **133** | **105** | **79%** | **28** |
 
-### A3 Remaining (4 items — Verification)
+### A3 Remaining (13 items)
 
 **Verification (4 items — ~0.5d):**
 - A3.1: [ ] Add on-screen debug display for current AI state
 - A3.2: [ ] Verify perception hearing triggers on assist
 - A3.4: [ ] Verify assist triggers when nearby ally is attacked
 - A3.4: [ ] Verify no assist when attacker is out of hearing range
+
+**Aggro System (9 items — ~5.5d) — NEW:**
+See [Aggro System](../Docs/AI/Aggro_System.md) for full design.
+- A3.6: [ ] Create `UOnsetAggroSubsystem` (world subsystem, threat table)
+- A3.6: [ ] Wire damage → aggro feed in `PostGameplayEffectExecute`
+- A3.6: [ ] Wire pool return + NPC death → aggro cleanup
+- A3.6: [ ] Add aggro helpers to `FOnsetStateTreeTask` base
+- A3.6: [ ] Modify AgroTask to prefer aggro target over perception
+- A3.6: [ ] Create AttackPositionTask with angular spread
+- A3.6: [ ] Modify ChaseTask offset to use aggro
+- A3.6: [ ] AI LOD — disable/ throttle NPC ticks based on distance
+- A3.6: [ ] Verify: aggro drives targeting, angular spread prevents bunching
 
 ### A4 Remaining (15 items)
 
@@ -124,6 +136,22 @@ Wave 1d — UI Stub (day 4):
 - [ ] Update progress tracking table in `Private_Demo_Checklist.md`
 - [ ] Tag all completed items
 
+### Wave 5 — Aggro System (~5.5d)
+**Threat-driven targeting, angular spread, AI LOD.**
+
+See [Aggro System Doc](../Docs/AI/Aggro_System.md) for full design.
+
+- [ ] Create `UOnsetAggroSubsystem` — world subsystem, `TMap<APlayerState*, TMap<TWeakObjectPtr<AOnsetEnemy>, float>>` threat table
+- [ ] API: `AddThreat()`, `RemovePlayer()`, `RemoveEnemy()`, `GetPrimaryTarget()`, `GetTargetRank()`, `GetTargetCount()`, `GetEnemiesTargeting()`, `ClearAll()`
+- [ ] Wire damage feed: `OnsetAttributeSet::PostGameplayEffectExecute` → if damage > 0 to `AOnsetEnemy` → `Subsystem->AddThreat(InstigatorPlayerState, Victim, Damage)`
+- [ ] Wire cleanup: `OnsetEnemy::DeferredDeathCleanup` + `PoolSubsystem::ReturnToPool` → `Subsystem->RemoveEnemy(NPC)`
+- [ ] Add helpers to `FOnsetStateTreeTask`: `GetAggroSubsystem()`, `GetAggroAngularOffset(Count, Rank, Radius)` → `FVector`
+- [ ] Modify `AgroTask::Tick` — check `GetPrimaryTarget()` first, fall back to `GetTarget()`
+- [ ] Modify `ChaseTask::EnterState` — replace random lateral offset with aggro angular position at `ChaseRange`
+- [ ] Create `AttackPositionTask` — compute angular offset at `AttackRange` via aggro rank, nav-project, `MoveToLocation`, re-evaluate at 3s or on target move > 200 units. Fire abilities at throttle.
+- [ ] AI LOD: `AOnsetAIController` tick interval tiers based on distance to nearest player. Far NPCs tick at 0.5s or paused.
+- [ ] Verify: aggro target = highest damage dealer, angular spread prevents bunching, LOD stops far NPC work
+
 ---
 
 ## ⚠ Risks & Mitigations
@@ -136,6 +164,9 @@ Wave 1d — UI Stub (day 4):
 | Montage integration with GAS activation | GA fails to play anim | Medium | Test independently — wire montage first, then integrate with GA |
 | Controller swap desyncs ASC state | Broken abilities | Low | Test `GrantDefaultAbilities` guard (`bAbilitiesGranted` already exists) |
 | Camera handover on controller swap | Black screen | Low | Use `DelayedSetViewTarget` — defer one frame after `UnPossess` to avoid race |
+| Aggro angular spread ignores navmesh blockers | NPC stuck running into wall | Low | Nav-project offset position before `MoveToLocation` |
+| Aggro table grows unbounded on long sessions | Memory leak | Low | `TWeakObjectPtr` auto-clears dead NPCs; `ClearAll()` on level transition |
+| Aggro override breaks perception-driven assist | Assist never fires | Medium | Aggro only overrides target when threat > 0; empty threat = perception fallback |
 
 ---
 
@@ -154,3 +185,13 @@ Wave 1d — UI Stub (day 4):
 **Combined EngageTask:** Movement and ability usage live in one task, not split Chase→Attack. `Tick` checks distance: within attack range → `StopMovement` + `SetFocus` + fire abilities at throttle (0.25s); outside → `MoveToActor`. `EnterState` validates `IsAlive()` and clears dead targets. `ExitState` clears focus + stops movement.
 
 **Null guards on GetTarget/SetTarget:** Both guard against missing `TargetingComponent` — returns null target instead of crashing.
+
+**Aggro subsystem over component:** `UOnsetAggroSubsystem` (world subsystem) instead of per-NPC `UAggroComponent`. Zero per-NPC allocation, single map for pool/player cleanup, server-only data.
+
+**Threat table structure:** `TMap<APlayerState*, TMap<TWeakObjectPtr<AOnsetEnemy>, float>>`. Outer key by player for fast `RemovePlayer()`. `TWeakObjectPtr` for inner key so dead NPCs don't leak. AddThreat sorts the inner map for O(1) rank reads.
+
+**Angular spread:** `angle = (rank / count) * 360°` at `AttackRange` radius. Nav-projected. Re-evaluated on timer (3s) or when target moves > 200 units. Single enemy → rank 0, count 1 → angle 0° → directly in front (correct).
+
+**Aggro + perception coexistence:** Perception feeds `TargetingComponent` (sight) and noise data (hearing) as before. Aggro `GetPrimaryTarget()` is checked first by AgroTask. If non-null, it overrides the perception target. If null, perception target is used. Assist still flows through hearing events.
+
+**AI LOD tiers:** `AOnsetAIController` uses `SetComponentTickInterval()` per NPC based on distance to nearest player. Three tiers: full tick (< `SightRange`), throttled (0.2s up to `ChaseRange * 2`), paused (beyond). StateTree stops ticking first; pathfinding naturally quiesces.

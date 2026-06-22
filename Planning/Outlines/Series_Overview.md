@@ -49,7 +49,7 @@ The final demo includes:
 ---
 
 ## **Series Structure**
-The series is divided into **8 phases** (see the full [Episode List](Episode_List.md) for details):
+The series is divided into **9 phases** (see the full [Episode List](Episode_List.md) for details):
 
 0. **Player Core & Input** — Project setup, camera, multi-device movement, targeting, enemy spawner  
 1. **NPC Lifecycle** — Pooling, groups, respawn  
@@ -57,11 +57,12 @@ The series is divided into **8 phases** (see the full [Episode List](Episode_Lis
 3. **Combat (GAS)** — Abilities, damage, death  
 3.5 **Architecture Cleanup** — Controller refactor, profile split, GAS movement speed attribute  
 3.6 **Player AI** — Autoplay/testing mode  
+3.7 **Aggro System** — Threat table, angular spread, AI LOD  
 4. **Advanced AI** — Flee, group assist, dynamic types, debugging  
 5. **Multiplayer** — Replication, dedicated server, Steam, PvP  
 6. **Final Demo & Polish** — UI, gameplay loop, optimization, showcase  
 
-Total: **40 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
+Total: **46 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System; episodes 29-31 added for Aggro System, Angular Spread, and AI LOD). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
 
 ---
 

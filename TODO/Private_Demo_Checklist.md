@@ -215,6 +215,17 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify no assist when attacker is out of hearing range
 - [x] Assist radius testing moved here from A2.3 — assist now flows through perception hearing, not Group System
 
+## A3.6 Aggro System
+- [ ] Create `UOnsetAggroSubsystem` — world subsystem with threat table
+- [ ] Wire damage feed: `PostGameplayEffectExecute` → `AddThreat(InstigatorPlayerState, Victim, Damage)`
+- [ ] Wire cleanup: `DeferredDeathCleanup` + `ReturnToPool` → `RemoveEnemy()`
+- [ ] Add `GetAggroSubsystem()` + `GetAggroAngularOffset()` to `FOnsetStateTreeTask` base
+- [ ] Modify AgroTask — prefer aggro target over perception target
+- [ ] Create AttackPositionTask — angular spread at `AttackRange`, re-evaluation timer, nav-projection
+- [ ] Modify ChaseTask offset — use aggro angular position instead of random lateral
+- [ ] AI LOD — 3 tick tiers based on distance to nearest player
+- [ ] Verify: aggro drives targeting, angular spread prevents bunching
+
 ## A3.5 Player AI Autoplay
 - [x] Create `AOnsetPlayerAIController` class (created as `APlayerAIController.h/.cpp`)
 - [x] ~~Create `UPlayerAIStateTreeComponent`~~ — N/A, uses `UStateTreeAIComponent` (same component as NPCs)
@@ -422,7 +433,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | 66 | 60 | 91% |
+| A3 AI Systems | 75 | 60 | 80% |
 | A4 GAS Combat | 58 | 43 | 74% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |

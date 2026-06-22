@@ -164,6 +164,18 @@ Player rapidly toggling PvP on/off during combat to avoid damage. Noted as a fut
 StateTree debugger exists but has fewer features than Behavior Tree debugger. Troubleshooting AI issues during recording may be harder.
 
 ## R37 — Pooled NPC Death During StateTree Evaluation
+
+## R38 — Aggro Angular Spread Collides with Navmesh Obstacles
+**Severity:** Low | **Likelihood:** Low
+The angular spread computes a position at `AttackRange` from the player, but that position may be inside a wall, off the navmesh, or on an unreachable ledge. Need navmesh projection and a fallback (clamp to nearest navmesh point, or default to current position).
+
+## R39 — Aggro Table Memory Leak on Long Sessions
+**Severity:** Low | **Likelihood:** Low
+`TWeakObjectPtr` prevents dead NPC entries from pinning actors, but the map entries themselves persist. Over a very long session with many NPC spawn/death cycles, the inner `TMap` accumulates dead entries. Mitigation: `RemoveEnemy()` cleans up on every pool return; periodic `Compact()` or `ClearAll()` on level transition.
+
+## R40 — Aggro Override Breaks Perception-Driven Assist Flow
+**Severity:** Medium | **Likelihood:** Low
+Assist hearing events are processed by `OnPerceptionUpdated`, which sets the noise location and triggers the Investigate/Search chain. If aggro immediately overrides the target on arrival, the assist NPC may never investigate the noise. Mitigation: aggro only active once the NPC has threat entries. Assist NPCs start with zero threat — they investigate first, build threat on their first attack.
 **Severity:** Low | **Likelihood:** Low
 An NPC dies while the StateTree is mid-evaluation. The NPC returns to pool mid-frame. Needs careful handling of death + pooling ordering.
 
@@ -197,5 +209,5 @@ If NPCs die faster than the corpse despawn timer (e.g., AoE kill-cascade), corps
 
 ---
 
-**Total: 42 risks identified**
+**Total: 45 risks identified**
 **Next step:** Mitigation strategies in Risk Mitigation Plan.
