@@ -75,7 +75,7 @@
 
 ### Implementation
 - [ ] Add `GetAggroSubsystem()` — returns `UOnsetAggroSubsystem*` via `World->GetSubsystem`
-- [ ] Add `GetAggroAngularOffset(int32 Count, int32 Rank, float Radius)` — returns `FVector(Cos/Rank/Count angle, Sin, 0) * Radius`
+- [ ] Add `GetAggroAngularOffset(int32 Count, int32 Rank, float Radius)` — returns `FVector(Cos(Rank/Count angle), Sin, 0) * Radius`
   - Static helper, doesn't need context
   - Wrap angle math in `FMath::Sin` / `FMath::Cos`
   - `Count = 0` guard (return `FVector::ZeroVector`)
