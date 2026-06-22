@@ -1,10 +1,10 @@
-#include "StateTree/Tasks/Enemy/ChaseTask.h"
+﻿#include "StateTree/Tasks/Enemy/EnemyChaseTask.h"
 
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
 #include "Engine/World.h"
 
-EStateTreeRunStatus FChaseTask::EnterState(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyChaseTask::EnterState(FStateTreeExecutionContext& Context,
                                                          const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
@@ -26,7 +26,7 @@ EStateTreeRunStatus FChaseTask::EnterState(FStateTreeExecutionContext& Context,
 	return EStateTreeRunStatus::Running;
 }
 
-EStateTreeRunStatus FChaseTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+EStateTreeRunStatus FEnemyChaseTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
@@ -43,7 +43,7 @@ EStateTreeRunStatus FChaseTask::Tick(FStateTreeExecutionContext& Context, const 
 	return EStateTreeRunStatus::Running;
 }
 
-void FChaseTask::ExitState(FStateTreeExecutionContext& Context,
+void FEnemyChaseTask::ExitState(FStateTreeExecutionContext& Context,
 	const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);

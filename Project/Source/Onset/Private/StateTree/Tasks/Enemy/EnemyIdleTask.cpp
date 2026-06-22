@@ -1,11 +1,11 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "StateTree/Tasks/Enemy/IdleTask.h"
+#include "StateTree/Tasks/Enemy/EnemyIdleTask.h"
 
 #include "StateTreeExecutionContext.h"
 
-EStateTreeRunStatus FIdleTask::EnterState(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyIdleTask::EnterState(FStateTreeExecutionContext& Context,
                                                         const FStateTreeTransitionResult& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
@@ -15,7 +15,7 @@ EStateTreeRunStatus FIdleTask::EnterState(FStateTreeExecutionContext& Context,
 	return EStateTreeRunStatus::Running;
 }
 
-EStateTreeRunStatus FIdleTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+EStateTreeRunStatus FEnemyIdleTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	InstanceData.RemainingDuration -= DeltaTime;

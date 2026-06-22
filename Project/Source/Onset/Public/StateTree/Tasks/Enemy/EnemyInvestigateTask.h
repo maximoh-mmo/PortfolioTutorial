@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
-#include "InvestigateTask.generated.h"
+#include "EnemyInvestigateTask.generated.h"
 
 USTRUCT()       
 struct FOnsetStateTreeInvestigateTaskInstanceData
@@ -25,7 +25,7 @@ struct FOnsetStateTreeInvestigateTaskInstanceData
 };                                                                                                              
                 
 USTRUCT()
-struct FInvestigateTask : public FOnsetStateTreeTask
+struct FEnemyInvestigateTask : public FOnsetStateTreeTask
 {
 	GENERATED_BODY()
 	

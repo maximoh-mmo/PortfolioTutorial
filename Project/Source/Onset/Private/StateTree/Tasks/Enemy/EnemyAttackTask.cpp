@@ -1,4 +1,4 @@
-#include "StateTree/Tasks/Enemy/AttackTask.h"
+﻿#include "StateTree/Tasks/Enemy/EnemyAttackTask.h"
 
 #include "AbilitySystemComponent.h"
 #include "StateTreeExecutionContext.h"
@@ -8,7 +8,7 @@
 #include "Core/OnsetBaseCharacter.h"
 #include "Core/TargetingComponent.h"
 
-EStateTreeRunStatus FAttackTask::EnterState(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyAttackTask::EnterState(FStateTreeExecutionContext& Context,
                                                           const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
@@ -26,7 +26,7 @@ EStateTreeRunStatus FAttackTask::EnterState(FStateTreeExecutionContext& Context,
 	return EStateTreeRunStatus::Running;
 }
 
-EStateTreeRunStatus FAttackTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+EStateTreeRunStatus FEnemyAttackTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (!InstanceData.AbilityClass) return EStateTreeRunStatus::Failed;

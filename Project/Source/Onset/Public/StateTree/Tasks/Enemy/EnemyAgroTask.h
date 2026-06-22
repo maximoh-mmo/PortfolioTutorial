@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
-#include "AgroTask.generated.h"
+#include "EnemyAgroTask.generated.h"
 
 USTRUCT()                                                                                                       
 struct FOnsetStateTreeAgroInstanceData                                                                          
@@ -24,7 +24,7 @@ struct FOnsetStateTreeAgroInstanceData
 };
 
 USTRUCT()
-struct FAgroTask : public FOnsetStateTreeTask
+struct FEnemyAgroTask : public FOnsetStateTreeTask
 {
 	GENERATED_BODY()
 

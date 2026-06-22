@@ -1,4 +1,4 @@
-#include "StateTree/Tasks/Enemy/FleeTask.h"
+﻿#include "StateTree/Tasks/Enemy/EnemyFleeTask.h"
 #include "NavigationSystem.h"
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
@@ -6,7 +6,7 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "Core/OnsetBaseCharacter.h"                                                            
                                                          
-EStateTreeRunStatus FFleeTask::EnterState(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyFleeTask::EnterState(FStateTreeExecutionContext& Context,
                                                         const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
@@ -49,7 +49,7 @@ EStateTreeRunStatus FFleeTask::EnterState(FStateTreeExecutionContext& Context,
 	return EStateTreeRunStatus::Failed;
 }
 
-EStateTreeRunStatus FFleeTask::Tick(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyFleeTask::Tick(FStateTreeExecutionContext& Context,
                                                   const float DeltaTime) const
 {
 	AOnsetAIController* AIController = GetController(Context);
@@ -73,7 +73,7 @@ EStateTreeRunStatus FFleeTask::Tick(FStateTreeExecutionContext& Context,
 	return HasMoveCompleted(Context) ? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
 }
 
-void FFleeTask::ExitState(FStateTreeExecutionContext& Context,
+void FEnemyFleeTask::ExitState(FStateTreeExecutionContext& Context,
                                         const FStateTreeTransitionResult& Transition) const
 {
 	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))

@@ -1,7 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "StateTree/Tasks/Enemy/InvestigateTask.h"
+#include "StateTree/Tasks/Enemy/EnemyInvestigateTask.h"
 
 #include "AbilitySystemComponent.h"
 #include "StateTreeExecutionContext.h"
@@ -9,7 +9,7 @@
 #include "Enemy/GroupComponent.h"
 #include "Core/OnsetBaseCharacter.h"
 
-EStateTreeRunStatus FInvestigateTask::EnterState(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyInvestigateTask::EnterState(FStateTreeExecutionContext& Context,
                                                                const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* Controller = GetController(Context);
@@ -42,7 +42,7 @@ EStateTreeRunStatus FInvestigateTask::EnterState(FStateTreeExecutionContext& Con
 	return EStateTreeRunStatus::Running;
 }
 
-EStateTreeRunStatus FInvestigateTask::Tick(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyInvestigateTask::Tick(FStateTreeExecutionContext& Context,
 	const float DeltaTime) const
 {
 	AOnsetAIController* Controller = GetController(Context);
@@ -59,7 +59,7 @@ EStateTreeRunStatus FInvestigateTask::Tick(FStateTreeExecutionContext& Context,
 	return HasMoveCompleted(Context) ? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
 }
 
-void FInvestigateTask::ExitState(FStateTreeExecutionContext& Context,
+void FEnemyInvestigateTask::ExitState(FStateTreeExecutionContext& Context,
 	const FStateTreeTransitionResult& Transition) const
 {
 	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))

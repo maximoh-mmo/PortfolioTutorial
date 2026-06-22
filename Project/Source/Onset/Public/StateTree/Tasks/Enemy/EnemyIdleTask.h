@@ -4,28 +4,29 @@
 
 #include "CoreMinimal.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
-#include "LostTargetTask.generated.h"
+#include "EnemyIdleTask.generated.h"
 
 USTRUCT()
-struct FOnsetStateTreeLostTargetInstanceData
+struct FOnsetStateTreeIdleInstanceData
 {
 	GENERATED_BODY()
 	
-	UPROPERTY(EditAnywhere, Category = "LostTarget")
-	float MinDuration = 2.0f;
-	UPROPERTY(EditAnywhere, Category = "LostTarget")
-	float MaxDuration = 4.0f;
+	UPROPERTY(EditAnywhere, Category="Idle")
+	float MinDuration = 3.0f;
 	
-	float RemainingTime = 0.0f;
+	UPROPERTY(EditAnywhere, Category="Idle")
+	float MaxDuration = 10.0f;
+	
+	float RemainingDuration = 0.0f;
 	
 };
 
 USTRUCT()
-struct FLostTargetTask : public FOnsetStateTreeTask
+struct FEnemyIdleTask : public FOnsetStateTreeTask
 {
 	GENERATED_BODY()
 
-	using FInstanceDataType = FOnsetStateTreeLostTargetInstanceData;
+	using FInstanceDataType = FOnsetStateTreeIdleInstanceData;
 	
 	virtual const UStruct* GetInstanceDataType() const override
 	{

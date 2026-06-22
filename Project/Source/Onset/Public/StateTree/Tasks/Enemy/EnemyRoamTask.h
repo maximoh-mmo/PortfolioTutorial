@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
-#include "RoamTask.generated.h"
+#include "EnemyRoamTask.generated.h"
 
 USTRUCT()
 struct FOnsetStateTreeRoamInstanceData
@@ -26,7 +26,7 @@ struct FOnsetStateTreeRoamInstanceData
 };
 
 USTRUCT()
-struct FRoamTask : public FOnsetStateTreeTask
+struct FEnemyRoamTask : public FOnsetStateTreeTask
 {
 	GENERATED_BODY()
 

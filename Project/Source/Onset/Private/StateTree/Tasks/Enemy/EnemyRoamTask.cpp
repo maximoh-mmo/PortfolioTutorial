@@ -1,7 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "StateTree/Tasks/Enemy/RoamTask.h"
+#include "StateTree/Tasks/Enemy/EnemyRoamTask.h"
 
 #include "NavigationSystem.h"
 #include "StateTreeExecutionContext.h"
@@ -9,7 +9,7 @@
 #include "Enemy/OnsetEnemy.h"
 #include "Navigation/PathFollowingComponent.h"
 
-EStateTreeRunStatus FRoamTask::EnterState(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyRoamTask::EnterState(FStateTreeExecutionContext& Context,
                                                         const FStateTreeTransitionResult& Transition) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
@@ -34,7 +34,7 @@ EStateTreeRunStatus FRoamTask::EnterState(FStateTreeExecutionContext& Context,
 	return EStateTreeRunStatus::Failed;
 }
 
-EStateTreeRunStatus FRoamTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+EStateTreeRunStatus FEnemyRoamTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (InstanceData.bHasArrived)

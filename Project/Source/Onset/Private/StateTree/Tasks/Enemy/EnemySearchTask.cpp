@@ -1,7 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "StateTree/Tasks/Enemy/SearchTask.h"
+#include "StateTree/Tasks/Enemy/EnemySearchTask.h"
 
 #include "AbilitySystemComponent.h"
 #include "NavigationSystem.h"
@@ -9,7 +9,7 @@
 #include "AI/OnsetAIController.h"
 #include "Core/OnsetBaseCharacter.h"
 
-EStateTreeRunStatus FSearchTask::EnterState(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemySearchTask::EnterState(FStateTreeExecutionContext& Context,
                                                           const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* Controller = GetController(Context);
@@ -40,7 +40,7 @@ EStateTreeRunStatus FSearchTask::EnterState(FStateTreeExecutionContext& Context,
 }
 
 
-EStateTreeRunStatus FSearchTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+EStateTreeRunStatus FEnemySearchTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	AOnsetAIController* Controller = GetController(Context);
 	if (!Controller) return EStateTreeRunStatus::Failed;
@@ -69,7 +69,7 @@ EStateTreeRunStatus FSearchTask::Tick(FStateTreeExecutionContext& Context, const
 	return EStateTreeRunStatus::Running;
 }
 
-void FSearchTask::ExitState(FStateTreeExecutionContext& Context,
+void FEnemySearchTask::ExitState(FStateTreeExecutionContext& Context,
 	const FStateTreeTransitionResult& Transition) const
 {
 	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))                                                
@@ -82,7 +82,7 @@ void FSearchTask::ExitState(FStateTreeExecutionContext& Context,
 		}                                                                                                           
 	}             }
 
-FVector FSearchTask::PickSearchPoint(const FInstanceDataType& InstanceData, const FVector& Vector, UWorld* World) const
+FVector FEnemySearchTask::PickSearchPoint(const FInstanceDataType& InstanceData, const FVector& Vector, UWorld* World) const
 {
 	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
 	if (!NavSystem) return InstanceData.SearchCenter;
@@ -108,7 +108,7 @@ FVector FSearchTask::PickSearchPoint(const FInstanceDataType& InstanceData, cons
 	return InstanceData.SearchCenter;
 }
 
-void FSearchTask::ApplyYawSweep(const FStateTreeExecutionContext& Context, AOnsetAIController* Controller, AOnsetBaseCharacter* Self) const                        
+void FEnemySearchTask::ApplyYawSweep(const FStateTreeExecutionContext& Context, AOnsetAIController* Controller, AOnsetBaseCharacter* Self) const                        
 {                                                                                                               
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);                                     
 	if (!Controller || !Self) return;                                                                           

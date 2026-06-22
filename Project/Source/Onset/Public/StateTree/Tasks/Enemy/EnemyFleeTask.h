@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "ActiveGameplayEffectHandle.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
-#include "FleeTask.generated.h"
+#include "EnemyFleeTask.generated.h"
 
 USTRUCT()
 struct FOnsetStateTreeFleeTaskInstanceData
@@ -27,7 +27,7 @@ struct FOnsetStateTreeFleeTaskInstanceData
 };
 
 USTRUCT()
-struct FFleeTask : public FOnsetStateTreeTask
+struct FEnemyFleeTask : public FOnsetStateTreeTask
 {
 	GENERATED_BODY()
 

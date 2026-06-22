@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
-#include "AttackTask.generated.h"
+#include "EnemyAttackTask.generated.h"
 
 class UGameplayAbility;
 
@@ -18,7 +18,7 @@ struct FOnsetStateTreeAttackTaskInstanceData
 
 
 USTRUCT()
-struct FAttackTask : public FOnsetStateTreeTask
+struct FEnemyAttackTask : public FOnsetStateTreeTask
 {
 	GENERATED_BODY()
 	

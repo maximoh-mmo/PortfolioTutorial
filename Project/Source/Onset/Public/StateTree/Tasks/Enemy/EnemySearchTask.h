@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
-#include "SearchTask.generated.h"
+#include "EnemySearchTask.generated.h"
 
 /**
  * 
@@ -42,7 +42,7 @@ struct FOnsetStateTreeSearchInstanceData
 };
 
 USTRUCT()
-struct FSearchTask : public FOnsetStateTreeTask
+struct FEnemySearchTask : public FOnsetStateTreeTask
 {
 	GENERATED_BODY()
 	

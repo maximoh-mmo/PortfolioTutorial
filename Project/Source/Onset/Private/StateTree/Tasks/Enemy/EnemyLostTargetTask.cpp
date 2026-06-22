@@ -1,11 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "StateTree/Tasks/Enemy/LostTargetTask.h"
+#include "StateTree/Tasks/Enemy/EnemyLostTargetTask.h"
 
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
 
-EStateTreeRunStatus FLostTargetTask::EnterState(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyLostTargetTask::EnterState(FStateTreeExecutionContext& Context,
                                                               const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
@@ -16,7 +16,7 @@ EStateTreeRunStatus FLostTargetTask::EnterState(FStateTreeExecutionContext& Cont
 	return EStateTreeRunStatus::Running;
 }
 
-EStateTreeRunStatus FLostTargetTask::Tick(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyLostTargetTask::Tick(FStateTreeExecutionContext& Context,
 	const float DeltaTime) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);

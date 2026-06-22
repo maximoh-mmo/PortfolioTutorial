@@ -1,10 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "StateTree/Tasks/Enemy/AgroTask.h"
+#include "StateTree/Tasks/Enemy/EnemyAgroTask.h"
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
 
-EStateTreeRunStatus FAgroTask::EnterState(FStateTreeExecutionContext& Context,
+EStateTreeRunStatus FEnemyAgroTask::EnterState(FStateTreeExecutionContext& Context,
                                                         const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
@@ -15,7 +15,7 @@ EStateTreeRunStatus FAgroTask::EnterState(FStateTreeExecutionContext& Context,
 	return EStateTreeRunStatus::Running;
 }
 
-EStateTreeRunStatus FAgroTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
+EStateTreeRunStatus FEnemyAgroTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	InstanceData.TimeSpent += DeltaTime;
