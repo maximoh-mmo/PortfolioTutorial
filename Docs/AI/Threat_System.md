@@ -1,22 +1,22 @@
 
-## 📘 Aggro System — `/Docs/AI/Aggro_System.md`
+## 📘 Threat System — `/Docs/AI/Threat_System.md`
 
-# **Aggro System**
+# **Threat System**
 
 ## Purpose
 Provide a **server-side threat table** that drives NPC target selection and positional distribution, enabling:
-- Threat-driven aggro (highest-damage dealer is targeted)
+- Threat-driven threat (highest-damage dealer is targeted)
 - Angular spread around the target to prevent bunching
 - Taunt/tank mechanics via threat multipliers
 - Clean integration with existing perception and StateTree pipeline
 
 ## Design Decision: World Subsystem over Component
-`UOnsetAggroSubsystem` (world subsystem) rather than a per-NPC component:
+`UOnsetThreatSubsystem` (world subsystem) rather than a per-NPC component:
 - Zero per-NPC overhead
 - Single map clean-up on pool return / player death
 - Server-only data — no replication needed
 
-## Key Class: `UOnsetAggroSubsystem`
+## Key Class: `UOnsetThreatSubsystem`
 
 ### Data Storage
 
@@ -67,13 +67,13 @@ No change to the death/hit-reaction/hearing flow.
 
 ### Perception
 
-No change to how perception sets targets. Perception feeds **initial** awareness (sight → `TargetingComponent->SetTarget`, hearing → noise). Aggro overrides the target when the NPC has threat data.
+No change to how perception sets targets. Perception feeds **initial** awareness (sight → `TargetingComponent->SetTarget`, hearing → noise). Threat overrides the target when the NPC has threat data.
 
-### NPC Transition from Perception → Aggro
+### NPC Transition from Perception → Threat
 
-When a perception-detected target is set AND aggro has threat entries, aggro target takes priority. The AgroTask will:
+When a perception-detected target is set AND threat has threat entries, threat target takes priority. The AgroTask will:
 
-1. Check `GetPrimaryTarget()` — if non-null, use aggro target
+1. Check `GetPrimaryTarget()` — if non-null, use threat target
 2. Fall back to `GetTarget()` (perception target) — if null, clear focus → transition to Idle
 
 ### Angular Spread (Bunching Fix)
@@ -98,16 +98,16 @@ Since threat is stored as `PlayerState → Enemy → Threat`, a taunt ability si
 
 | File | Action | Change |
 |------|--------|--------|
-| `Source/Onset/Public/AI/AggroSubsystem.h` | **New** | `UOnsetAggroSubsystem` class declaration |
-| `Source/Onset/Private/AI/AggroSubsystem.cpp` | **New** | Implementation |
+| `Source/Onset/Public/AI/ThreatSubsystem.h` | **New** | `UOnsetThreatSubsystem` class declaration |
+| `Source/Onset/Private/AI/ThreatSubsystem.cpp` | **New** | Implementation |
 | `Source/Onset/Onset.Build.cs` | Edit | Add `AIModule` dependency if not present |
-| `Source/Onset/Public/StateTree/Tasks/Enemy/AgroTask.h/.cpp` | Modify | Check aggro primary target before perception target |
-| `Source/Onset/Public/StateTree/Tasks/Enemy/ChaseTask.h/.cpp` | Modify | Replace random offset with aggro-angular offset |
-| `Source/Onset/Public/StateTree/Tasks/Enemy/AttackTask.h/.cpp` | Modify | Add `AttackPositionTask` sub-state for aggro-based positioning |
-| `Source/Onset/Private/GAS/OnsetAttributeSet.cpp` | Modify | Add aggro feed in `PostGameplayEffectExecute` |
+| `Source/Onset/Public/StateTree/Tasks/Enemy/AgroTask.h/.cpp` | Modify | Check threat primary target before perception target |
+| `Source/Onset/Public/StateTree/Tasks/Enemy/ChaseTask.h/.cpp` | Modify | Replace random offset with threat-angular offset |
+| `Source/Onset/Public/StateTree/Tasks/Enemy/AttackTask.h/.cpp` | Modify | Add `AttackPositionTask` sub-state for threat-based positioning |
+| `Source/Onset/Private/GAS/OnsetAttributeSet.cpp` | Modify | Add threat feed in `PostGameplayEffectExecute` |
 | `Source/Onset/Private/Enemy/OnsetEnemy.cpp` | Modify | `DeferredDeathCleanup` calls `Subsystem->RemoveEnemy(this)` |
 | `Source/Onset/Private/Spawning/OnsetPoolSubsystem.cpp` | Modify | `ReturnToPool` calls `Subsystem->RemoveEnemy(Enemy)` |
-| `Source/Onset/Public/StateTree/Tasks/OnsetStateTreeTask.h/.cpp` | Modify | Add `GetAggroSubsystem()` and `GetAggroAngularOffset()` helpers |
+| `Source/Onset/Public/StateTree/Tasks/OnsetStateTreeTask.h/.cpp` | Modify | Add `GetThreatSubsystem()` and `GetThreatAngularOffset()` helpers |
 
 ## StateTree Changes
 
@@ -116,15 +116,15 @@ Current NPC state flow:
 Idle → Roam → [perception] → Agro → Chase → Attack → Flee → ...
 ```
 
-New NPC state flow (aggro-aware):
+New NPC state flow (threat-aware):
 ```
-Idle → Roam → [perception/aggro] → Agro → Chase → AttackPosition → [distance check] ↔ Attack
+Idle → Roam → [perception/threat] → Agro → Chase → AttackPosition → [distance check] ↔ Attack
 ```
 
 | State | Change |
 |-------|--------|
 | Agro | No structural change. Tick checks `GetPrimaryTarget()` first, then `GetTarget()` |
-| Chase | Replace current random-lateral-offset with offset = aggro angular position at `ChaseRange` |
+| Chase | Replace current random-lateral-offset with offset = threat angular position at `ChaseRange` |
 | AttackPosition | New sub-state (or merged into existing Attack). Computes angular offset at `AttackRange`, moves there, fires abilities at throttle. Re-evaluates on timer (3s) or player move > 200 units. |
 | Attack (current) | Modified to be a "fire abilities" state only — no movement logic. Position handled by AttackPosition. |
 
@@ -145,19 +145,19 @@ All NPC AI logic is already event-driven (perception, damage). Heavy work is in 
 
 - **StateTree Interval**: `UStateTreeAIComponent` supports `SetComponentTickInterval()`. Set per-NPC at pool-retrieve time based on LOD tier.
 - **Pathfinding**: NPC path cost is driven by `AOnsetAIController` distance. Far NPCs simply don't path (tickless).
-- **Aggro subsystem reads**: O(1) map lookups on damage events only. No per-tick overhead.
+- **Threat subsystem reads**: O(1) map lookups on damage events only. No per-tick overhead.
 
 ## Implementation Order
 
 | Step | Task | Files | Est. |
 |------|------|-------|------|
-| 1 | Create `UOnsetAggroSubsystem` | 2 new files | 1d |
-| 2 | Wire damage → aggro feed in `PostGameplayEffectExecute` | 1 modify | 0.5d |
+| 1 | Create `UOnsetThreatSubsystem` | 2 new files | 1d |
+| 2 | Wire damage → threat feed in `PostGameplayEffectExecute` | 1 modify | 0.5d |
 | 3 | Wire pool return + death cleanup | 2 modify | 0.25d |
 | 4 | Add helpers to `FOnsetStateTreeTask` base | 1 modify | 0.25d |
-| 5 | Modify AgroTask to check aggro target | 2 modify | 0.5d |
+| 5 | Modify AgroTask to check threat target | 2 modify | 0.5d |
 | 6 | Create AttackPositionTask with angular spread | 2 files (new) | 1d |
-| 7 | Modify ChaseTask offset to use aggro | 2 modify | 0.5d |
+| 7 | Modify ChaseTask offset to use threat | 2 modify | 0.5d |
 | 8 | AI LOD + stagger tick | 2 modify | 1d |
 | 9 | Verify + tune | 0.5d |
 | | **Total** | | **~5.5d** |

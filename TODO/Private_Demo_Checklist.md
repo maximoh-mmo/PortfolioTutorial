@@ -215,16 +215,16 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Verify no assist when attacker is out of hearing range
 - [x] Assist radius testing moved here from A2.3 — assist now flows through perception hearing, not Group System
 
-## A3.6 Aggro System
-- [ ] Create `UOnsetAggroSubsystem` — world subsystem with threat table
+## A3.6 Threat System
+- [ ] Create `UOnsetThreatSubsystem` — world subsystem with threat table
 - [ ] Wire damage feed: `PostGameplayEffectExecute` → `AddThreat(InstigatorPlayerState, Victim, Damage)`
 - [ ] Wire cleanup: `DeferredDeathCleanup` + `ReturnToPool` → `RemoveEnemy()`
-- [ ] Add `GetAggroSubsystem()` + `GetAggroAngularOffset()` to `FOnsetStateTreeTask` base
-- [ ] Modify AgroTask — prefer aggro target over perception target
+- [ ] Add `GetThreatSubsystem()` + `GetThreatAngularOffset()` to `FOnsetStateTreeTask` base
+- [ ] Modify AgroTask — prefer threat target over perception target
 - [ ] Create AttackPositionTask — angular spread at `AttackRange`, re-evaluation timer, nav-projection
-- [ ] Modify ChaseTask offset — use aggro angular position instead of random lateral
+- [ ] Modify ChaseTask offset — use threat angular position instead of random lateral
 - [ ] AI LOD — 3 tick tiers based on distance to nearest player
-- [ ] Verify: aggro drives targeting, angular spread prevents bunching
+- [ ] Verify: threat drives targeting, angular spread prevents bunching
 
 ## A3.5 Player AI Autoplay
 - [x] Create `AOnsetPlayerAIController` class (created as `APlayerAIController.h/.cpp`)

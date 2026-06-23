@@ -63,7 +63,7 @@ The final result is a polished, self‑contained demo suitable for:
   - Flee  
 - Dynamic enemy types (mesh, stats, behaviour)
 - [Assist behaviour via Group System](../../Docs/AI/Group_System.md): allies respond when a group member is attacked
-- [Aggro System](../../Docs/AI/Aggro_System.md): threat-driven target selection, angular combat spread, AI LOD
+- [Threat System](../../Docs/AI/Threat_System.md): threat-driven target selection, angular combat spread, AI LOD
 
 ---
 

@@ -63,7 +63,7 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 | Behaviour States (Idle → Flee) | 4 | Perception |
 | Group Assist Integration | 1 | StateTree, Group |
 | Player AI Autoplay | 2 | StateTree, Targeting |
-| Aggro System (threat table, angular spread, AI LOD) | 5.5 | StateTree, Targeting, GAS |
+| Threat System (threat table, angular spread, AI LOD) | 5.5 | StateTree, Targeting, GAS |
 | **Subtotal** | **15.5 days** | |
 
 ## Phase A4 — GAS Combat
@@ -137,7 +137,7 @@ Episodes 1-3 need script updates for Enhanced Input + multi-device movement. Epi
 | Scripts 14-20 | 7 | 4 | 28 |
 | Scripts 21-22 | 2 | 3 | 6 |
 | Scripts 23-25 | 3 | 4 | 12 |
-| Scripts 26-28 (Aggro System) | 3 | 4 | 12 |
+| Scripts 26-28 (Threat System) | 3 | 4 | 12 |
 | Scripts 29-33 | 5 | 3 | 15 |
 | Scripts 34-39 | 6 | 3 | 18 |
 | Scripts 40-43 | 4 | 3 | 12 |
@@ -163,7 +163,7 @@ Estimated per episode:
 | Phase 3: GAS Combat | 14-20 | 48 |
 | Phase 3.5: Architecture Cleanup | 21-22 | 12 |
 | Phase 3.6: Player AI | 23-25 | 18 |
-| Phase 3.7: Aggro System | 26-28 | 18 |
+| Phase 3.7: Threat System | 26-28 | 18 |
 | Phase 4: Advanced AI (incl. Group Assist) | 29-33 | 30 |
 | Phase 5: Multiplayer (incl. PvP) | 34-39 | 36 |
 | Phase 6: Final Demo | 40-43 | 24 |
@@ -184,7 +184,7 @@ Estimated per episode:
 |-------|----------|-------|
 | ✅ Planning (Phases 1-5) | Complete | Outlines, docs, scripts 1-5, workflow |
 | ✅ Pre-Production Review | Complete | Consistency scan, risk docs, timeline |
-| **Phase A: Private Demo** | **~15 weeks** | Build all systems off-camera (incl. multi-device input, corpse system, aggro system) |
+| **Phase A: Private Demo** | **~15 weeks** | Build all systems off-camera (incl. multi-device input, corpse system, threat system) |
 | **Phase B: Episode Production** | **~10 weeks** | Record, edit, export 43 episodes (~136h scripting + ~258h recording) |
 | **Total Remaining** | **~25 weeks (~6 months)** | |
 
@@ -214,7 +214,7 @@ If releasing one episode per week:
 | Phase 3: GAS Combat | 14-20 | 1/week | 7 weeks |
 | Phase 3.5: Architecture Cleanup | 21-22 | 1/week | 2 weeks |
 | Phase 3.6: Player AI | 23-25 | 1/week | 3 weeks |
-| Phase 3.7: Aggro System | 26-28 | 1/week | 3 weeks |
+| Phase 3.7: Threat System | 26-28 | 1/week | 3 weeks |
 | Phase 4: Advanced AI | 29-33 | 1/week | 5 weeks |
 | Phase 5: Multiplayer | 34-39 | 1/week | 6 weeks |
 | Phase 6: Final Demo | 40-43 | 1/week | 4 weeks |
@@ -236,7 +236,7 @@ The ~3-month private demo build + ~9.5-month release window means a **~12.5-mont
 | GAS milestone | Week 33 | Episodes 14-20 released (full ability system) |
 | Architecture cleanup | Week 35 | Episodes 21-22 released (interaction component, profile split, GAS speed attribute) |
 | Player AI milestone | Week 38 | Episodes 23-25 released (autoplay mode) |
-| Aggro System milestone | Week 41 | Episodes 26-28 released (threat, angular spread, AI LOD) |
+| Threat System milestone | Week 41 | Episodes 26-28 released (threat, angular spread, AI LOD) |
 | Advanced AI milestone | Week 46 | Episodes 29-33 released (group assist, advanced behaviour) |
 | Multiplayer milestone | Week 52 | Episodes 34-39 released (MP + Steam + PvP) |
 | Series complete | Week 56 | Episode 43 (Final Showcase) released — 43rd release |

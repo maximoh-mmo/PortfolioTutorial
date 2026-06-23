@@ -21,12 +21,16 @@ public:
 	/** Retrieve a deactivated enemy from the pool. Spawns a fallback if exhausted. */
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	AOnsetEnemy* GetPooledEnemy();
+	
+	/** Retrieve a deactivated controller from the pool. Spawns a fallback if exhausted. */	
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	AOnsetAIController* GetPooledController();
 
 	/** Return an enemy to the pool for later reuse. */
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	void ReleasePooledEnemy(AOnsetEnemy* Enemy);
+	
+	/** Return a pooled controller to the pool for later reuse. */
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	void ReleasePooledController(AOnsetAIController* Controller);
 

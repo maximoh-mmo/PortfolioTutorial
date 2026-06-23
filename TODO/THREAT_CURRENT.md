@@ -1,19 +1,19 @@
-# 🗓 AGGRO SYSTEM — PRODUCTION PLAN
+# 🗓 THREAT SYSTEM — PRODUCTION PLAN
 
-**Source design doc:** [Aggro System](../Docs/AI/Aggro_System.md)
+**Source design doc:** [Threat System](../Docs/AI/Threat_System.md)
 **Estimate:** ~5.5 days
 **Dependencies:** StateTree, GAS damage pipeline, object pooling
 
 ---
 
-## Step 1 — UOnsetAggroSubsystem (day 1, ~1d)
+## Step 1 — UOnsetThreatSubsystem (day 1, ~1d)
 
 ### New files
-- `Source/Onset/Public/AI/AggroSubsystem.h`
-- `Source/Onset/Private/AI/AggroSubsystem.cpp`
+- `Source/Onset/Public/AI/ThreatSubsystem.h`
+- `Source/Onset/Private/AI/ThreatSubsystem.cpp`
 
 ### Implementation
-- [ ] Create `UOnsetAggroSubsystem` — inherits `UWorldSubsystem`
+- [ ] Create `UOnsetThreatSubsystem` — inherits `UWorldSubsystem`
 - [ ] Storage: `TMap<APlayerState*, TMap<TWeakObjectPtr<AOnsetEnemy>, float>> ThreatTable`
 - [ ] `AddThreat(APlayerState* Player, AOnsetEnemy* Enemy, float Amount)` — add/subtract, clamp at 0, auto-remove at 0
 - [ ] `RemovePlayer(APlayerState* Player)` — erase outer key (on player death)
@@ -39,7 +39,7 @@
 - [ ] In `PostGameplayEffectExecute`, when `Data.EvaluatedData.Magnitude < 0` (damage taken) AND victim is `AOnsetEnemy`:
   - [ ] Get instigator pawn via `Data.EffectSpec.GetContext().GetInstigator()`
   - [ ] Get `PlayerState` via `InstigatorPawn->GetPlayerState()`
-  - [ ] Get subsystem: `GetWorld()->GetSubsystem<UOnsetAggroSubsystem>()`
+  - [ ] Get subsystem: `GetWorld()->GetSubsystem<UOnsetThreatSubsystem>()`
   - [ ] Call `Subsystem->AddThreat(PlayerState, VictimEnemy, FMath::Abs(Damage))`
 
 ### Verification
@@ -74,17 +74,17 @@
 - `Source/Onset/Private/StateTree/Tasks/OnsetStateTreeTask.cpp`
 
 ### Implementation
-- [ ] Add `GetAggroSubsystem()` — returns `UOnsetAggroSubsystem*` via `World->GetSubsystem`
-- [ ] Add `GetAggroAngularOffset(int32 Count, int32 Rank, float Radius)` — returns `FVector(Cos(Rank/Count angle), Sin, 0) * Radius`
+- [ ] Add `GetThreatSubsystem()` — returns `UOnsetThreatSubsystem*` via `World->GetSubsystem`
+- [ ] Add `GetThreatAngularOffset(int32 Count, int32 Rank, float Radius)` — returns `FVector(Cos(Rank/Count angle), Sin, 0) * Radius`
   - Static helper, doesn't need context
   - Wrap angle math in `FMath::Sin` / `FMath::Cos`
   - `Count = 0` guard (return `FVector::ZeroVector`)
 
 ### Verification
 - [ ] Helper compiles
-- [ ] `GetAggroAngularOffset(4, 0, 250)` returns `(250, 0, 0)` (in front)
-- [ ] `GetAggroAngularOffset(4, 1, 250)` returns `(0, 250, 0)` (right)
-- [ ] `GetAggroAngularOffset(0, 0, 250)` returns zero vector
+- [ ] `GetThreatAngularOffset(4, 0, 250)` returns `(250, 0, 0)` (in front)
+- [ ] `GetThreatAngularOffset(4, 1, 250)` returns `(0, 250, 0)` (right)
+- [ ] `GetThreatAngularOffset(0, 0, 250)` returns zero vector
 
 ---
 
@@ -95,10 +95,10 @@
 - `Source/Onset/Private/StateTree/Tasks/Enemy/AgroTask.cpp`
 
 ### Implementation
-- [ ] `Tick`: before checking `GetTarget()`, call `GetAggroSubsystem()->GetPrimaryTarget(SelfEnemy)`
-  - [ ] If non-null: use aggro target (set as focus, set via `SetTarget()`)
+- [ ] `Tick`: before checking `GetTarget()`, call `GetThreatSubsystem()->GetPrimaryTarget(SelfEnemy)`
+  - [ ] If non-null: use thro target (set as focus, set via `SetTarget()`)
   - [ ] If null: fall back to `GetTarget()` (perception target, current behaviour)
-- [ ] `EnterState`: same logic — set focus on aggro target if available
+- [ ] `EnterState`: same logic — set focus on thro target if available
 
 ### Verification
 - [ ] NPC with threat focuses highest-threat player
@@ -117,9 +117,9 @@
 - [ ] `FAttackPositionTask` — inherits `FOnsetStateTreeTask`
 - [ ] Instance data: `AttackRange`, `ReevaluateInterval` (3s), `MoveThreshold` (200), `AbilityClass`, timer
 - [ ] `EnterState`:
-  - [ ] Get aggro primary target via subsystem
+  - [ ] Get thro primary target via subsystem
   - [ ] Get rank + count via subsystem
-  - [ ] Compute offset via `GetAggroAngularOffset(Count, Rank, AttackRange)`
+  - [ ] Compute offset via `GetThreatAngularOffset(Count, Rank, AttackRange)`
   - [ ] Nav-project via `UNavigationSystemV1::ProjectPointToNavigation`
   - [ ] `MoveToLocation(ProjectedLocation, AcceptanceRadius)`
   - [ ] Cache target location for distance check
@@ -154,7 +154,7 @@
 
 ### Implementation
 - [ ] `EnterState`: replace current random-lateral-offset computation
-  - [ ] Get aggro primary target
+  - [ ] Get thro primary target
   - [ ] Get rank + count
   - [ ] Compute angular offset at `ChaseRange` (or `AttackRange * 1.5` if no chase-range threshold)
   - [ ] Nav-project → `MoveToLocation`
@@ -162,7 +162,7 @@
 ### Verification
 - [ ] Chase movement goes to angular offset position, not random
 - [ ] Multiple chasers spread around target during approach
-- [ ] Fallback to random offset if no aggro data (perception-only NPC)
+- [ ] Fallback to random offset if no thro data (perception-only NPC)
 
 ---
 
@@ -216,5 +216,5 @@
 - [ ] PIE test: NPC dies mid-combat → remaining NPCs re-rank and re-position
 - [ ] PIE test: player runs away → NPCs chase using angular offset → re-acquire on arrival
 - [ ] PIE test: 2 players, 5 NPCs → NPCs distribute across both players by who dealt most damage
-- [ ] PIE test: Aggro LOD → far NPCs visibly throttle, resume on approach
+- [ ] PIE test: Threat LOD → far NPCs visibly throttle, resume on approach
 - [ ] Profile: no per-tick allocations, no TSet allocations, no subsystem O(n) scans

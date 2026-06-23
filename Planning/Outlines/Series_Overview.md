@@ -57,12 +57,12 @@ The series is divided into **9 phases** (see the full [Episode List](Episode_Lis
 3. **Combat (GAS)** — Abilities, damage, death  
 3.5 **Architecture Cleanup** — Controller refactor, profile split, GAS movement speed attribute  
 3.6 **Player AI** — Autoplay/testing mode  
-3.7 **Aggro System** — Threat table, angular spread, AI LOD  
+3.7 **Threat System** — Threat table, angular spread, AI LOD  
 4. **Advanced AI** — Flee, group assist, dynamic types, debugging  
 5. **Multiplayer** — Replication, dedicated server, Steam, PvP  
 6. **Final Demo & Polish** — UI, gameplay loop, optimization, showcase  
 
-Total: **43 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System; episodes 26-28 cover Aggro System, Angular Spread, and AI LOD). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
+Total: **43 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System; episodes 26-28 cover Threat System, Angular Spread, and AI LOD). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
 
 ---
 

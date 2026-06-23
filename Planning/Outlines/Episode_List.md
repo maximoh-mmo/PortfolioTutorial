@@ -162,22 +162,22 @@ Add a toggle for AI control, debug UI, and AI‑vs‑AI testing.
 
 ---
 
-# **PHASE 3.7 — Aggro System & AI Optimization**
+# **PHASE 3.7 — Threat System & AI Optimization**
 ### *Goal: Add threat-driven targeting, angular combat spread, and AI LOD.*
 
 ---
 
-### **Episode 26 — Threat/Aggro System**
-Implement a server-side threat table (`UOnsetAggroSubsystem`) that drives NPC target selection. Damage dealt generates threat; NPCs target the highest-threat player. Enables future taunt/tank mechanics.
-· [Aggro System](../../Docs/AI/Aggro_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
+### **Episode 26 — Threat/Threat System**
+Implement a server-side threat table (`UOnsetThreatSubsystem`) that drives NPC target selection. Damage dealt generates threat; NPCs target the highest-threat player. Enables future taunt/tank mechanics.
+· [Threat System](../../Docs/AI/Threat_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
 
 ### **Episode 27 — Attack Positioning with Angular Spread**
-Replace random-lateral-offset with deterministic angular spread: divide 360° by attacker count, assign each NPC an angle based on aggro rank. Prevents bunching around the player.
-· [Aggro System](../../Docs/AI/Aggro_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
+Replace random-lateral-offset with deterministic angular spread: divide 360° by attacker count, assign each NPC an angle based on threat rank. Prevents bunching around the player.
+· [Threat System](../../Docs/AI/Threat_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
 ### **Episode 28 — AI LOD & Tick Management**
 Add distance-based tick tiers to `AOnsetAIController`. Far NPCs tick at 0.5s intervals or stop entirely. StateTree, perception, and navigation respect the LOD tier.
-· [Aggro System](../../Docs/AI/Aggro_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
+· [Threat System](../../Docs/AI/Threat_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
 ---
 

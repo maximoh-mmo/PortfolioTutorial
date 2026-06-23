@@ -33,7 +33,7 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Move using AI navigation  
 - React to damage and death  
 - React to assist events via AI Perception hearing (noise from damage → `OnPerceptionUpdated`)  
-- Use [Aggro System](Aggro_System.md) for threat-driven target selection (overrides perception target when threat data exists)  
+- Use [Threat System](Threat_System.md) for threat-driven target selection (overrides perception target when threat data exists)  
 - Position around target using aggro rank for angular spread 
 
 ---
