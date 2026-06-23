@@ -9,7 +9,7 @@ UGroupManagerComponent::UGroupManagerComponent()
 
 void UGroupManagerComponent::RegisterMember(AOnsetEnemy* Enemy)
 {
-	if (!Enemy || Enemy->IsPendingKillPending() || Members.Contains(Enemy)) return;
+	if (!Enemy || !IsValid(Enemy) || Members.Contains(Enemy)) return;
 
 	Members.Add(Enemy);
 	if (auto* Component = Enemy->FindComponentByClass<UGroupComponent>())
@@ -20,7 +20,7 @@ void UGroupManagerComponent::RegisterMember(AOnsetEnemy* Enemy)
 
 void UGroupManagerComponent::UnregisterMember(AOnsetEnemy* Enemy)
 {
-	if (!Enemy || Enemy->IsPendingKillPending() || !Members.Contains(Enemy)) return;
+	if (!Enemy || !IsValid(Enemy) || !Members.Contains(Enemy)) return;
 	Members.Remove(Enemy);
 	if (auto* Component = Enemy->FindComponentByClass<UGroupComponent>())
 	{
@@ -38,7 +38,7 @@ FGroupData UGroupManagerComponent::GetGroupData() const
 	int32 ValidCount = 0;
 	for (const AOnsetEnemy* Enemy : Members)
 	{
-		if (Enemy && !Enemy->IsPendingKillPending() && !Enemy->IsHidden())
+		if (IsValid(Enemy) && !Enemy->IsHidden())
 		{
 			AccumulatedLocation += Enemy->GetActorLocation();
 			ValidCount++;
@@ -56,13 +56,13 @@ TArray<AOnsetEnemy*> UGroupManagerComponent::GetNearbyAllies(AOnsetEnemy* Source
 {
 	TArray<AOnsetEnemy*> Result;
 
-	if (!Source || Source->IsPendingKillPending()) return Result;
+	if (!Source || !IsValid(Source)) return Result;
 
 	const FVector SourceLocation = Source->GetActorLocation();
 
 	for (AOnsetEnemy* Enemy : Members)
 	{
-		if (Enemy && !Enemy->IsPendingKillPending() && !Enemy->IsHidden())
+		if (IsValid(Enemy) && !Enemy->IsHidden())
 		{
 			if (FVector::Dist(Enemy->GetActorLocation(), SourceLocation) <= Radius)
 			{

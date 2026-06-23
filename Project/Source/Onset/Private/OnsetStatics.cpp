@@ -31,7 +31,8 @@ AOnsetPlayerState* UOnsetStatics::GetOnsetPlayerState(UObject* WorldContext, int
 
 UTargetingComponent* UOnsetStatics::GetTargetingComponent(AActor* Actor)
 {
-	if (UActorComponent* Component = Actor->GetComponentByClass(UTargetingComponent::StaticClass())){
+	if (UActorComponent* Component = Actor->GetComponentByClass(UTargetingComponent::StaticClass()))
+	{
 		if (UTargetingComponent* CastComponent = Cast<UTargetingComponent>(Component)) return CastComponent;
 	}
 	return nullptr;
@@ -40,7 +41,8 @@ UTargetingComponent* UOnsetStatics::GetTargetingComponent(AActor* Actor)
 AOnsetPlayerCharacter* UOnsetStatics::GetOnsetPlayerCharacter(UObject* WorldContext, int32 PlayerIndex)
 {
 	const auto Controller = UGameplayStatics::GetPlayerController(WorldContext, PlayerIndex);
-	if (!Controller) {
+	if (!Controller)
+	{
 		UE_LOG(OnsetCore, Error, TEXT("Failed to get PlayerCharacter for PlayerIndex %d"), PlayerIndex);
 		return nullptr;
 	}

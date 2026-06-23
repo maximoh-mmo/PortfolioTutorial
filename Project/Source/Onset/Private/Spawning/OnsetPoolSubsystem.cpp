@@ -74,14 +74,14 @@ AOnsetAIController* UOnsetPoolSubsystem::GetPooledController()
 
 void UOnsetPoolSubsystem::ReleasePooledEnemy(AOnsetEnemy* Enemy)
 {
-	if (!Enemy || Enemy->IsPendingKillPending()) return;
+	if (!Enemy || !IsValid(Enemy)) return;
 	
 	ReturnToPool(Enemy);
 }
 
 void UOnsetPoolSubsystem::ReleasePooledController(AOnsetAIController* Controller)
 {
-	if (!Controller || Controller->IsPendingKillPending()) return;
+	if (!Controller || !IsValid(Controller)) return;
 	Controller->UnPossess();
 	if (!ControllerPool.Contains(Controller)) ControllerPool.Add(Controller);    
 }

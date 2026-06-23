@@ -23,7 +23,7 @@ void AOnsetSpawner::SpawnGroup()
 	for (int32 i = 0; i < Slots.Num(); i++)                                                                     
 	{                                                                                                           
 		FSpawnerSlot& Slot = Slots[i];                                                                          
-		if (Slot.Occupant && !Slot.Occupant->IsPendingKillPending())                                            
+		if (Slot.Occupant && IsValid(Slot.Occupant))                                            
 			continue;                                                                                           
                                                                                                                      
 		SpawnEnemyAtSlot(i);                                                                                       
@@ -34,7 +34,7 @@ void AOnsetSpawner::DestroyGroup()
 {
 	for (int32 i = 0; i < Slots.Num(); i++)
 	{
-		if (Slots[i].Occupant == nullptr || Slots[i].Occupant->IsPendingKillPending()) continue; 
+		if (Slots[i].Occupant == nullptr || !IsValid(Slots[i].Occupant)) continue; 
 		if (GroupManager) GroupManager->UnregisterMember(Slots[i].Occupant);
 		if (GetWorld()->GetSubsystem<UOnsetPoolSubsystem>())
 		{

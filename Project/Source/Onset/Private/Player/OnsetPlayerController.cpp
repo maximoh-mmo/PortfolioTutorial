@@ -77,7 +77,7 @@ void AOnsetPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 	
-	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent);
 	if (EnhancedInputComponent)
 	{
 		EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &AOnsetPlayerController::OnMove);
@@ -87,7 +87,7 @@ void AOnsetPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(IA_Ability1, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility1);
 		EnhancedInputComponent->BindAction(IA_Ability2, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility2);
 		EnhancedInputComponent->BindAction(IA_Ability3, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility3);
-		EnhancedInputComponent->BindAction(IA_Ability4, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility4);;
+		EnhancedInputComponent->BindAction(IA_Ability4, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility4);
 		EnhancedInputComponent->BindAction(IA_PvPToggle, ETriggerEvent::Started, this, &AOnsetPlayerController::OnPvPToggleTriggered);
 		
 	}
@@ -101,7 +101,6 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 
 void AOnsetPlayerController::OnUnPossess()
 {
-	Super::OnUnPossess();
 	TargetingComponent = nullptr;
 }
 
@@ -125,7 +124,7 @@ void AOnsetPlayerController::StopAutoAttack()
 
 void AOnsetPlayerController::OnAutoAttackTick()
 {
-	const AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
+	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (!Self || !Self->AbilitySystemComponent || !Self->TargetingComponent || !Self->TargetingComponent->GetTarget() || !BasicAttackAbility)
 	{
 		StopAutoAttack();
@@ -160,7 +159,7 @@ void AOnsetPlayerController::OnCursorMove(const FInputActionValue& Value)
 	{
 		GamepadCursorWidget->SetCursorPosition(ScreenPos);
 		GamepadCursorWidget->ShowCursor();
-		GetWorld()->GetTimerManager().ClearTimer(CursorIdleTimerHandle);
+		GetWorldTimerManager().ClearTimer(CursorIdleTimerHandle);
 	}
 }
 
@@ -243,7 +242,8 @@ void AOnsetPlayerController::OnPvPToggleTriggered(const FInputActionValue& Value
 void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(bool bEnabled)                                 
 {                                                                                                               
 	AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
-	if(OnsetPlayerState) {
+	if (OnsetPlayerState)
+	{
 		OnsetPlayerState->bIsPvPEnabled = bEnabled;
 	}
 }
@@ -255,7 +255,6 @@ void AOnsetPlayerController::EnableAutoCombat()
 	{
 		AutoCombatController->Possess(MyPawn);
 		UnPossess();
-        GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerController::DelayedSetViewTarget);            
 		bAutoCombatEnabled = true;
 	}
 }
@@ -269,7 +268,7 @@ void AOnsetPlayerController::DisableAutoCombat()
 	bAutoCombatEnabled = false;
 }
 
-AController* AOnsetPlayerController::GetActiveController()
+const AController* AOnsetPlayerController::GetActiveController() const
 {
 	AController* AutoController = AutoCombatController;
 	return bAutoCombatEnabled ? AutoController : this;
@@ -280,13 +279,7 @@ void AOnsetPlayerController::ResetIdleTimer()
 	GetWorldTimerManager().ClearTimer(IdleAutoCombatTimerHandle);
 	if (IdleAutoCombatDelay > 0.0f)
 	{	
-		GetWorld()->GetTimerManager().SetTimer(IdleAutoCombatTimerHandle, this,
-			&AOnsetPlayerController::EnableAutoCombat, IdleAutoCombatDelay,false);
+		GetWorldTimerManager().SetTimer(IdleAutoCombatTimerHandle, this,
+			&AOnsetPlayerController::EnableAutoCombat, IdleAutoCombatDelay, false);
 	}
-}
-
-void AOnsetPlayerController::DelayedSetViewTarget()
-{
-	if (APawn* MyPawn = AutoCombatController ? AutoCombatController->GetPawn() : nullptr)
-		SetViewTarget(MyPawn);
 }

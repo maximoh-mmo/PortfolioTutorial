@@ -3,7 +3,7 @@
 
 #include "GAS/OnsetMovementAttributeSet.h"
 
-#include "GameplayEffectExtension.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Core/OnsetBaseCharacter.h"

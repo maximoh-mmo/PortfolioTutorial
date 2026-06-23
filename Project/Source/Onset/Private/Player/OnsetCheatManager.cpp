@@ -8,7 +8,7 @@
 #include "GAS/OnsetGameplayTags.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
-#include "Widgets/Text/ISlateEditableTextWidget.h"
+
 
 void UOnsetCheatManager::God()
 {
@@ -29,12 +29,12 @@ void UOnsetCheatManager::God()
 
 void UOnsetCheatManager::Heal()
 {
-	const auto Character = GetOnsetCharacter();
+	AOnsetBaseCharacter* Character = GetOnsetCharacter();
 	if (!Character) return;
 	Character->AttributeSet->SetHealth(Character->AttributeSet->GetMaxHealth());
 }
 
-AController* UOnsetCheatManager::GetController() const
+const AController* UOnsetCheatManager::GetController() const
 {
 	APlayerController* PlayerController =  GetPlayerController();
 	if (!PlayerController) return nullptr;
@@ -44,7 +44,7 @@ AController* UOnsetCheatManager::GetController() const
 
 AOnsetBaseCharacter* UOnsetCheatManager::GetOnsetCharacter() const
 {
-	AController* Controller = GetController();
+	const AController* Controller = GetController();
 	if (!Controller) return nullptr;
 	return Controller->GetPawn<AOnsetBaseCharacter>();
 }

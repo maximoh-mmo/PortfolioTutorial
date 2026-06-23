@@ -3,7 +3,7 @@
 
 #include "Core/TargetingComponent.h"
 
-#include "GameFramework/Actor.h"
+
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
@@ -23,7 +23,7 @@ void UTargetingComponent::ClearTarget()
 	CurrentTarget = nullptr;
 }
 
-bool UTargetingComponent::IsActorTargetValid(AActor* Actor)
+bool UTargetingComponent::IsActorTargetValid(AActor* Actor) const
 {
 	if (!Actor) return false;
 	if (const AOnsetBaseCharacter* Character = Cast<AOnsetBaseCharacter>(Actor); !Character) return false;
@@ -31,9 +31,10 @@ bool UTargetingComponent::IsActorTargetValid(AActor* Actor)
 }
 
 // ReSharper disable once CppUE4CodingStandardNamingViolationWarning
-bool UTargetingComponent::IsActorTargetPVPValid(AActor* TargetActor, AActor* SourceActor)
+bool UTargetingComponent::IsActorTargetPVPValid(AActor* TargetActor, AActor* SourceActor) const
 {
 	if (const AOnsetPlayerCharacter* TargetCharacter = Cast<AOnsetPlayerCharacter>(TargetActor); !TargetCharacter) return false;
+	if (!SourceActor) return false;
 	if (const AOnsetPlayerController* SourceController = Cast<AOnsetPlayerController>(SourceActor->GetInstigatorController()))
 	{
 		AOnsetPlayerState* SourcePlayerState = SourceController->GetPlayerState<AOnsetPlayerState>();

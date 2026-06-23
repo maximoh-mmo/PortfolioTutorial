@@ -4,13 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Core/OnsetBaseCharacter.h"
-#include "OnsetPlayerController.h"
+class AOnsetPlayerController;
 #include "GameFramework/CheatManager.h"
 #include "OnsetCheatManager.generated.h"
 
-/**
- * 
- */
+/** Cheat manager for development testing */
 UCLASS()
 class ONSET_API UOnsetCheatManager : public UCheatManager
 {
@@ -21,9 +19,10 @@ public:
 	
 	UFUNCTION(exec)
 	void Heal();
-	AController* GetController() const;
+	const AController* GetController() const;
 	AOnsetBaseCharacter* GetOnsetCharacter() const;
 	UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
+	UPROPERTY()
 	bool bGodMode = false;
 };

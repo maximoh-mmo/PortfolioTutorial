@@ -20,11 +20,11 @@ struct FSpawnConfig
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TObjectPtr<UAIProfile> EnemyAIProfile;
 	
-	/** The UAIProfile asset defining visuals for spawned NPCs. */
+	/** The UVisualProfile asset defining visuals for spawned NPCs. */
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TObjectPtr<UVisualProfile> EnemyVisualProfile;
 	
-	/** The UAIProfile asset defining perception for spawned NPCs. */
+	/** The UPerceptionProfile asset defining perception for spawned NPCs. */
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TObjectPtr<UPerceptionProfile> EnemyPerceptionProfile;
 

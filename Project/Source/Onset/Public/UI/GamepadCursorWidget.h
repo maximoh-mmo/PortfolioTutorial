@@ -39,5 +39,5 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<UImage> CrosshairImage;
-	bool bIsVisible;   
+	bool bIsVisible = false;   
 };

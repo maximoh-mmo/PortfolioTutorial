@@ -8,7 +8,7 @@ AOnsetCorpse* UOnsetCorpseSubsystem::SpawnCorpse(const FTransform& Transform, US
 {
 	SweepDeadCorpses();
 
-	while (ActiveCorpses.Num() >= MaxActiveCorpses && ActiveCorpses.Num() > 0)
+	while (ActiveCorpses.Num() >= MaxActiveCorpses && ActiveCorpses.Num() > 0 && MaxActiveCorpses > 0)
 	{
 		if (AOnsetCorpse* Oldest = ActiveCorpses[0].Get())
 		{

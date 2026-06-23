@@ -30,7 +30,7 @@ EStateTreeRunStatus FEnemyAgroTask::Tick(FStateTreeExecutionContext& Context, co
 	ToTarget.Z = 0.0f;
 	ToTarget.Normalize();
 	FVector Forward = AIController->GetPawn()->GetActorForwardVector();
-	float FacingAngle = FMath::Acos(FVector::DotProduct(Forward, ToTarget)) * (180.0f / PI);
+	float FacingAngle = FMath::Acos(FMath::Clamp(FVector::DotProduct(Forward, ToTarget), -1.0f, 1.0f)) * (180.0f / PI);
 	
 	if (FacingAngle <= InstanceData.FacingThreshold && InstanceData.TimeSpent >= InstanceData.MinDuration)
 	{

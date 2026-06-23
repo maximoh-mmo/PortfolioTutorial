@@ -4,10 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
-#include "StateTree.h"
-#include "UObject/ConstructorHelpers.h"
 #include "OnsetPlayerAIController.generated.h"
 
+class UStateTree;
 class UStateTreeAIComponent;
 class UTargetingComponent;
 
@@ -29,7 +28,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Auto Combat")
 	float Aggression = 0.5f;
 
-	/** Stores the current targeting component via OnPossess, clear's on UnPossess. */          
+	/** Stores the current targeting component via OnPossess, clears on UnPossess. */          
 	UTargetingComponent* GetTargetingComponent() const { return TargetingComponent; }
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Auto Combat Ranges")
@@ -42,6 +41,7 @@ public:
 	float MaxAcquire = 5000.0f;
 	
 protected:
+	void StartStateTree();
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 	

@@ -31,6 +31,7 @@ static bool BestAvailableTarget(const FStateTreeExecutionContext& Context)
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(Controller->GetWorld());                                         
 	if (!NavSys) return false;
 	
+	// MaxDistance/ Aggression are 0-1 lerp ratios, not absolute distances
 	const float Leash = FMath::Lerp(Controller->MinLeash, Controller->MaxLeash, Controller->MaxDistance);
 	const float Range = FMath::Lerp(Controller->MinAcquire, Controller->MaxAcquire, Controller->Aggression);
 	const FVector Home = Self->HomeTransform.GetLocation();

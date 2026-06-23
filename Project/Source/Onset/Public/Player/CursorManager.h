@@ -6,7 +6,9 @@
 #include "Components/ActorComponent.h"
 #include "CursorManager.generated.h"
 
-UCLASS(BlueprintType, Blueprintable, meta = (BlueprintSpawnableComponent) )
+class APlayerController;
+
+UCLASS(BlueprintType, Blueprintable, meta = (BlueprintSpawnableComponent))
 class ONSET_API UCursorManager : public UActorComponent
 {
 	GENERATED_BODY()
@@ -75,4 +77,7 @@ private:
 	
 	/** Cached pointer to owning PlayerController (Set in InitializeComponent). */
 	mutable TWeakObjectPtr<APlayerController> CachedPlayerController;
+	
+	/** Helper: returns cached or fresh PlayerController from owner. */
+	APlayerController* GetPlayerController() const;
 };

@@ -6,7 +6,6 @@
 #include "StateTree.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Core/TargetingComponent.h"
-#include "UObject/ConstructorHelpers.h"
 
 
 // Sets default values
@@ -18,28 +17,38 @@ AOnsetPlayerAIController::AOnsetPlayerAIController()
 	StateTree = LoadObject<UStateTree>(nullptr, TEXT("/Game/AI/PlayerAutoCombat.PlayerAutoCombat"));
 }
 
+void AOnsetPlayerAIController::StartStateTree()
+{
+	if (!StateTree)
+	{
+		StateTree = LoadObject<UStateTree>(nullptr, TEXT("/Game/AI/PlayerAutoCombat.PlayerAutoCombat"));
+	}
+#if WITH_EDITOR
+	if (!StateTree->IsReadyToRun())
+	{
+		StateTree->MarkAsModified(false);
+		StateTree->CompileIfChanged();
+	}
+#endif
+	
+	if (StateTree->IsReadyToRun())
+	{
+		StateTreeComponent->SetStateTree(StateTree);
+		StateTreeComponent->SetComponentTickEnabled(true);
+		StateTreeComponent->StartLogic();
+	}
+
+	else
+	{
+		UE_LOG(LogController, Error, TEXT("StateTree not ready. Open /Game/AI/PlayerAutoCombat and save it."));
+	}
+}
+
 void AOnsetPlayerAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
-	if (StateTree)
-	{
-		StateTreeComponent->SetStateTree(StateTree);
-	}
-	else
-	{		
-		StateTree = LoadObject<UStateTree>(nullptr, TEXT("/Game/AI/PlayerAutoCombat.PlayerAutoCombat"));
-		if (StateTree)
-		{
-			StateTreeComponent->SetStateTree(StateTree);
-		}
-		else
-		{
-			UE_LOG(LogController, Warning, TEXT("AOnsetPlayerAIController::OnPossess: No tree component"));
-		}
-	}
-	StateTreeComponent->SetComponentTickEnabled(true);
-	StateTreeComponent->StartLogic();
+	StartStateTree();
 	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Possessed player"));
 }
 

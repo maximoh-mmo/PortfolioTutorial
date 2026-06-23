@@ -6,9 +6,6 @@
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
 #include "EnemySearchTask.generated.h"
 
-/**
- * 
- */
 USTRUCT()
 struct FOnsetStateTreeSearchInstanceData
 {
@@ -66,6 +63,6 @@ struct FEnemySearchTask : public FOnsetStateTreeTask
 		const FStateTreeTransitionResult& Transition) const override;
 	
 	FVector PickSearchPoint(
-		const FInstanceDataType& InstanceData, const FVector& Vector, UWorld* World) const;
+		const FInstanceDataType& InstanceData, const FVector& Origin, UWorld* World) const;
 	void ApplyYawSweep(const FStateTreeExecutionContext& Context, AOnsetAIController* Controller, AOnsetBaseCharacter* Self) const;
 };

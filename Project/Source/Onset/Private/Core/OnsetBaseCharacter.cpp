@@ -56,7 +56,7 @@ void AOnsetBaseCharacter::ResetAttributes()
 	AttributeSet->InitHealth(AttributeSet->GetMaxHealth());
 	AttributeSet->InitMaxHealth(100.0f);
 	MovementAttributes->InitMovementSpeed(600.0f);
-	bIsAlive = false;
+	bIsAlive = false; // Pool return — OnRespawn() re-enables on retrieval
 }
 
 void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)

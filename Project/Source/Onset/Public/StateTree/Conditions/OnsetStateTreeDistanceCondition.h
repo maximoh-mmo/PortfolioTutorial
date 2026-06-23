@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "StateTreeConditionBase.h"
-#include "Animation/AnimNode_TransitionPoseEvaluator.h"
 #include "OnsetStateTreeDistanceCondition.generated.h"
 
 UENUM()

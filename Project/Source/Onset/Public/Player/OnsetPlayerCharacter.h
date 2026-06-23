@@ -21,10 +21,6 @@ class ONSET_API AOnsetPlayerCharacter : public AOnsetBaseCharacter
 public:
 	AOnsetPlayerCharacter();
 
-	virtual void Tick(float DeltaTime) override;
-
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
 	virtual void OnDeath(AActor* KillingActor = nullptr) override;
 	
 	virtual void BeginPlay() override;
@@ -33,6 +29,8 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	float AttackRange = 250.0f;
+	
+	void EnableCameraLag(bool bEnable);
 protected:
 	// --- Camera ---
 	

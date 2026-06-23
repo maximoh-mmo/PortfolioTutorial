@@ -61,6 +61,7 @@ EStateTreeRunStatus FEnemyFleeTask::Tick(FStateTreeExecutionContext& Context,
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 		float HealthRatio = Self->AttributeSet->GetHealth() / Self->AttributeSet->GetMaxHealth();
 		float SpeedMod = FMath::Lerp(InstanceData.MinSpeedMultiplier, 1.0f, HealthRatio);
+		// TODO: Cache speed modifier to avoid remove/reapply every tick
 		if (InstanceData.SpeedEffectHandle.IsValid())                                                                   
 		{                                                                                                               
 			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);                   

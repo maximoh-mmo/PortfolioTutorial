@@ -6,9 +6,6 @@
 #include "Abilities/GameplayAbility.h"
 #include "OnsetGA_HitReaction.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class ONSET_API UOnsetGA_HitReaction : public UGameplayAbility
 {
@@ -17,7 +14,7 @@ public:
 	UOnsetGA_HitReaction();
 	
 	UPROPERTY()
-	TObjectPtr<UGameplayEffect> StaggerEffectClass;
+	TObjectPtr<UGameplayEffect> StaggerEffect;
 protected:
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle,

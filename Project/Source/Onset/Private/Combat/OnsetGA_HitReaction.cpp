@@ -12,7 +12,7 @@ UOnsetGA_HitReaction::UOnsetGA_HitReaction()
 		TEXT("Game/Game/Combat/GE_Stagger.GE_Stagger_C"));
 	if (StaggerFinder.Succeeded())
 	{
-		StaggerEffectClass = StaggerFinder.Object;
+		StaggerEffect = StaggerFinder.Object;
 	}
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	FAbilityTriggerData TriggerData;
@@ -36,10 +36,9 @@ void UOnsetGA_HitReaction::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	{
 		// void to avoid IDE warnings for unused statement result
 		(void)ApplyGameplayEffectToOwner(Handle, ActorInfo, ActivationInfo, CooldownGameplayEffectClass, GetAbilityLevel());
-		if (StaggerEffectClass)
+		if (StaggerEffect)
 		{
-			// void to avoid IDE warnings for unused statement result
-			(void)ApplyGameplayEffectToOwner(Handle, ActorInfo, ActivationInfo, StaggerEffectClass, GetAbilityLevel());
+			ApplyGameplayEffectToOwner(Handle, ActorInfo, ActivationInfo, StaggerEffect, GetAbilityLevel());
 		}
 	}
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);

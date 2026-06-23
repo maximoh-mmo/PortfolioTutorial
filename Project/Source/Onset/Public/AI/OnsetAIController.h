@@ -24,7 +24,7 @@ public:
 	AOnsetAIController();
 
 	UFUNCTION(BlueprintPure, Category = "AI")
-	bool InUse() { return bInUse; }
+	bool InUse() const { return bInUse; }
 	// --- Components ---
 
 	/** StateTree execution component. Started on possess, stopped on pool return. */
@@ -33,7 +33,7 @@ public:
 
 	/** Push a profile to this controller — sets StateTree asset and configures perception. */
 	UFUNCTION(BlueprintCallable, Category = "AI")
-	void ApplyAIProfile(const UAIProfile* Profile);
+	void ApplyAIProfile(UAIProfile* Profile);
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	const UAIProfile* GetAIProfile() const { return AIProfile; } 
 	void ApplyPerceptionProfile(const UPerceptionProfile* Profile);
@@ -71,5 +71,5 @@ protected:
 private:
 	bool bInUse;
 	UPROPERTY()
-	const UAIProfile* AIProfile;
+	UAIProfile* AIProfile;
 };

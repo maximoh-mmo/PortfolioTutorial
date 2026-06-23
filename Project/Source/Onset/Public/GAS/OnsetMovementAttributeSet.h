@@ -5,17 +5,11 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
+#include "OnsetAttributeSet.h"
 #include "OnsetMovementAttributeSet.generated.h"
 
-// Macro for boilerplate OnRep replication
-#define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
-	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
-	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
-	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
-	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
-/**
- * 
- */
+
+/** Movement speed attribute set with OnRep replication. */
 UCLASS()
 class ONSET_API UOnsetMovementAttributeSet : public UAttributeSet
 {

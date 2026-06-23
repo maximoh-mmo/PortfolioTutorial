@@ -82,7 +82,7 @@ void FEnemySearchTask::ExitState(FStateTreeExecutionContext& Context,
 		}                                                                                                           
 	}             }
 
-FVector FEnemySearchTask::PickSearchPoint(const FInstanceDataType& InstanceData, const FVector& Vector, UWorld* World) const
+FVector FEnemySearchTask::PickSearchPoint(const FInstanceDataType& InstanceData, const FVector& Origin, UWorld* World) const
 {
 	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
 	if (!NavSystem) return InstanceData.SearchCenter;

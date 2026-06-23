@@ -13,6 +13,10 @@ AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
+	// lock rotation setting absolute to ignore pawn rotation.
+	CameraBoom->bInheritYaw = false;  // camera stays at fixed world yaw
+	CameraBoom->bInheritPitch = false; // also fix pitch for good measure
+	CameraBoom->bInheritRoll = false;  // also fix roll  
 	CameraBoom->TargetArmLength = 2000.f;
 	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
 	CameraBoom->bDoCollisionTest = true;
@@ -45,15 +49,9 @@ void AOnsetPlayerCharacter::RespawnPlayer()
 	}                        
 }
 
-void AOnsetPlayerCharacter::Tick(float DeltaTime)
+void AOnsetPlayerCharacter::EnableCameraLag(bool bEnable)
 {
-	Super::Tick(DeltaTime);
-
-}
-
-void AOnsetPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	CameraBoom->bEnableCameraLag = bEnable;
 }
 
 void AOnsetPlayerCharacter::OnDeath(AActor* KillingActor)

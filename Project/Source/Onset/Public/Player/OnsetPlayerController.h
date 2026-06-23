@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EngineMinimal.h"
 #include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
 #include "OnsetPlayerController.generated.h"
@@ -34,7 +33,7 @@ public:
 	
 	void EnableAutoCombat();
 	void DisableAutoCombat();
-	AController* GetActiveController();    
+	const AController* GetActiveController() const;    
 protected:
 	virtual void BeginPlay() override;
 
@@ -47,7 +46,7 @@ protected:
 private:
 	// --- Auto Combat ---
 	
-	/** PlayerAIC, spawned as world actor on Begin Play, responsible for it's own destruction */
+	/** PlayerAIC, spawned as world actor on Begin Play, responsible for its own destruction */
 	UPROPERTY()
 	TObjectPtr<AOnsetPlayerAIController> AutoCombatController;
 	
@@ -58,13 +57,9 @@ private:
 	
 	FTimerHandle IdleAutoCombatTimerHandle;
 	
-	void ResetIdleTimer();
+	void ResetIdleTimer();	
 	
-	UFUNCTION()
-	void DelayedSetViewTarget();       
-	
-	
-	//  --- Input Mapping Contexts ---
+	// --- Input Mapping Contexts ---
 	
 	/** Virtual joystick + tap + virtual ability buttons for touch input. */                                      
 	UPROPERTY(EditDefaultsOnly, Category="Input")
@@ -79,7 +74,7 @@ private:
 	// --- Input Actions ---                                                                                      
                                                                                                                      
 	/** Movement input (2D axis): virtual joystick, WASD, gamepad L-Stick. */                                     
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")                    
+	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")                    
 	UInputAction* IA_Move;
 	/** Gamepad R-Stick cursor emulation (2D axis). */                                                            
 	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")
@@ -90,15 +85,15 @@ private:
 	UInputAction* IA_Primary;
 	
 	/** Ability Input Actions */
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")
+	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")
 	UInputAction* IA_Ability1;
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")
+	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")
 	UInputAction* IA_Ability2;
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")
+	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")
 	UInputAction* IA_Ability3;
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")                                                              
+	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")                                                              
 	UInputAction* IA_Ability4; 
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Actions")                                                         
+	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")                                                         
 	UInputAction* IA_PvPToggle;                                                                                     
 	
 	// --- Cursor ---                                                                                         
@@ -111,18 +106,18 @@ private:
 	/** Timer handle for idle hide cursor*/
 	FTimerHandle CursorIdleTimerHandle;	
 	/** Time in seconds after R-Stick stops moving to hide the software cursor */
-	UPROPERTY(EditDefaultsOnly, Category = "Cursor")                                                                
+	UPROPERTY(EditDefaultsOnly, Category="Cursor")                                                                
 	float CursorIdleDelay = 1.5f;
 	
 	/** Virtual cursor for gamepad */
-	UPROPERTY(EditDefaultsOnly, Category = "Cursor")                                                                
+	UPROPERTY(EditDefaultsOnly, Category="Cursor")                                                                
 	TSubclassOf<UGamepadCursorWidget> GamepadCursorWidgetClass;                                                     
 	UPROPERTY()                                                                                                     
 	TObjectPtr<UGamepadCursorWidget> GamepadCursorWidget;         
 	
 	// --- Targeting ---
 	
-	/** Stores the current targeting component via OnPossess, clear's on UnPossess. */          
+	/** Stores the current targeting component via OnPossess, clears on UnPossess. */          
 	UPROPERTY()
 	TObjectPtr<UTargetingComponent> TargetingComponent;
 	
@@ -153,13 +148,13 @@ private:
 	/** Called when IA_Primary triggers. Raycasts at cursor position and branches:                                
 	 *  Enemy → TargetingComponent->SetTarget(), Ground → MoveToLocation(). */                                    
 	void OnPrimaryInteraction(const FInputActionValue& Value);
-	/** Abiliity handlers for each ability */
+	/** Ability handlers for each ability */
 	void OnAbility1(const FInputActionValue& Value);
 	void OnAbility2(const FInputActionValue& Value);
 	void OnAbility3(const FInputActionValue& Value);
 	void OnAbility4(const FInputActionValue& Value);
 	
-	// --- Touch bridge (so BP widget does not need subsystem access ---
+	// --- Touch bridge (BP widget injects ability input without subsystem access) ---
 	UFUNCTION(BlueprintCallable, Category="Input")
 	void InjectAbilityInput(int32 AbilityIndex, bool bPressed);
 	

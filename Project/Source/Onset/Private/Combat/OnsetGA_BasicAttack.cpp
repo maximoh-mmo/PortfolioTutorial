@@ -72,9 +72,8 @@ void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	ActorArrayData->TargetActorArray.Add(TargetActor);
 	TargetData.Add(ActorArrayData);
 	
-	// (void) in order to remove IDE warning / suggestion to remove statement as returned Struct is not used.
-	auto results = ApplyGameplayEffectToTarget(Handle, ActorInfo, ActivationInfo, TargetData, DamageEffectClass,
-	GetAbilityLevel()); 
+	ApplyGameplayEffectToTarget(Handle, ActorInfo, ActivationInfo, TargetData, DamageEffectClass,
+	GetAbilityLevel());
 	
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);                                                 
 }                                                                         

@@ -1,7 +1,7 @@
 #include "AI/OnsetAIController.h"
 
 #include "Enemy/Profile/AIProfile.h"
-#include "StateTree/OnsetStateTreeSchema.h"
+
 #include "Components/StateTreeAIComponent.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Navigation/CrowdFollowingComponent.h"
@@ -39,7 +39,7 @@ AOnsetAIController::AOnsetAIController()
 	}         
 }
 
-void AOnsetAIController::ApplyAIProfile(const UAIProfile* Profile)
+void AOnsetAIController::ApplyAIProfile(UAIProfile* Profile)
 {
 	if (Profile == nullptr)
 	{
@@ -49,12 +49,9 @@ void AOnsetAIController::ApplyAIProfile(const UAIProfile* Profile)
 		AIProfile = nullptr;
 		return;
 	}
-	if (Profile != nullptr)
-	{
-		StateTreeComponent->StopLogic(TEXT("Applying new profile"));
-		StateTreeComponent->SetStateTree(Profile->StateTreeAsset);
-		AIProfile = Profile;
-	}
+	StateTreeComponent->StopLogic(TEXT("Applying new profile"));
+	StateTreeComponent->SetStateTree(Profile->StateTreeAsset);
+	AIProfile = Profile;
 }
 void AOnsetAIController::ApplyPerceptionProfile(const UPerceptionProfile* Profile)
 {

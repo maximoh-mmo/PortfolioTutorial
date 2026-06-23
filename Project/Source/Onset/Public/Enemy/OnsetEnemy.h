@@ -6,11 +6,9 @@
 #include "Core/OnsetBaseCharacter.h"
 #include "OnsetEnemy.generated.h"
 
-class UVisualProfile;
-class UPerceptionProfile;
-class AOnsetSpawner;
 class UGroupComponent;
-class UAIProfile;
+class UVisualProfile;
+class AOnsetSpawner;
 
 /** NPC pawn owned by AOnsetAIController. Visuals are driven by UAIProfile via ApplyProfile(). */
 UCLASS()
@@ -29,10 +27,9 @@ public:
 	UPROPERTY()
 	TObjectPtr<UGroupComponent> GroupComp;
 	
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Visual Profile")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Profile")
 	TObjectPtr<UVisualProfile> VisualProfile;
 	
-	/** */
 	UPROPERTY()
 	TObjectPtr<AOnsetSpawner> OwningSpawner;
 	

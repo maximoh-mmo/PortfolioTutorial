@@ -37,13 +37,10 @@ bool UCursorManager::GetCursorPosition(FVector2D& OutPosition) const
 		OutPosition = LastTouchPosition;
 		return true;
 	}
-	APlayerController* Controller = CachedPlayerController.Get();
-	if (!Controller)	{
-		Controller = Cast<APlayerController>(GetOwner());
-		CachedPlayerController = Controller;
-	}
 	
-	if (Controller)	{
+	APlayerController* Controller = GetPlayerController();
+	if (Controller)
+	{
 		return Controller->GetMousePosition(OutPosition.X, OutPosition.Y);
 	}
 	
@@ -64,12 +61,7 @@ void UCursorManager::SetGamepadCursorActive(bool bActive)
 
 void UCursorManager::ResetGamepadCursor()
 {
-	APlayerController* Controller = CachedPlayerController.Get();
-	if (!Controller)	{
-		Controller = Cast<APlayerController>(GetOwner());
-		CachedPlayerController = Controller;
-	}
-
+	APlayerController* Controller = GetPlayerController();
 	if (!Controller || !Controller->GetLocalPlayer()) return;
 	
 	FVector2D ViewportSize;	
@@ -80,14 +72,8 @@ void UCursorManager::ResetGamepadCursor()
 
 void UCursorManager::ClampToViewport()
 {
-	APlayerController* Controller = CachedPlayerController.Get();                                                       
-	if (!Controller)                                                                                                    
-	{                                                                                                           
-		Controller = Cast<APlayerController>(GetOwner());                                                               
-		CachedPlayerController = Controller;                                                                            
-	}                                                                                                           
-                                                                                                                     
-	if (!Controller || !Controller->GetLocalPlayer()) return;                                                                   
+	APlayerController* Controller = GetPlayerController();
+	if (!Controller || !Controller->GetLocalPlayer()) return;
                                                                                                                      
 	FVector2D ViewportSize;                                                                                     
 	Controller->GetLocalPlayer()->ViewportClient->GetViewportSize(ViewportSize);                                        
@@ -104,4 +90,15 @@ void UCursorManager::AddGamepadCursorDelta(const FVector2D& Delta, float DeltaTi
 	if (Delta.IsZero()) return;
 	GamepadCursorPosition += Delta * GamepadCursorSensitivity * DeltaTime;
 	bUsingGamepadCursor = true;	
+}
+
+APlayerController* UCursorManager::GetPlayerController() const
+{
+	APlayerController* Controller = CachedPlayerController.Get();
+	if (!Controller)
+	{
+		Controller = Cast<APlayerController>(GetOwner());
+		CachedPlayerController = Controller;
+	}
+	return Controller;
 }

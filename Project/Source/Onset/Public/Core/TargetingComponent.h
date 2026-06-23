@@ -7,7 +7,7 @@
 #include "TargetingComponent.generated.h"
 
 /**
- * Pure data holder for the player's current target with accessor validation.
+ * Target management component with validation and accessor methods.
  */
 UCLASS(BlueprintType, Blueprintable, meta = (BlueprintSpawnableComponent))
 class ONSET_API UTargetingComponent : public UActorComponent
@@ -25,11 +25,11 @@ public:
 	
 	/** Returns the current target actor, or nullptr if no target is set. */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
-	AActor* GetTarget() const { return CurrentTarget; };
+	AActor* GetTarget() const { return CurrentTarget; }
 	
 	/** Returns true if a valid target is currently set. */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
-	bool HasTarget() const { return CurrentTarget != nullptr; };
+	bool HasTarget() const { return CurrentTarget != nullptr; }
 	
 	/** Clears the current target. Identical to SetTarget(nullptr). */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
@@ -37,13 +37,13 @@ public:
 	
 	/** Target validation determines whether a target should be set */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
-	bool IsActorTargetValid(AActor* Actor);
+	bool IsActorTargetValid(AActor* Actor) const;
 	/** Target validation override for pvp checks */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
-	bool IsActorTargetPVPValid(AActor* TargetActor, AActor* SourceActor);
+	bool IsActorTargetPVPValid(AActor* TargetActor, AActor* SourceActor) const;
 
 private:
-	/** The currently targeted actor. Updated by PlayerController context resolution. */
+	/** The currently targeted actor. */
 	UPROPERTY(VisibleAnywhere, Category = "Targeting")
 	AActor* CurrentTarget;	
 };
