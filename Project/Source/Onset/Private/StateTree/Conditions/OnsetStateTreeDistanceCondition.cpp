@@ -28,7 +28,7 @@ bool FOnsetStateTreeDistanceCondition::TestCondition(FStateTreeExecutionContext&
 	}
 	else // Home location
 	{
-		AOnsetBaseCharacter* Self = FOnsetStateTreeTask::GetSelfBaseCharacter(Context);
+		AOnsetBaseCharacter* Self = FOnsetStateTreeTask::GetSelfPawn<AOnsetBaseCharacter>(Context);
 		if (!Self) return false;
 		TargetLocation = Self->HomeTransform.GetLocation();
 	}

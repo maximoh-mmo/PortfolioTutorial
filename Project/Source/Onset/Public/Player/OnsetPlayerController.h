@@ -156,7 +156,7 @@ private:
 	
 	// --- Touch bridge (BP widget injects ability input without subsystem access) ---
 	UFUNCTION(BlueprintCallable, Category="Input")
-	void InjectAbilityInput(int32 AbilityIndex, bool bPressed);
+	void InjectAbilityInput(int32 AbilityIndex, bool bPressed) const;
 	
 	// --- PVP toggling ---
 	void OnPvPToggleTriggered(const FInputActionValue& Value);                                                      

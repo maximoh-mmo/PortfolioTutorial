@@ -6,21 +6,26 @@
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
 #include "EnemyAgroTask.generated.h"
 
-USTRUCT()                                                                                                       
-struct FOnsetStateTreeAgroInstanceData                                                                          
-{                                                                                                               
-	GENERATED_BODY()                                                                                            
-                                                                                                                     
-	UPROPERTY(EditAnywhere, Category = "Agro")                                                                  
-	float TurnSpeed = 360.0f;                                                                                   
-                                                                                                                     
-	UPROPERTY(EditAnywhere, Category = "Agro")                                                                  
-	float FacingThreshold = 15.0f;                                                                              
-                                                                                                                     
-	UPROPERTY(EditAnywhere, Category = "Agro")                                                                  
-	float MinDuration = 0.5f;                                                                                   
-                                                                                                                     
-	float TimeSpent = 0.0f;                                                                                     
+/** Runtime data for the enemy agro task. */
+USTRUCT()
+struct FOnsetStateTreeAgroInstanceData
+{
+	GENERATED_BODY()
+
+	/** Rotation speed when facing the target, in degrees per second. */
+	UPROPERTY(EditAnywhere, Category = "Agro")
+	float TurnSpeed = 360.0f;
+
+	/** Angular threshold in degrees before the NPC is considered facing the target. */
+	UPROPERTY(EditAnywhere, Category = "Agro")
+	float FacingThreshold = 15.0f;
+
+	/** Minimum time to remain in the agro state. */
+	UPROPERTY(EditAnywhere, Category = "Agro")
+	float MinDuration = 0.5f;
+
+	/** Time spent in the agro state. */
+	float TimeSpent = 0.0f;
 };
 
 USTRUCT()

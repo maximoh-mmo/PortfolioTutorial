@@ -47,7 +47,7 @@ void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 		return;
 	}
 	AActor* TargetActor = Self->TargetingComponent->GetTarget();
-	if (!TargetActor)
+	if (!IsValid(TargetActor))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
@@ -72,7 +72,7 @@ void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	ActorArrayData->TargetActorArray.Add(TargetActor);
 	TargetData.Add(ActorArrayData);
 	
-	ApplyGameplayEffectToTarget(Handle, ActorInfo, ActivationInfo, TargetData, DamageEffectClass,
+	(void)ApplyGameplayEffectToTarget(Handle, ActorInfo, ActivationInfo, TargetData, DamageEffectClass,
 	GetAbilityLevel());
 	
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);                                                 

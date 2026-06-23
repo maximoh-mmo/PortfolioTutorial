@@ -69,7 +69,7 @@ protected:
 	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
 	
 private:
-	bool bInUse;
+	bool bInUse = false;
 	UPROPERTY()
 	UAIProfile* AIProfile;
 };

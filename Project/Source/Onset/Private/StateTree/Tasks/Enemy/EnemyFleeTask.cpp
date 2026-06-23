@@ -12,7 +12,7 @@ EStateTreeRunStatus FEnemyFleeTask::EnterState(FStateTreeExecutionContext& Conte
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;                                                      
 	AIController->ClearFocus(EAIFocusPriority::Gameplay);
-	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
+	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;
 
 	AActor* Target = GetTarget(Context);
@@ -56,7 +56,7 @@ EStateTreeRunStatus FEnemyFleeTask::Tick(FStateTreeExecutionContext& Context,
 	if (!AIController) return EStateTreeRunStatus::Failed;
 	if (!GetPathFollowingComponent(Context)) return EStateTreeRunStatus::Failed;
 
-	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))
+	if (AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context))
 	{
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 		float HealthRatio = Self->AttributeSet->GetHealth() / Self->AttributeSet->GetMaxHealth();
@@ -77,7 +77,7 @@ EStateTreeRunStatus FEnemyFleeTask::Tick(FStateTreeExecutionContext& Context,
 void FEnemyFleeTask::ExitState(FStateTreeExecutionContext& Context,
                                         const FStateTreeTransitionResult& Transition) const
 {
-	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))
+	if (AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context))
 	{
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 		if (InstanceData.SpeedEffectHandle.IsValid())                                                                   

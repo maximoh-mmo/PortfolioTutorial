@@ -6,9 +6,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "OnsetGA_BasicAttack.generated.h"
 
-/**
- * 
- */
+/** Basic attack ability: applies damage to the targeted actor within range. */
 UCLASS()
 class ONSET_API UOnsetGA_BasicAttack : public UGameplayAbility
 {
@@ -26,9 +24,11 @@ protected:
 
 
 private:
+	/** Gameplay effect applied as damage to the target. */
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
-	
+
+	/** Maximum range at which this ability can hit a target. */
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	float AttackRange = 300.0f;
 };

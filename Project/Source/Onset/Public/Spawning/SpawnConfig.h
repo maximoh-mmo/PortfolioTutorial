@@ -16,7 +16,7 @@ struct FSpawnConfig
 {
 	GENERATED_BODY()
 
-	/** The UAIProfile asset defining behaviours for spawned NPCs. */
+	/** The UAIProfile asset defining behaviors for spawned NPCs. */
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TObjectPtr<UAIProfile> EnemyAIProfile;
 	

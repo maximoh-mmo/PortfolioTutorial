@@ -33,12 +33,29 @@ AOnsetPlayerController::AOnsetPlayerController()
 	CheatClass = UOnsetCheatManager::StaticClass();
 }
 
+void AOnsetPlayerController::StartAutoAttack()
+{
+	// Ensure we have a valid world context before setting the timer
+	if (!GetWorld()) return;
+	GetWorldTimerManager().SetTimer(
+		AutoAttackTimerHandle,
+		this,
+		&AOnsetPlayerController::OnAutoAttackTick,
+		AutoAttackInterval,
+		true,
+		0.0f);
+}
+
+void AOnsetPlayerController::StopAutoAttack()
+{
+	GetWorldTimerManager().ClearTimer(AutoAttackTimerHandle);
+}
+
 void AOnsetPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
-	if (Subsystem)
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
 	{
 		Subsystem->AddMappingContext(IMC_Touch, 0);
 		Subsystem->AddMappingContext(IMC_KbMouse, 0);
@@ -76,9 +93,8 @@ void AOnsetPlayerController::BeginPlay()
 void AOnsetPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	
-	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent);
-	if (EnhancedInputComponent)
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 	{
 		EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &AOnsetPlayerController::OnMove);
 		EnhancedInputComponent->BindAction(IA_Cursor, ETriggerEvent::Triggered, this, &AOnsetPlayerController::OnCursorMove);
@@ -104,22 +120,14 @@ void AOnsetPlayerController::OnUnPossess()
 	TargetingComponent = nullptr;
 }
 
-void AOnsetPlayerController::StartAutoAttack()
+// ReSharper disable once CppMemberFunctionMayBeConst modifies GamepadCursorWidget
+void AOnsetPlayerController::HideGamepadCursor()
 {
-	// Ensure we have a valid world context before setting the timer
-	if (!GetWorld()) return;
-	GetWorldTimerManager().SetTimer(
-		AutoAttackTimerHandle,
-		this,
-		&AOnsetPlayerController::OnAutoAttackTick,
-		AutoAttackInterval,
-		true,
-		0.0f);
-}
-
-void AOnsetPlayerController::StopAutoAttack()
-{
-	GetWorldTimerManager().ClearTimer(AutoAttackTimerHandle);
+	if (GamepadCursorWidget)
+	{
+		GamepadCursorWidget->HideCursor();
+		CursorManager->ResetGamepadCursor();
+	}
 }
 
 void AOnsetPlayerController::OnAutoAttackTick()
@@ -150,33 +158,30 @@ void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 void AOnsetPlayerController::OnCursorMove(const FInputActionValue& Value)
 {
 	bShowMouseCursor = false;
-	FVector2D CursorDelta = Value.Get<FVector2D>();
+	const FVector2D CursorDelta = Value.Get<FVector2D>();
 	if (CursorDelta.IsZero()) return;
-	CursorManager->AddGamepadCursorDelta(CursorDelta, GetWorld()->GetDeltaSeconds());
-	CursorManager->ClampToViewport();
-	FVector2D ScreenPos;
-	if (CursorManager->GetCursorPosition(ScreenPos))
+	if (const UWorld* World = GetWorld())
 	{
-		GamepadCursorWidget->SetCursorPosition(ScreenPos);
-		GamepadCursorWidget->ShowCursor();
-		GetWorldTimerManager().ClearTimer(CursorIdleTimerHandle);
+		CursorManager->AddGamepadCursorDelta(CursorDelta, World->GetDeltaSeconds());
+		CursorManager->ClampToViewport();
+		FVector2D ScreenPos;
+		if (CursorManager->GetCursorPosition(ScreenPos))
+		{
+			if (GamepadCursorWidget)
+			{
+				GamepadCursorWidget->SetCursorPosition(ScreenPos);
+				GamepadCursorWidget->ShowCursor();
+			}
+			GetWorldTimerManager().ClearTimer(CursorIdleTimerHandle);
+		}
 	}
 }
 
 void AOnsetPlayerController::OnCursorMoveEnded(const FInputActionValue& Value)
 {
-	GetWorld()->GetTimerManager().SetTimer(CursorIdleTimerHandle, this, &AOnsetPlayerController::HideGamepadCursor,
-		CursorIdleDelay, false);
-}
-
-// ReSharper disable once CppMemberFunctionMayBeConst modifies GamepadCursorWidget
-void AOnsetPlayerController::HideGamepadCursor()
-{
-	if (GamepadCursorWidget)
-	{
-		GamepadCursorWidget->HideCursor();
-		CursorManager->ResetGamepadCursor();
-	}
+	if (UWorld* World = GetWorld())
+		World->GetTimerManager().SetTimer(CursorIdleTimerHandle, this, &AOnsetPlayerController::HideGamepadCursor,
+		                                  CursorIdleDelay, false);
 }
 
 void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value)
@@ -212,14 +217,14 @@ void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 	ResetIdleTimer();
 }
 
-void AOnsetPlayerController::InjectAbilityInput(int32 AbilityIndex, bool bPressed)
+void AOnsetPlayerController::InjectAbilityInput(const int32 AbilityIndex, const bool bPressed) const
 {
 	// Route to the right action via the Enhanced Input subsystem                                               
 	UEnhancedInputLocalPlayerSubsystem* Subsystem =                                                             
 		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());                       
-	if (!Subsystem) return;                                                       
-                                                                                                                     
-	UInputAction* Action = nullptr;                                                                             
+	if (!Subsystem) return;
+
+	UInputAction* Action;                                                                             
 	switch (AbilityIndex)                                                                                       
 	{                                                                                                           
 	case 1: Action = IA_Ability1; break;                                                                    
@@ -233,16 +238,15 @@ void AOnsetPlayerController::InjectAbilityInput(int32 AbilityIndex, bool bPresse
 
 void AOnsetPlayerController::OnPvPToggleTriggered(const FInputActionValue& Value)                               
 {
-	AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
+	const AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
 	if (!OnsetPlayerState) return;                                                                                            
 	Server_SetPvPEnabled(!OnsetPlayerState->bIsPvPEnabled);                                                                   
 }
 
 
-void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(bool bEnabled)                                 
-{                                                                                                               
-	AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>();                                                
-	if (OnsetPlayerState)
+void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(const bool bEnabled)                                 
+{
+	if (AOnsetPlayerState* OnsetPlayerState = GetPlayerState<AOnsetPlayerState>())
 	{
 		OnsetPlayerState->bIsPvPEnabled = bEnabled;
 	}

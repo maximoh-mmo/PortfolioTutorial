@@ -2,17 +2,17 @@
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
 #include "Enemy/Profile/AIProfile.h"
-#include "StateTree/Tasks/OnsetStateTreeTask.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/OnsetEnemy.h"
+#include "StateTree/Tasks/OnsetStateTreeTask.h"
 
 bool FOnsetStateTreeFleeCondition::TestCondition(FStateTreeExecutionContext& Context) const
 {
 	FOnsetFleeConditionInstanceData& InstanceData = Context.GetInstanceData<FOnsetFleeConditionInstanceData>(*this);
 	AOnsetAIController* AIController = FOnsetStateTreeTask::GetController(Context); 
 	if (!AIController->GetAIProfile()) return false;
-	AOnsetEnemy* Self = FOnsetStateTreeTask::GetSelfEnemyCharacter(Context);
+	const AOnsetEnemy* Self = FOnsetStateTreeTask::GetSelfPawn<AOnsetEnemy>(Context);
 	if (!Self || !Self->AbilitySystemComponent) return false;
 	
 	float MaxHealth = Self->AttributeSet->GetMaxHealth();

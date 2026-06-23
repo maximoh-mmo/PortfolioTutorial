@@ -1,14 +1,18 @@
-﻿#pragma once
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
 #include "StateTreeConditionBase.h"
 #include "OnsetStateTreeHearingCondition.generated.h"
 
+/** Runtime data for the hearing condition. */
 USTRUCT()
 struct FOnsetStateTreeHearingConditionInstanceData
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(EditAnywhere, Category = "Investigation")                                                             
-	float MaxTimeSinceLastNoise = 5.0f;      
+
+	/** Maximum time since the last noise event for the condition to pass. */
+	UPROPERTY(EditAnywhere, Category = "Investigation")
+	float MaxTimeSinceLastNoise = 5.0f;
 };
 
 

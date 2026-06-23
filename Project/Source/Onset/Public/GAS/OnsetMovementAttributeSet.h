@@ -5,9 +5,7 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
-#include "OnsetAttributeSet.h"
 #include "OnsetMovementAttributeSet.generated.h"
-
 
 /** Movement speed attribute set with OnRep replication. */
 UCLASS()
@@ -21,7 +19,7 @@ public:
 	UPROPERTY(ReplicatedUsing=OnRep_MovementSpeed, EditAnywhere, BlueprintReadWrite, Category="Attributes")
 	FGameplayAttributeData MovementSpeed;
 	
-	ATTRIBUTE_ACCESSORS(UOnsetMovementAttributeSet, MovementSpeed)
+	ATTRIBUTE_ACCESSORS_BASIC(UOnsetMovementAttributeSet, MovementSpeed)
 	
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

@@ -38,7 +38,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Pooling")
 	int32 PoolSize = 10;
 
-	UFUNCTION(Category = "Pooling")
 	const TArray<TWeakObjectPtr<AOnsetEnemy>>& GetActiveEnemies() const { return ActiveEnemies; }  
 	
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;

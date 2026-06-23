@@ -1,14 +1,17 @@
-﻿#pragma once
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
 
 #include "CoreMinimal.h"
 #include "StateTreeConditionBase.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
 #include "OnsetStateTreeHasTargetCondition.generated.h"
 
-USTRUCT()                                                                                                       
-struct FOnsetStateTreeTargetConditionInstanceData                                                            
-{                                                                                                               
-	GENERATED_BODY()                                                                                            
+/** No runtime data required. */
+USTRUCT()
+struct FOnsetStateTreeTargetConditionInstanceData
+{
+	GENERATED_BODY()
 };     
 
 USTRUCT()

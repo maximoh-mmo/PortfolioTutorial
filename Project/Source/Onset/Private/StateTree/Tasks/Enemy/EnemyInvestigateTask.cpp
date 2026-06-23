@@ -15,7 +15,7 @@ EStateTreeRunStatus FEnemyInvestigateTask::EnterState(FStateTreeExecutionContext
 	AOnsetAIController* Controller = GetController(Context);
 	if (!Controller) return	EStateTreeRunStatus::Failed;
 	
-	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
+	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return	EStateTreeRunStatus::Failed;
 	
 	if (!Controller->bHasPendingNoise) return EStateTreeRunStatus::Succeeded;
@@ -62,7 +62,7 @@ EStateTreeRunStatus FEnemyInvestigateTask::Tick(FStateTreeExecutionContext& Cont
 void FEnemyInvestigateTask::ExitState(FStateTreeExecutionContext& Context,
 	const FStateTreeTransitionResult& Transition) const
 {
-	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))
+	if (AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context))
 	{
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 		if (InstanceData.SpeedEffectHandle.IsValid())

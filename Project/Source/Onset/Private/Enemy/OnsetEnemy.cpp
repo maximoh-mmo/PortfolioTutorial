@@ -89,14 +89,17 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 	Super::OnDeath(KillingActor);
 	if (UOnsetCorpseSubsystem* CorpseSub = GetWorld()->GetSubsystem<UOnsetCorpseSubsystem>())
 	{
-		UStaticMesh* CorpseMesh = VisualProfile->CorpseMesh.IsNull() ? nullptr : VisualProfile->CorpseMesh.LoadSynchronous();
-		CorpseSub->SpawnCorpse(GetActorTransform(), CorpseMesh);
+		if (VisualProfile)
+		{
+			UStaticMesh* CorpseMesh = VisualProfile->CorpseMesh.IsNull() ? nullptr : VisualProfile->CorpseMesh.LoadSynchronous();
+			CorpseSub->SpawnCorpse(GetActorTransform(), CorpseMesh);
+		}
 	}
-
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetEnemy::DeferredDeathCleanup);
 }
 
 void AOnsetEnemy::DeferredDeathCleanup()
 {
+	if (!OwningSpawner)	return;
 	OwningSpawner->OnNPCDeath(this);
 }

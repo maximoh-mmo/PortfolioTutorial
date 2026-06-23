@@ -31,7 +31,7 @@ EStateTreeRunStatus FEnemyAttackTask::Tick(FStateTreeExecutionContext& Context, 
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	if (!InstanceData.AbilityClass) return EStateTreeRunStatus::Failed;
 	
-	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
+	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self || !Self->AbilitySystemComponent)	return EStateTreeRunStatus::Failed;
 	
 	if (Self->AbilitySystemComponent->HasMatchingGameplayTag(TAG_Cooldown_BasicAttack))

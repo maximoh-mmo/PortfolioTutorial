@@ -15,7 +15,7 @@ EStateTreeRunStatus FEnemySearchTask::EnterState(FStateTreeExecutionContext& Con
 	AOnsetAIController* Controller = GetController(Context);
 	if (!Controller) return EStateTreeRunStatus::Failed;
 	
-	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
+	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;
 	
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
@@ -45,7 +45,7 @@ EStateTreeRunStatus FEnemySearchTask::Tick(FStateTreeExecutionContext& Context, 
 	AOnsetAIController* Controller = GetController(Context);
 	if (!Controller) return EStateTreeRunStatus::Failed;
 	
-	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
+	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;
 	
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
@@ -72,7 +72,7 @@ EStateTreeRunStatus FEnemySearchTask::Tick(FStateTreeExecutionContext& Context, 
 void FEnemySearchTask::ExitState(FStateTreeExecutionContext& Context,
 	const FStateTreeTransitionResult& Transition) const
 {
-	if (AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context))                                                
+	if (AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context))                                                
 	{                                                                                                             
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);                                           
 		if (InstanceData.SpeedEffectHandle.IsValid())                                                               

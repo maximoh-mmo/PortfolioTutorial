@@ -27,6 +27,7 @@ public:
 	UPROPERTY()
 	TObjectPtr<UGroupComponent> GroupComp;
 	
+	/** Visual profile defining mesh, anim BP, material, and capsule size. Applied via ApplyProfile(). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Profile")
 	TObjectPtr<UVisualProfile> VisualProfile;
 	

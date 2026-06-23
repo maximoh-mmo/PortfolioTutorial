@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
 
 #include "CoreMinimal.h"
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
@@ -6,14 +8,16 @@
 
 class UGameplayAbility;
 
+/** Runtime data for the enemy attack task. */
 USTRUCT()
 struct FOnsetStateTreeAttackTaskInstanceData
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(EditAnywhere, Category = "Attack")                                                                 
-	TSubclassOf<UGameplayAbility> AbilityClass;    
-	
+
+	/** Gameplay ability class to activate when attacking. */
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	TSubclassOf<UGameplayAbility> AbilityClass;
+
 };
 
 

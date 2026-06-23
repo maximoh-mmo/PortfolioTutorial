@@ -42,10 +42,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Spawner")
 	void DestroyGroup();
 
-	/** Spawns a single NPC into the first available empty slot. */
-	UFUNCTION(BlueprintCallable, Category = "Spawner")
-	void SpawnSingleNPC();
-
 	/** Kills and returns all NPCs in the group. */
 	UFUNCTION(BlueprintCallable, Category = "Spawner")
 	void DebugKillAll();

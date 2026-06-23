@@ -15,7 +15,7 @@ class ONSET_API AOnsetPlayerState : public APlayerState
 public:
 	/** Whether PvP is enabled for this player. Replicated; triggers OnRep on clients. */
 	UPROPERTY(ReplicatedUsing=OnRep_PvPEnabled)
-	bool bIsPvPEnabled;
+	bool bIsPvPEnabled = false;
 
 	/** Called when bIsPvPEnabled changes on a client. Updates TargetingComponent validation. */
 	UFUNCTION()

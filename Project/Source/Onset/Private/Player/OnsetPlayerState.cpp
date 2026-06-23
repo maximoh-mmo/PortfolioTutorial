@@ -7,6 +7,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Player/OnsetPlayerController.h"
 #include "Core/TargetingComponent.h"
+#include "GameFramework/Pawn.h"
 
 void AOnsetPlayerState::OnRep_PvPEnabled()
 {
@@ -14,13 +15,18 @@ void AOnsetPlayerState::OnRep_PvPEnabled()
 	AOnsetPlayerController* Controller = Cast<AOnsetPlayerController>(GetPlayerController());
 	if (Controller)
 	{
-		UTargetingComponent* TargetingComponent = Cast<UTargetingComponent>(Controller->GetComponentByClass(UTargetingComponent::StaticClass()));
-		if (TargetingComponent)
+		APawn* Pawn = Controller->GetPawn();
+		if (Pawn)
 		{
-			AActor* Target = TargetingComponent->GetTarget();
-			if (Target && Target->ActorHasTag("Player"))
+			UTargetingComponent* TargetingComponent = Cast<UTargetingComponent>(
+				Pawn->GetComponentByClass(UTargetingComponent::StaticClass()));
+			if (TargetingComponent)
 			{
-				TargetingComponent->ClearTarget();
+				AActor* Target = TargetingComponent->GetTarget();
+				if (Target && Target->ActorHasTag("Player"))
+				{
+					TargetingComponent->ClearTarget();
+				}
 			}
 		}
 	}

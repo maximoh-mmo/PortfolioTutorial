@@ -2,7 +2,6 @@
 
 
 #include "Player/OnsetPlayerAIController.h"
-
 #include "StateTree.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Core/TargetingComponent.h"
@@ -23,21 +22,25 @@ void AOnsetPlayerAIController::StartStateTree()
 	{
 		StateTree = LoadObject<UStateTree>(nullptr, TEXT("/Game/AI/PlayerAutoCombat.PlayerAutoCombat"));
 	}
-#if WITH_EDITOR
-	if (!StateTree->IsReadyToRun())
+	if (StateTree)
 	{
-		StateTree->MarkAsModified(false);
-		StateTree->CompileIfChanged();
-	}
+#if WITH_EDITOR
+	
+		if (!StateTree->IsReadyToRun())
+		{
+			StateTree->MarkAsModified(false);
+			StateTree->CompileIfChanged();
+		}
+	
 #endif
 	
-	if (StateTree->IsReadyToRun())
-	{
-		StateTreeComponent->SetStateTree(StateTree);
-		StateTreeComponent->SetComponentTickEnabled(true);
-		StateTreeComponent->StartLogic();
+		if (StateTree->IsReadyToRun())
+		{
+			StateTreeComponent->SetStateTree(StateTree);
+			StateTreeComponent->SetComponentTickEnabled(true);
+			StateTreeComponent->StartLogic();
+		}
 	}
-
 	else
 	{
 		UE_LOG(LogController, Error, TEXT("StateTree not ready. Open /Game/AI/PlayerAutoCombat and save it."));

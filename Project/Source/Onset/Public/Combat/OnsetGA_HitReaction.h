@@ -6,6 +6,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "OnsetGA_HitReaction.generated.h"
 
+/** Hit reaction ability: plays a stagger effect in response to taking damage. */
 UCLASS()
 class ONSET_API UOnsetGA_HitReaction : public UGameplayAbility
 {
@@ -13,6 +14,7 @@ class ONSET_API UOnsetGA_HitReaction : public UGameplayAbility
 public:
 	UOnsetGA_HitReaction();
 	
+	/** Stagger gameplay effect applied on hit. */
 	UPROPERTY()
 	TObjectPtr<UGameplayEffect> StaggerEffect;
 protected:

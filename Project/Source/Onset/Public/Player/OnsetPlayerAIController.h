@@ -22,9 +22,11 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Auto Combat")
 	TObjectPtr<UStateTreeAIComponent> StateTreeComponent;
 	
+	/** Maximum distance ratio for movement destination acceptance. */
 	UPROPERTY(EditAnywhere, Category = "Auto Combat")
 	float MaxDistance = 0.5f;
-	
+
+	/** Aggressiveness bias affecting target selection and engagement decisions. */
 	UPROPERTY(EditAnywhere, Category = "Auto Combat")
 	float Aggression = 0.5f;
 

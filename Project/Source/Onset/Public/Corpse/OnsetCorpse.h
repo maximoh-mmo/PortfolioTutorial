@@ -1,9 +1,12 @@
-﻿#pragma once
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "OnsetCorpse.generated.h"
 
+/** A simple corpse actor with a static mesh, spawned and recycled by UOnsetCorpseSubsystem. */
 UCLASS()
 class ONSET_API AOnsetCorpse : public AActor
 {
@@ -12,6 +15,7 @@ class ONSET_API AOnsetCorpse : public AActor
 public:
 	AOnsetCorpse();
 
+	/** Static mesh component for the corpse visual. */
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 };

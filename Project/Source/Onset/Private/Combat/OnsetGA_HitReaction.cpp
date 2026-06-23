@@ -9,7 +9,7 @@
 UOnsetGA_HitReaction::UOnsetGA_HitReaction()
 {
 	static ConstructorHelpers::FObjectFinder<UGameplayEffect> StaggerFinder(
-		TEXT("Game/Game/Combat/GE_Stagger.GE_Stagger_C"));
+		TEXT("/Game/Game/Combat/GE_Stagger.GE_Stagger_C"));
 	if (StaggerFinder.Succeeded())
 	{
 		StaggerEffect = StaggerFinder.Object;

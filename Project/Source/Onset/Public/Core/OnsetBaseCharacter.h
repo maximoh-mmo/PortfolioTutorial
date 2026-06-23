@@ -21,9 +21,11 @@ public:
 	void InitAbilityActorInfo();
 	virtual void PossessedBy(AController* NewController) override;
 	
+	/** Home location used as a reference for AI leash and roam behavior. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	FTransform HomeTransform;
 	
+	/** Ability System Component for GAS integration. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
@@ -38,10 +40,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
 	TObjectPtr<UTargetingComponent> TargetingComponent;
 	
-	UPROPERTY()                                                                                                
+	/** Attribute set containing health, damage, and death event data. */
+	UPROPERTY()
 	TObjectPtr<UOnsetAttributeSet> AttributeSet;
-	
-	UPROPERTY()                                                                                                
+
+	/** Attribute set containing movement speed and related properties. */
+	UPROPERTY()
 	TObjectPtr<UOnsetMovementAttributeSet> MovementAttributes;
 		
 	UFUNCTION(BlueprintCallable, Category = "Combat")

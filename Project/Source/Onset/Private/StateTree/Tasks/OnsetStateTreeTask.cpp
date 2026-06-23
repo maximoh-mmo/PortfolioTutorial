@@ -24,24 +24,6 @@ AOnsetPlayerAIController* FOnsetStateTreeTask::GetPlayerController(const FStateT
 	return AIController;
 }
 
-AOnsetBaseCharacter* FOnsetStateTreeTask::GetSelfBaseCharacter(const FStateTreeExecutionContext& Context)
-{
-	const AOnsetAIController* AIController = GetController(Context);                                                                        
-	if (!AIController) return nullptr;                                                                               
-	AOnsetBaseCharacter* BaseCharacter = Cast<AOnsetBaseCharacter>(AIController->GetPawn());                                                 
-	if (!BaseCharacter) UE_LOG(LogTemp, Warning, TEXT("GetSelfBaseCharacter: Pawn is not an AOnsetBaseCharacter"));                 
-	return BaseCharacter;
-}
-
-AOnsetEnemy* FOnsetStateTreeTask::GetSelfEnemyCharacter(const FStateTreeExecutionContext& Context)
-{
-	const AOnsetAIController* AIController = GetController(Context);
-	if (!AIController) return nullptr;
-	AOnsetEnemy* EnemyCharacter = Cast<AOnsetEnemy>(AIController->GetPawn());
-	if (!EnemyCharacter) UE_LOG(LogTemp, Warning, TEXT("GetSelfEnemyCharacter: Pawn is not an AOnsetEnemy"))
-	return EnemyCharacter;
-}
-
 UTargetingComponent* FOnsetStateTreeTask::GetTargetingComponent(const FStateTreeExecutionContext& Context)
 {
 	AAIController* Controller = Cast<AAIController>(Context.GetOwner());                                                                                                               
@@ -58,8 +40,9 @@ UTargetingComponent* FOnsetStateTreeTask::GetTargetingComponent(const FStateTree
 
 AActor* FOnsetStateTreeTask::GetTarget(const FStateTreeExecutionContext& Context)
 {
-	if (GetTargetingComponent(Context) == nullptr) return nullptr;
-	return GetTargetingComponent(Context)->GetTarget();
+	const UTargetingComponent* TargetingComponent = GetTargetingComponent(Context);
+	if (!TargetingComponent) return nullptr;
+	return TargetingComponent->GetTarget();
 }
 
 void FOnsetStateTreeTask::SetTarget(const FStateTreeExecutionContext& Context, AActor* NewTarget)

@@ -36,13 +36,11 @@ void AOnsetSpawner::DestroyGroup()
 	{
 		if (Slots[i].Occupant == nullptr || !IsValid(Slots[i].Occupant)) continue; 
 		if (GroupManager) GroupManager->UnregisterMember(Slots[i].Occupant);
-		if (GetWorld()->GetSubsystem<UOnsetPoolSubsystem>())
-		{
-			GetWorld()->GetSubsystem<UOnsetPoolSubsystem>()->ReleasePooledEnemy(Slots[i].Occupant);
+		if (UOnsetPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UOnsetPoolSubsystem>()){
+			PoolSubsystem->ReleasePooledEnemy(Slots[i].Occupant);
 		}
 		else
 		{
-			
 			Slots[i].Occupant->Destroy();
 		}
 		Slots[i].Occupant = nullptr;
@@ -87,27 +85,25 @@ void AOnsetSpawner::InitSlots()
 
 AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 {
-	UOnsetPoolSubsystem* PoolManager = GetWorld()->GetSubsystem<UOnsetPoolSubsystem>();
-	if (!PoolManager) return nullptr;
+	UOnsetPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UOnsetPoolSubsystem>();
+	if (!PoolSubsystem) return nullptr;
 	if (!Slots.IsValidIndex(SlotIndex)) return nullptr;
 	FSpawnerSlot& Slot = Slots[SlotIndex];
 	if (Slot.Occupant && IsValid(Slot.Occupant)) return nullptr; // already occupied
 	
 	AOnsetEnemy* Spawned = nullptr;
-	if (PoolManager)
+	Spawned = PoolSubsystem->GetPooledEnemy();
+	
+	if (!Spawned)
 	{
-		Spawned = PoolManager->GetPooledEnemy();
-		if (Spawned) Spawned->SetActorTransform(Slot.SpawnTransform);
-	}
-	else
-	{
-		UE_LOG(LogSpawner, Warning, TEXT("SpawnEnemyAtSlot: PoolManager is null — cannot spawn NPC."));
+		UE_LOG(LogSpawner, Error, TEXT("No pooled enemy to spawn"))
 	}
 	if (Spawned)
 	{
+		Spawned->SetActorTransform(Slot.SpawnTransform);
 		Spawned->ApplyProfile(Config.EnemyVisualProfile);
 		Spawned->OwningSpawner = this;
-		AOnsetAIController* AIController = PoolManager->GetPooledController();
+		AOnsetAIController* AIController = PoolSubsystem->GetPooledController();
 		if (!AIController)
 		{
 			UE_LOG(LogSpawner, Error, TEXT("SpawnEnemyAtSlot: No pooled controller available."));
@@ -124,18 +120,6 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	return Spawned;
 }
 
-void AOnsetSpawner::SpawnSingleNPC()
-{
-	// get first available Free spawn Transform
-	for (auto Slot : Slots)
-	{
-		if (!Slot.Occupant || !IsValid(Slot.Occupant)) 
-		{
-			SpawnEnemyAtSlot(&Slot - Slots.GetData()); // pointer arithmetic to get index
-			return;
-		}
-	}
-}
 
 void AOnsetSpawner::DebugKillAll()
 {
@@ -149,9 +133,9 @@ void AOnsetSpawner::DebugKillLast()
 		if (Slots[i].Occupant && IsValid(Slots[i].Occupant))
 		{
 			if (GroupManager) GroupManager->UnregisterMember(Slots[i].Occupant);
-			if (GetWorld()->GetSubsystem<UOnsetPoolSubsystem>())
+			if (UOnsetPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UOnsetPoolSubsystem>())
 			{
-				GetWorld()->GetSubsystem<UOnsetPoolSubsystem>()->ReleasePooledEnemy(Slots[i].Occupant);
+				PoolSubsystem->ReleasePooledEnemy(Slots[i].Occupant);
 			}
 			else Slots[i].Occupant->Destroy();
 			Slots[i].Occupant = nullptr;
@@ -177,8 +161,11 @@ void AOnsetSpawner::OnNPCDeath(AOnsetEnemy* Enemy)
 			break;
 		}
 	}
-	
-	GetWorld()->GetSubsystem<UOnsetPoolSubsystem>()->ReleasePooledEnemy(Enemy);
+	UOnsetPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UOnsetPoolSubsystem>();
+	if (PoolSubsystem)
+	{
+		PoolSubsystem->ReleasePooledEnemy(Enemy);
+	}
 }
 
 void AOnsetSpawner::RespawnNPC(int32 SlotIndex)

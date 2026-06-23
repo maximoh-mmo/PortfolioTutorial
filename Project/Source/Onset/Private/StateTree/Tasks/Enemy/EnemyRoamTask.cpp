@@ -18,7 +18,7 @@ EStateTreeRunStatus FEnemyRoamTask::EnterState(FStateTreeExecutionContext& Conte
 	
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController)  return EStateTreeRunStatus::Failed;
-	AOnsetBaseCharacter* Self = GetSelfBaseCharacter(Context);
+	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(AIController->GetWorld());               
 	if (!NavSys) return EStateTreeRunStatus::Failed;
