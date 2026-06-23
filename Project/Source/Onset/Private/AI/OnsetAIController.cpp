@@ -4,6 +4,7 @@
 
 #include "Components/StateTreeAIComponent.h"
 #include "Enemy/OnsetEnemy.h"
+#include "Engine/Engine.h"
 #include "Navigation/CrowdFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -111,6 +112,29 @@ void AOnsetAIController::BeginPlay()
 		StateTreeComponent->StopLogic(TEXT("Client - No Authority"));
 		StateTreeComponent->SetStateTree(nullptr);
 	}
+}
+
+void AOnsetAIController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+#if WITH_EDITOR
+	if (GetPawn() && StateTreeComponent && StateTreeComponent->IsRunning())
+	{
+		const TArray<FName> ActiveStates = StateTreeComponent->GetActiveStateNames();
+		if (ActiveStates.Num() > 0)
+		{
+			FString DebugStr;
+			for (const FName& Name : ActiveStates)
+			{
+				if (!DebugStr.IsEmpty()) DebugStr += TEXT(" > ");
+				DebugStr += Name.ToString();
+			}
+			DrawDebugString(GetWorld(), GetPawn()->GetActorLocation() + FVector(0, 0, 120),
+				DebugStr, nullptr, FColor::Cyan, 0.0f, false);
+		}
+	}
+#endif
 }
 
 void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActors)

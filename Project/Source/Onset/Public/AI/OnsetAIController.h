@@ -53,6 +53,7 @@ protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 	// --- Perception ---
 

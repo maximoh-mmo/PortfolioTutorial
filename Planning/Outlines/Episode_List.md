@@ -160,18 +160,6 @@ Implement the StateTree asset using `UOnsetStateTreeSchema` (shared with NPCs). 
 Add a toggle for AI control, debug UI, and AI‑vs‑AI testing.
 · [Player AI System](../../Docs/AI/Player_AI_System.md) · [UI System](../../Docs/Gameplay/UI_System.md)
 
-### **Episode 26 — Threat / Aggro System**
-Implement a server-side threat table (`UOnsetAggroSubsystem`) that drives NPC target selection. Damage dealt generates threat; NPCs target the highest-threat player. Enables future taunt/tank mechanics.
-· [Aggro System](../../Docs/AI/Aggro_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
-
-### **Episode 27 — Attack Positioning with Angular Spread**
-Replace the current random-lateral-offset in chase/attack with deterministic angular spread: divide 360° by attacker count, assign each NPC an angle based on aggro rank. Prevents bunching around the player.
-· [Aggro System](../../Docs/AI/Aggro_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
-
-### **Episode 28 — AI LOD & Tick Management**
-Add distance-based tick tiers to `AOnsetAIController`. Far NPCs tick at 0.5s intervals or stop ticking entirely. StateTree, perception, and navigation all respect the LOD tier.
-· [Aggro System](../../Docs/AI/Aggro_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
-
 ---
 
 # **PHASE 3.7 — Aggro System & AI Optimization**
@@ -179,15 +167,15 @@ Add distance-based tick tiers to `AOnsetAIController`. Far NPCs tick at 0.5s int
 
 ---
 
-### **Episode 29 — Threat/Aggro System**
+### **Episode 26 — Threat/Aggro System**
 Implement a server-side threat table (`UOnsetAggroSubsystem`) that drives NPC target selection. Damage dealt generates threat; NPCs target the highest-threat player. Enables future taunt/tank mechanics.
 · [Aggro System](../../Docs/AI/Aggro_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
 
-### **Episode 30 — Attack Positioning with Angular Spread**
+### **Episode 27 — Attack Positioning with Angular Spread**
 Replace random-lateral-offset with deterministic angular spread: divide 360° by attacker count, assign each NPC an angle based on aggro rank. Prevents bunching around the player.
 · [Aggro System](../../Docs/AI/Aggro_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 31 — AI LOD & Tick Management**
+### **Episode 28 — AI LOD & Tick Management**
 Add distance-based tick tiers to `AOnsetAIController`. Far NPCs tick at 0.5s intervals or stop entirely. StateTree, perception, and navigation respect the LOD tier.
 · [Aggro System](../../Docs/AI/Aggro_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
@@ -198,23 +186,23 @@ Add distance-based tick tiers to `AOnsetAIController`. Far NPCs tick at 0.5s int
 
 ---
 
-### **Episode 32 — Flee State**
+### **Episode 29 — Flee State**
 Implement low‑health retreat behaviour with evaluators.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 33 — Group Assist Integration**
+### **Episode 30 — Group Assist Integration**
 Wire assist events from the Group System into the StateTree so NPCs respond when nearby allies are attacked.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md) · [Group System](../../Docs/AI/Group_System.md)
 
-### **Episode 34 — Optional Behavior Tree Integration**
+### **Episode 31 — Optional Behavior Tree Integration**
 Add a small BT/EQS subtree for advanced chase/positioning.
 · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 35 — Dynamic Enemy Types**
+### **Episode 32 — Dynamic Enemy Types**
 Swap meshes, stats, and behaviour profiles when recycling NPCs.
 · [Spawner System](../../Docs/AI/Spawner_System.md) · [Pooling System](../../Docs/AI/Pooling_System.md)
 
-### **Episode 36 — AI Debugging Tools**
+### **Episode 33 — AI Debugging Tools**
 Use AIDebugger, StateTree debugger, GAS debugger, and on‑screen debug.
 · [UI System](../../Docs/Gameplay/UI_System.md)
 
@@ -225,27 +213,27 @@ Use AIDebugger, StateTree debugger, GAS debugger, and on‑screen debug.
 
 ---
 
-### **Episode 37 — Server/Client Architecture**
+### **Episode 34 — Server/Client Architecture**
 Explain authority, replication, RPCs, and server‑only logic.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 38 — Multiplayer‑Safe NPCs**
+### **Episode 35 — Multiplayer‑Safe NPCs**
 Replicate health, enemy type, and ensure server‑only AI.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md) · [NPC AI System](../../Docs/AI/NPC_AI_System.md)
 
-### **Episode 39 — Multiplayer‑Safe Spawner & Pool**
+### **Episode 36 — Multiplayer‑Safe Spawner & Pool**
 Make spawner/pooling server‑only with replicated activation.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md) · [Spawner System](../../Docs/AI/Spawner_System.md)
 
-### **Episode 40 — Dedicated Server Testing**
+### **Episode 37 — Dedicated Server Testing**
 Run server + client, debug replication, and simulate latency.
 · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 41 — PvP System**
+### **Episode 38 — PvP System**
 Implement the PvP toggle with replicated state, targeting filtering, and damage-rule enforcement.
 · [PvP System](../../Docs/Gameplay/PVP_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 42 — Steam Integration**
+### **Episode 39 — Steam Integration**
 Add Steam OSS, auth tickets, server verification, and testing.
 · [Steam Integration System](../../Docs/Steam/Steam_Integration_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
@@ -256,19 +244,19 @@ Add Steam OSS, auth tickets, server verification, and testing.
 
 ---
 
-### **Episode 43 — UI & Feedback**
+### **Episode 40 — UI & Feedback**
 Add health bars, hit indicators, cooldown UI, virtual joystick widget, virtual ability buttons, gamepad cursor overlay, and target highlights.
 · [UI System](../../Docs/Gameplay/UI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
 
-### **Episode 44 — Final Gameplay Loop**
+### **Episode 41 — Final Gameplay Loop**
 Implement waves, respawn cycles, and full combat flow with all input methods supported.
 · [Spawner System](../../Docs/AI/Spawner_System.md) · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 
-### **Episode 45 — Performance Optimization**
+### **Episode 42 — Performance Optimization**
 Reduce ticks, add AI LOD, optimize pooling and networking.
 · [Pooling System](../../Docs/AI/Pooling_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 46 — Final Showcase**
+### **Episode 43 — Final Showcase**
 Record the final demo, recap architecture, and discuss next steps.
 · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 

@@ -125,7 +125,7 @@ Each episode requires:
 - **Editing** (2-3 hours)
 - **Export + README** (1 hour)
 
-## B1 — Scripting (Episodes 6-46)
+## B1 — Scripting (Episodes 6-43)
 
 Episodes 1-3 need script updates for Enhanced Input + multi-device movement. Episodes 4-5 need re-ordering. Remaining episodes need scripts from scratch:
 
@@ -137,11 +137,11 @@ Episodes 1-3 need script updates for Enhanced Input + multi-device movement. Epi
 | Scripts 14-20 | 7 | 4 | 28 |
 | Scripts 21-22 | 2 | 3 | 6 |
 | Scripts 23-25 | 3 | 4 | 12 |
-| Scripts 29-31 (Aggro System) | 3 | 4 | 12 |
-| Scripts 32-36 | 5 | 3 | 15 |
-| Scripts 37-42 | 6 | 3 | 18 |
-| Scripts 43-46 | 4 | 3 | 12 |
-| **Total** | **46 scripts** | | **~142 hours (3.55 weeks)** |
+| Scripts 26-28 (Aggro System) | 3 | 4 | 12 |
+| Scripts 29-33 | 5 | 3 | 15 |
+| Scripts 34-39 | 6 | 3 | 18 |
+| Scripts 40-43 | 4 | 3 | 12 |
+| **Total** | **43 scripts** | | **~136 hours (3.4 weeks)** |
 
 ## B2 — Recording + Editing + Export
 
@@ -163,18 +163,18 @@ Estimated per episode:
 | Phase 3: GAS Combat | 14-20 | 48 |
 | Phase 3.5: Architecture Cleanup | 21-22 | 12 |
 | Phase 3.6: Player AI | 23-25 | 18 |
-| Phase 3.7: Aggro System | 29-31 | 18 |
-| Phase 4: Advanced AI (incl. Group Assist) | 32-36 | 30 |
-| Phase 5: Multiplayer (incl. PvP) | 37-42 | 36 |
-| Phase 6: Final Demo | 43-46 | 24 |
-| **Total** | **46 episodes** | **~282 hours (7.05 weeks)** |
+| Phase 3.7: Aggro System | 26-28 | 18 |
+| Phase 4: Advanced AI (incl. Group Assist) | 29-33 | 30 |
+| Phase 5: Multiplayer (incl. PvP) | 34-39 | 36 |
+| Phase 6: Final Demo | 40-43 | 24 |
+| **Total** | **43 episodes** | **~258 hours (6.45 weeks)** |
 
 ## Phase B Total
 | Activity | Time |
 |----------|------|
-| Scripting (rewrites + new) | 3.55 weeks |
-| Recording + Editing + Export | 7.05 weeks |
-| **Total** | **~10.6 weeks** |
+| Scripting (rewrites + new) | 3.4 weeks |
+| Recording + Editing + Export | 6.45 weeks |
+| **Total** | **~9.85 weeks** |
 
 ---
 
@@ -185,15 +185,15 @@ Estimated per episode:
 | ✅ Planning (Phases 1-5) | Complete | Outlines, docs, scripts 1-5, workflow |
 | ✅ Pre-Production Review | Complete | Consistency scan, risk docs, timeline |
 | **Phase A: Private Demo** | **~15 weeks** | Build all systems off-camera (incl. multi-device input, corpse system, aggro system) |
-| **Phase B: Episode Production** | **~11 weeks** | Record, edit, export 46 episodes (157h scripting + 276h recording) |
-| **Total Remaining** | **~26 weeks (~6.5 months)** | |
+| **Phase B: Episode Production** | **~10 weeks** | Record, edit, export 43 episodes (~136h scripting + ~258h recording) |
+| **Total Remaining** | **~25 weeks (~6 months)** | |
 
 ## Parallel Work
 
 Scripting (Phase B1) can overlap with Phase A development:
 - Script rewriting + Episodes 6-13 during Phase A2/A3 development
-- Script Episodes 14-29 during Phase A4/A5 development
-- Script Episodes 30-46 during Phase A6/A7 development
+- Script Episodes 14-26 during Phase A4/A5 development
+- Script Episodes 27-43 during Phase A6/A7 development
 
 This reduces total calendar time:
 
@@ -214,13 +214,13 @@ If releasing one episode per week:
 | Phase 3: GAS Combat | 14-20 | 1/week | 7 weeks |
 | Phase 3.5: Architecture Cleanup | 21-22 | 1/week | 2 weeks |
 | Phase 3.6: Player AI | 23-25 | 1/week | 3 weeks |
-| Phase 3.7: Aggro System | 29-31 | 1/week | 3 weeks |
-| Phase 4: Advanced AI | 32-36 | 1/week | 5 weeks |
-| Phase 5: Multiplayer | 37-42 | 1/week | 6 weeks |
-| Phase 6: Final Demo | 43-46 | 1/week | 4 weeks |
-| **Total release window** | **46 episodes** | **1/week** | **46 weeks (~11.5 months)** |
+| Phase 3.7: Aggro System | 26-28 | 1/week | 3 weeks |
+| Phase 4: Advanced AI | 29-33 | 1/week | 5 weeks |
+| Phase 5: Multiplayer | 34-39 | 1/week | 6 weeks |
+| Phase 6: Final Demo | 40-43 | 1/week | 4 weeks |
+| **Total release window** | **43 episodes** | **1/week** | **43 weeks (~10.75 months)** |
 
-The ~3-month private demo build + ~9.75-month release window means a **~12.75-month project** from start to finish of the last episode release. Batch-recording (recording multiple episodes per week) compresses the production phase but not the release schedule.
+The ~3-month private demo build + ~9.5-month release window means a **~12.5-month project** from start to finish of the last episode release. Batch-recording (recording multiple episodes per week) compresses the production phase but not the release schedule.
 
 ---
 
@@ -236,12 +236,12 @@ The ~3-month private demo build + ~9.75-month release window means a **~12.75-mo
 | GAS milestone | Week 33 | Episodes 14-20 released (full ability system) |
 | Architecture cleanup | Week 35 | Episodes 21-22 released (interaction component, profile split, GAS speed attribute) |
 | Player AI milestone | Week 38 | Episodes 23-25 released (autoplay mode) |
-| Aggro System milestone | Week 41 | Episodes 29-31 released (threat, angular spread, AI LOD) |
-| Advanced AI milestone | Week 46 | Episodes 32-36 released (group assist, advanced behaviour) |
-| Multiplayer milestone | Week 52 | Episodes 37-42 released (MP + Steam + PvP) |
-| Series complete | Week 56 | Episode 46 (Final Showcase) released — 46th release |
+| Aggro System milestone | Week 41 | Episodes 26-28 released (threat, angular spread, AI LOD) |
+| Advanced AI milestone | Week 46 | Episodes 29-33 released (group assist, advanced behaviour) |
+| Multiplayer milestone | Week 52 | Episodes 34-39 released (MP + Steam + PvP) |
+| Series complete | Week 56 | Episode 43 (Final Showcase) released — 43rd release |
 
 ---
 
-**Total estimated effort:** ~22 weeks of work, ~12.75 months calendar (with weekly release cadence; 39 unique episodes over 39 weeks)
-**Next step:** Begin Private Demo Development
+**Total estimated effort:** ~21 weeks of work, ~12.5 months calendar (with weekly release cadence; 43 episodes over 43 weeks)
+**Next step:** Continue Private Demo Development

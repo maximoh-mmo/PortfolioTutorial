@@ -167,7 +167,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Create `UNPCStateTreeSchema` with context data *(created as `UOnsetStateTreeSchema`)*
 - [x] Bind NPC context (self, target, group data, health) *(via `FOnsetStateTreeContextTask` Global Task; group moved to per-task read — not universal context)*
 - [x] Verify StateTree compiles and runs on NPC spawn
-- [ ] Add on-screen debug display for current AI state
+- [x] Add on-screen debug display for current AI state
 
 ## A3.2 AI Perception
 - [x] Add `AIPerceptionComponent` to AOnsetAIController *(done as part of A3.0)*
@@ -176,7 +176,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Implement `OnPerceptionUpdated()` handler
 - [x] Feed perception data into StateTree context
 - [x] Verify perception triggers on player proximity
-- [ ] Verify perception hearing triggers on assist (deferred until GAS/attack emits noise events — A4)
+- [x] Verify perception hearing triggers on assist
 
 ## A3.3 Behaviour States (Idle → Flee)
 - [x] Implement **Idle** state (timer-based, stand still) — `FOnsetStateTreeIdleTask`
@@ -211,8 +211,8 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Implement **Search** state (Alerted: yaw sweep scan at noise origin)
 - [x] **E22:** SearchTask refactored — replaced direct `MaxWalkSpeed` with GAS GE (**fixes speed leak:** ExitState previously called base which did nothing)
 - [x] Wire StateTree Search state: Investigate → Search → Idle
-- [ ] Verify assist triggers when nearby ally is attacked
-- [ ] Verify no assist when attacker is out of hearing range
+- [x] Verify assist triggers when nearby ally is attacked
+- [x] Verify no assist when attacker is out of hearing range
 - [x] Assist radius testing moved here from A2.3 — assist now flows through perception hearing, not Group System
 
 ## A3.6 Aggro System
@@ -232,9 +232,9 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Implement player AI StateTree: AcquireTargetTask → EngageTask (combined movement+attack)
 - [x] Implement `EnableAutoCombat()` / `DisableAutoCombat()` — possession switching
 - [x] Ensure PvP rules respected (targets filtered by `IsAlive()`, ignores players)
-- [ ] Verify clean toggle on/off
-- [ ] Verify AI picks reasonable targets
-- [ ] Verify abilities fire correctly under AI control
+- [x] Verify clean toggle on/off
+- [x] Verify AI picks reasonable targets
+- [x] Verify abilities fire correctly under AI control
 
 ---
 
@@ -296,8 +296,8 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] **E22:** Pool `ReturnToPool` now calls `RemoveActiveEffects` to clear all GEs on return (prevents speed leak across pool cycles)
 - [x] Verify NPC returns to pool immediately (corpse lifecycle independent)
 - [x] Verify spawner respawn timer starts at death, not corpse despawn
-- [ ] Verify corpse spawned for player kills and NPC-kills-NPC deaths
-- [ ] Verify no performance regression under rapid death cascade
+- [x] Verify corpse spawned for player kills and NPC-kills-NPC deaths
+- [x] Verify no performance regression under rapid death cascade
 
 ## A4.6 Multiple Abilities
 - [ ] Create **AoE** ability (target-centered damage volume) — activated GA, slot 1
@@ -433,8 +433,8 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | 75 | 60 | 80% |
-| A4 GAS Combat | 58 | 43 | 74% |
+| A3 AI Systems | 75 | 69 | 92% |
+| A4 GAS Combat | 58 | 45 | 78% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |

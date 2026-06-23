@@ -62,7 +62,7 @@ The series is divided into **9 phases** (see the full [Episode List](Episode_Lis
 5. **Multiplayer** — Replication, dedicated server, Steam, PvP  
 6. **Final Demo & Polish** — UI, gameplay loop, optimization, showcase  
 
-Total: **46 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System; episodes 29-31 added for Aggro System, Angular Spread, and AI LOD). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
+Total: **43 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System; episodes 26-28 cover Aggro System, Angular Spread, and AI LOD). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
 
 ---
 

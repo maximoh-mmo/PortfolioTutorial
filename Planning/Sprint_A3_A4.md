@@ -2,7 +2,7 @@
 
 **Goal:** Complete all remaining A3 (AI Systems) + A4 (GAS Combat) tasks from `Private_Demo_Checklist.md`.
 **Target:** Functional single-player combat loop — spawn, fight, die, respawn, with player abilities and full NPC behaviour.
-**Estimate:** ~10 working days
+**Estimate:** ~12 working days (Wave 4 + Wave 5 + Wave 2 + Wave 6)
 
 ---
 
@@ -10,17 +10,17 @@
 
 | Section | Tasks | Done | % | Remaining |
 |---------|-------|------|---|-----------|
-| A3 AI Systems | 75 | 62 | 83% | 13 |
-| A4 GAS Combat | 58 | 43 | 74% | 15 |
-| **Sprint Total** | **133** | **105** | **79%** | **28** |
+| A3 AI Systems | 75 | 69 | 92% | 6 |
+| A4 GAS Combat | 58 | 45 | 78% | 13 |
+| **Sprint Total** | **133** | **114** | **86%** | **19** |
 
-### A3 Remaining (13 items)
+### A3 Remaining (6 items)
 
-**Verification (4 items — ~0.5d):**
-- A3.1: [ ] Add on-screen debug display for current AI state
-- A3.2: [ ] Verify perception hearing triggers on assist
-- A3.4: [ ] Verify assist triggers when nearby ally is attacked
-- A3.4: [ ] Verify no assist when attacker is out of hearing range
+**Verification (4 items — ~0.5d):** ✅ COMPLETE
+- A3.1: [x] Add on-screen debug display for current AI state
+- A3.2: [x] Verify perception hearing triggers on assist
+- A3.4: [x] Verify assist triggers when nearby ally is attacked
+- A3.4: [x] Verify no assist when attacker is out of hearing range
 
 **Aggro System (9 items — ~5.5d) — NEW:**
 See [Aggro System](../Docs/AI/Aggro_System.md) for full design.
@@ -34,7 +34,7 @@ See [Aggro System](../Docs/AI/Aggro_System.md) for full design.
 - A3.6: [ ] AI LOD — disable/ throttle NPC ticks based on distance
 - A3.6: [ ] Verify: aggro drives targeting, angular spread prevents bunching
 
-### A4 Remaining (15 items)
+### A4 Remaining (13 items)
 
 **Anim Montage (1 item — ~0.5d):**
 - A4.2: [ ] Add animation montage support (simple melee swing)
@@ -42,11 +42,7 @@ See [Aggro System](../Docs/AI/Aggro_System.md) for full design.
 **Stagger Effect (1 item — ~0.5d):**
 - A4.3: [ ] Apply hitstop / stagger effect
 
-**Corpse Verification (2 items — ~0.5d):**
-- A4.5b: [ ] Verify corpse spawned for player kills and NPC-kills-NPC deaths
-- A4.5b: [ ] Verify no performance regression under rapid death cascade
-
-**Multiple Abilities (11 items — ~4d):**
+**Multiple Abilities — Wave 6 (11 items — ~4d):**
 - A4.6: [ ] Create **AoE** ability (target-centered damage volume) — activated GA, slot 1
 - A4.6: [ ] Create **Cone** ability (directional frontal cone) — activated GA, slot 2
 - A4.6: [ ] Create **Shadowstep** passive (on-kill blink behind nearest enemy, cooldown-gated) — replaces dash
@@ -74,35 +70,8 @@ Deliverables:
 - [x] Pool return clears GEs — no speed leak
 - [x] `bMovementSpeedInitialized` dead code removed from `OnsetBaseCharacter`
 
-### Wave 1 — A4.6 Abilities (~4d)
-**Core player combat — AoE, Cone, Shadowstep.**
-
-Wave 1a — AoE (day 1–2):
-- [ ] `GA_OnsetAoE.h/.cpp` — C++ GA
-- [ ] Implementation: spawn temporary overlap volume at target location on activate, apply GE to overlapping enemies, destroy after delay
-- [ ] PvP filter per target
-- [ ] BP asset `Content/Game/Combat/GA_AoE` (tune radius, damage, cooldown)
-- [ ] Slot 1 binding in PlayerController
-- [ ] Verify: activates from input, damages enemies, respects PvP
-
-Wave 1b — Cone (day 2–3):
-- [ ] `GA_OnsetCone.h/.cpp` — C++ GA
-- [ ] Implementation: trace/fan cone from character forward on activate, apply GE to hit enemies
-- [ ] PvP filter per target
-- [ ] BP asset `Content/Game/Combat/GA_Cone` (tune angle, range, damage, cooldown)
-- [ ] Slot 2 binding in PlayerController
-- [ ] Verify: activates from input, damages in correct shape, respects PvP
-
-Wave 1c — Shadowstep (day 3–4):
-- [ ] `GA_OnsetShadowstep.h/.cpp` — C++ GA (passive, triggered by `FGameplayEvent` on enemy death)
-- [ ] Implementation: on kill, find nearest enemy within distance gate, teleport behind, brief invulnerability window
-- [ ] Cooldown gating (cannot chain kills)
-- [ ] BP asset `Content/Game/Combat/GA_Shadowstep`
-- [ ] Verify: triggers on kill, respects distance gate, cooldown prevents spam
-
-Wave 1d — UI Stub (day 4):
-- [ ] Basic ability bar widget (4 slot icons, cooldown overlay text)
-- [ ] Verify abilities display and cooldowns update
+### Wave 1 — ~~A4.6 Abilities~~ ⏳ DEFERRED TO WAVE 6
+**Moved to Wave 6 (after Aggro System) to avoid blocking Multiplayer.**
 
 ### Wave 2 — A4.2 Anim Montage + A4.3 Stagger (~1d)
 **Combat polish.**
@@ -121,20 +90,20 @@ Wave 1d — UI Stub (day 4):
 - [x] Player AI StateTree asset: AcquireTarget → Engage
 - [x] `EnableAutoCombat()` / `DisableAutoCombat()` — UnPossess → possess with AI controller; camera handover via `DelayedSetViewTarget`
 - [x] PvP auto-respected (targets filtered by `IsAlive()` and enemy class)
-- [ ] Verify: clean toggle, reasonable targets, abilities fire, target re-acquisition on death
+- [x] Verify: clean toggle, reasonable targets, abilities fire, target re-acquisition on death
 
-### Wave 4 — Verification Pass (~1d)
+### Wave 4 — Verification Pass (~1d) ✅ COMPLETE
 **Close out all remaining unchecked items.**
 
-- [ ] A3.1: On-screen debug display for AI state (simple string on NPC or on controller)
-- [ ] A3.2: Verify perception hearing triggers on assist
-- [ ] A3.4: Verify assist triggers when nearby ally is attacked
-- [ ] A3.4: Verify no assist when attacker out of hearing range
-- [ ] A4.5b: Verify corpse spawned for both player kills and NPC-kills-NPC deaths
-- [ ] A4.5b: Verify no performance regression under rapid death cascade
-- [ ] Cross-system: Player AI vs NPC AI combat test (A3.5 + A3.3)
-- [ ] Update progress tracking table in `Private_Demo_Checklist.md`
-- [ ] Tag all completed items
+- [x] A3.1: On-screen debug display for AI state — added `Tick()` to `AOnsetAIController`, draws StateTree state name
+- [x] A3.2: Perception hearing triggers on assist — verified in PIE
+- [x] A3.4: Assist triggers when nearby ally is attacked — Investigate→Search→Agro chain confirmed
+- [x] A3.4: No assist when attacker out of hearing range — confirmed
+- [x] A4.5b: Corpse spawned for both player kills and NPC-kills-NPC deaths — confirmed
+- [x] A4.5b: No performance regression under rapid death cascade — confirmed
+- [x] Cross-system: Player AI vs NPC AI combat test — full loop verified
+- [x] Update progress tracking table in `Private_Demo_Checklist.md`
+- [x] Tag all completed items
 
 ### Wave 5 — Aggro System (~5.5d)
 **Threat-driven targeting, angular spread, AI LOD.**
@@ -151,6 +120,39 @@ See [Aggro System Doc](../Docs/AI/Aggro_System.md) for full design.
 - [ ] Create `AttackPositionTask` — compute angular offset at `AttackRange` via aggro rank, nav-project, `MoveToLocation`, re-evaluate at 3s or on target move > 200 units. Fire abilities at throttle.
 - [ ] AI LOD: `AOnsetAIController` tick interval tiers based on distance to nearest player. Far NPCs tick at 0.5s or paused.
 - [ ] Verify: aggro target = highest damage dealer, angular spread prevents bunching, LOD stops far NPC work
+
+### Wave 6 — A4.6 Multiple Abilities (~4d)
+**Core player combat — AoE, Cone, Shadowstep, ability bar UI.**
+
+Previously deferred from Wave 1; moved here to avoid blocking Multiplayer. Delivered after Aggro so NPC threats/positioning are stable.
+
+Wave 6a — AoE (day 1–2):
+- [ ] `GA_OnsetAoE.h/.cpp` — C++ GA
+- [ ] Implementation: sphere overlap at target location on activate, apply GE to overlapping enemies, destroy after delay
+- [ ] PvP filter per target
+- [ ] BP asset `Content/Game/Combat/GA_AoE` (tune radius, damage, cooldown)
+- [ ] Slot 1 binding
+- [ ] Verify: activates from input, damages enemies, respects PvP
+
+Wave 6b — Cone (day 2–3):
+- [ ] `GA_OnsetCone.h/.cpp` — C++ GA
+- [ ] Implementation: `ConeOverlapActors` from character forward, apply GE to hit enemies
+- [ ] PvP filter per target
+- [ ] BP asset `Content/Game/Combat/GA_Cone` (tune angle, range, damage, cooldown)
+- [ ] Slot 2 binding
+- [ ] Verify: activates from input, damages in correct shape, respects PvP
+
+Wave 6c — Shadowstep (day 3–4):
+- [ ] `GA_OnsetShadowstep.h/.cpp` — C++ GA (passive, triggered by `FGameplayEvent` on enemy death)
+- [ ] Implementation: on kill, find nearest enemy within distance gate, teleport behind, brief invulnerability window
+- [ ] Cooldown gating
+- [ ] BP asset `Content/Game/Combat/GA_Shadowstep`
+- [ ] Verify: triggers on kill, respects distance gate, cooldown prevents spam
+
+Wave 6d — UI Stub (day 4):
+- [ ] Basic ability bar widget (4 slot icons, cooldown overlay text)
+- [ ] Bind to GAS cooldown tags
+- [ ] Verify abilities display and cooldowns update
 
 ---
 

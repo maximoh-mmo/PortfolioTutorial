@@ -199,7 +199,7 @@ This ensures the project remains a **focused technical demo**, not a full game.
 ---
 
 ## **2. Public Repo Deliverables**
-- 46 episode branches  
+- 43 episode branches  
 - Clean code snapshots  
 - Episode READMEs  
 - Final demo branch (optional)  
@@ -208,7 +208,7 @@ This ensures the project remains a **focused technical demo**, not a full game.
 
 ## **3. Tutorial Series Deliverables**
 
-- 46 recorded episodes
+- 43 recorded episodes
 - Supporting diagrams  
 - Code snippets  
 - Explanations and breakdowns  
