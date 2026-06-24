@@ -8,6 +8,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Perception/AISense_Hearing.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "Enemy/OnsetEnemy.h"
+#include "Subsystems/OnsetThreatSubsystem.h"
 
 UOnsetAttributeSet::UOnsetAttributeSet()
 {
@@ -59,17 +61,18 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 		}
 
 		if (Data.EvaluatedData.Magnitude < 0.0f && GetHealth() > 0.0f)                                                                        
-		{                                                                                                               
+		{
 			FGameplayEventData Payload;                                                                                 
 			Payload.EventTag = TAG_Event_HitReaction;                                                                   
 			Payload.Instigator = Data.EffectSpec.GetContext().GetInstigator();                                          
 			Payload.Target = GetOwningActor();                                                                          
-			Payload.EventMagnitude = FMath::Abs(Data.EvaluatedData.Magnitude);                                          
+			Payload.EventMagnitude = FMath::Abs(Data.EvaluatedData.Magnitude);                                   
                                                                                                                      
 			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())                                       
 			{                                                                                                           
 				ASC->HandleGameplayEvent(TAG_Event_HitReaction, &Payload);                                              
 			}   
+			
 			if (AActor* OwningActor = GetOwningActor())
 			{
 				UAISense_Hearing::ReportNoiseEvent(
@@ -79,8 +82,17 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 					OwningActor,                                // Instigator
 					0.0f                                       // Max range 0 = unlimited                       
 					);
+			}      
+			
+			if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())                   
+			{       
+				AOnsetEnemy* TargetEnemy = Cast<AOnsetEnemy>(Data.Target.GetOwnerActor());
+				AOnsetBaseCharacter* Instigator = Cast<AOnsetBaseCharacter>(Data.EffectSpec.GetContext().GetInstigator());
+				if (TargetEnemy && Instigator)                                                                       
+					ThreatSub->AddThreat(Instigator,TargetEnemy,                                 
+						FMath::Abs(Data.EvaluatedData.Magnitude));                                                      
 			}           
-		}              
+		}        
 	}
 }
 

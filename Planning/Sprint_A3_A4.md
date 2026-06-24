@@ -10,11 +10,11 @@
 
 | Section | Tasks | Done | % | Remaining |
 |---------|-------|------|---|-----------|
-| A3 AI Systems | 75 | 69 | 92% | 6 |
+| A3 AI Systems | 75 | 72 | 96% | 3 |
 | A4 GAS Combat | 58 | 45 | 78% | 13 |
-| **Sprint Total** | **133** | **114** | **86%** | **19** |
+| **Sprint Total** | **133** | **117** | **88%** | **16** |
 
-### A3 Remaining (6 items)
+### A3 Remaining (3 items)
 
 **Verification (4 items — ~0.5d):** ✅ COMPLETE
 - A3.1: [x] Add on-screen debug display for current AI state
@@ -22,11 +22,11 @@
 - A3.4: [x] Verify assist triggers when nearby ally is attacked
 - A3.4: [x] Verify no assist when attacker is out of hearing range
 
-**Threat System (9 items — ~5.5d) — NEW:**
+**Threat System (9 items — ~5.5d) — IN PROGRESS:**
 See [Threat System](../Docs/AI/Threat_System.md) for full design.
-- A3.6: [ ] Create `UOnsetThreatSubsystem` (world subsystem, threat table)
-- A3.6: [ ] Wire damage → threat feed in `PostGameplayEffectExecute`
-- A3.6: [ ] Wire pool return + NPC death → threat cleanup
+- A3.6: [x] Create `UOnsetThreatSubsystem` (world subsystem, threat table)
+- A3.6: [x] Wire damage → threat feed in `PostGameplayEffectExecute`
+- A3.6: [x] Wire pool return + NPC death → threat cleanup
 - A3.6: [ ] Add threat helpers to `FOnsetStateTreeTask` base
 - A3.6: [ ] Modify AgroTask to prefer threat target over perception
 - A3.6: [ ] Create AttackPositionTask with angular spread
@@ -110,10 +110,10 @@ Deliverables:
 
 See [Threat System Doc](../Docs/AI/Threat_System.md) for full design.
 
-- [ ] Create `UOnsetThreatSubsystem` — world subsystem, `TMap<APlayerState*, TMap<TWeakObjectPtr<AOnsetEnemy>, float>>` threat table
-- [ ] API: `AddThreat()`, `RemovePlayer()`, `RemoveEnemy()`, `GetPrimaryTarget()`, `GetTargetRank()`, `GetTargetCount()`, `GetEnemiesTargeting()`, `ClearAll()`
-- [ ] Wire damage feed: `OnsetAttributeSet::PostGameplayEffectExecute` → if damage > 0 to `AOnsetEnemy` → `Subsystem->AddThreat(InstigatorPlayerState, Victim, Damage)`
-- [ ] Wire cleanup: `OnsetEnemy::DeferredDeathCleanup` + `PoolSubsystem::ReturnToPool` → `Subsystem->RemoveEnemy(NPC)`
+- [x] Create `UOnsetThreatSubsystem` — world subsystem, `TMap<TWeakObjectPtr<AOnsetEnemy>, TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>>` threat table (pawn-keyed)
+- [x] API: `AddThreat()`, `RemovePlayer()`, `RemoveEnemy()`, `GetPrimaryTarget()`, `GetTargetRank()`, `GetTargetCount()`, `RegisterEngaged()`, `UnregisterEngaged()`, `GetEngagedCount()`, `GetEngagedIndex()`, `ClearAll()`
+- [x] Wire damage feed: `OnsetAttributeSet::PostGameplayEffectExecute` → if damage > 0 to `AOnsetEnemy` → `Subsystem->AddThreat(Instigator, Victim, FMath::Abs(Damage))`
+- [x] Wire cleanup: `OnsetEnemy::DeferredDeathCleanup` + `PoolSubsystem::ReturnToPool` → `Subsystem->RemoveEnemy(NPC)`
 - [ ] Add helpers to `FOnsetStateTreeTask`: `GetThreatSubsystem()`, `GetThreatAngularOffset(Count, Rank, Radius)` → `FVector`
 - [ ] Modify `AgroTask::Tick` — check `GetPrimaryTarget()` first, fall back to `GetTarget()`
 - [ ] Modify `ChaseTask::EnterState` — replace random lateral offset with threat angular position at `ChaseRange`

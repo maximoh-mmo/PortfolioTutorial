@@ -6,22 +6,24 @@
 
 ---
 
-## Step 1 — UOnsetThreatSubsystem (day 1, ~1d)
+## Step 1 — UOnsetThreatSubsystem (day 1, ~1d) ✅ COMPLETE
 
-### New files
-- `Source/Onset/Public/AI/ThreatSubsystem.h`
-- `Source/Onset/Private/AI/ThreatSubsystem.cpp`
+### Actual files
+- `Source/Onset/Public/Subsystems/OnsetThreatSubsystem.h`
+- `Source/Onset/Private/Subsystems/OnsetThreatSubsystem.cpp`
 
 ### Implementation
-- [ ] Create `UOnsetThreatSubsystem` — inherits `UWorldSubsystem`
-- [ ] Storage: `TMap<APlayerState*, TMap<TWeakObjectPtr<AOnsetEnemy>, float>> ThreatTable`
-- [ ] `AddThreat(APlayerState* Player, AOnsetEnemy* Enemy, float Amount)` — add/subtract, clamp at 0, auto-remove at 0
-- [ ] `RemovePlayer(APlayerState* Player)` — erase outer key (on player death)
-- [ ] `RemoveEnemy(AOnsetEnemy* Enemy)` — iterate all players, erase inner key (on NPC death/pool return)
-- [ ] `GetPrimaryTarget(AOnsetEnemy* Enemy)` — find player with highest threat to this enemy, return their pawn
-- [ ] `GetTargetRank(AOnsetEnemy* Enemy, APlayerState* Player)` — sorted threat position (0 = highest)
-- [ ] `GetTargetCount(AOnsetEnemy* Enemy)` — number of players with positive threat
-- [ ] `ClearAll()` — empty table (level transition)
+- [x] Create `UOnsetThreatSubsystem` — inherits `UWorldSubsystem`
+- [x] Storage: `TMap<TWeakObjectPtr<AOnsetEnemy>, TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>> ThreatTable` (pawn-keyed, not PlayerState)
+- [x] `AddThreat(AOnsetBaseCharacter* Player, AOnsetEnemy* Enemy, float Amount)` — add/subtract, clamp at 0, auto-remove at 0
+- [x] `RemovePlayer(const AOnsetBaseCharacter* Player)` — erase inner key across all enemies
+- [x] `RemoveEnemy(AOnsetEnemy* Enemy)` — erase outer key + cleanup engagement (on NPC death/pool return)
+- [x] `GetPrimaryTarget(AOnsetEnemy* Enemy)` — find player with highest threat to this enemy, return their pawn
+- [x] `GetTargetRank(AOnsetEnemy* Enemy, const AOnsetBaseCharacter* Player)` — sorted threat position (0 = highest)
+- [x] `GetTargetCount(AOnsetEnemy* Enemy)` — number of players with positive threat
+- [x] `ClearAll()` — empty table (level transition)
+- [x] Engagement list: `TMap<TWeakObjectPtr<AOnsetBaseCharacter>, TArray<TWeakObjectPtr<AOnsetEnemy>>>` for angular spread
+- [x] UE_LOG console logging for all add/remove/engage/disengage events
 
 ### Verification
 - [ ] Subsystem creates on world begin
@@ -30,17 +32,17 @@
 
 ---
 
-## Step 2 — Wire Damage Feed (day 2, ~0.5d)
+## Step 2 — Wire Damage Feed (day 2, ~0.5d) ✅ COMPLETE
 
 ### Modified files
 - `Source/Onset/Private/GAS/OnsetAttributeSet.cpp`
 
 ### Implementation
-- [ ] In `PostGameplayEffectExecute`, when `Data.EvaluatedData.Magnitude < 0` (damage taken) AND victim is `AOnsetEnemy`:
-  - [ ] Get instigator pawn via `Data.EffectSpec.GetContext().GetInstigator()`
-  - [ ] Get `PlayerState` via `InstigatorPawn->GetPlayerState()`
-  - [ ] Get subsystem: `GetWorld()->GetSubsystem<UOnsetThreatSubsystem>()`
-  - [ ] Call `Subsystem->AddThreat(PlayerState, VictimEnemy, FMath::Abs(Damage))`
+- [x] In `PostGameplayEffectExecute`, when `Data.EvaluatedData.Magnitude < 0` (damage taken) AND victim is `AOnsetEnemy`:
+  - [x] Get instigator pawn via `Data.EffectSpec.GetContext().GetInstigator()`
+  - [x] Get target via `Data.Target.GetOwnerActor()`
+  - [x] Get subsystem: `GetWorld()->GetSubsystem<UOnsetThreatSubsystem>()`
+  - [x] Call `Subsystem->AddThreat(Instigator, TargetEnemy, FMath::Abs(Damage))`
 
 ### Verification
 - [ ] Damage dealt to NPC generates threat entry
@@ -50,15 +52,15 @@
 
 ---
 
-## Step 3 — Wire Pool & Death Cleanup (day 2, ~0.25d)
+## Step 3 — Wire Pool & Death Cleanup (day 2, ~0.25d) ✅ COMPLETE
 
 ### Modified files
 - `Source/Onset/Private/Enemy/OnsetEnemy.cpp`
-- `Source/Onset/Private/Spawning/OnsetPoolSubsystem.cpp`
+- `Source/Onset/Private/Subsystems/OnsetPoolSubsystem.cpp`
 
 ### Implementation
-- [ ] `OnsetEnemy::DeferredDeathCleanup()` — call `Subsystem->RemoveEnemy(this)` before `OwningSpawner->OnNPCDeath(this)`
-- [ ] `PoolSubsystem::ReturnToPool()` — call `Subsystem->RemoveEnemy(Enemy)` after existing clean-up
+- [x] `OnsetEnemy::DeferredDeathCleanup()` — call `Subsystem->RemoveEnemy(this)` before `OwningSpawner->OnNPCDeath(this)`
+- [x] `PoolSubsystem::ReturnToPool()` — call `Subsystem->RemoveEnemy(Enemy)` after existing clean-up
 
 ### Verification
 - [ ] NPC death removes its threat entries

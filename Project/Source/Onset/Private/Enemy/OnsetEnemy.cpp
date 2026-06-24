@@ -7,10 +7,11 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
-#include "Corpse/OnsetCorpseSubsystem.h"
+#include "Subsystems/OnsetCorpseSubsystem.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/Profile/VisualProfile.h"
 #include "Spawning/OnsetSpawner.h"
+#include "Subsystems/OnsetThreatSubsystem.h"
 
 AOnsetEnemy::AOnsetEnemy()
 {
@@ -100,6 +101,10 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 
 void AOnsetEnemy::DeferredDeathCleanup()
 {
+	if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())
+	{
+		ThreatSub->RemoveEnemy(this);
+	}
 	if (!OwningSpawner)	return;
 	OwningSpawner->OnNPCDeath(this);
 }

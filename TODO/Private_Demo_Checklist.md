@@ -216,9 +216,9 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Assist radius testing moved here from A2.3 — assist now flows through perception hearing, not Group System
 
 ## A3.6 Threat System
-- [ ] Create `UOnsetThreatSubsystem` — world subsystem with threat table
-- [ ] Wire damage feed: `PostGameplayEffectExecute` → `AddThreat(InstigatorPlayerState, Victim, Damage)`
-- [ ] Wire cleanup: `DeferredDeathCleanup` + `ReturnToPool` → `RemoveEnemy()`
+- [x] Create `UOnsetThreatSubsystem` — world subsystem with threat table
+- [x] Wire damage feed: `PostGameplayEffectExecute` → `AddThreat(InstigatorPlayerState, Victim, Damage)`
+- [x] Wire cleanup: `DeferredDeathCleanup` + `ReturnToPool` → `RemoveEnemy()`
 - [ ] Add `GetThreatSubsystem()` + `GetThreatAngularOffset()` to `FOnsetStateTreeTask` base
 - [ ] Modify AgroTask — prefer threat target over perception target
 - [ ] Create AttackPositionTask — angular spread at `AttackRange`, re-evaluation timer, nav-projection
@@ -433,9 +433,9 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | 75 | 69 | 92% |
+| A3 AI Systems | 75 | 72 | 96% |
 | A4 GAS Combat | 58 | 45 | 78% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |
 | A7 Integration & Harden | — | — | — |
-| **Total** | — | — | **—** |
+| **Total** | **—** | **—** | **—** |
