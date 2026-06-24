@@ -1,8 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Spawning/OnsetPoolSubsystem.h"
-
+#include "Subsystems/OnsetPoolSubsystem.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
 #include "AI/OnsetAIController.h"
@@ -11,6 +10,7 @@
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Subsystems/OnsetThreatSubsystem.h"
 
 DEFINE_LOG_CATEGORY(LogPooling)
 
@@ -112,6 +112,10 @@ void UOnsetPoolSubsystem::InitializePool()
 void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 {
 	if (!Enemy) return;	
+	if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())                       
+	{                                                                                                               
+		ThreatSub->RemoveEnemy(Enemy);                                                                              
+	}   
 	if (ActiveEnemies.Contains(Enemy)) ActiveEnemies.Remove(Enemy);
 	if (UGroupComponent* GroupComp = Enemy->FindComponentByClass<UGroupComponent>())
 	{
@@ -126,7 +130,8 @@ void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 		Enemy->AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery(), -1);  
 	}    
 	Enemy->ResetAttributes();
-	Enemy->ApplyProfile(nullptr); // defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyAIProfile)
+	// defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyAIProfile)
+	Enemy->ApplyProfile(nullptr);
 	Enemy->OwningSpawner = nullptr;
 	Enemy->SetActorLocation(FVector::ZeroVector);
 	Enemy->SetActorHiddenInGame(true);                                                                            

@@ -5,7 +5,7 @@
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
 #include "Spawning/GroupManagerComponent.h"
-#include "Spawning/OnsetPoolSubsystem.h"
+#include "Subsystems/OnsetPoolSubsystem.h"
 #include "Spawning/SpawnerSlot.h"
 
 DEFINE_LOG_CATEGORY(LogSpawner);

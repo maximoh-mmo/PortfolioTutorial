@@ -5,7 +5,7 @@
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
 #include "Player/OnsetPlayerCharacter.h"
-#include "Spawning/OnsetPoolSubsystem.h"
+#include "Subsystems/OnsetPoolSubsystem.h"
 
 /**
 	- Get UOnsetPoolSubsystem from world                                                                                                                                         
