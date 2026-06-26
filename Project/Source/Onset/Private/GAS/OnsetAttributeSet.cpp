@@ -9,7 +9,7 @@
 #include "Perception/AISense_Hearing.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Enemy/OnsetEnemy.h"
-#include "Subsystems/OnsetThreatSubsystem.h"
+#include "Subsystem/OnsetThreatSubsystem.h"
 
 UOnsetAttributeSet::UOnsetAttributeSet()
 {

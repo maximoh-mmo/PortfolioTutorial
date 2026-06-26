@@ -8,10 +8,7 @@
 #include "OnsetThreatSubsystem.generated.h"
 
 class AOnsetEnemy;
-class APlayerState;
-/**
- * 
- */
+
 UCLASS()
 class ONSET_API UOnsetThreatSubsystem : public UWorldSubsystem
 {
@@ -21,13 +18,15 @@ public:
 	// --- Threat ---
 	
 	// Add/Subtract threat.
-	void AddThreat( AOnsetBaseCharacter* PlayerCharacter, AOnsetEnemy* Enemy, float ThreatAmount);
+	void AddThreat(AOnsetBaseCharacter* PlayerCharacter, AOnsetEnemy* Enemy, float ThreatAmount);
 	// Clean up on player disconnect (after autoplay timeout/death if enabled).
 	void RemovePlayer(const AOnsetBaseCharacter* PlayerCharacter);
 	// Clean up Enemy on death.
 	void RemoveEnemy(AOnsetEnemy* Enemy);
-	// Return the highest threat player.
+	// Return the highest threat player (by raw value).
 	APawn* GetPrimaryTarget(AOnsetEnemy* Enemy);
+	// Return the best target considering threat × distance weighting.
+	AOnsetBaseCharacter* GetBestTarget(AOnsetEnemy* Enemy, float AttackRange, float ChaseRange);
 	// Return the given ranked threat player.
 	APawn* GetNthTarget(int32 Rank, AOnsetEnemy* Enemy);
 	// Return the Given Player's current threat position (0 = highest, -1 = invalid).
@@ -47,6 +46,8 @@ public:
 	int32 GetEngagedCount(AOnsetBaseCharacter* PlayerCharacter);
 	// Returns the index of this Enemy as stored against the Player character.
 	int32 GetEngagedIndex(AOnsetEnemy* Enemy, AOnsetBaseCharacter* PlayerCharacter);
+	// Switch this Enemy's engagement from its current player(s) to NewPlayer.
+	void SwitchTarget(AOnsetEnemy* Enemy, AOnsetBaseCharacter* NewPlayer);
 	
 private:
     TMap<TWeakObjectPtr<AOnsetEnemy>, TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>> ThreatTable;

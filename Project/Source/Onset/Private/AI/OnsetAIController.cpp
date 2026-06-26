@@ -75,6 +75,9 @@ void AOnsetAIController::ApplyPerceptionProfile(const UPerceptionProfile* Profil
 		HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
 		PerceptionComponent->ConfigureSense(*HearingConfig);
 	}
+
+	CachedSightRange = Profile->SightRange;
+	CachedHearingRange = Profile->HearingRange;
 }
 
 void AOnsetAIController::OnPossess(APawn* InPawn)
@@ -135,6 +138,48 @@ void AOnsetAIController::Tick(float DeltaTime)
 		}
 	}
 #endif
+
+	if (++LodTickCounter >= 30)
+	{
+		LodTickCounter = 0;
+		UpdateLodTier();
+	}
+}
+
+void AOnsetAIController::UpdateLodTier()
+{
+	if (!GetPawn() || !HasAuthority()) return;
+
+	float NearestDistSq = FLT_MAX;
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APlayerController* PC = It->Get())
+		{
+			if (APawn* PlayerPawn = PC->GetPawn())
+			{
+				const float DistSq = FVector::DistSquared(GetPawn()->GetActorLocation(), PlayerPawn->GetActorLocation());
+				if (DistSq < NearestDistSq) NearestDistSq = DistSq;
+			}
+		}
+	}
+
+	const float NearestDist = FMath::Sqrt(NearestDistSq);
+
+	if (NearestDist < CachedSightRange)
+	{
+		SetActorTickInterval(0.0f);
+		StateTreeComponent->SetComponentTickEnabled(true);
+	}
+	else if (NearestDist < CachedHearingRange)
+	{
+		SetActorTickInterval(0.2f);
+		StateTreeComponent->SetComponentTickEnabled(true);
+	}
+	else
+	{
+		SetActorTickInterval(0.5f);
+		StateTreeComponent->SetComponentTickEnabled(false);
+	}
 }
 
 void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActors)

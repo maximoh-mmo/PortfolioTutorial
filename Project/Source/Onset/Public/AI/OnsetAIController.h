@@ -49,6 +49,13 @@ public:
 	bool bHasPendingNoise = false;                                                                                  
 	float LastNoiseHeardTime = 0.0f;        
 
+	// --- AI LOD ---
+
+	/** Cached sight range for LOD tier calculation (set in ApplyPerceptionProfile). */
+	float CachedSightRange = 0.0f;
+	/** Cached hearing range for LOD tier calculation. */
+	float CachedHearingRange = 0.0f;
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
@@ -70,6 +77,9 @@ protected:
 	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
 	
 private:
+	void UpdateLodTier();
+	int32 LodTickCounter = 0;
+
 	bool bInUse = false;
 	UPROPERTY()
 	UAIProfile* AIProfile;

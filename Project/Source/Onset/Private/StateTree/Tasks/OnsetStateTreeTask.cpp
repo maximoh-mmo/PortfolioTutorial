@@ -2,13 +2,13 @@
 #include "GameplayEffect.h"
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
-#include "Enemy/OnsetEnemy.h"
 #include "GAS/OnsetMovementAttributeSet.h"
-
+#include "Subsystem/OnsetThreatSubsystem.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Player/OnsetPlayerAIController.h"
 #include "Core/TargetingComponent.h"
+#include "Engine/World.h"
 
 AOnsetAIController* FOnsetStateTreeTask::GetController(const FStateTreeExecutionContext& Context)
 {
@@ -36,6 +36,21 @@ UTargetingComponent* FOnsetStateTreeTask::GetTargetingComponent(const FStateTree
 		return Pawn->FindComponentByClass<UTargetingComponent>();                                                                                                                      
                                                                                                                                                                                             
 	return nullptr;      
+}
+
+UOnsetThreatSubsystem* FOnsetStateTreeTask::GetThreatSubsystem(const FStateTreeExecutionContext& Context)
+{
+	AAIController* Controller = Cast<AAIController>(Context.GetOwner());
+	if (!Controller || !Controller->GetWorld()) return nullptr;
+	return Controller->GetWorld()->GetSubsystem<UOnsetThreatSubsystem>();
+}
+
+FVector FOnsetStateTreeTask::GetThreatAngularOffset(int32 Count, int32 Rank, float Radius)
+{
+	if (Count <= 0 || Rank < 0 || Rank >= Count) return FVector::ZeroVector;
+	float Angle = Rank / static_cast<float>(Count) * 360.0f;
+	float Rad = FMath::DegreesToRadians(Angle);
+	return FVector(FMath::Cos(Rad) * Radius, FMath::Sin(Rad) * Radius, 0);	
 }
 
 AActor* FOnsetStateTreeTask::GetTarget(const FStateTreeExecutionContext& Context)

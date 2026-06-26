@@ -9,6 +9,7 @@
 #include "Player/OnsetPlayerAIController.h"
 #include "OnsetStateTreeTask.generated.h"
 
+class UOnsetThreatSubsystem;
 class UPathFollowingComponent;
 class AOnsetBaseCharacter;
 class AOnsetAIController;
@@ -20,10 +21,10 @@ struct FOnsetStateTreeTask : public FStateTreeTaskCommonBase
 	GENERATED_BODY()                                                                                            
                                                                                                                      
 	static AOnsetAIController* GetController(const FStateTreeExecutionContext& Context);
-	static AOnsetPlayerAIController* GetPlayerController(const FStateTreeExecutionContext& Context);
-	
+	static AOnsetPlayerAIController* GetPlayerController(const FStateTreeExecutionContext& Context);	
 	static UTargetingComponent* GetTargetingComponent(const FStateTreeExecutionContext& Context);
-
+	static UOnsetThreatSubsystem* GetThreatSubsystem(const FStateTreeExecutionContext& Context);
+	static FVector GetThreatAngularOffset(int32 Count, int32 Rank, float Radius);
 	static AActor* GetTarget(const FStateTreeExecutionContext& Context);
 	static void SetTarget(const FStateTreeExecutionContext& Context, AActor* NewTarget);
 

@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Subsystems/OnsetPoolSubsystem.h"
+#include "Subsystem/OnsetPoolSubsystem.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
 #include "AI/OnsetAIController.h"
@@ -10,7 +10,7 @@
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/World.h"
 #include "Perception/AIPerceptionComponent.h"
-#include "Subsystems/OnsetThreatSubsystem.h"
+#include "Subsystem/OnsetThreatSubsystem.h"
 
 DEFINE_LOG_CATEGORY(LogPooling)
 

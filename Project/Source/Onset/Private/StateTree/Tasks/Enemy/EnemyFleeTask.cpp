@@ -2,16 +2,25 @@
 #include "NavigationSystem.h"
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
+#include "Enemy/OnsetEnemy.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Core/OnsetBaseCharacter.h"                                                            
-                                                         
+#include "Subsystem/OnsetThreatSubsystem.h"
+                                                          
 EStateTreeRunStatus FEnemyFleeTask::EnterState(FStateTreeExecutionContext& Context,
-                                                        const FStateTreeTransitionResult& Transition) const
+                                                         const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;                                                      
 	AIController->ClearFocus(EAIFocusPriority::Gameplay);
+
+	if (UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context))
+	{
+		if (AOnsetEnemy* SelfEnemy = GetSelfPawn<AOnsetEnemy>(Context))
+			Subsystem->UnregisterEngaged(SelfEnemy);
+	}
+
 	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;
 

@@ -7,11 +7,11 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
-#include "Subsystems/OnsetCorpseSubsystem.h"
+#include "Subsystem/OnsetCorpseSubsystem.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/Profile/VisualProfile.h"
 #include "Spawning/OnsetSpawner.h"
-#include "Subsystems/OnsetThreatSubsystem.h"
+#include "Subsystem/OnsetThreatSubsystem.h"
 
 AOnsetEnemy::AOnsetEnemy()
 {

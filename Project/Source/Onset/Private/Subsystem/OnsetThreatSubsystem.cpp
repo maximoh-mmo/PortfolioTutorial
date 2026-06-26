@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Subsystems/OnsetThreatSubsystem.h"
+#include "Subsystem/OnsetThreatSubsystem.h"
 #include "Enemy/OnsetEnemy.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogOnsetThreat, Log, All);
@@ -110,12 +110,54 @@ int32 UOnsetThreatSubsystem::GetEngagedIndex(AOnsetEnemy* Enemy, AOnsetBaseChara
 	return -1;     
 }
 
+void UOnsetThreatSubsystem::SwitchTarget(AOnsetEnemy* Enemy, AOnsetBaseCharacter* NewPlayer)
+{
+	if (!Enemy || !NewPlayer) return;
+	UE_LOG(LogOnsetThreat, Log, TEXT("SwitchTarget: %s -> %s"), *Enemy->GetName(), *NewPlayer->GetName());
+	UnregisterEngaged(Enemy);
+	RegisterEngaged(NewPlayer, Enemy);
+}
+
 void UOnsetThreatSubsystem::RemoveEnemy(AOnsetEnemy* Enemy)
 {
 	if (!Enemy) return;
 	UE_LOG(LogOnsetThreat, Log, TEXT("RemoveEnemy: %s"), *Enemy->GetName());
 	ThreatTable.Remove(Enemy);
 	UnregisterEngaged(Enemy);	
+}
+
+APawn* UOnsetThreatSubsystem::GetBestTarget(AOnsetEnemy* Enemy, float AttackRange, float ChaseRange)
+{
+	const auto* ThreatList = ThreatTable.Find(Enemy);
+	if (!ThreatList || ThreatList->IsEmpty()) return nullptr;
+
+	AOnsetBaseCharacter* Best = nullptr;
+	float BestScore = -FLT_MAX;
+	const FVector EnemyLoc = Enemy->GetActorLocation();
+	const float AttackRangeSq = FMath::Square(AttackRange);
+	const float ChaseRangeSq = FMath::Square(ChaseRange);
+
+	for (const auto& Pair : *ThreatList)
+	{
+		AOnsetBaseCharacter* Player = Pair.Key.Get();
+		if (!Player) continue;
+
+		const float DistSq = FVector::DistSquared(EnemyLoc, Player->GetActorLocation());
+		const float ThreatVal = Pair.Value;
+
+		const float DistWeight = (DistSq <= AttackRangeSq) ? 1.0f
+		                     : (DistSq <= ChaseRangeSq)  ? 0.5f
+		                     : 0.1f;
+
+		const float Score = ThreatVal * DistWeight;
+		if (Score > BestScore)
+		{
+			BestScore = Score;
+			Best = Player;
+		}
+	}
+
+	return Best;
 }
 
 APawn* UOnsetThreatSubsystem::GetPrimaryTarget(AOnsetEnemy* Enemy)
