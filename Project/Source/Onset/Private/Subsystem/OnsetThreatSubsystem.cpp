@@ -126,7 +126,7 @@ void UOnsetThreatSubsystem::RemoveEnemy(AOnsetEnemy* Enemy)
 	UnregisterEngaged(Enemy);	
 }
 
-APawn* UOnsetThreatSubsystem::GetBestTarget(AOnsetEnemy* Enemy, float AttackRange, float ChaseRange)
+AOnsetBaseCharacter* UOnsetThreatSubsystem::GetBestTarget(AOnsetEnemy* Enemy, float AttackRange, float ChaseRange)
 {
 	const auto* ThreatList = ThreatTable.Find(Enemy);
 	if (!ThreatList || ThreatList->IsEmpty()) return nullptr;
