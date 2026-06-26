@@ -36,6 +36,7 @@ struct FOnsetStateTreeEngageInstanceData
 	float MoveThreshold = 200.0f;
 
 	float TimeInState = 0.0f;
+	float TimeWithoutTarget = 0.0f;
 	float NextPositionReevaluateTime = 0.0f;
 	float NextTargetReevaluateTime = 0.0f;
 	FVector CurrentOffsetPosition = FVector::ZeroVector;

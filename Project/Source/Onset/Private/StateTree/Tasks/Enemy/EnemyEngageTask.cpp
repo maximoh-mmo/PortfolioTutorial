@@ -19,14 +19,13 @@ EStateTreeRunStatus FEnemyEngageTask::EnterState(FStateTreeExecutionContext& Con
 	AOnsetEnemy* SelfEnemy = GetSelfPawn<AOnsetEnemy>(Context);
 	if (!SelfEnemy) return EStateTreeRunStatus::Failed;
 
-	if (!GetTarget(Context)) return EStateTreeRunStatus::Succeeded;
-
 	FInstanceDataType& Inst = Context.GetInstanceData(*this);
 
 	const float Stagger = FMath::FRand() * 2.0f;
 	Inst.NextPositionReevaluateTime = Stagger;
 	Inst.NextTargetReevaluateTime = Stagger;
 	Inst.TimeInState = 0.0f;
+	Inst.TimeWithoutTarget = 0.0f;
 
 	UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context);
 	if (Subsystem)
@@ -58,6 +57,19 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 	if (!SelfEnemy) return EStateTreeRunStatus::Failed;
 	UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context);
 
+	// Track sustained absence of target before giving up
+	AActor* Target = GetTarget(Context);
+	if (!Target && !Inst.CurrentTarget)
+	{
+		Inst.TimeWithoutTarget += DeltaTime;
+		if (Inst.TimeWithoutTarget >= 2.0f)
+			return EStateTreeRunStatus::Succeeded;
+	}
+	else
+	{
+		Inst.TimeWithoutTarget = 0.0f;
+	}
+
 	// Target re-evaluation
 	if (Subsystem && Inst.TimeInState >= Inst.NextTargetReevaluateTime)
 	{
@@ -75,14 +87,10 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 			Inst.LastTargetLocation = Best->GetActorLocation();
 			Inst.NextPositionReevaluateTime = 0.0f;
 		}
-		else if (!Best)
-		{
-			return EStateTreeRunStatus::Succeeded;
-		}
 	}
 
-	AActor* Target = GetTarget(Context);
-	if (!Target) return EStateTreeRunStatus::Succeeded;
+	Target = GetTarget(Context);
+	if (!Target) return EStateTreeRunStatus::Running;
 
 	const FVector TargetLoc = Target->GetActorLocation();
 	const float DistSq = FVector::DistSquared(SelfEnemy->GetActorLocation(), TargetLoc);
