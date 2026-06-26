@@ -40,7 +40,7 @@ struct FOnsetStateTreeEngageInstanceData
 	float NextTargetReevaluateTime = 0.0f;
 	FVector CurrentOffsetPosition = FVector::ZeroVector;
 	FVector LastTargetLocation = FVector::ZeroVector;
-	TWeakObjectPtr<AOnsetBaseCharacter> CurrentTarget;
+	TObjectPtr<AOnsetBaseCharacter> CurrentTarget = nullptr;
 };
 
 USTRUCT()

@@ -35,7 +35,8 @@ EStateTreeRunStatus FEnemyEngageTask::EnterState(FStateTreeExecutionContext& Con
 		if (Best)
 		{
 			SetTarget(Context, Best);
-			Subsystem->SwitchTarget(SelfEnemy, Best);
+			Subsystem->RegisterEngaged(Best, SelfEnemy);
+			AIController->SetFocus(Best);
 			Inst.CurrentTarget = Best;
 			Inst.LastTargetLocation = Best->GetActorLocation();
 		}
@@ -63,7 +64,7 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 		Inst.NextTargetReevaluateTime = Inst.TimeInState + Inst.TargetReevaluateInterval;
 
 		AOnsetBaseCharacter* Best = Subsystem->GetBestTarget(SelfEnemy, Inst.AttackRange, Inst.ChaseRange);
-		AOnsetBaseCharacter* CurrentTargetPtr = Inst.CurrentTarget.Get();
+		AOnsetBaseCharacter* CurrentTargetPtr = Inst.CurrentTarget;
 
 		if (Best && Best != CurrentTargetPtr)
 		{
