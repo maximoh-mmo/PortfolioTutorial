@@ -36,6 +36,8 @@ EStateTreeRunStatus FEnemyInvestigateTask::EnterState(FStateTreeExecutionContext
 	float MovementMultiplier = bIsGroupMember ? InstanceData.GroupMemberSpeedMultiplier 
 												: InstanceData.NonGroupSpeedMultiplier;
 	
+	Controller->SetFocalPoint(InstanceData.InvestigationDestination, EAIFocusPriority::Gameplay);
+	
 	InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(                           
          Self, MovementMultiplier);  	
 	Controller->MoveToLocation(InstanceData.InvestigationDestination, InstanceData.AcceptanceRadius);
