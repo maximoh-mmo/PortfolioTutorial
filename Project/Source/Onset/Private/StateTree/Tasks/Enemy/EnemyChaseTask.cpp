@@ -9,6 +9,7 @@ EStateTreeRunStatus FEnemyChaseTask::EnterState(FStateTreeExecutionContext& Cont
 {
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
+	if (!AIController->HasAuthority()) return EStateTreeRunStatus::Failed;
 	AActor* TargetActor = GetTarget(Context);
 	// No target to chase, but not a failure of the task itself.
 	if (!TargetActor) return EStateTreeRunStatus::Succeeded; 
@@ -30,6 +31,7 @@ EStateTreeRunStatus FEnemyChaseTask::Tick(FStateTreeExecutionContext& Context, c
 {
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
+	if (!AIController->HasAuthority()) return EStateTreeRunStatus::Failed;
 	
 	UPathFollowingComponent* PathFollowingComponent = GetPathFollowingComponent(Context);
 	if (!PathFollowingComponent) return EStateTreeRunStatus::Failed;

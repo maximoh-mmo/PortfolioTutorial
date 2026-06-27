@@ -14,6 +14,7 @@ EStateTreeRunStatus FEnemySearchTask::EnterState(FStateTreeExecutionContext& Con
 {
 	AOnsetAIController* Controller = GetController(Context);
 	if (!Controller) return EStateTreeRunStatus::Failed;
+	if (!Controller->HasAuthority()) return EStateTreeRunStatus::Failed;
 	
 	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;
@@ -44,6 +45,7 @@ EStateTreeRunStatus FEnemySearchTask::Tick(FStateTreeExecutionContext& Context, 
 {
 	AOnsetAIController* Controller = GetController(Context);
 	if (!Controller) return EStateTreeRunStatus::Failed;
+	if (!Controller->HasAuthority()) return EStateTreeRunStatus::Failed;
 	
 	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;

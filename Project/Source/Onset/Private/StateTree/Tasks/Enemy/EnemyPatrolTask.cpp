@@ -15,6 +15,7 @@ EStateTreeRunStatus FEnemyPatrolTask::EnterState(FStateTreeExecutionContext& Con
 
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
+	if (!AIController->HasAuthority()) return EStateTreeRunStatus::Failed;
 	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;
 

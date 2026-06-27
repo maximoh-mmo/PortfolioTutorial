@@ -19,6 +19,7 @@ void UInteractionComponent::ProcessPrimaryInteraction(FVector2D ScreenPosition)
 {
 	AOnsetPlayerController* PlayerController = Cast<AOnsetPlayerController>(GetOwner());
 	if (!PlayerController) return;
+	if (!PlayerController->HasAuthority()) return;
 	
 	if (!TargetingComponent)
 	{

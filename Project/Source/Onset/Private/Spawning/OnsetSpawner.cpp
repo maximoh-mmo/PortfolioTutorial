@@ -17,6 +17,7 @@ AOnsetSpawner::AOnsetSpawner()
 
 void AOnsetSpawner::SpawnGroup()
 {
+	if (!HasAuthority()) return;
 	if (Config.EnemyAIProfile == nullptr || Config.GroupSize <= 0) return;     
 	if (Slots.Num() == 0) InitSlots();                                                                          
                                                                                                                      
@@ -32,6 +33,7 @@ void AOnsetSpawner::SpawnGroup()
 
 void AOnsetSpawner::DestroyGroup()
 {
+	if (!HasAuthority()) return;
 	for (int32 i = 0; i < Slots.Num(); i++)
 	{
 		if (Slots[i].Occupant == nullptr || !IsValid(Slots[i].Occupant)) continue; 
@@ -49,7 +51,8 @@ void AOnsetSpawner::DestroyGroup()
 
 void AOnsetSpawner::BeginPlay()
 {
-	Super::BeginPlay();                                                                                
+	Super::BeginPlay();
+	if (!HasAuthority()) return;
 	InitSlots();                                                                                                
 	if (bAutoSpawn) SpawnGroup();          
 }
@@ -85,6 +88,7 @@ void AOnsetSpawner::InitSlots()
 
 AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 {
+	if (!HasAuthority()) return nullptr;
 	UOnsetPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UOnsetPoolSubsystem>();
 	if (!PoolSubsystem) return nullptr;
 	if (!Slots.IsValidIndex(SlotIndex)) return nullptr;
@@ -123,11 +127,13 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 
 void AOnsetSpawner::DebugKillAll()
 {
+	if (!HasAuthority()) return;
 	DestroyGroup();
 }
 
 void AOnsetSpawner::DebugKillLast()
 {
+	if (!HasAuthority()) return;
 	for (int32 i = Slots.Num() - 1; i >= 0; i--)
 	{
 		if (Slots[i].Occupant && IsValid(Slots[i].Occupant))
@@ -146,7 +152,7 @@ void AOnsetSpawner::DebugKillLast()
 
 void AOnsetSpawner::OnNPCDeath(AOnsetEnemy* Enemy)
 {
-	if (!Enemy) return;
+	if (!HasAuthority() || !Enemy) return;
 	
 	for (int32 i = 0; i < Slots.Num(); ++i)
 	{
@@ -170,7 +176,7 @@ void AOnsetSpawner::OnNPCDeath(AOnsetEnemy* Enemy)
 
 void AOnsetSpawner::RespawnNPC(int32 SlotIndex)
 {
-	if (!Slots.IsValidIndex(SlotIndex)) return;
+	if (!HasAuthority() || !Slots.IsValidIndex(SlotIndex)) return;
 	
 	Slots[SlotIndex].RespawnTimerHandle.Invalidate();
 	SpawnEnemyAtSlot(SlotIndex);

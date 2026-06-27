@@ -5,6 +5,7 @@
 
 AOnsetCorpse* UOnsetCorpseSubsystem::SpawnCorpse(const FTransform& Transform, UStaticMesh* CorpseMesh)
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return nullptr;
 	SweepDeadCorpses();
 
 	while (ActiveCorpses.Num() >= MaxActiveCorpses && ActiveCorpses.Num() > 0 && MaxActiveCorpses > 0)

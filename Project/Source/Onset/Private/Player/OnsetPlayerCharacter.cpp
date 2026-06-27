@@ -38,6 +38,7 @@ void AOnsetPlayerCharacter::BeginPlay()
 
 void AOnsetPlayerCharacter::RespawnPlayer()
 {
+	if (!HasAuthority()) return;
 	if (AttributeSet)                                                                                           
 	{                                                                                                           
 		AttributeSet->SetHealth(AttributeSet->GetMaxHealth());                                                  
@@ -58,5 +59,6 @@ void AOnsetPlayerCharacter::OnDeath(AActor* KillingActor)
 {
 	Super::OnDeath(KillingActor);
 	DisableInput(nullptr);
+	if (!HasAuthority()) return;
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerCharacter::RespawnPlayer);
 }

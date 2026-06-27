@@ -21,6 +21,7 @@ EStateTreeRunStatus FPlayerEngageTask::EnterState(FStateTreeExecutionContext& Co
 {
 	AOnsetPlayerAIController* Controller = GetPlayerController(Context);
 	if (!Controller) return EStateTreeRunStatus::Failed;
+	if (!Controller->HasAuthority()) return EStateTreeRunStatus::Failed;
 	
 	AActor* Target = GetTarget(Context);
 	if (!Target)
@@ -45,6 +46,7 @@ EStateTreeRunStatus FPlayerEngageTask::Tick(FStateTreeExecutionContext& Context,
 {
 	AOnsetPlayerAIController* Controller = GetPlayerController(Context);
 	if (!Controller) return EStateTreeRunStatus::Failed;
+	if (!Controller->HasAuthority()) return EStateTreeRunStatus::Failed;
 	
 	AOnsetPlayerCharacter* Self = Cast<AOnsetPlayerCharacter>(Controller->GetPawn());
 	if (!Self) return EStateTreeRunStatus::Failed;

@@ -31,6 +31,7 @@ void AOnsetBaseCharacter::InitAbilityActorInfo()
 void AOnsetBaseCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+	if (!HasAuthority()) return;
 	InitAbilityActorInfo();
 	GrantDefaultAbilities();
 }

@@ -69,6 +69,7 @@ EStateTreeRunStatus FPlayerAcquireTargetTask::EnterState(FStateTreeExecutionCont
 	
 	AOnsetPlayerAIController* Controller = GetPlayerController(Context);
 	if (!Controller) return EStateTreeRunStatus::Failed;
+	if (!Controller->HasAuthority()) return EStateTreeRunStatus::Failed;
 	
 	InstanceData.LastSearchTime = Controller->GetWorld()->GetTimeSeconds();
 	return EStateTreeRunStatus::Running;
@@ -80,6 +81,7 @@ EStateTreeRunStatus FPlayerAcquireTargetTask::Tick(FStateTreeExecutionContext& C
 	
 	AOnsetPlayerAIController* Controller = GetPlayerController(Context);
 	if (!Controller) return EStateTreeRunStatus::Failed;
+	if (!Controller->HasAuthority()) return EStateTreeRunStatus::Failed;
 	
 	float Now = Controller->GetWorld()->GetTimeSeconds();
 	if (Now - InstanceData.LastSearchTime < InstanceData.SearchInterval) return EStateTreeRunStatus::Running;

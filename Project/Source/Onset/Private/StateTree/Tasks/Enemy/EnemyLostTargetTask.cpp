@@ -12,6 +12,7 @@ EStateTreeRunStatus FEnemyLostTargetTask::EnterState(FStateTreeExecutionContext&
 {
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
+	if (!AIController->HasAuthority()) return EStateTreeRunStatus::Failed;
 	AIController->ClearFocus(EAIFocusPriority::Gameplay);
 
 	if (UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context))

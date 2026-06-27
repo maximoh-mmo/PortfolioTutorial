@@ -50,6 +50,7 @@ void AOnsetPlayerAIController::StartStateTree()
 void AOnsetPlayerAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	if (!HasAuthority()) return;
 	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
 	StartStateTree();
 	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Possessed player"));

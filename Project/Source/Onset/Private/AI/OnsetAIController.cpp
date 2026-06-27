@@ -86,6 +86,7 @@ void AOnsetAIController::OnPossess(APawn* InPawn)
 {
 	bInUse = true;
 	Super::OnPossess(InPawn);
+	if (!HasAuthority()) return;
 	StateTreeComponent->StartLogic();
 	TargetingComponent = GetPawn()->FindComponentByClass<UTargetingComponent>();
 }
@@ -186,7 +187,7 @@ void AOnsetAIController::UpdateLodTier()
 
 void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActors)
 {
-	if (GetPawn() == nullptr) return;
+	if (!HasAuthority() || GetPawn() == nullptr) return;
 	
 	// --- Sight: set targeting component and add threat ---
 	TArray<AActor*> SeenActors;

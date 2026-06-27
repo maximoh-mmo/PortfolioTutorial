@@ -6,6 +6,7 @@
 
 void UOnsetThreatSubsystem::AddThreat(AOnsetBaseCharacter* PlayerCharacter, AOnsetEnemy* Enemy, float ThreatAmount)
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!PlayerCharacter || !Enemy) return;
 	TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>& EnemyThreats = ThreatTable.FindOrAdd(TWeakObjectPtr(Enemy));
 	float& CurrentThreat = EnemyThreats.FindOrAdd(TWeakObjectPtr(PlayerCharacter));
@@ -23,6 +24,7 @@ void UOnsetThreatSubsystem::AddThreat(AOnsetBaseCharacter* PlayerCharacter, AOns
 
 void UOnsetThreatSubsystem::RemovePlayer(const AOnsetBaseCharacter* PlayerCharacter)
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!PlayerCharacter) return;
 	TArray<TWeakObjectPtr<AOnsetEnemy>> Enemies;
 	ThreatTable.GetKeys(Enemies);
@@ -58,6 +60,7 @@ int32 UOnsetThreatSubsystem::GetTargetRank(AOnsetEnemy* Enemy, AOnsetBaseCharact
 
 void UOnsetThreatSubsystem::RegisterEngaged(AOnsetBaseCharacter* PlayerCharacter, AOnsetEnemy* Enemy)
 {
+    if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
     if (!PlayerCharacter || !Enemy) return;
     auto& EnemyList = EngagementTable.FindOrAdd(PlayerCharacter);
     bool bAlreadyContains = false;
@@ -77,6 +80,7 @@ void UOnsetThreatSubsystem::RegisterEngaged(AOnsetBaseCharacter* PlayerCharacter
 
 void UOnsetThreatSubsystem::UnregisterEngaged(AOnsetEnemy* Enemy)
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!Enemy) return;
 	const TWeakObjectPtr WeakEnemy(Enemy);
 	for (auto& Player : EngagementTable)
@@ -129,6 +133,7 @@ bool UOnsetThreatSubsystem::IsEnemyEngagedWithPlayer(AOnsetEnemy* Enemy, AOnsetB
 
 void UOnsetThreatSubsystem::SwitchTarget(AOnsetEnemy* Enemy, AOnsetBaseCharacter* NewPlayer)
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!Enemy || !NewPlayer) return;
 
 	if (IsEnemyEngagedWithPlayer(Enemy, NewPlayer))
@@ -142,6 +147,7 @@ void UOnsetThreatSubsystem::SwitchTarget(AOnsetEnemy* Enemy, AOnsetBaseCharacter
 
 void UOnsetThreatSubsystem::RemoveEnemy(AOnsetEnemy* Enemy)
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!Enemy) return;
 	ThreatTable.Remove(Enemy);
 	UnregisterEngaged(Enemy);	
@@ -226,6 +232,7 @@ int32 UOnsetThreatSubsystem::GetTargetCount(AOnsetEnemy* Enemy)
 
 void UOnsetThreatSubsystem::ClearAll()
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	ThreatTable = {};
 	EngagementTable = {};
 }

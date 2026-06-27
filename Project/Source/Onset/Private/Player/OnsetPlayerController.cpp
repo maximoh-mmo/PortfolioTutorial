@@ -83,10 +83,13 @@ void AOnsetPlayerController::BeginPlay()
 			GamepadCursorWidget->SetCursorPosition(CenterPos);
 		}
 	}
-	
-	AutoCombatController = GetWorld()->SpawnActor<AOnsetPlayerAIController>(AOnsetPlayerAIController::StaticClass());
-	if (AutoCombatController)                                                                                       
-		AutoCombatController->Rename(TEXT("PlayerAI"));           
+
+	if (HasAuthority())
+	{
+		AutoCombatController = GetWorld()->SpawnActor<AOnsetPlayerAIController>(AOnsetPlayerAIController::StaticClass());
+		if (AutoCombatController)
+			AutoCombatController->Rename(TEXT("PlayerAI"));
+	}
 	ResetIdleTimer();
 }
 

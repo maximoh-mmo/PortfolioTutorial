@@ -12,7 +12,8 @@ EStateTreeRunStatus FEnemyFleeTask::EnterState(FStateTreeExecutionContext& Conte
                                                          const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
-	if (!AIController) return EStateTreeRunStatus::Failed;                                                      
+	if (!AIController) return EStateTreeRunStatus::Failed;
+	if (!AIController->HasAuthority()) return EStateTreeRunStatus::Failed;
 	AIController->ClearFocus(EAIFocusPriority::Gameplay);
 
 	if (UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context))
@@ -63,6 +64,7 @@ EStateTreeRunStatus FEnemyFleeTask::Tick(FStateTreeExecutionContext& Context,
 {
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
+	if (!AIController->HasAuthority()) return EStateTreeRunStatus::Failed;
 	if (!GetPathFollowingComponent(Context)) return EStateTreeRunStatus::Failed;
 
 	if (AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context))

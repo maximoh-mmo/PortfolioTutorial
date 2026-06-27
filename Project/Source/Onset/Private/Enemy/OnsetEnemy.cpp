@@ -21,6 +21,7 @@ AOnsetEnemy::AOnsetEnemy()
 
 void AOnsetEnemy::ApplyProfile(UVisualProfile* InProfile)
 {
+	if (!HasAuthority()) return;
 	VisualProfile = InProfile;
 	USkeletalMeshComponent* SkeletalComp = GetMesh();
 	if (!SkeletalComp) return;
@@ -88,6 +89,7 @@ void AOnsetEnemy::ApplyProfile(UVisualProfile* InProfile)
 void AOnsetEnemy::OnDeath(AActor* KillingActor)
 {
 	Super::OnDeath(KillingActor);
+	if (!HasAuthority()) return;
 	if (UOnsetCorpseSubsystem* CorpseSub = GetWorld()->GetSubsystem<UOnsetCorpseSubsystem>())
 	{
 		if (VisualProfile)
@@ -101,6 +103,7 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 
 void AOnsetEnemy::DeferredDeathCleanup()
 {
+	if (!HasAuthority()) return;
 	if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())
 	{
 		ThreatSub->RemoveEnemy(this);

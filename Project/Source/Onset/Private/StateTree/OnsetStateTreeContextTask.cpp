@@ -16,6 +16,7 @@ EStateTreeRunStatus FOnsetStateTreeContextTask::EnterState(FStateTreeExecutionCo
 	
 	const AOnsetAIController* AIController = Cast<AOnsetAIController>(Context.GetOwner());
 	if (!AIController) return EStateTreeRunStatus::Failed;
+	if (!AIController->HasAuthority()) return EStateTreeRunStatus::Failed;
 	
 	if (AIController->TargetingComponent)
 	{

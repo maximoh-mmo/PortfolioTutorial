@@ -17,12 +17,14 @@ DEFINE_LOG_CATEGORY(LogPooling)
 void UOnsetPoolSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
+	if (InWorld.GetNetMode() == NM_Client) return;
 	InitializePool();	
 }
 
 // Sets default values	
 AOnsetEnemy* UOnsetPoolSubsystem::GetPooledEnemy()
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return nullptr;
 	if (!bPoolInitialized) InitializePool();
 	for (AOnsetEnemy* Enemy : ObjectPool)
 	{
@@ -48,6 +50,7 @@ AOnsetEnemy* UOnsetPoolSubsystem::GetPooledEnemy()
 
 AOnsetAIController* UOnsetPoolSubsystem::GetPooledController()
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return nullptr;
 	if (!bPoolInitialized) InitializePool();
 	for (AOnsetAIController* Controller : ControllerPool)
 	{
@@ -74,6 +77,7 @@ AOnsetAIController* UOnsetPoolSubsystem::GetPooledController()
 
 void UOnsetPoolSubsystem::ReleasePooledEnemy(AOnsetEnemy* Enemy)
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!Enemy || !IsValid(Enemy)) return;
 	
 	ReturnToPool(Enemy);
@@ -81,6 +85,7 @@ void UOnsetPoolSubsystem::ReleasePooledEnemy(AOnsetEnemy* Enemy)
 
 void UOnsetPoolSubsystem::ReleasePooledController(AOnsetAIController* Controller)
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!Controller || !IsValid(Controller)) return;
 	Controller->UnPossess();
 	if (!ControllerPool.Contains(Controller)) ControllerPool.Add(Controller);    
@@ -88,6 +93,7 @@ void UOnsetPoolSubsystem::ReleasePooledController(AOnsetAIController* Controller
 
 void UOnsetPoolSubsystem::InitializePool()
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (bPoolInitialized) return;
 	bPoolInitialized = true;
 	
@@ -111,6 +117,7 @@ void UOnsetPoolSubsystem::InitializePool()
 
 void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 {
+	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!Enemy) return;	
 	if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())                       
 	{                                                                                                               
