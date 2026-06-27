@@ -56,9 +56,15 @@ public:
 		
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void OnRespawn();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION()
+	void OnRep_bIsAlive();
 	
 protected:
 	bool bAbilitiesGranted = false;
 	
+	UPROPERTY(ReplicatedUsing = OnRep_bIsAlive)
 	bool bIsAlive = true;
 };

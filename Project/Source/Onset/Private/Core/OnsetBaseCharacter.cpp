@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GAS/OnsetMovementAttributeSet.h"
 #include "Core/TargetingComponent.h"
+#include "Net/UnrealNetwork.h"
 
 AOnsetBaseCharacter::AOnsetBaseCharacter()
 {
@@ -50,6 +51,18 @@ void AOnsetBaseCharacter::GrantDefaultAbilities()
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(HitReaction, 1, INDEX_NONE, this));
 	
 	bAbilitiesGranted = true;
+}
+
+void AOnsetBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_CONDITION(AOnsetBaseCharacter, bIsAlive, COND_None);
+}
+
+void AOnsetBaseCharacter::OnRep_bIsAlive()
+{
+	SetActorHiddenInGame(!bIsAlive);
+	SetActorEnableCollision(bIsAlive);
 }
 
 void AOnsetBaseCharacter::ResetAttributes()

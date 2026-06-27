@@ -17,6 +17,7 @@ AOnsetEnemy::AOnsetEnemy()
 {
 	this->Tags.Add(FName("Enemy"));
 	GroupComp = CreateDefaultSubobject<UGroupComponent>(TEXT("GroupComp"));
+	SetReplicateMovement(true);
 }
 
 void AOnsetEnemy::ApplyProfile(UVisualProfile* InProfile)
