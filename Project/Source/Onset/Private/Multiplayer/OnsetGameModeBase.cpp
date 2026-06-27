@@ -4,11 +4,16 @@
 #include "Multiplayer/OnsetGameModeBase.h"
 
 #include "Engine/Engine.h"
+#include "Multiplayer/OnsetGameState.h"
 #include "Player/OnsetPlayerCharacter.h"
+#include "Player/OnsetPlayerController.h"
 
 AOnsetGameModeBase::AOnsetGameModeBase()
 {
 	DefaultPawnClass = AOnsetPlayerCharacter::StaticClass();
+	PlayerControllerClass = AOnsetPlayerController::StaticClass();
+	GameStateClass = AOnsetGameState::StaticClass();
+	HUDClass = nullptr;
 }
 
 void AOnsetGameModeBase::StartPlay()
