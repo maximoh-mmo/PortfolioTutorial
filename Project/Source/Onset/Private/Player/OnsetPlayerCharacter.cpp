@@ -39,15 +39,16 @@ void AOnsetPlayerCharacter::BeginPlay()
 void AOnsetPlayerCharacter::RespawnPlayer()
 {
 	if (!HasAuthority()) return;
-	if (AttributeSet)                                                                                           
-	{                                                                                                           
-		AttributeSet->SetHealth(AttributeSet->GetMaxHealth());                                                  
-	}                                                                                                           
-	SetActorTransform(HomeTransform);                                                                             
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))                                       
-	{                                                                                                           
-		EnableInput(PC);                                                                                        
-	}                        
+	OnRespawn();
+	if (AttributeSet)
+	{
+		AttributeSet->SetHealth(AttributeSet->GetMaxHealth());
+	}
+	SetActorTransform(HomeTransform);
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		EnableInput(PC);
+	}
 }
 
 void AOnsetPlayerCharacter::EnableCameraLag(bool bEnable)

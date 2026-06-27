@@ -25,7 +25,7 @@ AOnsetCorpse* UOnsetCorpseSubsystem::SpawnCorpse(const FTransform& Transform, US
 		if (CorpseMesh)
 		{
 			Corpse->MeshComponent->SetStaticMesh(CorpseMesh);
-		} 
+		}
 		Corpse->SetLifeSpan(CorpseLifespan);
 		ActiveCorpses.Add(Corpse);
 	}

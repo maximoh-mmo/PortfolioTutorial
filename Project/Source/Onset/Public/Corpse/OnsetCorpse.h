@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "OnsetCorpse.generated.h"
 
-/** A simple corpse actor with a static mesh, spawned and recycled by UOnsetCorpseSubsystem. */
+/** A corpse actor with a static mesh, spawned and recycled by UOnsetCorpseSubsystem. */
 UCLASS()
 class ONSET_API AOnsetCorpse : public AActor
 {

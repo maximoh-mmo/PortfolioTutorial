@@ -28,14 +28,19 @@ public:
 	TObjectPtr<UGroupComponent> GroupComp;
 	
 	/** Visual profile defining mesh, anim BP, material, and capsule size. Applied via ApplyProfile(). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Profile")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Profile", ReplicatedUsing = OnRep_VisualProfile)
 	TObjectPtr<UVisualProfile> VisualProfile;
 	
 	UPROPERTY()
 	TObjectPtr<AOnsetSpawner> OwningSpawner;
-	
+
 	virtual void OnDeath(AActor* KillingActor = nullptr) override;
-	
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION()
+	void OnRep_VisualProfile();
+
 protected:
 
 	void DeferredDeathCleanup();

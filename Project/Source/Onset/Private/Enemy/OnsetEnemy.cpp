@@ -1,12 +1,11 @@
 #include "Enemy/OnsetEnemy.h"
 
 #include "TimerManager.h"
+#include "Net/UnrealNetwork.h"
 #include "Animation/AnimInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
-#include "Engine/StaticMesh.h"
 #include "Subsystem/OnsetCorpseSubsystem.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/Profile/VisualProfile.h"
@@ -22,61 +21,31 @@ AOnsetEnemy::AOnsetEnemy()
 
 void AOnsetEnemy::ApplyProfile(UVisualProfile* InProfile)
 {
-	if (!HasAuthority()) return;
+	checkf(!InProfile || !InProfile->SkeletalMesh.IsNull(),
+	       TEXT("ApplyProfile called with a VisualProfile that has no SkeletalMesh assigned"));
 	VisualProfile = InProfile;
 	USkeletalMeshComponent* SkeletalComp = GetMesh();
 	if (!SkeletalComp) return;
 
-	if (UStaticMeshComponent* OldCube = FindComponentByClass<UStaticMeshComponent>())
-		OldCube->DestroyComponent(false);
-
 	if (VisualProfile)
 	{
-		const bool bHasSkeletal = !VisualProfile->SkeletalMesh.IsNull();
-
-		if (bHasSkeletal)
+		if (USkeletalMesh* SkeletalMesh = VisualProfile->SkeletalMesh.LoadSynchronous())
 		{
-			if (USkeletalMesh* SkeletalMesh = VisualProfile->SkeletalMesh.LoadSynchronous())
-			{
-				SkeletalComp->SetSkeletalMesh(SkeletalMesh);
-				FBoxSphereBounds Bounds = SkeletalMesh->GetImportedBounds();
-				float Radius = FMath::Max(Bounds.BoxExtent.X, Bounds.BoxExtent.Y);
-				float HalfHeight = FMath::Max(Radius, Bounds.BoxExtent.Z);
-				GetCapsuleComponent()->SetCapsuleSize(Radius, HalfHeight);
-			}
-			SkeletalComp->SetHiddenInGame(false);
-
-			if (VisualProfile->AnimBlueprintClass)
-				SkeletalComp->SetAnimInstanceClass(VisualProfile->AnimBlueprintClass);
+			SkeletalComp->SetSkeletalMesh(SkeletalMesh);
+			FBoxSphereBounds Bounds = SkeletalMesh->GetImportedBounds();
+			float Radius = FMath::Max(Bounds.BoxExtent.X, Bounds.BoxExtent.Y);
+			float HalfHeight = FMath::Max(Radius, Bounds.BoxExtent.Z);
+			GetCapsuleComponent()->SetCapsuleSize(Radius, HalfHeight);
 		}
-		else
-		{
-			SkeletalComp->SetSkeletalMesh(nullptr);
-			SkeletalComp->SetHiddenInGame(true);
+		SkeletalComp->SetHiddenInGame(false);
 
-			UStaticMeshComponent* CubeVis = NewObject<UStaticMeshComponent>(this, TEXT("CubeVis"));
-			CubeVis->SetupAttachment(RootComponent);
-			CubeVis->RegisterComponent();
-			CubeVis->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			CubeVis->SetCollisionObjectType(ECC_WorldDynamic);
-			CubeVis->SetCollisionResponseToAllChannels(ECR_Block);
-			CubeVis->SetWorldScale3D(FVector(1.0f));
-			if (UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
-				CubeVis->SetStaticMesh(CubeMesh);
-			CubeVis->SetHiddenInGame(false);
-		}
+		if (VisualProfile->AnimBlueprintClass)
+			SkeletalComp->SetAnimInstanceClass(VisualProfile->AnimBlueprintClass);
 
 		if (VisualProfile->OverrideMaterial)
-		{
-			if (bHasSkeletal)
-				SkeletalComp->SetMaterial(0, VisualProfile->OverrideMaterial);
-			else if (UStaticMeshComponent* CubeVis = FindComponentByClass<UStaticMeshComponent>())
-				CubeVis->SetMaterial(0, VisualProfile->OverrideMaterial);
-		}
+			SkeletalComp->SetMaterial(0, VisualProfile->OverrideMaterial);
 		else
-		{
 			SkeletalComp->SetMaterial(0, nullptr);
-		}
 	}
 	else
 	{
@@ -87,16 +56,26 @@ void AOnsetEnemy::ApplyProfile(UVisualProfile* InProfile)
 	}
 }
 
+void AOnsetEnemy::OnRep_VisualProfile()
+{
+	ApplyProfile(VisualProfile);
+}
+
+void AOnsetEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AOnsetEnemy, VisualProfile);
+}
+
 void AOnsetEnemy::OnDeath(AActor* KillingActor)
 {
 	Super::OnDeath(KillingActor);
 	if (!HasAuthority()) return;
 	if (UOnsetCorpseSubsystem* CorpseSub = GetWorld()->GetSubsystem<UOnsetCorpseSubsystem>())
 	{
-		if (VisualProfile)
+		if (VisualProfile && !VisualProfile->CorpseMesh.IsNull())
 		{
-			UStaticMesh* CorpseMesh = VisualProfile->CorpseMesh.IsNull() ? nullptr : VisualProfile->CorpseMesh.LoadSynchronous();
-			CorpseSub->SpawnCorpse(GetActorTransform(), CorpseMesh);
+			CorpseSub->SpawnCorpse(GetActorTransform(), VisualProfile->CorpseMesh.LoadSynchronous());
 		}
 	}
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetEnemy::DeferredDeathCleanup);
