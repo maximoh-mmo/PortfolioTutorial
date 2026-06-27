@@ -3,6 +3,7 @@
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
 #include "GAS/OnsetMovementAttributeSet.h"
+#include "GAS/OnsetMovementSpeedModifierEffect.h"
 #include "Subsystem/OnsetThreatSubsystem.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Core/OnsetBaseCharacter.h"
@@ -86,25 +87,18 @@ UPathFollowingComponent* FOnsetStateTreeTask::GetPathFollowingComponent(const FS
 FActiveGameplayEffectHandle FOnsetStateTreeTask::ApplyMovementSpeedModifier(const AOnsetBaseCharacter* Self,
 	const float Magnitude)
 {
-	if (!Self || !Self->AbilitySystemComponent)	return FActiveGameplayEffectHandle();
-		
-	UGameplayEffect* SpeedGE = NewObject<UGameplayEffect>(GetTransientPackageAsObject(),FName("DynamicSpeedModifier"));
-	SpeedGE->DurationPolicy = EGameplayEffectDurationType::Infinite;
-	if (SpeedGE->Modifiers.Num()==0)
+	if (!Self || !Self->AbilitySystemComponent) return FActiveGameplayEffectHandle();
+
+	UAbilitySystemComponent* ASC = Self->AbilitySystemComponent;
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(
+		UOnsetMovementSpeedModifierEffect::StaticClass(), 1.0f, ASC->MakeEffectContext());
+	if (!SpecHandle.IsValid()) return FActiveGameplayEffectHandle();
+
+	FGameplayEffectSpec* Spec = SpecHandle.Data.Get();
+	if (Spec)
 	{
-		FGameplayModifierInfo ModifierInfo;
-		ModifierInfo.Attribute = UOnsetMovementAttributeSet::GetMovementSpeedAttribute();
-		ModifierInfo.ModifierOp = EGameplayModOp::MultiplyCompound;
-		ModifierInfo.ModifierMagnitude = FScalableFloat(Magnitude);
-		SpeedGE->Modifiers.Add(ModifierInfo);
+		Spec->SetSetByCallerMagnitude(FName("MoveSpeedMod"), Magnitude);
 	}
-	else
-	{
-		SpeedGE->Modifiers[0].Attribute = UOnsetMovementAttributeSet::GetMovementSpeedAttribute();
-		SpeedGE->Modifiers[0].ModifierOp = EGameplayModOp::MultiplyCompound;
-		SpeedGE->Modifiers[0].ModifierMagnitude = FScalableFloat(Magnitude);
-	}
-		
-	return Self->AbilitySystemComponent->ApplyGameplayEffectToSelf(
-		SpeedGE,1.0f,Self->AbilitySystemComponent->MakeEffectContext());
+
+	return ASC->ApplyGameplayEffectSpecToSelf(*Spec);
 }

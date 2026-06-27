@@ -87,8 +87,6 @@ void AOnsetPlayerController::BeginPlay()
 	if (HasAuthority())
 	{
 		AutoCombatController = GetWorld()->SpawnActor<AOnsetPlayerAIController>(AOnsetPlayerAIController::StaticClass());
-		if (AutoCombatController)
-			AutoCombatController->Rename(TEXT("PlayerAI"));
 	}
 	ResetIdleTimer();
 }

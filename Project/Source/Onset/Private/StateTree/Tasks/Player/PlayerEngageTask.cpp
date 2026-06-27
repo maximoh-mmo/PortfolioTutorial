@@ -128,7 +128,6 @@ EStateTreeRunStatus FPlayerEngageTask::Tick(FStateTreeExecutionContext& Context,
 
 	if (FGameplayAbilitySpec* BestSpec = ASC->FindAbilitySpecFromHandle(ReadyAbilities[0]))
 	{
-		UE_LOG(LogTemp, Log, TEXT("EngageTask: activating %s"), *BestSpec->Ability->GetName());
 		ASC->TryActivateAbility(BestSpec->Handle);
 	}
 	return EStateTreeRunStatus::Running;
