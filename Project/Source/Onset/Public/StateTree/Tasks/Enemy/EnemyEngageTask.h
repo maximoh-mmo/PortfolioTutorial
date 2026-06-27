@@ -71,6 +71,6 @@ struct FEnemyEngageTask : public FOnsetStateTreeTask
 		const FStateTreeTransitionResult& Transition) const override;
 
 private:
-	FVector ComputeOffsetPosition(const FStateTreeExecutionContext& Context,
-		const FInstanceDataType& Inst, AOnsetEnemy* SelfEnemy) const;
+	static FVector ComputeOffsetPosition(const FStateTreeExecutionContext& Context,
+	                                     const FInstanceDataType& Inst, AOnsetEnemy* SelfEnemy);
 };

@@ -179,7 +179,7 @@ void FEnemyEngageTask::ExitState(FStateTreeExecutionContext& Context,
 }
 
 FVector FEnemyEngageTask::ComputeOffsetPosition(const FStateTreeExecutionContext& Context,
-	const FInstanceDataType& Inst, AOnsetEnemy* SelfEnemy) const
+	const FInstanceDataType& Inst, AOnsetEnemy* SelfEnemy)
 {
 	AActor* Target = GetTarget(Context);
 	if (!Target) return FVector::ZeroVector;
