@@ -219,12 +219,19 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Create `UOnsetThreatSubsystem` — world subsystem with threat table
 - [x] Wire damage feed: `PostGameplayEffectExecute` → `AddThreat(InstigatorPlayerState, Victim, Damage)`
 - [x] Wire cleanup: `DeferredDeathCleanup` + `ReturnToPool` → `RemoveEnemy()`
-- [ ] Add `GetThreatSubsystem()` + `GetThreatAngularOffset()` to `FOnsetStateTreeTask` base
-- [ ] Modify AgroTask — prefer threat target over perception target
-- [ ] Create AttackPositionTask — angular spread at `AttackRange`, re-evaluation timer, nav-projection
-- [ ] Modify ChaseTask offset — use threat angular position instead of random lateral
-- [ ] AI LOD — 3 tick tiers based on distance to nearest player
-- [ ] Verify: threat drives targeting, angular spread prevents bunching
+- [x] Add `GetThreatSubsystem()` + `GetThreatAngularOffset()` to `FOnsetStateTreeTask` base
+- [x] **Architecture simplified:** AgroTask, ChaseTask, AttackTask, AttackPositionTask, IdleTask, RoamTask deleted. Replaced by:
+  - `PatrolTask` — 50/50 idle vs roam in one task
+  - `EngageTask` — single combat state: target switching, angular offset positioning, ability firing, AIProfile-driven ranges, crowd avoidance
+- [x] AI LOD — `UpdateLodTier` in `AOnsetAIController`: 3 tiers (full, throttled 0.2s, paused)
+- [x] AIProfile-driven ranges — `EngageTask::EnterState` reads `AttackRange`/`ChaseRange` from profile at runtime
+- [x] Sight-based threat — `OnPerceptionUpdated` adds base threat (1.0) on visual contact if not already engaged
+- [x] `IsEnemyEngagedWithPlayer()` — query method for engagement safety
+- [x] `ClearFocus()` on lost target — AI stops staring at null
+- [x] StateTree reduced to 6 top-level subtrees (no Selector — event-driven transitions)
+- [x] Debug logging stripped from EngageTask and ThreatSubsystem
+- [x] `Subsystem/` directory migration (plural → singular)
+- [x] Verify: threat drives targeting, angular spread prevents bunching, corpses ignore pawn collision
 
 ## A3.5 Player AI Autoplay
 - [x] Create `AOnsetPlayerAIController` class (created as `APlayerAIController.h/.cpp`)
@@ -433,7 +440,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 |---------|-------|------|---|
 | A1 Core Player | 38 | 38 | 100% |
 | A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | 75 | 72 | 96% |
+| A3 AI Systems | 75 | 75 | 100% |
 | A4 GAS Combat | 58 | 45 | 78% |
 | A5 Multiplayer & Steam | — | — | — |
 | A6 UI & Final Demo | — | — | — |

@@ -13,6 +13,7 @@ AOnsetCorpse::AOnsetCorpse()
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	MeshComponent->SetCollisionObjectType(ECC_WorldDynamic);
 	MeshComponent->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	MeshComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	MeshComponent->SetWorldScale3D(FVector(0.5f));
 	MeshComponent->SetIsReplicated(true);
 

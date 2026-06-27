@@ -10,29 +10,30 @@
 
 | Section | Tasks | Done | % | Remaining |
 |---------|-------|------|---|-----------|
-| A3 AI Systems | 75 | 72 | 96% | 3 |
+| A3 AI Systems | 75 | 75 | 100% | 0 |
 | A4 GAS Combat | 58 | 45 | 78% | 13 |
-| **Sprint Total** | **133** | **117** | **88%** | **16** |
+| **Sprint Total** | **133** | **120** | **90%** | **13** |
 
-### A3 Remaining (3 items)
+### A3 Remaining (0 items) ✅ COMPLETE
 
-**Verification (4 items — ~0.5d):** ✅ COMPLETE
-- A3.1: [x] Add on-screen debug display for current AI state
-- A3.2: [x] Verify perception hearing triggers on assist
-- A3.4: [x] Verify assist triggers when nearby ally is attacked
-- A3.4: [x] Verify no assist when attacker is out of hearing range
+All A3 items are complete. See details below.
 
-**Threat System (9 items — ~5.5d) — IN PROGRESS:**
-See [Threat System](../Docs/AI/Threat_System.md) for full design.
+**Threat System (9+ items — ~5.5d):** ✅ COMPLETE
+
+**Architecture simplified:** AgroTask, ChaseTask, AttackTask, AttackPositionTask, IdleTask, RoamTask deleted. Replaced by `EngageTask` (single combat state) + `PatrolTask` (idle/roam). StateTree reduced from 9 to 6 top-level subtrees with event-driven transitions (no Selector).
+
 - A3.6: [x] Create `UOnsetThreatSubsystem` (world subsystem, threat table)
 - A3.6: [x] Wire damage → threat feed in `PostGameplayEffectExecute`
 - A3.6: [x] Wire pool return + NPC death → threat cleanup
-- A3.6: [ ] Add threat helpers to `FOnsetStateTreeTask` base
-- A3.6: [ ] Modify AgroTask to prefer threat target over perception
-- A3.6: [ ] Create AttackPositionTask with angular spread
-- A3.6: [ ] Modify ChaseTask offset to use threat
-- A3.6: [ ] AI LOD — disable/ throttle NPC ticks based on distance
-- A3.6: [ ] Verify: threat drives targeting, angular spread prevents bunching
+- A3.6: [x] Add threat helpers to `FOnsetStateTreeTask` base
+- A3.6: [x] Create **EngageTask** — replaces Agro/Chase/Attack/AttackPosition; angular spread, AIProfile-driven ranges, crowd avoidance, target switching
+- A3.6: [x] Create **PatrolTask** — 50/50 idle vs roam replaces separate IdleTask + RoamTask
+- A3.6: [x] AI LOD — 3 tick tiers (full, throttled 0.2s, paused) via `UpdateLodTier`
+- A3.6: [x] Sight-based threat — `OnPerceptionUpdated` adds base threat on visual contact
+- A3.6: [x] `IsEnemyEngagedWithPlayer()`, `ClearFocus()` on lost target, `HasSameIndexAndSerialNumber` fix for RegisterEngaged
+- A3.6: [x] Strip all debug logging from EngageTask and ThreatSubsystem
+- A3.6: [x] Subsystem directory migration `Subsystems/` → `Subsystem/`
+- A3.6: [x] Verify: threat drives targeting, angular spread prevents bunching
 
 ### A4 Remaining (13 items)
 
@@ -105,21 +106,29 @@ Deliverables:
 - [x] Update progress tracking table in `Private_Demo_Checklist.md`
 - [x] Tag all completed items
 
-### Wave 5 — Threat System (~5.5d)
+### Wave 5 — Threat System (~5.5d) ✅ COMPLETE
 **Threat-driven targeting, angular spread, AI LOD.**
+**Architecture simplified:** Agro, Chase, Attack, AttackPosition, Idle, Roam tasks deleted. Replaced by EngageTask + PatrolTask. StateTree reduced from 9 to 6 subtrees.
 
 See [Threat System Doc](../Docs/AI/Threat_System.md) for full design.
 
-- [x] Create `UOnsetThreatSubsystem` — world subsystem, `TMap<TWeakObjectPtr<AOnsetEnemy>, TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>>` threat table (pawn-keyed)
-- [x] API: `AddThreat()`, `RemovePlayer()`, `RemoveEnemy()`, `GetPrimaryTarget()`, `GetTargetRank()`, `GetTargetCount()`, `RegisterEngaged()`, `UnregisterEngaged()`, `GetEngagedCount()`, `GetEngagedIndex()`, `ClearAll()`
-- [x] Wire damage feed: `OnsetAttributeSet::PostGameplayEffectExecute` → if damage > 0 to `AOnsetEnemy` → `Subsystem->AddThreat(Instigator, Victim, FMath::Abs(Damage))`
+- [x] Create `UOnsetThreatSubsystem` — world subsystem, threat table + engagement table
+- [x] API: `AddThreat()`, `RemovePlayer()`, `RemoveEnemy()`, `GetPrimaryTarget()`, `GetBestTarget()`, `GetTargetRank()`, `GetTargetCount()`, `RegisterEngaged()`, `UnregisterEngaged()`, `GetEngagedCount()`, `GetEngagedIndex()`, `SwitchTarget()`, `IsEnemyEngagedWithPlayer()`, `ClearAll()`
+- [x] Wire damage feed: `OnsetAttributeSet::PostGameplayEffectExecute` → `Subsystem->AddThreat(Instigator, Victim, Damage)`
 - [x] Wire cleanup: `OnsetEnemy::DeferredDeathCleanup` + `PoolSubsystem::ReturnToPool` → `Subsystem->RemoveEnemy(NPC)`
-- [ ] Add helpers to `FOnsetStateTreeTask`: `GetThreatSubsystem()`, `GetThreatAngularOffset(Count, Rank, Radius)` → `FVector`
-- [ ] Modify `AgroTask::Tick` — check `GetPrimaryTarget()` first, fall back to `GetTarget()`
-- [ ] Modify `ChaseTask::EnterState` — replace random lateral offset with threat angular position at `ChaseRange`
-- [ ] Create `AttackPositionTask` — compute angular offset at `AttackRange` via threat rank, nav-project, `MoveToLocation`, re-evaluate at 3s or on target move > 200 units. Fire abilities at throttle.
-- [ ] AI LOD: `AOnsetAIController` tick interval tiers based on distance to nearest player. Far NPCs tick at 0.5s or paused.
-- [ ] Verify: threat target = highest damage dealer, angular spread prevents bunching, LOD stops far NPC work
+- [x] Add helpers to `FOnsetStateTreeTask`: `GetThreatSubsystem()`, `GetThreatAngularOffset(Count, Rank, Radius)` → `FVector`
+- [x] Create **EngageTask** — single combat state replacing Agro/Chase/Attack/AttackPosition:
+  - `EnterState`: reads `AttackRange`/`ChaseRange` from `UAIProfile`, gets best target, registers engagement, sets focus, computes angular offset, paths to it
+  - `Tick`: target re-eval every 1s via `GetBestTarget()`, position re-eval every 3s or 200u move, angular offset at `SpreadRadius` (chase) or `AttackRange` (attack), dead zone 50u, crowd avoidance, abilities fire at throttle, 2s timeout on lost target
+  - `ExitState`: `StopMovement()`
+- [x] Create **PatrolTask** — 50/50 idle vs roam in one task (replaces IdleTask + RoamTask)
+- [x] AI LOD: `UpdateLodTier` in `AOnsetAIController` — 3 tiers: full tick within sight, throttle 0.2s within hearing, StateTree paused beyond
+- [x] Sight-based threat: `OnPerceptionUpdated` adds 1.0 threat on visual contact if not already engaged
+- [x] Debug logging stripped from both EnemyEngageTask and OnsetThreatSubsystem
+- [x] StateTree: 6 top-level subtrees with event-driven transitions (Patrol, Engage, Investigate, Search, Flee, Lost)
+- [x] Subsystem directory migrated `Subsystems/` → `Subsystem/`
+- [x] Corpses ignore pawn collision (ECC_Pawn → Ignore)
+- [x] Verify: threat drives targeting, angular spread prevents bunching, LOD stops far NPC work
 
 ### Wave 6 — A4.6 Multiple Abilities (~4d)
 **Core player combat — AoE, Cone, Shadowstep, ability bar UI.**
@@ -184,13 +193,13 @@ Wave 6d — UI Stub (day 4):
 
 **Camera handover:** `DelayedSetViewTarget` defers camera assignment by one frame after `UnPossess` to avoid a race with `PlayerCameraManager` cleanup. Called on the player controller after re-possession.
 
-**Combined EngageTask:** Movement and ability usage live in one task, not split Chase→Attack. `Tick` checks distance: within attack range → `StopMovement` + `SetFocus` + fire abilities at throttle (0.25s); outside → `MoveToActor`. `EnterState` validates `IsAlive()` and clears dead targets. `ExitState` clears focus + stops movement.
+**Combined EngageTask (NPC):** Single combat state replacing Agro/Chase/Attack/AttackPosition. `Tick` checks distance: within attack range → `StopMovement` + `SetFocus` + fire abilities at throttle; outside → path to angular offset position. `EnterState` reads ranges from `UAIProfile`, registers engagement, sets initial offset. `ExitState` clears focus + stops movement. Angular offset uses `SpreadRadius` (chase) or `AttackRange` (attack) depending on current distance. Crowd avoidance via `UCrowdFollowingComponent`. 2s timeout on sustained absence of target before exiting.
 
 **Null guards on GetTarget/SetTarget:** Both guard against missing `TargetingComponent` — returns null target instead of crashing.
 
 **Threat subsystem over component:** `UOnsetThreatSubsystem` (world subsystem) instead of per-NPC `UThreatComponent`. Zero per-NPC allocation, single map for pool/player cleanup, server-only data.
 
-**Threat table structure:** `TMap<APlayerState*, TMap<TWeakObjectPtr<AOnsetEnemy>, float>>`. Outer key by player for fast `RemovePlayer()`. `TWeakObjectPtr` for inner key so dead NPCs don't leak. AddThreat sorts the inner map for O(1) rank reads.
+**Threat table structure:** `TMap<TWeakObjectPtr<AOnsetEnemy>, TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>>`. Outer key by enemy for fast `RemoveEnemy()`. `TWeakObjectPtr` for both keys so dead actors don't leak. Separate engagement table: `TMap<TWeakObjectPtr<AOnsetBaseCharacter>, TArray<TWeakObjectPtr<AOnsetEnemy>>>` for angular spread computation.
 
 **Angular spread:** `angle = (rank / count) * 360°` at `AttackRange` radius. Nav-projected. Re-evaluated on timer (3s) or when target moves > 200 units. Single enemy → rank 0, count 1 → angle 0° → directly in front (correct).
 
