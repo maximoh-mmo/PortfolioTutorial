@@ -75,8 +75,11 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 | NPC Attack Integration | 1 | GAS, StateTree |
 | Damage + Death + Pool Return (A4.5a) | 1.5 | GAS, Pooling |
 | Corpse Actor System (A4.5b) | 1 | GAS, Pooling |
-| Multiple Abilities (Dash, AoE, Projectile) | 3 | GAS Setup |
+| Multiple Abilities (AoE, Cone, Shadowstep, Montage, Stagger) | 5 | GAS Setup |
 | **Subtotal** | **10.5 days** | |
+
+> Note: Multiple Abilities (5 days) deferred to post-A5 — pending full combat design pass.
+> A4 actual completed: ~5.5 days (GAS Setup, Basic Attack, Hit Reaction, NPC Attack, Damage/Death, Corpse).
 
 ## Phase A5 — Multiplayer & Steam
 | System | Est. Days | Dependencies |
@@ -113,7 +116,7 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 | A5 — Multiplayer & Steam | 10 |
 | A6 — UI & Final Demo (incl. touch/gamepad widgets) | 8 |
 | A7 — Integration & Buffer | 11 |
-| **Total** | **~68.5 days (~14 weeks)** |
+| **Total** | **~68.5 days (~14 weeks)** *(10 days A5 remaining, 5 days A4 deferred)* |
 
 ---
 
@@ -229,7 +232,7 @@ The ~3-month private demo build + ~9.5-month release window means a **~12.5-mont
 | Milestone | Target | What's True |
 |-----------|--------|-------------|
 | Private demo playable | Week 8 | Core player + NPC + basic combat working |
-| Private demo complete | Week 13.5 | All systems, corpse system, multiplayer, Steam, final loop |
+| Private demo complete | Week 15.5 | All systems, corpse system, multiplayer, Steam, final loop |
 | First episode released | Week 14 | Episode 1 on public repo |
 | Targeting + enemies milestone | Week 18 | Episodes 1-5 released (playable combat) |
 | AI milestone | Week 26 | Episodes 9-13 released (full NPC AI) |

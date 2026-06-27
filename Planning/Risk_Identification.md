@@ -209,5 +209,25 @@ If NPCs die faster than the corpse despawn timer (e.g., AoE kill-cascade), corps
 
 ---
 
-**Total: 45 risks identified**
+# 🌐 MULTIPLAYER & STEAM RISKS
+
+## R46 — DS Build Configuration Issues (UE 5.8)
+**Severity:** Medium | **Likelihood:** Medium
+UE 5.8 may have changed DS build paths, module requirements, or platform file references. First-time DS build often requires iteration.
+
+## R47 — Client Authority Exploit via RPC Spoofing
+**Severity:** High | **Likelihood:** Low
+A malicious client could send crafted RPCs to manipulate server state. Requires discipline in all Server_ RPC handlers.
+
+## R48 — StateTree Task Authority Guards Missed
+**Severity:** High | **Likelihood:** Medium
+With 9+ StateTree task classes, it's easy to miss one during the authority audit. A single unguarded task running on client causes silent desyncs.
+
+## R49 — GAS Replication Prediction Conflicts
+**Severity:** Low | **Likelihood:** Low
+UE's GAS handles most replication automatically, but prediction of gameplay effects on simulated proxies can cause visual desyncs under latency.
+
+---
+
+**Total: 49 risks identified**
 **Next step:** Mitigation strategies in Risk Mitigation Plan.

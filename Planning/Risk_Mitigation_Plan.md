@@ -309,5 +309,39 @@ These systems should be built and validated in private (Episode 0 / prep work) b
 
 ---
 
-**Total: 45 risks with mitigation strategies**
-**Next step:** Create Production Timeline
+---
+
+# 🛡 MULTIPLAYER & STEAM RISK MITIGATIONS
+
+## R46 — DS Build Configuration Issues (UE 5.8)
+**Strategy:** Prototype Early + Fallback
+- **Prototype:** Attempt DS build on Day 1 of Wave 3 — don't leave it to the end
+- **Mitigation:** Cross-reference UE 5.8.0 documentation for RunUAT.bat flags
+- **Fallback:** If DS build fails, verify all replication + authority in listen-server mode and document DS as "pending engine fix"
+
+## R47 — Client Authority Exploit via RPC Spoofing
+**Strategy:** Validate Everything
+- **Mitigation:** Every Server_ RPC validates inputs:
+  - Target must be a valid pawn within range
+  - Abilities must be granted and off cooldown
+  - PvP flag checked server-side (not trusting client's flag)
+- **Testing:** Add security audit step to Sprint checklist
+
+## R48 — StateTree Task Authority Guards Missed
+**Strategy:** Systematic Audit + Template
+- **Mitigation:** Use a systematic approach:
+  1. Grep for all `: public FOnsetStateTreeTask` derived structs
+  2. Check each has `if (!HasAuthority()) return Failed;` in EnterState/Tick
+  3. Add a code comment template: `// Server-only: guard client execution`
+- **Testing:** PIE with NetMode switch exercises this — no crash/desync if missed
+
+## R49 — GAS Replication Prediction Conflicts
+**Strategy:** Defaults + Verify
+- **Mitigation:** Rely on UE's default GAS replication — it's battle-tested
+- **Testing:** PIE 2-window verify visual parity under normal latency
+- **Fallback:** If desyncs occur, mark specific effects as REPNOTIFY_Always or adjust prediction mode
+
+---
+
+**Total: 49 risks with mitigation strategies**
+**Next step:** Begin Sprint A5 — Multiplayer & Steam
