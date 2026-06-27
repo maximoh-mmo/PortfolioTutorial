@@ -11,11 +11,11 @@
 
 | Section | Tasks | Done | % | Remaining |
 |---------|-------|------|---|-----------|
-| A5.1 Server/Client Authority | 4 | 0 | 0% | 4 |
-| A5.2 Replication Pass | 7 | 0 | 0% | 7 |
+| A5.1 Server/Client Authority | 6 | 5 | 83% | 1 (PIE verify) |
+| A5.2 Replication Pass | 12 | 10 | 83% | 2 (targeting validation, 2-client test) |
 | A5.3 Dedicated Server Build | 7 | 0 | 0% | 7 |
 | A5.4 Steam Auth Integration | 10 | 0 | 0% | 10 |
-| **Sprint Total** | **28** | **0** | **0%** | **28** |
+| **Sprint Total** | **35** | **15** | **43%** | **20** |
 
 ### Pre-Sprint Audit: What Already Exists
 - GAS attributes replicate: Health, MaxHealth, MovementSpeed via DOREPLIFETIME

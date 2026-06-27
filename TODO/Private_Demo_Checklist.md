@@ -324,18 +324,25 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 # A5 — MULTIPLAYER & STEAM (est. 10 days)
 
 ## A5.1 Server/Client Authority Setup
-- [ ] Define server authority rules per system
-- [ ] Add `HasAuthority()` guards to all server-only logic
-- [ ] Set up GameMode + GameState for multiplayer
+- [x] Define server authority rules per system
+- [x] Add `HasAuthority()` guards to all server-only logic (21 files — spawner, pool, corpse, threat, controllers, characters, all 11 StateTree tasks)
+- [x] Set up GameMode + GameState for multiplayer (PlayerControllerClass, GameStateClass, HUDClass=nullptr)
+- [x] Add `bReplicates = true` to `AOnsetBaseCharacter` constructor
+- [x] Set `SetReplicateMovement(true)` on `AOnsetEnemy` constructor
 - [ ] Verify PIE with `NetMode` switch (standalone → listen server + client)
 
 ## A5.2 Replication Pass
-- [ ] Replicate NPC movement (CharacterMovementComponent defaults)
-- [ ] Replicate NPC health/attributes (via GAS)
-- [ ] Replicate targeting data (client target → server validation)
-- [ ] Replicate PvP flag (via PlayerState `OnRep`)
-- [ ] Replicate abilities + cooldowns (via GAS)
-- [ ] Verify AI runs only on server (guard check)
+- [x] Replicate NPC movement — `SetReplicateMovement(true)` on `AOnsetEnemy`
+- [x] Replicate NPC health/attributes — GAS replicates natively, verified no errors
+- [x] Replicate `bIsAlive` — `GetLifetimeReplicatedProps` with `OnRep_bIsAlive`
+- [x] **NEW: Replicate NPC visuals** — `VisualProfile` now `ReplicatedUsing=OnRep_VisualProfile`; client applies skeletal mesh, anim BP, material locally
+- [x] **NEW: Fix player death/respawn** — `OnRespawn()` in `RespawnPlayer` restores `bIsAlive=true` → pawn visible again → camera no longer falls
+- [x] **NEW: Remove cube fallback** — no runtime `NewObject<UStaticMeshComponent>` for enemy visuals; corpse actor stripped of default cube mesh
+- [x] **NEW: VisualProfile validation** — `IsDataValid()` blocks save/cook of incomplete profiles; `checkf` catches runtime null/incomplete
+- [ ] Replicate targeting data (client target → server validation) — clients run own traces, server validates on activation
+- [x] Replicate PvP flag — `bIsPvPEnabled` on `AOnsetPlayerState` was already replicating
+- [x] Replicate abilities + cooldowns — GAS handles natively
+- [x] Verify AI runs only on server — all controllers + StateTree tasks guarded with `HasAuthority()`
 - [ ] Verify 2-client + server session works
 
 ## A5.3 Dedicated Server Build
@@ -442,6 +449,6 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A2 NPC Lifecycle | 35 | 35 | 100% | |
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
-| A5 Multiplayer & Steam | — | — | — | Not started |
+| A5 Multiplayer & Steam | 34 | 15 | 44% | Wave 1 done (5/6), Wave 2 partial (10/12) — visual replication, respawn fix, validation added |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |
