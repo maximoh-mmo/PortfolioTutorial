@@ -3,6 +3,7 @@
 **Goal:** Complete all remaining A3 (AI Systems) + A4 (GAS Combat) tasks from `Private_Demo_Checklist.md`.
 **Target:** Functional single-player combat loop — spawn, fight, die, respawn, with player abilities and full NPC behaviour.
 **Estimate:** ~12 working days (Wave 4 + Wave 5 + Wave 2 + Wave 6)
+**Status:** ✅ SPRINT COMPLETE — remaining 13 A4 items deferred for full combat design pass.
 
 ---
 
@@ -11,8 +12,8 @@
 | Section | Tasks | Done | % | Remaining |
 |---------|-------|------|---|-----------|
 | A3 AI Systems | 75 | 75 | 100% | 0 |
-| A4 GAS Combat | 58 | 45 | 78% | 13 |
-| **Sprint Total** | **133** | **120** | **90%** | **13** |
+| A4 GAS Combat | 58 | 45 | 78% | 13 deferred |
+| **Sprint Total** | **133** | **120** | **90%** | **13 deferred** |
 
 ### A3 Remaining (0 items) ✅ COMPLETE
 
@@ -35,26 +36,20 @@ All A3 items are complete. See details below.
 - A3.6: [x] Subsystem directory migration `Subsystems/` → `Subsystem/`
 - A3.6: [x] Verify: threat drives targeting, angular spread prevents bunching
 
-### A4 Remaining (13 items)
+### A4 Remaining — All Deferred ⏳
 
-**Anim Montage (1 item — ~0.5d):**
-- A4.2: [ ] Add animation montage support (simple melee swing)
+The remaining 13 A4 items have been deferred pending a full combat design pass before implementation.
 
-**Stagger Effect (1 item — ~0.5d):**
-- A4.3: [ ] Apply hitstop / stagger effect
+**Anim Montage (1 item):**
+- A4.2: ~~Add animation montage support (simple melee swing)~~ ⏳ **DEFERRED**
 
-**Multiple Abilities — Wave 6 (11 items — ~4d):**
-- A4.6: [ ] Create **AoE** ability (target-centered damage volume) — activated GA, slot 1
-- A4.6: [ ] Create **Cone** ability (directional frontal cone) — activated GA, slot 2
-- A4.6: [ ] Create **Shadowstep** passive (on-kill blink behind nearest enemy, cooldown-gated) — replaces dash
-- A4.6: [ ] Wire `OnAbility1` → AoE, `OnAbility2` → Cone in PlayerController
-- A4.6: [ ] Create ability bar UI stub (for testing)
-- A4.6: [ ] Verify all abilities activate from input
-- A4.6: [ ] Verify AoE respects PvP rules (per-target filtering)
-- A4.6: [ ] Verify Cone respects PvP rules (per-target filtering)
-- A4.6: [ ] Verify Shadowstep triggers on kill
-- A4.6: [ ] Verify Shadowstep respects distance gate
-- A4.6: [ ] Verify Shadowstep cooldown prevents spam
+**Stagger Effect (1 item):**
+- A4.3: ~~Apply hitstop / stagger effect~~ ⏳ **DEFERRED**
+
+**Multiple Abilities — Wave 6 (11 items):**
+- A4.6: ~~Create **AoE**, **Cone**, **Shadowstep** abilities~~ ⏳ **DEFERRED**
+- A4.6: ~~Wire ability slots + UI stub~~ ⏳ **DEFERRED**
+- A4.6: ~~All verification items~~ ⏳ **DEFERRED**
 
 ---
 
@@ -74,13 +69,13 @@ Deliverables:
 ### Wave 1 — ~~A4.6 Abilities~~ ⏳ DEFERRED TO WAVE 6
 **Moved to Wave 6 (after Threat System) to avoid blocking Multiplayer.**
 
-### Wave 2 — A4.2 Anim Montage + A4.3 Stagger (~1d)
-**Combat polish.**
+### Wave 2 — A4.2 Anim Montage + A4.3 Stagger (~1d) ⏳ DEFERRED
+**Combat polish — deferred pending full design pass.**
 
-- [ ] Simple melee swing montage (`Content/Game/Combat/AM_MeleeSwing`)
-- [ ] Wire montage in `GA_BasicAttack` — `PlayMontageOnActivate`
-- [ ] `GE_Stagger` hitstop/stagger application in `GA_HitReaction`
-- [ ] Verify montage plays on attack, stagger animates on hit
+- [ ] ~~Simple melee swing montage~~ ⏳
+- [ ] ~~Wire montage in `GA_BasicAttack`~~ ⏳
+- [ ] ~~`GE_Stagger` hitstop/stagger application~~ ⏳
+- [ ] ~~Verify montage + stagger~~ ⏳
 
 ### Wave 3 — A3.5 Player AI Autoplay (~2d) ✅ COMPLETE
 **AI-vs-AI testing capability.**
@@ -130,38 +125,15 @@ See [Threat System Doc](../Docs/AI/Threat_System.md) for full design.
 - [x] Corpses ignore pawn collision (ECC_Pawn → Ignore)
 - [x] Verify: threat drives targeting, angular spread prevents bunching, LOD stops far NPC work
 
-### Wave 6 — A4.6 Multiple Abilities (~4d)
+### Wave 6 — A4.6 Multiple Abilities (~4d) ⏳ DEFERRED
 **Core player combat — AoE, Cone, Shadowstep, ability bar UI.**
+Deferred pending full design pass on combat abilities, progression, and class system.
 
-Previously deferred from Wave 1; moved here to avoid blocking Multiplayer. Delivered after Threat so NPC threats/positioning are stable.
-
-Wave 6a — AoE (day 1–2):
-- [ ] `GA_OnsetAoE.h/.cpp` — C++ GA
-- [ ] Implementation: sphere overlap at target location on activate, apply GE to overlapping enemies, destroy after delay
-- [ ] PvP filter per target
-- [ ] BP asset `Content/Game/Combat/GA_AoE` (tune radius, damage, cooldown)
-- [ ] Slot 1 binding
-- [ ] Verify: activates from input, damages enemies, respects PvP
-
-Wave 6b — Cone (day 2–3):
-- [ ] `GA_OnsetCone.h/.cpp` — C++ GA
-- [ ] Implementation: `ConeOverlapActors` from character forward, apply GE to hit enemies
-- [ ] PvP filter per target
-- [ ] BP asset `Content/Game/Combat/GA_Cone` (tune angle, range, damage, cooldown)
-- [ ] Slot 2 binding
-- [ ] Verify: activates from input, damages in correct shape, respects PvP
-
-Wave 6c — Shadowstep (day 3–4):
-- [ ] `GA_OnsetShadowstep.h/.cpp` — C++ GA (passive, triggered by `FGameplayEvent` on enemy death)
-- [ ] Implementation: on kill, find nearest enemy within distance gate, teleport behind, brief invulnerability window
-- [ ] Cooldown gating
-- [ ] BP asset `Content/Game/Combat/GA_Shadowstep`
-- [ ] Verify: triggers on kill, respects distance gate, cooldown prevents spam
-
-Wave 6d — UI Stub (day 4):
-- [ ] Basic ability bar widget (4 slot icons, cooldown overlay text)
-- [ ] Bind to GAS cooldown tags
-- [ ] Verify abilities display and cooldowns update
+- [ ] ~~AoE ability (C++ GA + BP + slot 1)~~ ⏳
+- [ ] ~~Cone ability (C++ GA + BP + slot 2)~~ ⏳
+- [ ] ~~Shadowstep passive (on-kill blink, cooldown-gated)~~ ⏳
+- [ ] ~~Ability bar UI stub~~ ⏳
+- [ ] ~~All verification items~~ ⏳
 
 ---
 

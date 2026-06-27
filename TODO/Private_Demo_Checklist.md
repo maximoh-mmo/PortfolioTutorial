@@ -263,13 +263,13 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Create `UOnsetGA_BasicAttack` (C++ GA)
 - [x] Implement targeting from TargetingComponent/TargetData
 - [x] Apply damage via GameplayEffect
-- [ ] Add animation montage support (simple melee swing)
+- [ ] ~~Add animation montage support (simple melee swing)~~ ⏳ **DEFERRED** — pending full design pass
 - [x] Verify player attack hits target
 - [x] Verify NPC attack hits player
 
 ## A4.3 Hit Reaction Ability
 - [x] Create `UOnsetGA_HitReaction` (C++ GA)
-- [ ] Apply hitstop / stagger effect
+- [ ] ~~Apply hitstop / stagger effect~~ ⏳ **DEFERRED** — pending full design pass
 - [x] Trigger on damage received (HandleGameplayEvent in PostGameplayEffectExecute)
 - [x] Verify hit reaction plays on damage
 - [x] Verify cooldown prevents hit-reaction spam
@@ -307,17 +307,17 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Verify no performance regression under rapid death cascade
 
 ## A4.6 Multiple Abilities
-- [ ] Create **AoE** ability (target-centered damage volume) — activated GA, slot 1
-- [ ] Create **Cone** ability (directional frontal cone) — activated GA, slot 2
-- [ ] Create **Shadowstep** passive (on-kill blink behind nearest enemy, cooldown-gated) — replaces dash
-- [ ] Wire `OnAbility1` → AoE, `OnAbility2` → Cone in PlayerController
-- [ ] Create ability bar UI stub (for testing)
-- [ ] Verify all abilities activate from input
-- [ ] Verify AoE respects PvP rules (per-target filtering)
-- [ ] Verify Cone respects PvP rules (per-target filtering)
-- [ ] Verify Shadowstep triggers on kill
-- [ ] Verify Shadowstep respects distance gate
-- [ ] Verify Shadowstep cooldown prevents spam
+- [ ] ~~Create **AoE** ability (target-centered damage volume) — activated GA, slot 1~~ ⏳ **DEFERRED** — pending full design pass
+- [ ] ~~Create **Cone** ability (directional frontal cone) — activated GA, slot 2~~ ⏳ **DEFERRED**
+- [ ] ~~Create **Shadowstep** passive (on-kill blink behind nearest enemy, cooldown-gated) — replaces dash~~ ⏳ **DEFERRED**
+- [ ] ~~Wire `OnAbility1` → AoE, `OnAbility2` → Cone in PlayerController~~ ⏳ **DEFERRED**
+- [ ] ~~Create ability bar UI stub (for testing)~~ ⏳ **DEFERRED**
+- [ ] ~~Verify all abilities activate from input~~ ⏳ **DEFERRED**
+- [ ] ~~Verify AoE respects PvP rules (per-target filtering)~~ ⏳ **DEFERRED**
+- [ ] ~~Verify Cone respects PvP rules (per-target filtering)~~ ⏳ **DEFERRED**
+- [ ] ~~Verify Shadowstep triggers on kill~~ ⏳ **DEFERRED**
+- [ ] ~~Verify Shadowstep respects distance gate~~ ⏳ **DEFERRED**
+- [ ] ~~Verify Shadowstep cooldown prevents spam~~ ⏳ **DEFERRED**
 
 ---
 
@@ -436,13 +436,12 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 
 # ✅ PROGRESS TRACKING
 
-| Section | Tasks | Done | % |
-|---------|-------|------|---|
-| A1 Core Player | 38 | 38 | 100% |
-| A2 NPC Lifecycle | 35 | 35 | 100% |
-| A3 AI Systems | 75 | 75 | 100% |
-| A4 GAS Combat | 58 | 45 | 78% |
-| A5 Multiplayer & Steam | — | — | — |
-| A6 UI & Final Demo | — | — | — |
-| A7 Integration & Harden | — | — | — |
-| **Total** | **—** | **—** | **—** |
+| Section | Tasks | Done | % | Notes |
+|---------|-------|------|---|-------|
+| A1 Core Player | 38 | 38 | 100% | |
+| A2 NPC Lifecycle | 35 | 35 | 100% | |
+| A3 AI Systems | 75 | 75 | 100% | |
+| A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
+| A5 Multiplayer & Steam | — | — | — | Not started |
+| A6 UI & Final Demo | — | — | — | Not started |
+| A7 Integration & Harden | — | — | — | Not started |
