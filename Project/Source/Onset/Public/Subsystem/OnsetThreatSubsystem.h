@@ -48,8 +48,10 @@ public:
 	int32 GetEngagedIndex(AOnsetEnemy* Enemy, AOnsetBaseCharacter* PlayerCharacter);
 	// Switch this Enemy's engagement from its current player(s) to NewPlayer.
 	void SwitchTarget(AOnsetEnemy* Enemy, AOnsetBaseCharacter* NewPlayer);
-	
+	bool IsEnemyEngagedWithPlayer(AOnsetEnemy* Enemy, AOnsetBaseCharacter* PlayerCharacter) const;
+
 private:
+	
     TMap<TWeakObjectPtr<AOnsetEnemy>, TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>> ThreatTable;
 	TMap<TWeakObjectPtr<AOnsetBaseCharacter>, TArray<TWeakObjectPtr<AOnsetEnemy>>> EngagementTable;
 };

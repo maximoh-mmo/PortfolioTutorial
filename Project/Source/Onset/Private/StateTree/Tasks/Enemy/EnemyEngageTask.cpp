@@ -8,19 +8,35 @@
 #include "Enemy/OnsetEnemy.h"
 #include "GAS/OnsetGameplayTags.h"
 #include "Core/OnsetBaseCharacter.h"
-#include "Core/TargetingComponent.h"
+#include "Enemy/Profile/AIProfile.h"
 #include "Subsystem/OnsetThreatSubsystem.h"
+
+DEFINE_LOG_CATEGORY(LogEnemyEngageTask);
 
 EStateTreeRunStatus FEnemyEngageTask::EnterState(FStateTreeExecutionContext& Context,
 	const FStateTreeTransitionResult& Transition) const
 {
 	AOnsetAIController* AIController = GetController(Context);
-	if (!AIController) return EStateTreeRunStatus::Failed;
+	if (!AIController)
+	{
+		UE_LOG(LogEnemyEngageTask, Warning, TEXT("EnterState: AIController is null. Returning Failed."));
+		return EStateTreeRunStatus::Failed;
+	}
 	AOnsetEnemy* SelfEnemy = GetSelfPawn<AOnsetEnemy>(Context);
-	if (!SelfEnemy) return EStateTreeRunStatus::Failed;
+	if (!SelfEnemy)
+	{
+		UE_LOG(LogEnemyEngageTask, Warning, TEXT("EnterState: SelfEnemy is null. Returning Failed."));
+		return EStateTreeRunStatus::Failed;
+	}
 
 	FInstanceDataType& Inst = Context.GetInstanceData(*this);
 
+	if (const UAIProfile* Profile = AIController->GetAIProfile())
+	{
+		Inst.AttackRange = Profile->AttackRange;
+		Inst.ChaseRange = Profile->ChaseRange;
+	}
+	
 	const float Stagger = FMath::FRand() * 2.0f;
 	Inst.NextPositionReevaluateTime = Stagger;
 	Inst.NextTargetReevaluateTime = Stagger;
@@ -52,18 +68,30 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 	Inst.TimeInState += DeltaTime;
 
 	AOnsetAIController* AIController = GetController(Context);
-	if (!AIController) return EStateTreeRunStatus::Failed;
+	if (!AIController)
+	{
+		UE_LOG(LogEnemyEngageTask, Warning, TEXT("Tick: AIController is null. Returning Failed."))
+		return EStateTreeRunStatus::Failed;
+	}
 	AOnsetEnemy* SelfEnemy = GetSelfPawn<AOnsetEnemy>(Context);
-	if (!SelfEnemy) return EStateTreeRunStatus::Failed;
+	if (!SelfEnemy)
+	{
+		UE_LOG(LogEnemyEngageTask, Warning, TEXT("Tick: SelfEnemy is null. Returning Failed."))
+		return EStateTreeRunStatus::Failed;
+	}
+	
 	UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context);
 
+	AActor* CurrentContextTarget = GetTarget(Context);
+
 	// Track sustained absence of target before giving up
-	AActor* Target = GetTarget(Context);
-	if (!Target && !Inst.CurrentTarget)
+	if (!CurrentContextTarget && !Inst.CurrentTarget)
 	{
 		Inst.TimeWithoutTarget += DeltaTime;
 		if (Inst.TimeWithoutTarget >= 2.0f)
+		{
 			return EStateTreeRunStatus::Succeeded;
+		}
 	}
 	else
 	{
@@ -87,10 +115,19 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 			Inst.LastTargetLocation = Best->GetActorLocation();
 			Inst.NextPositionReevaluateTime = 0.0f;
 		}
+		else if (!Best && CurrentTargetPtr)
+		{
+			Inst.CurrentTarget = nullptr; // Clear current target if no best target is found
+			SetTarget(Context, nullptr);
+			AIController->ClearFocus(EAIFocusPriority::Gameplay);
+		}
 	}
 
-	Target = GetTarget(Context);
-	if (!Target) return EStateTreeRunStatus::Running;
+	AActor* Target = GetTarget(Context);
+	if (!Target)
+	{
+		return EStateTreeRunStatus::Running;
+	}
 
 	const FVector TargetLoc = Target->GetActorLocation();
 	const float DistSq = FVector::DistSquared(SelfEnemy->GetActorLocation(), TargetLoc);
@@ -117,9 +154,10 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 		}
 	}
 
-	// Branch: chase vs attack
 	if (DistSq > FMath::Square(Inst.AttackRange))
+	{
 		return EStateTreeRunStatus::Running;
+	}
 
 	AIController->StopMovement();
 	AIController->SetFocus(Target);

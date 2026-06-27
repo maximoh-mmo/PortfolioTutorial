@@ -1,5 +1,6 @@
 #include "AI/OnsetAIController.h"
 
+#include "DrawDebugHelpers.h"
 #include "Enemy/Profile/AIProfile.h"
 
 #include "Components/StateTreeAIComponent.h"
@@ -10,6 +11,7 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Core/TargetingComponent.h"
+#include "Subsystem/OnsetThreatSubsystem.h" // Include for UOnsetThreatSubsystem
 
 AOnsetAIController::AOnsetAIController()
 {
@@ -186,7 +188,7 @@ void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActor
 {
 	if (GetPawn() == nullptr) return;
 	
-	// --- Sight: set targeting component ---
+	// --- Sight: set targeting component and add threat ---
 	TArray<AActor*> SeenActors;
 	PerceptionComponent->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), SeenActors);
 	AActor* BestTarget = nullptr;
@@ -211,6 +213,22 @@ void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActor
 	if (BestTarget)
 	{
 		TargetingComponent->SetTarget(BestTarget);
+
+		// Add threat when a player is visually perceived
+		if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())
+		{
+			AOnsetEnemy* SelfEnemy = Cast<AOnsetEnemy>(GetPawn());
+			AOnsetBaseCharacter* PlayerChar = Cast<AOnsetBaseCharacter>(BestTarget);
+			if (SelfEnemy && PlayerChar)
+			{
+				// Only add threat if the player is not already engaged with this enemy
+				// This prevents spamming threat if the player is already the target
+				if (!ThreatSub->IsEnemyEngagedWithPlayer(SelfEnemy, PlayerChar))
+				{
+					ThreatSub->AddThreat(PlayerChar, SelfEnemy, 1.0f); // Add a base threat of 1.0
+				}
+			}
+		}
 	}
 	else if (SeenActors.Num() == 0)
 	{

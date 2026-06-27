@@ -4,8 +4,6 @@
 #include "Subsystem/OnsetThreatSubsystem.h"
 #include "Enemy/OnsetEnemy.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogOnsetThreat, Log, All);
-
 void UOnsetThreatSubsystem::AddThreat(AOnsetBaseCharacter* PlayerCharacter, AOnsetEnemy* Enemy, float ThreatAmount)
 {
 	if (!PlayerCharacter || !Enemy) return;
@@ -13,14 +11,9 @@ void UOnsetThreatSubsystem::AddThreat(AOnsetBaseCharacter* PlayerCharacter, AOns
 	float& CurrentThreat = EnemyThreats.FindOrAdd(TWeakObjectPtr(PlayerCharacter));
 	CurrentThreat = FMath::Max(0.0f, CurrentThreat + ThreatAmount);
 
-	UE_LOG(LogOnsetThreat, Log, TEXT("Threat: %s %+.1f -> %.1f (%s)"),
-		*Enemy->GetName(), ThreatAmount, CurrentThreat, *PlayerCharacter->GetName());
-	
 	if (CurrentThreat <= 0.0f)
 	{
 		EnemyThreats.Remove(TWeakObjectPtr(PlayerCharacter));
-		UE_LOG(LogOnsetThreat, Log, TEXT("Threat: %s -- removed %s (zero)"),
-			*Enemy->GetName(), *PlayerCharacter->GetName());
 		if (EnemyThreats.IsEmpty())
 		{
 			RemoveEnemy(Enemy);
@@ -31,7 +24,6 @@ void UOnsetThreatSubsystem::AddThreat(AOnsetBaseCharacter* PlayerCharacter, AOns
 void UOnsetThreatSubsystem::RemovePlayer(const AOnsetBaseCharacter* PlayerCharacter)
 {
 	if (!PlayerCharacter) return;
-	UE_LOG(LogOnsetThreat, Log, TEXT("RemovePlayer: %s"), *PlayerCharacter->GetName());
 	TArray<TWeakObjectPtr<AOnsetEnemy>> Enemies;
 	ThreatTable.GetKeys(Enemies);
 	const TWeakObjectPtr WeakPlayer(PlayerCharacter);
@@ -66,20 +58,26 @@ int32 UOnsetThreatSubsystem::GetTargetRank(AOnsetEnemy* Enemy, AOnsetBaseCharact
 
 void UOnsetThreatSubsystem::RegisterEngaged(AOnsetBaseCharacter* PlayerCharacter, AOnsetEnemy* Enemy)
 {
-	if (!PlayerCharacter || !Enemy) return;
-	UE_LOG(LogOnsetThreat, Log, TEXT("Engage: %s -> %s"), *Enemy->GetName(), *PlayerCharacter->GetName());
-	const TWeakObjectPtr WeakEnemy(Enemy);
-	auto& EnemyList = EngagementTable.FindOrAdd(PlayerCharacter);
-	if (!EnemyList.Find(WeakEnemy))
-	{
-		EnemyList.Add(WeakEnemy);
-	}
+    if (!PlayerCharacter || !Enemy) return;
+    auto& EnemyList = EngagementTable.FindOrAdd(PlayerCharacter);
+    bool bAlreadyContains = false;
+    for (const TWeakObjectPtr<AOnsetEnemy>& ExistingWeakEnemy : EnemyList)
+    {
+        if (ExistingWeakEnemy.HasSameIndexAndSerialNumber(Enemy))
+        {
+            bAlreadyContains = true;
+            break;
+        }
+    }
+    if (!bAlreadyContains)
+    {
+        EnemyList.Add(TWeakObjectPtr<AOnsetEnemy>(Enemy));
+    }
 }
 
 void UOnsetThreatSubsystem::UnregisterEngaged(AOnsetEnemy* Enemy)
 {
 	if (!Enemy) return;
-	UE_LOG(LogOnsetThreat, Log, TEXT("Disengage: %s"), *Enemy->GetName());
 	const TWeakObjectPtr WeakEnemy(Enemy);
 	for (auto& Player : EngagementTable)
 	{
@@ -110,10 +108,34 @@ int32 UOnsetThreatSubsystem::GetEngagedIndex(AOnsetEnemy* Enemy, AOnsetBaseChara
 	return -1;     
 }
 
+bool UOnsetThreatSubsystem::IsEnemyEngagedWithPlayer(AOnsetEnemy* Enemy, AOnsetBaseCharacter* PlayerCharacter) const
+{
+	if (!Enemy || !PlayerCharacter) return false;
+
+	const TWeakObjectPtr WeakPlayer(PlayerCharacter);
+
+	if (const TArray<TWeakObjectPtr<AOnsetEnemy>>* EngagedEnemies = EngagementTable.Find(WeakPlayer))
+	{
+		for (const TWeakObjectPtr<AOnsetEnemy>& ExistingWeakEnemy : *EngagedEnemies)
+		{
+			if (ExistingWeakEnemy.HasSameIndexAndSerialNumber(Enemy))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void UOnsetThreatSubsystem::SwitchTarget(AOnsetEnemy* Enemy, AOnsetBaseCharacter* NewPlayer)
 {
 	if (!Enemy || !NewPlayer) return;
-	UE_LOG(LogOnsetThreat, Log, TEXT("SwitchTarget: %s -> %s"), *Enemy->GetName(), *NewPlayer->GetName());
+
+	if (IsEnemyEngagedWithPlayer(Enemy, NewPlayer))
+	{
+		return;
+	}
+
 	UnregisterEngaged(Enemy);
 	RegisterEngaged(NewPlayer, Enemy);
 }
@@ -121,7 +143,6 @@ void UOnsetThreatSubsystem::SwitchTarget(AOnsetEnemy* Enemy, AOnsetBaseCharacter
 void UOnsetThreatSubsystem::RemoveEnemy(AOnsetEnemy* Enemy)
 {
 	if (!Enemy) return;
-	UE_LOG(LogOnsetThreat, Log, TEXT("RemoveEnemy: %s"), *Enemy->GetName());
 	ThreatTable.Remove(Enemy);
 	UnregisterEngaged(Enemy);	
 }

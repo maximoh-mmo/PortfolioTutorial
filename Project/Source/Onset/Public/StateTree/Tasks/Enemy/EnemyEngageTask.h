@@ -4,6 +4,8 @@
 #include "StateTree/Tasks/OnsetStateTreeTask.h"
 #include "EnemyEngageTask.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogEnemyEngageTask, Warning, All);
+
 class UGameplayAbility;
 
 USTRUCT()
