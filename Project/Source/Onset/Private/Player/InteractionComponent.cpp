@@ -1,12 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Player/InteractionComponent.h"
 #include "NavigationSystem.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "Player/OnsetPlayerController.h"
 #include "Core/TargetingComponent.h"
-
 
 class UNavigationSystemV1;
 
@@ -15,11 +11,14 @@ UInteractionComponent::UInteractionComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UInteractionComponent::ProcessPrimaryInteraction(FVector2D ScreenPosition)
+void UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation)
 {
 	AOnsetPlayerController* PlayerController = Cast<AOnsetPlayerController>(GetOwner());
-	if (!PlayerController) return;
-	if (!PlayerController->HasAuthority()) return;
+	if (!PlayerController)
+	{
+		UE_LOG(LogGamepad, Log, TEXT("ProcessPrimaryInteraction: Owner is null or not OnsetPlayerController"));
+		return;
+	}
 	
 	if (!TargetingComponent)
 	{
@@ -28,37 +27,43 @@ void UInteractionComponent::ProcessPrimaryInteraction(FVector2D ScreenPosition)
 			TargetingComponent = Pawn->FindComponentByClass<UTargetingComponent>();
 			if (!TargetingComponent) return;
 		}
+		else
+		{
+			return;
+		}
 	}
 	
-	FHitResult HitResult;
-	if (!PlayerController->GetHitResultAtScreenPosition(ScreenPosition, ECC_Visibility, false, HitResult)) return;
-	AActor* HitActor = HitResult.GetActor();                                                                    
-         UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());               
-         FNavLocation NavLoc;                                                                                        
-         bool bIsHostile = false;                                                                                    
-                                                                                                                     
-         if (HitActor)                                                                                               
-         {                                                                                                           
-             if (HitActor->ActorHasTag("Enemy") || TargetingComponent->IsActorTargetPVPValid(HitActor, PlayerController->GetPawn()))  
-             {                                                                                                       
-                 TargetingComponent->SetTarget(HitActor);                                                            
-                 PlayerController->StartAutoAttack();                                                                
-                 bIsHostile = true;                                                                                  
-             }                                                                                                       
-         }                                                                                                           
-                                                                                                                     
-         if (NavSys && NavSys->ProjectPointToNavigation(HitResult.Location, NavLoc))                                 
-         {                                                                                                           
-             UAIBlueprintHelperLibrary::SimpleMoveToLocation(PlayerController, NavLoc.Location);                     
-         }                                                                                                           
-         else if (HitActor)                                                                                          
-         {                                                                                                           
-             UAIBlueprintHelperLibrary::SimpleMoveToActor(PlayerController, HitActor);                               
-         }                                                                                                           
-                                                                                                                     
-         if (!bIsHostile)                                                                                            
-         {                                                                                                           
-             TargetingComponent->ClearTarget();                                                                      
-             PlayerController->StopAutoAttack();                                                                     
-         }                           
+	PendingMoveTarget = FVector::ZeroVector;
+	
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	FNavLocation NavLoc;
+	bool bIsHostile = false;
+	
+	if (HitActor)
+	{
+		bool bEnemyTag = HitActor->ActorHasTag("Enemy");
+		bool bPVPValid = TargetingComponent->IsActorTargetPVPValid(HitActor, PlayerController->GetPawn());
+		if (bEnemyTag || bPVPValid)
+		{
+			TargetingComponent->SetTarget(HitActor);
+			PlayerController->StartAutoAttack();
+			bIsHostile = true;
+		}
+	}
+	
+	bool bProjected = NavSys && NavSys->ProjectPointToNavigation(HitLocation, NavLoc);
+	if (bProjected)
+	{
+		PendingMoveTarget = NavLoc.Location;
+	}
+	else if (HitActor)
+	{
+		PendingMoveTarget = HitActor->GetActorLocation();
+	}
+	
+	if (!bIsHostile)
+	{
+		TargetingComponent->ClearTarget();
+		PlayerController->StopAutoAttack();
+	}
 }

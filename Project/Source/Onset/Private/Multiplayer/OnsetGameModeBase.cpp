@@ -44,6 +44,7 @@ void AOnsetGameModeBase::ValidateAuthTicket(APlayerController* NewPlayer, const 
 	if (PC)
 	{
 		PC->ClearAuthTimeout();
+		PC->Client_ClearAuthTimeout();
 	}
 
 	AOnsetPlayerState* PS = NewPlayer->GetPlayerState<AOnsetPlayerState>();

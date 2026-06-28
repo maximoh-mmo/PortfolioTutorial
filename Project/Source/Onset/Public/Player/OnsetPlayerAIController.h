@@ -42,8 +42,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Auto Combat Ranges")
 	float MaxAcquire = 5000.0f;
 	
-protected:
 	void StartStateTree();
+	void StopStateTree();
+protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 	

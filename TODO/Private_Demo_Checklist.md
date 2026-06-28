@@ -350,9 +350,9 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Build DS target (Onset.exe via Game target)
 - [x] Fix unity build log category conflict
 - [x] Create launch script (Scripts/RunDS.ps1)
-- [ ] Test DS + 1 client connection
-- [ ] Test DS + 2+ client connection
-- [ ] Verify AI behaves identically on DS vs PIE
+- [x] Test DS + 1 client connection — WASD, auto-combat, click-to-move verified
+- [x] Test DS + 2+ client connection — 3 clients connected, full combat loop functional
+- [x] Verify AI behaves identically on DS vs PIE — StateTree, auto-combat, pathfinding all match
 - [x] Security audit: 2 Server_ RPCs, 0 Client_ RPCs, both validated
 
 ## A5.4 Steam Auth Integration
@@ -450,6 +450,6 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A2 NPC Lifecycle | 35 | 35 | 100% | |
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
-| A5 Multiplayer & Steam | 35 | 28 | 80% | Wave 1-2 complete, Wave 3 partial (5/7 — build, script, audit + security done), Wave 4 partial (5/10) |
+| A5 Multiplayer & Steam | 35 | 31 | 89% | Wave 1-3 complete (DS + 3-client session verified), Wave 4 partial (5/12) |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |

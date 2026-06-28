@@ -20,6 +20,7 @@
 #include "Player/OnsetPlayerAIController.h"
 #include "Player/OnsetPlayerState.h"
 #include "UI/GamepadCursorWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogGamepad);
 
@@ -77,6 +78,11 @@ void AOnsetPlayerController::OnAuthTimeout()
 void AOnsetPlayerController::ClearAuthTimeout()
 {
 	GetWorldTimerManager().ClearTimer(AuthTimeoutTimerHandle);
+}
+
+void AOnsetPlayerController::Client_ClearAuthTimeout_Implementation()
+{
+	ClearAuthTimeout();
 }
 
 void AOnsetPlayerController::Server_SendAuthTicket_Implementation(const FString& AuthTicket)
@@ -145,7 +151,8 @@ void AOnsetPlayerController::BeginPlay()
 	}
 
 	RequestSteamAuth();
-	ResetIdleTimer();
+	GetWorldTimerManager().SetTimer(IdleAutoCombatTimerHandle, this,
+		&AOnsetPlayerController::EnableAutoCombat, IdleAutoCombatDelay * 4.0f, false);
 }
 
 void AOnsetPlayerController::SetupInputComponent()
@@ -170,7 +177,8 @@ void AOnsetPlayerController::SetupInputComponent()
 void AOnsetPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	TargetingComponent = GetPawn()->FindComponentByClass<UTargetingComponent>();
+	CachedPlayerPawn = InPawn;
+	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
 }
 
 void AOnsetPlayerController::OnUnPossess()
@@ -201,12 +209,14 @@ void AOnsetPlayerController::OnAutoAttackTick()
 
 void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 {
-	if (bAutoCombatEnabled) DisableAutoCombat();
+	Server_DisableAutoCombat();
 	ResetIdleTimer();
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (MovementVector.IsZero()) return;	
 	StopMovement();
-	if (APawn* ControlledPawn = GetPawn())
+	APawn* ControlledPawn = GetPawn();
+	if (!ControlledPawn) ControlledPawn = CachedPlayerPawn;
+	if (ControlledPawn)
 	{
 		ControlledPawn->AddMovementInput(ControlledPawn->GetActorForwardVector(), MovementVector.Y);
 		ControlledPawn->AddMovementInput(ControlledPawn->GetActorRightVector(), MovementVector.X);
@@ -244,34 +254,99 @@ void AOnsetPlayerController::OnCursorMoveEnded(const FInputActionValue& Value)
 
 void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value)
 {
-	if (bAutoCombatEnabled) DisableAutoCombat();
 	ResetIdleTimer();
 	FVector2D ScreenPos;
 	if (!CursorManager->GetCursorPosition(ScreenPos)) return;
-	if (InteractionComponent) InteractionComponent->ProcessPrimaryInteraction(ScreenPos);
+
+	FVector WorldOrigin, WorldDirection;
+	if (!UGameplayStatics::DeprojectScreenToWorld(this, ScreenPos, WorldOrigin, WorldDirection))
+		return;
+
+	const float TraceDistance = 10000.0f;
+	const FVector TraceEnd = WorldOrigin + WorldDirection * TraceDistance;
+	AActor* HitActor = nullptr;
+	FVector HitLocation = FVector::ZeroVector;
+
+	// First: object trace for Pawn channel (enemy characters, players)
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.bTraceComplex = false;
+
+	FHitResult PawnHit;
+	if (GetWorld()->LineTraceSingleByObjectType(PawnHit, WorldOrigin, TraceEnd, ObjectParams, QueryParams))
+	{
+		HitActor = PawnHit.GetActor();
+		HitLocation = PawnHit.Location;
+	}
+	else
+	{
+		// Fall back to Visibility trace for world surfaces (terrain, walls)
+		FHitResult VisHit;
+		if (GetHitResultAtScreenPosition(ScreenPos, ECC_Visibility, false, VisHit))
+		{
+			HitActor = VisHit.GetActor();
+			HitLocation = VisHit.Location;
+		}
+	}
+
+	UE_LOG(LogGamepad, Log, TEXT("Click: HitActor=%s"), HitActor ? *HitActor->GetName() : TEXT("null"));
+	Server_ProcessPrimaryInteraction(HitActor, HitLocation);
+}
+
+void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AActor* HitActor, FVector HitLocation)
+{
+	if (!InteractionComponent)
+	{
+		return;
+	}
+	
+	if (HitActor && !IsValid(HitActor))
+	{
+		HitActor = nullptr;
+	}
+	
+	// Process targeting first (may change bAutoCombatEnabled)
+	InteractionComponent->ProcessPrimaryInteraction(HitActor, HitLocation);
+	
+	FVector MoveTarget = InteractionComponent->GetPendingMoveTarget();
+	if (MoveTarget != FVector::ZeroVector)
+	{
+		if (!bAutoCombatEnabled)
+		{
+			EnableAutoCombat();
+		}
+		
+		if (AutoCombatController && AutoCombatController->GetPawn())
+		{
+			AutoCombatController->StopStateTree();
+			AutoCombatController->MoveToLocation(MoveTarget);
+		}
+	}
 }	
 
 void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
-	if (bAutoCombatEnabled) DisableAutoCombat();
+	Server_DisableAutoCombat();
 	ResetIdleTimer();
 }
 
 void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
 {	
-	if (bAutoCombatEnabled) DisableAutoCombat();
+	Server_DisableAutoCombat();
 	ResetIdleTimer();
 }
 
 void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
 {
-	if (bAutoCombatEnabled) DisableAutoCombat();
+	Server_DisableAutoCombat();
 	ResetIdleTimer();
 }
 
 void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 {
-	if (bAutoCombatEnabled) DisableAutoCombat();
+	Server_DisableAutoCombat();
 	ResetIdleTimer();
 }
 
@@ -310,6 +385,11 @@ void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(const bool bEna
 	}
 }
 
+void AOnsetPlayerController::Server_DisableAutoCombat_Implementation()
+{
+	DisableAutoCombat();
+}
+
 void AOnsetPlayerController::EnableAutoCombat()
 {
 	if (!AutoCombatController || bAutoCombatEnabled) return;
@@ -326,8 +406,12 @@ void AOnsetPlayerController::DisableAutoCombat()
 	if (!AutoCombatController || !bAutoCombatEnabled) return;
 	APawn* AIPawn = AutoCombatController->GetPawn();
 	AutoCombatController->UnPossess();
-	if (AIPawn) Possess(AIPawn);
+	if (AIPawn)
+	{
+		Possess(AIPawn);
+	}
 	bAutoCombatEnabled = false;
+	ResetIdleTimer();
 }
 
 const AController* AOnsetPlayerController::GetActiveController() const
@@ -338,6 +422,7 @@ const AController* AOnsetPlayerController::GetActiveController() const
 
 void AOnsetPlayerController::ResetIdleTimer()
 {
+	bIdleTimerInitialized = true;
 	GetWorldTimerManager().ClearTimer(IdleAutoCombatTimerHandle);
 	if (IdleAutoCombatDelay > 0.0f)
 	{	

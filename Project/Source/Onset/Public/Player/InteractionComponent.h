@@ -19,12 +19,17 @@ public:
 	UInteractionComponent();
 	
 	/** Primary interaction: raycasts at screen position, branches on hit type. */
-	void ProcessPrimaryInteraction(FVector2D ScreenPosition);
+	void ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
+	
+	/** Returns the last processed move target from ProcessPrimaryInteraction. */
+	FVector GetPendingMoveTarget() const { return PendingMoveTarget; }
 		
 private:
 	
 	UPROPERTY()
 	TObjectPtr<UTargetingComponent> TargetingComponent;
+	
+	FVector PendingMoveTarget = FVector::ZeroVector;
 	
 	
 };

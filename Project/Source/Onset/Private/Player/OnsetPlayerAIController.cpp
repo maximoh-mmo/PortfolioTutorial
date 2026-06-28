@@ -47,6 +47,15 @@ void AOnsetPlayerAIController::StartStateTree()
 	}
 }
 
+void AOnsetPlayerAIController::StopStateTree()
+{
+	if (StateTreeComponent)
+	{
+		StateTreeComponent->StopLogic(TEXT("PlayerOverride"));
+		StateTreeComponent->SetComponentTickEnabled(false);
+	}
+}
+
 void AOnsetPlayerAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);

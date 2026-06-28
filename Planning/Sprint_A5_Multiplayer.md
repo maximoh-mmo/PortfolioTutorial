@@ -11,11 +11,11 @@
 
 | Section | Tasks | Done | % | Remaining |
 |---------|-------|------|---|-----------|
-| A5.1 Server/Client Authority | 6 | 6 | 100% | 0 |
-| A5.2 Replication Pass | 12 | 12 | 100% | 0 |
-| A5.3 Dedicated Server Build | 7 | 5 | 71% | 2 |
-| A5.4 Steam Auth Integration | 10 | 5 | 50% | 5 |
-| **Sprint Total** | **35** | **28** | **80%** | **7** |
+| A5.1 Server/Client Authority | 12 | 12 | 100% | 0 |
+| A5.2 Replication Pass | 11 | 11 | 100% | 0 |
+| A5.3 Dedicated Server Build | 10 | 10 | 100% | 0 |
+| A5.4 Steam Auth Integration | 12 | 5 | 42% | 7 |
+| **Sprint Total** | **45** | **38** | **84%** | **7** |
 
 ### Pre-Sprint Audit: What Already Exists
 - GAS attributes replicate: Health, MaxHealth, MovementSpeed via DOREPLIFETIME
@@ -74,9 +74,9 @@
 - [x] Build DS target from command line — Onset.exe built successfully
 - [x] Fix any platform-specific compile errors — fixed unity log category conflict
 - [x] Create launch script (RunDS.ps1) for DS + client — editor mode + standalone mode
-- [ ] Test DS + 1 client connection — requires cooked content or editor-based launch
-- [ ] Test DS + 2+ client connection — requires cooked content or editor-based launch
-- [ ] Verify AI behaviour is identical on DS vs PIE
+- [x] Test DS + 1 client connection — WASD, auto-combat, click-to-move verified
+- [x] Test DS + 2+ client connection — 3 clients connected, full combat loop functional
+- [x] Verify AI behaviour is identical on DS vs PIE — StateTree, auto-combat, pathfinding all match
 - [x] Security audit: 2 Server_ RPCs, 0 Client_ RPCs, both validated server-side
 
 ### Wave 4 — Steam Auth Integration (Days 8-10, ~3d)

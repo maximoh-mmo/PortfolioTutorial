@@ -56,6 +56,7 @@ private:
 	TObjectPtr<AOnsetPlayerAIController> AutoCombatController;
 	
 	bool bAutoCombatEnabled = false;
+	bool bIdleTimerInitialized = false;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Auto Combat")
 	float IdleAutoCombatDelay = 5.0f;
@@ -173,9 +174,21 @@ private:
 	void Server_SetPvPEnabled(bool bEnabled);
 
 public:
+	UFUNCTION(Client, Reliable)
+	void Client_ClearAuthTimeout();
+
+	UFUNCTION(Server, Reliable)
+	void Server_DisableAutoCombat();
+
+	UFUNCTION(Server, Reliable)
+	void Server_ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
+
 	void ClearAuthTimeout();
 private:
 	void OnAuthTimeout();
 	FTimerHandle AuthTimeoutTimerHandle;
+
+	UPROPERTY()
+	TObjectPtr<APawn> CachedPlayerPawn;
 
 };
