@@ -355,11 +355,11 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify no client-side authority exploits
 
 ## A5.4 Steam Auth Integration
-- [ ] Initialize Online Subsystem Steam
-- [ ] Implement `RequestAuthTicket()` on client
-- [ ] Implement `Server_SendAuthTicket()` RPC
-- [ ] Implement `ValidateAuthTicket()` on server
-- [ ] Handle Steam not running (graceful fallback/error)
+- [x] Initialize Online Subsystem Steam
+- [x] Implement `RequestAuthTicket()` on client
+- [x] Implement `Server_SendAuthTicket()` RPC
+- [x] Implement `ValidateAuthTicket()` on server
+- [x] Handle Steam not running (graceful fallback/error)
 - [ ] Handle invalid/expired ticket
 - [ ] Handle ticket validation timeout
 - [ ] Verify auth flow with AppID 480 (Spacewar)
@@ -449,6 +449,6 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A2 NPC Lifecycle | 35 | 35 | 100% | |
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
-| A5 Multiplayer & Steam | 34 | 15 | 44% | Wave 1 done (5/6), Wave 2 partial (10/12) — visual replication, respawn fix, validation added |
+| A5 Multiplayer & Steam | 34 | 20 | 59% | Wave 1-2 done, Wave 3 pending, Wave 4 partial (5/10 — auth transport, INI config, LAN fallback) |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |

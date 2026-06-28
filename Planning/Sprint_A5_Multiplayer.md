@@ -14,8 +14,8 @@
 | A5.1 Server/Client Authority | 6 | 5 | 83% | 1 (PIE verify) |
 | A5.2 Replication Pass | 12 | 10 | 83% | 2 (targeting validation, 2-client test) |
 | A5.3 Dedicated Server Build | 7 | 0 | 0% | 7 |
-| A5.4 Steam Auth Integration | 10 | 0 | 0% | 10 |
-| **Sprint Total** | **35** | **15** | **43%** | **20** |
+| A5.4 Steam Auth Integration | 10 | 6 | 60% | 4 |
+| **Sprint Total** | **35** | **21** | **60%** | **14** |
 
 ### Pre-Sprint Audit: What Already Exists
 - GAS attributes replicate: Health, MaxHealth, MovementSpeed via DOREPLIFETIME
@@ -82,13 +82,13 @@
 ### Wave 4 — Steam Auth Integration (Days 8-10, ~3d)
 **Implement Steam authentication flow.**
 
-- [ ] Add OnlineSubsystemSteam to .uproject plugins with "Enabled": true
-- [ ] Configure DefaultEngine.ini — OnlineSubsystemSteam with AppId=480
-- [ ] Implement Steam subsystem init + runtime detection
-- [ ] Client: RequestAuthTicket() via IOnlineSubsystem::Get()->GetIdentityInterface()
-- [ ] PlayerController: Server_SendAuthTicket(const TArray<uint8>&) reliable RPC
-- [ ] GameMode: ValidateAuthTicket() — server-side ticket verification
-- [ ] Handle "Steam not running" — graceful fallback to LAN mode
+- [x] Add OnlineSubsystemSteam to .uproject plugins with "Enabled": true
+- [x] Configure DefaultEngine.ini — OnlineSubsystemSteam with AppId=480
+- [x] Implement Steam subsystem init + runtime detection
+- [x] Client: RequestAuthTicket() via IOnlineSubsystem::Get()->GetIdentityInterface()
+- [x] PlayerController: Server_SendAuthTicket(const FString&) reliable RPC
+- [x] GameMode: ValidateAuthTicket() — server-side ticket validation
+- [x] Handle "Steam not running" — graceful fallback to LAN mode
 - [ ] Handle invalid/expired ticket — reject client with message
 - [ ] Handle ticket validation timeout (10s timer, retry/disconnect)
 - [ ] Verify auth flow with AppID 480
