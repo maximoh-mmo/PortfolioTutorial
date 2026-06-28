@@ -9,7 +9,7 @@
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogSteamAuth, Log, All);
+DEFINE_LOG_CATEGORY(LogSteamAuth);
 
 AOnsetGameModeBase::AOnsetGameModeBase()
 {

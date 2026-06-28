@@ -8,6 +8,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "OnsetGameModeBase.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogSteamAuth, Log, All);
+
 /** Default game mode. Sets the default pawn class OnsetPlayerCharacter and the player controller class. */
 UCLASS()
 class ONSET_API AOnsetGameModeBase : public AGameModeBase

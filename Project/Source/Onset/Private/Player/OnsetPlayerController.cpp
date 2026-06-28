@@ -22,7 +22,7 @@
 #include "UI/GamepadCursorWidget.h"
 
 DEFINE_LOG_CATEGORY(LogGamepad);
-DEFINE_LOG_CATEGORY_STATIC(LogSteamAuth, Log, All);
+
 
 AOnsetPlayerController::AOnsetPlayerController()
 {
@@ -37,6 +37,11 @@ AOnsetPlayerController::AOnsetPlayerController()
 
 void AOnsetPlayerController::RequestSteamAuth()
 {
+	if (!GetLocalPlayer())
+	{
+		return;
+	}
+
 	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
 	if (!Subsystem || !Subsystem->IsEnabled())
 	{
