@@ -11,11 +11,11 @@
 
 | Section | Tasks | Done | % | Remaining |
 |---------|-------|------|---|-----------|
-| A5.1 Server/Client Authority | 6 | 5 | 83% | 1 (PIE verify) |
-| A5.2 Replication Pass | 12 | 10 | 83% | 2 (targeting validation, 2-client test) |
-| A5.3 Dedicated Server Build | 7 | 4 | 57% | 3 |
-| A5.4 Steam Auth Integration | 10 | 6 | 60% | 4 |
-| **Sprint Total** | **35** | **25** | **71%** | **10** |
+| A5.1 Server/Client Authority | 6 | 6 | 100% | 0 |
+| A5.2 Replication Pass | 12 | 12 | 100% | 0 |
+| A5.3 Dedicated Server Build | 7 | 5 | 71% | 2 |
+| A5.4 Steam Auth Integration | 10 | 5 | 50% | 5 |
+| **Sprint Total** | **35** | **28** | **80%** | **7** |
 
 ### Pre-Sprint Audit: What Already Exists
 - GAS attributes replicate: Health, MaxHealth, MovementSpeed via DOREPLIFETIME
@@ -36,34 +36,34 @@
 ### Wave 1 — Server/Client Authority (Days 1-2, ~2d)
 **Add HasAuthority() guards to every server-only system.**
 
-- [ ] Audit all systems for server-only requirements
-- [ ] Add HasAuthority() guards to all StateTree tasks (EnterState/Tick)
-- [ ] Add HasAuthority() guards to Spawner spawn/destroy logic
-- [ ] Add HasAuthority() guards to PoolSubsystem (ReturnToPool, GetPooledEnemy)
-- [ ] Add HasAuthority() guards to CorpseSubsystem
-- [ ] Add HasAuthority() guards to ThreatSubsystem public API
-- [ ] Add HasAuthority() guard to InteractionComponent
-- [ ] Add HasAuthority() guard to PlayerController ability activation
-- [ ] Configure GameMode/GameState for multiplayer
-- [ ] Add bReplicates = true to AOnsetBaseCharacter constructor
-- [ ] Add bReplicates = true to AOnsetAIController constructor
-- [ ] PIE test: launch listen server + client, verify connection
-- [ ] PIE test: verify no authority errors in log
+- [x] Audit all systems for server-only requirements
+- [x] Add HasAuthority() guards to all StateTree tasks (EnterState/Tick)
+- [x] Add HasAuthority() guards to Spawner spawn/destroy logic
+- [x] Add HasAuthority() guards to PoolSubsystem (ReturnToPool, GetPooledEnemy)
+- [x] Add HasAuthority() guards to CorpseSubsystem
+- [x] Add HasAuthority() guards to ThreatSubsystem public API
+- [x] Add HasAuthority() guard to InteractionComponent
+- [x] Add HasAuthority() guard to PlayerController ability activation
+- [x] Configure GameMode/GameState for multiplayer
+- [x] Add bReplicates = true to AOnsetBaseCharacter constructor
+- [x] Add bReplicates = true to AOnsetAIController constructor
+- [x] PIE test: launch listen server + client, verify connection
+- [x] PIE test: verify no authority errors in log
 
 ### Wave 2 — Replication Pass (Days 3-5, ~3d)
 **Replicate NPCs, player state, abilities, and targeting.**
 
-- [ ] Add GetLifetimeReplicatedProps to AOnsetBaseCharacter/AOnsetEnemy
-- [ ] Set SetReplicateMovement(true) on NPCs
-- [ ] Verify NPC movement is smooth on client (PIE 2-window)
-- [ ] Verify GAS health replicates correctly to client
-- [ ] Verify PvP flag OnRep fires correctly
-- [ ] Verify GAS abilities + cooldowns replicate (native GAS replication)
-- [ ] Add HasAuthority() to GrantDefaultAbilities (guard already exists, verify)
-- [ ] Audit all StateTree tasks for client-side early-out
-- [ ] PIE test: 1 server + 2 clients, full combat loop
-- [ ] Verify death/corpse/pool replication
-- [ ] Verify no client-side exceptions
+- [x] Add GetLifetimeReplicatedProps to AOnsetBaseCharacter/AOnsetEnemy
+- [x] Set SetReplicateMovement(true) on NPCs
+- [x] Verify NPC movement is smooth on client (PIE 2-window)
+- [x] Verify GAS health replicates correctly to client
+- [x] Verify PvP flag OnRep fires correctly
+- [x] Verify GAS abilities + cooldowns replicate (native GAS replication)
+- [x] Add HasAuthority() to GrantDefaultAbilities (guard already exists, verify)
+- [x] Audit all StateTree tasks for client-side early-out
+- [x] PIE test: 1 server + 2 clients, full combat loop
+- [x] Verify death/corpse/pool replication
+- [x] Verify no client-side exceptions
 
 ### Wave 3 — Dedicated Server (Days 6-7, ~2d)
 **Build, launch, and verify dedicated server.**

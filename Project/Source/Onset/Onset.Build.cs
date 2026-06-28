@@ -19,3 +19,4 @@ public class Onset : ModuleRules
 		PrivateDependencyModuleNames.Add("OnlineSubsystemSteam");
 	}
 }
+	

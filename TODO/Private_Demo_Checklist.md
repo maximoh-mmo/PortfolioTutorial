@@ -329,7 +329,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Set up GameMode + GameState for multiplayer (PlayerControllerClass, GameStateClass, HUDClass=nullptr)
 - [x] Add `bReplicates = true` to `AOnsetBaseCharacter` constructor
 - [x] Set `SetReplicateMovement(true)` on `AOnsetEnemy` constructor
-- [ ] Verify PIE with `NetMode` switch (standalone → listen server + client)
+- [x] Verify PIE with `NetMode` switch (standalone → listen server + client)
 
 ## A5.2 Replication Pass
 - [x] Replicate NPC movement — `SetReplicateMovement(true)` on `AOnsetEnemy`
@@ -339,11 +339,11 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] **NEW: Fix player death/respawn** — `OnRespawn()` in `RespawnPlayer` restores `bIsAlive=true` → pawn visible again → camera no longer falls
 - [x] **NEW: Remove cube fallback** — no runtime `NewObject<UStaticMeshComponent>` for enemy visuals; corpse actor stripped of default cube mesh
 - [x] **NEW: VisualProfile validation** — `IsDataValid()` blocks save/cook of incomplete profiles; `checkf` catches runtime null/incomplete
-- [ ] Replicate targeting data (client target → server validation) — clients run own traces, server validates on activation
+- [x] Replicate targeting data (client target → server validation) — clients run own traces, server validates on activation
 - [x] Replicate PvP flag — `bIsPvPEnabled` on `AOnsetPlayerState` was already replicating
 - [x] Replicate abilities + cooldowns — GAS handles natively
 - [x] Verify AI runs only on server — all controllers + StateTree tasks guarded with `HasAuthority()`
-- [ ] Verify 2-client + server session works
+- [x] Verify 2-client + server session works
 
 ## A5.3 Dedicated Server Build
 - [x] Create dedicated server build configuration (Game target + -server; Server target unsupported)
@@ -450,6 +450,6 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A2 NPC Lifecycle | 35 | 35 | 100% | |
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
-| A5 Multiplayer & Steam | 34 | 24 | 71% | Wave 1-2 done, Wave 3 partial (4/7 — build, script, audit done), Wave 4 partial (5/10) |
+| A5 Multiplayer & Steam | 35 | 28 | 80% | Wave 1-2 complete, Wave 3 partial (5/7 — build, script, audit + security done), Wave 4 partial (5/10) |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |
