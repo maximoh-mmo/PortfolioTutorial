@@ -346,13 +346,14 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [ ] Verify 2-client + server session works
 
 ## A5.3 Dedicated Server Build
-- [ ] Create dedicated server build configuration
-- [ ] Build DS target
-- [ ] Create launch script for DS + client
+- [x] Create dedicated server build configuration (Game target + -server; Server target unsupported)
+- [x] Build DS target (Onset.exe via Game target)
+- [x] Fix unity build log category conflict
+- [x] Create launch script (Scripts/RunDS.ps1)
 - [ ] Test DS + 1 client connection
 - [ ] Test DS + 2+ client connection
 - [ ] Verify AI behaves identically on DS vs PIE
-- [ ] Verify no client-side authority exploits
+- [x] Security audit: 2 Server_ RPCs, 0 Client_ RPCs, both validated
 
 ## A5.4 Steam Auth Integration
 - [x] Initialize Online Subsystem Steam
@@ -449,6 +450,6 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A2 NPC Lifecycle | 35 | 35 | 100% | |
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
-| A5 Multiplayer & Steam | 34 | 20 | 59% | Wave 1-2 done, Wave 3 pending, Wave 4 partial (5/10 — auth transport, INI config, LAN fallback) |
+| A5 Multiplayer & Steam | 34 | 24 | 71% | Wave 1-2 done, Wave 3 partial (4/7 — build, script, audit done), Wave 4 partial (5/10) |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |

@@ -13,9 +13,9 @@
 |---------|-------|------|---|-----------|
 | A5.1 Server/Client Authority | 6 | 5 | 83% | 1 (PIE verify) |
 | A5.2 Replication Pass | 12 | 10 | 83% | 2 (targeting validation, 2-client test) |
-| A5.3 Dedicated Server Build | 7 | 0 | 0% | 7 |
+| A5.3 Dedicated Server Build | 7 | 4 | 57% | 3 |
 | A5.4 Steam Auth Integration | 10 | 6 | 60% | 4 |
-| **Sprint Total** | **35** | **21** | **60%** | **14** |
+| **Sprint Total** | **35** | **25** | **71%** | **10** |
 
 ### Pre-Sprint Audit: What Already Exists
 - GAS attributes replicate: Health, MaxHealth, MovementSpeed via DOREPLIFETIME
@@ -68,16 +68,16 @@
 ### Wave 3 — Dedicated Server (Days 6-7, ~2d)
 **Build, launch, and verify dedicated server.**
 
-- [ ] Add OnlineSubsystem module to Build.cs
-- [ ] Add OnlineSubsystemSteam plugin to .uproject
-- [ ] Create DS build configuration
-- [ ] Build DS target from command line
-- [ ] Fix any platform-specific compile errors
-- [ ] Create launch script (RunDS.ps1) for DS + client
-- [ ] Test DS + 1 client connection
-- [ ] Test DS + 2+ client connection
+- [x] Add OnlineSubsystem module to Build.cs
+- [x] Add OnlineSubsystemSteam plugin to .uproject
+- [x] Create DS build configuration (Game target + -server flag; Server target unsupported)
+- [x] Build DS target from command line — Onset.exe built successfully
+- [x] Fix any platform-specific compile errors — fixed unity log category conflict
+- [x] Create launch script (RunDS.ps1) for DS + client — editor mode + standalone mode
+- [ ] Test DS + 1 client connection — requires cooked content or editor-based launch
+- [ ] Test DS + 2+ client connection — requires cooked content or editor-based launch
 - [ ] Verify AI behaviour is identical on DS vs PIE
-- [ ] Security audit: Server_/Client_ RPC permissions, no client-side authority exploits
+- [x] Security audit: 2 Server_ RPCs, 0 Client_ RPCs, both validated server-side
 
 ### Wave 4 — Steam Auth Integration (Days 8-10, ~3d)
 **Implement Steam authentication flow.**
