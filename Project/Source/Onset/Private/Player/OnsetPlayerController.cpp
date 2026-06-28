@@ -5,6 +5,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
+#include "Multiplayer/OnsetGameModeBase.h"
 #include "Player/CursorManager.h"
 #include "Core/TargetingComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -21,6 +22,7 @@
 #include "UI/GamepadCursorWidget.h"
 
 DEFINE_LOG_CATEGORY(LogGamepad);
+DEFINE_LOG_CATEGORY_STATIC(LogSteamAuth, Log, All);
 
 AOnsetPlayerController::AOnsetPlayerController()
 {
@@ -31,6 +33,54 @@ AOnsetPlayerController::AOnsetPlayerController()
 		BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
 	}
 	CheatClass = UOnsetCheatManager::StaticClass();
+}
+
+void AOnsetPlayerController::RequestSteamAuth()
+{
+	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
+	if (!Subsystem || !Subsystem->IsEnabled())
+	{
+		UE_LOG(LogSteamAuth, Log, TEXT("Steam not available — skipping auth (LAN mode)."));
+		return;
+	}
+
+	IOnlineIdentityPtr Identity = Subsystem->GetIdentityInterface();
+	if (!Identity.IsValid())
+	{
+		UE_LOG(LogSteamAuth, Warning, TEXT("Steam available but identity interface missing — skipping auth."));
+		return;
+	}
+
+	const FString AuthTicket = Identity->GetAuthToken(0);
+	if (AuthTicket.IsEmpty())
+	{
+		UE_LOG(LogSteamAuth, Error, TEXT("Steam auth ticket is empty — cannot authenticate."));
+		return;
+	}
+
+	UE_LOG(LogSteamAuth, Log, TEXT("Auth ticket obtained (%d chars), sending to server."), AuthTicket.Len());
+	Server_SendAuthTicket(AuthTicket);
+
+	GetWorldTimerManager().SetTimer(AuthTimeoutTimerHandle, this, &AOnsetPlayerController::OnAuthTimeout, 10.0f, false);
+}
+
+void AOnsetPlayerController::OnAuthTimeout()
+{
+	UE_LOG(LogSteamAuth, Error, TEXT("Auth validation timed out — server did not respond within 10 seconds."));
+}
+
+void AOnsetPlayerController::ClearAuthTimeout()
+{
+	GetWorldTimerManager().ClearTimer(AuthTimeoutTimerHandle);
+}
+
+void AOnsetPlayerController::Server_SendAuthTicket_Implementation(const FString& AuthTicket)
+{
+	AOnsetGameModeBase* GM = GetWorld()->GetAuthGameMode<AOnsetGameModeBase>();
+	if (GM)
+	{
+		GM->ValidateAuthTicket(this, AuthTicket);
+	}
 }
 
 void AOnsetPlayerController::StartAutoAttack()
@@ -88,6 +138,8 @@ void AOnsetPlayerController::BeginPlay()
 	{
 		AutoCombatController = GetWorld()->SpawnActor<AOnsetPlayerAIController>(AOnsetPlayerAIController::StaticClass());
 	}
+
+	RequestSteamAuth();
 	ResetIdleTimer();
 }
 

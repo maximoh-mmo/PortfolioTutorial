@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSubsystem.h"
+#include "Interfaces/OnlineIdentityInterface.h"
 #include "GameFramework/GameModeBase.h"
 #include "OnsetGameModeBase.generated.h"
 
@@ -16,4 +18,6 @@ public:
 	AOnsetGameModeBase();
 
 	virtual void StartPlay() override;
+
+	void ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket);
 };

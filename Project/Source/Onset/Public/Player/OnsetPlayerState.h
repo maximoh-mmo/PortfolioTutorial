@@ -17,6 +17,10 @@ public:
 	UPROPERTY(ReplicatedUsing=OnRep_PvPEnabled)
 	bool bIsPvPEnabled = false;
 
+	/** Steam auth ticket (server-only, never replicated). */
+	UPROPERTY()
+	FString SteamAuthTicket;
+
 	/** Called when bIsPvPEnabled changes on a client. Updates TargetingComponent validation. */
 	UFUNCTION()
 	void OnRep_PvPEnabled();

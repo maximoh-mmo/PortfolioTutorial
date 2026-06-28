@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
+#include "OnlineSubsystem.h"
+#include "Interfaces/OnlineIdentityInterface.h"
 #include "GameFramework/PlayerController.h"
 #include "OnsetPlayerController.generated.h"
 
@@ -25,6 +27,9 @@ class ONSET_API AOnsetPlayerController : public APlayerController
 public:
 	AOnsetPlayerController();
 	
+	UFUNCTION(BlueprintCallable, Category="Steam")
+	void RequestSteamAuth();
+
 	UFUNCTION(BlueprintCallable, Category="Combat")
 	void StartAutoAttack();
 	
@@ -161,7 +166,16 @@ private:
 	// --- PVP toggling ---
 	void OnPvPToggleTriggered(const FInputActionValue& Value);                                                      
 
-	UFUNCTION(Server, Reliable)                                                                                     
-	void Server_SetPvPEnabled(bool bEnabled);  
-		
+	UFUNCTION(Server, Reliable)
+	void Server_SendAuthTicket(const FString& AuthTicket);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetPvPEnabled(bool bEnabled);
+
+public:
+	void ClearAuthTimeout();
+private:
+	void OnAuthTimeout();
+	FTimerHandle AuthTimeoutTimerHandle;
+
 };

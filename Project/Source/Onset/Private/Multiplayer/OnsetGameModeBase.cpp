@@ -7,6 +7,9 @@
 #include "Multiplayer/OnsetGameState.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
+#include "Player/OnsetPlayerState.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogSteamAuth, Log, All);
 
 AOnsetGameModeBase::AOnsetGameModeBase()
 {
@@ -24,4 +27,31 @@ void AOnsetGameModeBase::StartPlay()
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("GameMode Started!"));
 	}
+}
+
+void AOnsetGameModeBase::ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket)
+{
+	if (!NewPlayer) return;
+
+	if (AuthTicket.IsEmpty())
+	{
+		UE_LOG(LogSteamAuth, Error, TEXT("Steam auth failed — empty ticket from player, kicking."));
+		NewPlayer->Destroy();
+		return;
+	}
+
+	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
+	if (PC)
+	{
+		PC->ClearAuthTimeout();
+	}
+
+	AOnsetPlayerState* PS = NewPlayer->GetPlayerState<AOnsetPlayerState>();
+	if (PS)
+	{
+		PS->SteamAuthTicket = AuthTicket;
+	}
+
+	UE_LOG(LogSteamAuth, Log, TEXT("Steam auth ticket accepted for player %s (%d chars)."),
+		*NewPlayer->GetName(), AuthTicket.Len());
 }
