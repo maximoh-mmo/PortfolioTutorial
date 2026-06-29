@@ -101,6 +101,34 @@ Mitigation strategies for all 37 identified risks (see [Risk_Identification](Ris
 - **Simplify:** For base episode, use instant-hit abilities (no projectile). Add projectile as Episode 20 extension
 - **Fallback:** If projectile replication is too complex, skip and use beam/hitscan only
 
+## R15 — DB Corruption on DS Crash
+**Strategy:** WAL Mode + Transactions + Recovery
+- **Mitigation:** Enable SQLite WAL mode (`PRAGMA journal_mode=WAL`). Wrap all multi-row writes in transactions. On DS startup, run `PRAGMA integrity_check` and auto-recover if needed.
+- **Testing:** Kill DS process mid-save (taskkill) → verify DB intact on restart
+
+## R16 — Schema Migration Failure
+**Strategy:** Versioned Migrations + CI Testing
+- **Mitigation:** Each migration is a single SQL block that runs in a transaction. Migration runner applies them sequentially from current version to target. CI pipeline runs migration from v0 to current on every PR.
+- **Testing:** Integration test creates fresh DB, runs all migrations, verifies schema matches expected
+
+## R17 — SteamID Extraction Failure
+**Strategy:** Fallback + Clear Error
+- **Mitigation:** If `BeginAuthSession()` fails, hash the auth ticket as a fallback PlatformID (not unique per-player but prevents hard crash). Return `FPlatformAuthResult{false, "SteamID extraction failed", ""}` to client with disconnect message.
+- **Logging:** Log full Steamworks error code for debugging
+
+## R18 — Save Data Staleness
+**Strategy:** Documented Acceptable Loss + Death Save
+- **Mitigation:** 5-min auto-save is acceptable for demo. Critical events (death, level-up) trigger immediate save. Document this limitation in production checklist.
+- **Future:** Reduce to 1-min or implement write-ahead log for real production
+
+## R19 — Character Select Race Condition
+**Strategy:** DB Constraint + UI Feedback
+- **Mitigation:** Unique constraint on `(platform, platform_id, slot_index)` prevents double-create at DB level. UI disables create button after click, shows spinner until RPC returns. Handle `SaveComplete(false)` gracefully.
+
+## R20 — PgSQL Connection String Misconfiguration
+**Strategy:** Startup Validation + Fallback
+- **Mitigation:** On `Initialize()`, attempt `PQconnectdb()`. If fails, log warning with connection string (password masked), fall back to SQLite, continue startup. DS remains functional in demo mode.
+
 ---
 
 # 🛡 DESIGN RISK MITIGATIONS

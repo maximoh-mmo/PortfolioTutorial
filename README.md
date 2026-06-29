@@ -1,6 +1,6 @@
 ## 📘 **Private Unreal Project — Internal Repository**
 
-This repository contains the **full private development version** of the Top‑Down ARPG AI Demo and the complete production pipeline for the **36‑episode tutorial series**.
+This repository contains the **full private development version** of the Top‑Down ARPG AI Demo and the complete production pipeline for the **47‑episode tutorial series**.
 
 It includes:
 
@@ -35,6 +35,8 @@ Contains all systems:
 - Multiplayer support  
 - Steam authentication  
 - Dedicated server support  
+- **Player persistence & account system (SQLite/PostgreSQL)**  
+- **Lobby map & character select**  
 
 ---
 
@@ -184,11 +186,13 @@ General automation scripts.
 - [GAS System](Docs/GAS/GAS_System.md) — abilities, effects, attributes, PvP damage filtering
 - [Multiplayer System](Docs/Multiplayer/Multiplayer_System.md) — server authority, replication, dedicated server
 - [Steam Integration System](Docs/Steam/Steam_Integration_System.md) — auth tickets, server verification
+- [Persistence Data Store](Docs/Server/Persistence_Data_Store.md) — SQLite/PostgreSQL abstraction, migrations
+- [Account System](Docs/Player/Account_System.md) — character slots, login flow, save/load RPCs
 
 ### **Planning & Tracking**
 - [Series Overview](Planning/Outlines/Series_Overview.md) — tutorial series vision, structure, audience
 - [Scope Overview](Planning/Outlines/Scope_Overview.md) — project boundaries, deliverables, success criteria
-- [Episode List](Planning/Outlines/Episode_List.md) — all 38 episodes by phase
+- [Episode List](Planning/Outlines/Episode_List.md) — all 47 episodes by phase
 
 ### **Workflow**
 - [Branching Strategy](Planning/Workflow/BRANCHING_STRATEGY.md) — branch conventions, merge flow, rules

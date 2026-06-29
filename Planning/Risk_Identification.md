@@ -63,39 +63,63 @@ Client-predicted cooldown UI may desync from server state. Need clear cooldown r
 **Severity:** Medium | **Likelihood:** Medium
 Projectile movement, hit detection, and damage application across the network. Server-authoritative projectiles vs client-side visuals.
 
+## R15 — DB Corruption on DS Crash
+**Severity:** High | **Likelihood:** Low
+Dedicated server crashes mid-write could corrupt SQLite DB. WAL mode + transaction wrapping required.
+
+## R16 — Schema Migration Failure
+**Severity:** High | **Likelihood:** Low
+A migration script that works in dev fails on a clean DB or after multiple migrations. CI must test from v0 to current.
+
+## R17 — SteamID Extraction Failure
+**Severity:** Medium | **Likelihood:** Medium
+`BeginAuthSession()` may fail to return a valid SteamID. Need fallback (hash of auth ticket) and clear error message to client.
+
+## R18 — Save Data Staleness
+**Severity:** Medium | **Likelihood:** Medium
+Player disconnects mid-session; last auto-save was 4 minutes ago. 5-min auto-save window means up to 5m progress loss. Acceptable for demo, document for production.
+
+## R19 — Character Select Race Condition
+**Severity:** Medium | **Likelihood:** Low
+Two clients try to create a character in the same empty slot simultaneously. DB unique constraint prevents corruption; handle gracefully in UI.
+
+## R20 — PgSQL Connection String Misconfiguration
+**Severity:** Medium | **Likelihood:** Medium
+DS fails to start if connection string is wrong. Validate on startup, fall back to SQLite with warning log.
+
 ---
 
 # 🎯 DESIGN RISKS
 
-## R15 — Episode Scope Creep
+## R21 — Episode Scope Creep
 **Severity:** High | **Likelihood:** High
 Individual episodes taking longer than expected, pushing the 38-episode target. Each system doc lists 6-8 testing items — real implementation always reveals more.
 
-## R16 — Episode Dependency Chain Breaks
+## R22 — Episode Dependency Chain Breaks
 **Severity:** High | **Likelihood:** Medium
 Later episodes depend on earlier systems. If Episode 4 (Spawner) has issues, Episodes 5-8 cascade. No buffer or catch-up episodes planned.
 
-## R17 — Player AI vs NPC AI Interaction Bugs
+## R23 — Player AI vs NPC AI Interaction Bugs
 **Severity:** Medium | **Likelihood:** Medium
 Both use StateTrees but have different schemas, targets, and rules (PvP awareness). Edge cases where they interact unexpectedly.
 
-## R18 — Autoplay Possession Switching
+## R24 — Autoplay Possession Switching
 **Severity:** Medium | **Likelihood:** Low
 Switching between PlayerController and PlayerAIController mid-combat. State cleanup, input routing, and UI must all transition cleanly.
 
-## R19 — Camera Collision Edge Cases
+## R25 — Camera Collision Edge Cases
 **Severity:** Low | **Likelihood:** Medium
 Camera clipping through geometry in tight spaces or when the character is near walls. SpringArm collision handles most cases, but edge cases remain.
 
-## R20 — Group Assist Trigger Accuracy
+## R26 — Group Assist Trigger Accuracy
 **Severity:** Medium | **Likelihood:** Medium
 The assist radius must feel right — too small and assist never fires, too large and the entire group agros instantly. Requires tuning.
 
-## R21 — Multiple Assist Events Overlapping
+## R27 — Multiple Assist Events Overlapping
 **Severity:** Low | **Likelihood:** Medium
 Multiple NPCs in the same group attacked simultaneously. Each sends an assist event — the target NPC must not stack transitions.
 
-## R22 — Flee State Isolation Detection
+## R28 — Flee State Isolation Detection
 **Severity:** Medium | **Likelihood:** Medium
 Flee triggers on "low health + isolated." Defining "isolated" (distance to allies, number of nearby allies) is subjective and may need tuning.
 

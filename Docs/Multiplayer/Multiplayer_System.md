@@ -49,6 +49,8 @@ sequenceDiagram
 - **[GAS System](../GAS/GAS_System.md):** server‑authoritative abilities  
 - **[PvP System](../Gameplay/PVP_System.md):** server-authoritative PvP flag replication  
 - **[Steam Integration](../Steam/Steam_Integration_System.md):** auth + session validation  
+- **[Account System](../Player/Account_System.md):** post-auth persistence load/save  
+- **[Persistence Data Store](../Server/Persistence_Data_Store.md):** server-side DB abstraction  
 
 ## Replication Rules
 - NPCs, abilities, health, and effects replicate  

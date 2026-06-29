@@ -49,7 +49,7 @@ The final demo includes:
 ---
 
 ## **Series Structure**
-The series is divided into **9 phases** (see the full [Episode List](Episode_List.md) for details):
+The series is divided into **10 phases** (see the full [Episode List](Episode_List.md) for details):
 
 0. **Player Core & Input** — Project setup, camera, multi-device movement, targeting, enemy spawner  
 1. **NPC Lifecycle** — Pooling, groups, respawn  
@@ -60,9 +60,10 @@ The series is divided into **9 phases** (see the full [Episode List](Episode_Lis
 3.7 **Threat System** — Threat table, angular spread, AI LOD  
 4. **Advanced AI** — Flee, group assist, dynamic types, debugging  
 5. **Multiplayer** — Replication, dedicated server, Steam, PvP  
+5.5 **Persistence & Account System** — Database architecture, Steam ID resolution, character select, save/load  
 6. **Final Demo & Polish** — UI, gameplay loop, optimization, showcase  
 
-Total: **43 episodes** (Episode 18 split into 18a — Death/Pool/Respawn + 18b — Corpse Actor System; episodes 26-28 cover Threat System, Angular Spread, and AI LOD). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
+Total: **47 episodes** (Episode 18 split into 18a/18b; episodes 26-28 cover Threat System; episodes 40-43 cover Persistence & Account System). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
 
 ---
 

@@ -41,35 +41,41 @@ This system ensures that all multiplayer interactions are tied to verified Steam
 
 ## **Key Classes**
 
-### **`USteamSubsystem` (custom wrapper)**
-- Wraps Steam OSS calls  
-- Provides clean C++ API for auth and server registration  
+### **`IPlatformAuth` (platform abstraction interface)**
+- Wraps platform-specific auth validation
+- Provides clean C++ API: `ValidateTicket(AuthTicket)` → `FPlatformAuthResult`
+- Implemented by `FSteamAuth` (current), `FXboxAuth` (future), `FPSNAuth` (future)
 
 ### **`AOnsetPlayerController`**
-- Requests auth ticket from Steam  
-- Sends ticket to server via RPC  
+- Requests auth ticket from Steam via `IOnlineSubsystem::Get()->GetIdentityInterface()`
+- Sends ticket to server via RPC: `Server_SendAuthTicket(const FString& AuthTicket)`
 
 ### **`AOnsetGameModeBase`**
-- Validates auth tickets server‑side  
-- Rejects invalid clients  
+- Validates auth tickets server-side
+- **SteamID Extraction**: Calls `ISteamGameServer::BeginAuthSession()` to convert auth ticket → numeric SteamID64
+- Stores SteamID as `FString` on `AOnsetPlayerState::PlayerPlatformID`
+- Sets `AOnsetPlayerState::PlayerPlatform = "Steam"`
+- Triggers account load via `UOnsetPlayerDataSubsystem::LoadAccount()`
 
-### **`AGameSession`**
-- Registers dedicated server with Steam  
-- Handles session creation  
+### **`UOnsetPlayerDataSubsystem`** (DS only)
+- World subsystem that owns the `IPlayerDataStore`
+- Loads/saves account and character data keyed by `(Platform, PlatformID)`
+- Called from `GameMode::PostLogin()` after successful auth
 
 ---
 
 ## **Key Functions**
 
 ### **Client‑Side**
-- `RequestAuthTicket()`  
-- `OnAuthTicketReceived()`  
-- `Server_SendAuthTicket(TArray<uint8>)`  
+- `RequestAuthTicket()` — calls `IOnlineIdentity::GetAuthToken(0)` 
+- `Server_SendAuthTicket(const FString& AuthTicket)` — reliable RPC
 
 ### **Server‑Side**
-- `ValidateAuthTicket()`  
-- `OnAuthTicketValidated()`  
-- `RegisterServerWithSteam()`  
+- `ValidateAuthTicket(APlayerController*, const FString& AuthTicket)` — validates via `ISteamGameServer::BeginAuthSession()`
+- `ExtractSteamID(FString AuthTicket)` → `FString SteamID64` — gets numeric SteamID
+- `PostLogin()` — triggers `UOnsetPlayerDataSubsystem::LoadAccount(Platform, PlatformID)`
+- `RegisterServerWithSteam()` — registers dedicated server with Steam
+- `HandleAuthTimeout()` — disconnects client if ticket validation exceeds 10s
 
 ---
 
@@ -93,11 +99,16 @@ flowchart TD
 - Steam auth is required before joining  
 - Dedicated server uses Steam for registration  
 
+### **[Account System](../Player/Account_System.md)**
+- Provides the platform identity `(Platform, PlatformID)` that anchors all persistent data  
+- SteamID extracted via `ISteamGameServer::BeginAuthSession()` becomes the primary key for the account row  
+
 ### **[Player System](../Player/Player_System.md)**
-- PlayerState stores Steam ID and display name  
+- PlayerState stores Steam ID and platform name for persistence lookup  
+- Triggers account load after successful auth  
 
 ### **[UI System](../Gameplay/UI_System.md)**
-- Displays Steam name in UI  
+- Displays Steam name in character select  
 - Shows connection/auth errors  
 
 ---

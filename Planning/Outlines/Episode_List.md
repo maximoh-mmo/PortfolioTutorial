@@ -239,24 +239,47 @@ Add Steam OSS, auth tickets, server verification, and testing.
 
 ---
 
+# **PHASE 5.5 — Player Persistence & Account System**
+### *Goal: Add persistent player data, character slots, Steam ID extraction, and a full login → character select → enter world flow.*
+
+---
+
+### **Episode 40 — Database Architecture & Player Data Subsystem**
+Design the `IPlayerDataStore` abstraction, implement the SQLite store with schema migrations, and create the `UOnsetPlayerDataSubsystem` world subsystem on the DS.
+· [Account System](../../Docs/Player/Account_System.md) · [Persistence Data Store](../../Docs/Server/Persistence_Data_Store.md)
+
+### **Episode 41 — Steam ID Resolution & Save/Load Flow**
+Extract the numeric SteamID from the auth ticket via `SteamGameServer()->BeginAuthSession()`, store on `PlayerState`, and implement the full save/load RPC flow — account auto‑create on first login, load character data on select.
+· [Account System](../../Docs/Player/Account_System.md) · [Steam Integration System](../../Docs/Steam/Steam_Integration_System.md)
+
+### **Episode 42 — Lobby Map & Character Select UI**
+Build a lightweight lobby map on the DS, implement a 3‑slot WBP character select screen, and wire create/select/pick flow. `ServerTravel` to the game map on ready.
+· [Account System](../../Docs/Player/Account_System.md) · [UI System](../../Docs/Gameplay/UI_System.md)
+
+### **Episode 43 — Full Login → Character Select → Enter World**
+End‑to‑end verification: auth → account load → character select → spawn from saved state → auto‑save timer → save‑on‑disconnect. Production hardening with WAL mode, crash recovery, and migration tests.
+· [Account System](../../Docs/Player/Account_System.md) · [Persistence Data Store](../../Docs/Server/Persistence_Data_Store.md)
+
+---
+
 # **PHASE 6 — Final Demo & Polish**
 ### *Goal: Deliver a polished, impressive final result.*
 
 ---
 
-### **Episode 40 — UI & Feedback**
+### **Episode 44 — UI & Feedback**
 Add health bars, hit indicators, cooldown UI, virtual joystick widget, virtual ability buttons, gamepad cursor overlay, and target highlights.
 · [UI System](../../Docs/Gameplay/UI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
 
-### **Episode 41 — Final Gameplay Loop**
+### **Episode 45 — Final Gameplay Loop**
 Implement waves, respawn cycles, and full combat flow with all input methods supported.
 · [Spawner System](../../Docs/AI/Spawner_System.md) · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 
-### **Episode 42 — Performance Optimization**
+### **Episode 46 — Performance Optimization**
 Reduce ticks, add AI LOD, optimize pooling and networking.
 · [Pooling System](../../Docs/AI/Pooling_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 43 — Final Showcase**
+### **Episode 47 — Final Showcase**
 Record the final demo, recap architecture, and discuss next steps.
 · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 

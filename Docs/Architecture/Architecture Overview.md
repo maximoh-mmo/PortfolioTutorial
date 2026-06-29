@@ -15,7 +15,9 @@ The project is composed of several modular systems that interact through clean, 
 - **[PvP System](../Gameplay/PVP_System.md)**  
 - **[UI System](../Gameplay/UI_System.md)**  
 - **[Multiplayer System](../Multiplayer/Multiplayer_System.md)**  
-- **[Steam Integration System](../Steam/Steam_Integration_System.md)**
+- **[Steam Integration System](../Steam/Steam_Integration_System.md)**  
+- **[Persistence Data Store](../Server/Persistence_Data_Store.md)**  
+- **[Account System](../Player/Account_System.md)**
 
 Each system is responsible for a specific domain and communicates with others through explicit data flows.
 
@@ -48,6 +50,15 @@ flowchart TD
         AIProfile[UAIProfile<br/>behaviour params]
         PercProfile[UPerceptionProfile<br/>sight / hearing]
         GComp[UGroupComponent]
+        Threat[UOnsetThreatSubsystem]
+    end
+
+    subgraph Multiplayer
+        GM[AOnsetGameModeBase<br/>Authority + Auth]
+        GS[AOnsetGameState]
+        Steam[Steam OSS<br/>Auth Tickets]
+        Persist[Persistence Data Store<br/>IPlayerDataStore]
+        Account[Account System]
     end
 
     Spawner --> Pooling
@@ -55,6 +66,7 @@ flowchart TD
     NPC --> VisProfile
     NPC --> AIProfile
     NPC --> PercProfile
+    NPC --> GComp
     NPC --> GComp
     GComp --> GManager[UGroupManagerComponent]
 
@@ -79,6 +91,10 @@ flowchart TD
     Multiplayer --> PC
     Multiplayer --> NPC
     Corpse --> Multiplayer
+    Persist --> Account
+    Account --> PS[PlayerState<br/>PlatformID / Platform]
+    SteamSteamID[(SteamID\nExtracted)] -.-> PS
+    GM --> Persist
 ```
 
 ---

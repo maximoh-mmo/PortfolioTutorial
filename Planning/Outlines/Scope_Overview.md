@@ -146,12 +146,11 @@ The final result is a polished, self‑contained demo suitable for:
 These features are intentionally excluded to keep the project focused and achievable:
 
 ### **Gameplay**
-- Inventory systems  
+- Inventory systems (stub JSON blobs ready, gameplay payload deferred)  
 - Full loot drops (corpse system provides the container architecture; loot gameplay payload is out of scope)  
-- Equipment or stats progression  
+- Equipment or stats progression (stub JSON blobs ready, gameplay payload deferred)  
 - Skill trees  
-- Quests or narrative  
-- Saving/loading  
+- Quests or narrative (stub JSON blobs ready, gameplay payload deferred)  
 - Complex animation blending  
 - Advanced VFX or SFX polish  
 
@@ -167,6 +166,10 @@ These features are intentionally excluded to keep the project focused and achiev
 - Cross‑platform support  
 - Voice chat  
 - Anti‑cheat systems  
+
+### **Persistence**
+- Inventory, equipment, or quest gameplay (data structures and JSON blobs exist; gameplay payload deferred to future sprint)
+- Cross-platform account merge  
 
 ### **Steam**
 - Achievements  

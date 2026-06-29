@@ -361,15 +361,70 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Implement `Server_SendAuthTicket()` RPC
 - [x] Implement `ValidateAuthTicket()` on server
 - [x] Handle Steam not running (graceful fallback/error)
-- [ ] Handle invalid/expired ticket
-- [ ] Handle ticket validation timeout
-- [ ] Verify auth flow with AppID 480 (Spacewar)
-- [ ] Verify invalid tickets rejected
-- [ ] Verify clients can join Steam-authenticated session
+- [x] Handle invalid/expired ticket — `BeginAuthSession` failure rejects client
+- [x] Handle ticket validation timeout — `Client_ClearAuthTimeout()` RPC on success; timeout → disconnect
+- [x] Verify auth flow with AppID 480 (Spacewar)
+- [x] Verify invalid tickets rejected
+- [x] Verify clients can join Steam-authenticated session
 
 ---
+# A5b — PLAYER PERSISTENCE & ACCOUNT SYSTEM (est. 6 days)
 
-# A6 — UI & FINAL DEMO (est. 8 days)
+## A5b.1 Foundation & Schema Design
+- [ ] Add SQLite amalgamation to `Source/Onset/ThirdParty/SQLite/`
+- [ ] Update `Onset.Build.cs` — add SQLite include path and lib
+- [ ] Create `IPlayerDataStore` abstract interface
+- [ ] Create `FSQLiteStore` implementing `IPlayerDataStore`
+- [ ] Create `FPgSQLStore` stub implementing `IPlayerDataStore`
+- [ ] Create `UOnsetPlayerDataSubsystem` (world subsystem, DS only)
+- [ ] Schema: `accounts` table with composite PK `(platform, platform_id)`
+- [ ] Schema: `characters` table with slot_index (0-2), JSON blobs for inventory/equipment/quests
+- [ ] Schema: `_schema_version` table with migration runner
+- [ ] WAL mode enabled on SQLite connections
+- [ ] Config key for store selection (`DataStore=SQLite|Postgres`)
+
+## A5b.2 Data Structs & Serialization
+- [ ] Create `FOnsetCharacterSlotData` (BlueprintType) — SlotIndex, CharacterName, Level, bOccupied
+- [ ] Create `FOnsetAccountData` (BlueprintType) — PlatformID, Platform, Slots[3]
+- [ ] Create `FOnsetFullCharacterData` — full character state (progression, attributes, position, JSON blobs)
+- [ ] `UOnsetPlayerDataSubsystem` serialization: DB row → struct / struct → DB bind
+
+## A5b.3 SteamID Extraction & Auth Integration
+- [ ] Include Steamworks SDK headers in GameMode for `ISteamGameServer`
+- [ ] `ValidateAuthTicket()` calls `SteamGameServer()->BeginAuthSession()` to get SteamID
+- [ ] Store `PlayerPlatformID` (FString) and `PlayerPlatform` (FString) on `AOnsetPlayerState`
+- [ ] PostLogin: `LoadAccount(Platform, PlatformID)` → auto-create if first login
+- [ ] Send `Client_AccountData(FOnsetAccountData)` to client
+
+## A5b.4 Login → Auto-Create → Enter World
+- [ ] Add `Client_AccountData`, `Client_CharacterData`, `Server_SelectCharacter`, `Server_CreateCharacter`, `Server_SaveCharacter` RPCs
+- [ ] `Server_SelectCharacter(int32 SlotIndex)` — loads character, spawns pawn, applies save data, sends `Client_CharacterData`
+- [ ] `Server_CreateCharacter(int32 SlotIndex, FString Name)` — creates default character, auto-selects
+- [ ] Save-on-disconnect in `AOnsetPlayerController::EndPlay` / `Logout`
+- [ ] Periodic auto-save: 5-min timer in `UOnsetPlayerDataSubsystem` saves all connected players
+- [ ] Save on death placeholder (full state saved)
+
+## A5b.5 Lobby Map & Character Select UI
+- [ ] Create `/Game/LobbyMap` — lightweight level, no NPCs, no combat
+- [ ] Set as default map for DS launch
+- [ ] Implement `WBP_CharacterSelect` widget:
+  - 3 slot panels showing name + level + status
+  - Create button for empty slots
+  - Select + Enter World buttons for occupied slots
+  - Touch-friendly (large hit zones, virtual keyboard for name)
+- [ ] Wire create → `Server_CreateCharacter` → slot fills
+- [ ] Wire select → highlight slot → enable Enter World
+- [ ] Wire Enter World → `Server_SelectCharacter` → server `ServerTravel` to DemoLevel
+
+## A5b.6 Postgres Store & Production Hardening
+- [ ] `FPgSQLStore` implementation using libpq
+- [ ] Same parametrized queries as SQLite (portable SQL)
+- [ ] Config: `DataStore=Postgres` + connection string
+- [ ] Migration system tested from v0 to current
+- [ ] Crash recovery: transaction wrapping, WAL checkpoint on shutdown
+- [ ] Verify read-after-reboot survives DS restart
+
+---
 
 ## A6.1 UI System
 - [ ] Create `UHUDWidget` (main HUD container)
@@ -450,6 +505,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A2 NPC Lifecycle | 35 | 35 | 100% | |
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
-| A5 Multiplayer & Steam | 35 | 31 | 89% | Wave 1-3 complete (DS + 3-client session verified), Wave 4 partial (5/12) |
+| A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
+| A5b Persistence & Account | 30 | 0 | 0% | New sprint (DB, SteamID, character select, lobby) |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |

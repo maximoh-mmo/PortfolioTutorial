@@ -14,8 +14,8 @@
 | A5.1 Server/Client Authority | 12 | 12 | 100% | 0 |
 | A5.2 Replication Pass | 11 | 11 | 100% | 0 |
 | A5.3 Dedicated Server Build | 10 | 10 | 100% | 0 |
-| A5.4 Steam Auth Integration | 12 | 5 | 42% | 7 |
-| **Sprint Total** | **45** | **38** | **84%** | **7** |
+| A5.4 Steam Auth Integration | 12 | 12 | 100% | 0 |
+| **Sprint Total** | **45** | **45** | **100%** | **0** |
 
 ### Pre-Sprint Audit: What Already Exists
 - GAS attributes replicate: Health, MaxHealth, MovementSpeed via DOREPLIFETIME
@@ -89,13 +89,13 @@
 - [x] PlayerController: Server_SendAuthTicket(const FString&) reliable RPC
 - [x] GameMode: ValidateAuthTicket() — server-side ticket validation
 - [x] Handle "Steam not running" — graceful fallback to LAN mode
-- [ ] Handle invalid/expired ticket — reject client with message
-- [ ] Handle ticket validation timeout (10s timer, retry/disconnect)
-- [ ] Verify auth flow with AppID 480
-- [ ] Verify invalid tickets rejected (garbage data test)
-- [ ] Verify clients can join Steam-authenticated session
-- [ ] End-to-end: DS + Steam auth + 2 auth'd clients -> full combat loop
-- [ ] Update Private_Demo_Checklist.md progress
+- [x] Handle invalid/expired ticket — rejected via BeginAuthSession failure (see Sprint A5b for full SteamID extraction)
+- [x] Handle ticket validation timeout — Client_ClearAuthTimeout() RPC clears timer on success; timeout → disconnect
+- [x] Verify auth flow with AppID 480 — tested in Wave 3 DS session
+- [x] Verify invalid tickets rejected — garbage string → BeginAuthSession returns failure
+- [x] Verify clients can join Steam-authenticated session — DS + 3 clients connected
+- [x] End-to-end: DS + Steam auth + 2 auth'd clients -> full combat loop — Verified Wave 3
+- [x] Update Private_Demo_Checklist.md progress
 
 ---
 
