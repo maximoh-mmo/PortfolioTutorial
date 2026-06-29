@@ -18,6 +18,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Player/InteractionComponent.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "UI/CharacterSelectWidget.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerState.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
@@ -88,8 +89,17 @@ void AOnsetPlayerController::ClearAuthTimeout()
 
 void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccountData& AccountData)
 {
-	UE_LOG(LogTemp, Log, TEXT("Client_AccountData received: platform=%s, id=%s, %d slots"),
-		*AccountData.Platform, *AccountData.PlatformID, AccountData.Slots.Num());
+	UE_LOG(LogTemp, Log, TEXT("Client_AccountData: received %d slots"), AccountData.Slots.Num());
+
+	if (CharacterSelectWidgetClass)
+	{
+		CharacterSelectWidget = CreateWidget<UCharacterSelectWidget>(this, CharacterSelectWidgetClass);
+		if (CharacterSelectWidget)
+		{
+			CharacterSelectWidget->SetAccountData(AccountData);
+			CharacterSelectWidget->AddToViewport(200);
+		}
+	}
 }
 
 void AOnsetPlayerController::Client_ClearAuthTimeout_Implementation()
@@ -509,6 +519,9 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 
 	UE_LOG(LogTemp, Log, TEXT("Server_SelectCharacter: player %s selected slot %d (%s)"),
 		*PS->GetPlayerName(), SlotIndex, *CharData.CharacterName);
+
+	// Travel all players to the game world
+	GetWorld()->ServerTravel(TEXT("DemoLevel?game=/Game/OnsetGameMode.OnsetGameMode_C"));
 }
 
 void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotIndex, const FString& CharacterName)

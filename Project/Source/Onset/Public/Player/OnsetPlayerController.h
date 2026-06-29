@@ -15,6 +15,7 @@ class AOnsetPlayerAIController;
 class UInteractionComponent;
 class UGameplayAbility;
 class UGamepadCursorWidget;
+class UCharacterSelectWidget;
 class UCursorManager;
 class UInputAction;
 class UInputMappingContext;
@@ -121,7 +122,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category="Cursor")                                                                
 	TSubclassOf<UGamepadCursorWidget> GamepadCursorWidgetClass;                                                     
 	UPROPERTY()                                                                                                     
-	TObjectPtr<UGamepadCursorWidget> GamepadCursorWidget;         
+	TObjectPtr<UGamepadCursorWidget> GamepadCursorWidget;
+
+	// --- Character Select ---
+
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UCharacterSelectWidget> CharacterSelectWidgetClass;
+	UPROPERTY()
+	TObjectPtr<UCharacterSelectWidget> CharacterSelectWidget;         
 	
 	// --- Targeting ---
 	
