@@ -97,10 +97,12 @@ bool FSQLiteStore::EnsureSchema()
 	if (Version < 0)
 		return false;
 
-	if (Version > 0)
-		return true;
-
-	RunMigration(Version);
+	const int32 LatestVersion = 2;
+	while (Version < LatestVersion)
+	{
+		RunMigration(Version);
+		Version = GetSchemaVersion();
+	}
 	return true;
 }
 
@@ -165,6 +167,18 @@ void FSQLiteStore::RunMigration(int32 FromVersion)
 
 		Exec("INSERT INTO _schema_version (version) VALUES (1);");
 		UE_LOG(LogTemp, Log, TEXT("FSQLiteStore: migration 1 applied (accounts + characters)"));
+	}
+
+	if (FromVersion <= 1)
+	{
+		if (!Exec("ALTER TABLE characters ADD COLUMN current_zone TEXT NOT NULL DEFAULT '';"))
+		{
+			UE_LOG(LogTemp, Error, TEXT("FSQLiteStore: migration 2 failed (current_zone column)"));
+			return;
+		}
+
+		Exec("INSERT INTO _schema_version (version) VALUES (2);");
+		UE_LOG(LogTemp, Log, TEXT("FSQLiteStore: migration 2 applied (current_zone column)"));
 	}
 }
 
@@ -260,7 +274,7 @@ bool FSQLiteStore::LoadCharacter(const FString& Platform, const FString& Platfor
 
 	const char* SQL = "SELECT slot_index, character_name, level, experience,"
 		" saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		" inventory_json, equipment_json, quests_json"
+		" inventory_json, equipment_json, quests_json, current_zone"
 		" FROM characters WHERE platform = ?1 AND platform_id = ?2 AND slot_index = ?3;";
 
 	if (!PrepareAndBind(SQL))
@@ -289,6 +303,7 @@ bool FSQLiteStore::LoadCharacter(const FString& Platform, const FString& Platfor
 	OutData.InventoryJSON = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 9));
 	OutData.EquipmentJSON = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 10));
 	OutData.QuestsJSON = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 11));
+	OutData.CurrentZone = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 12));
 
 	sqlite3_finalize(ActiveStmt);
 	ActiveStmt = nullptr;
@@ -302,8 +317,8 @@ bool FSQLiteStore::SaveCharacter(const FString& Platform, const FString& Platfor
 	const char* SQL = "INSERT OR REPLACE INTO characters"
 		" (platform, platform_id, slot_index, character_name, level, experience,"
 		"  saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		"  inventory_json, equipment_json, quests_json, updated_at)"
-		" VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, datetime('now'));";
+		"  inventory_json, equipment_json, quests_json, current_zone, updated_at)"
+		" VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, datetime('now'));";
 
 	if (!PrepareAndBind(SQL))
 		return false;
@@ -322,6 +337,7 @@ bool FSQLiteStore::SaveCharacter(const FString& Platform, const FString& Platfor
 	sqlite3_bind_text(ActiveStmt, 12, TCHAR_TO_UTF8(*Data.InventoryJSON), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_text(ActiveStmt, 13, TCHAR_TO_UTF8(*Data.EquipmentJSON), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_text(ActiveStmt, 14, TCHAR_TO_UTF8(*Data.QuestsJSON), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_text(ActiveStmt, 15, TCHAR_TO_UTF8(*Data.CurrentZone), -1, SQLITE_TRANSIENT);
 
 	int32 RC = sqlite3_step(ActiveStmt);
 	sqlite3_finalize(ActiveStmt);

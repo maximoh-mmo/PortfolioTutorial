@@ -33,6 +33,10 @@ public:
 	UPROPERTY()
 	int32 SelectedCharacterSlot = -1;
 
+	/** Zone entry point to spawn at after travel. Set by zone gate, consumed by ChoosePlayerStart. Server-only. */
+	UPROPERTY()
+	FString PendingEntryPoint;
+
 	/** Called when bIsPvPEnabled changes on a client. Updates TargetingComponent validation. */
 	UFUNCTION()
 	void OnRep_PvPEnabled();

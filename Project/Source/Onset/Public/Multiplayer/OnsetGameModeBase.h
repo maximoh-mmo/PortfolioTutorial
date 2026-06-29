@@ -21,6 +21,14 @@ public:
 
 	virtual void StartPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
+
+	/** Save all connected players' state, then ServerTravel to the target map. */
+	void TravelToZone(const FString& MapName, const FString& EntryPoint = TEXT(""));
+
+	/** Exec command: TravelZone <MapName> [EntryPoint] */
+	UFUNCTION(Exec)
+	void TravelZone(const FString& MapName, const FString& EntryPoint = TEXT(""));
 
 	void ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket);
 };

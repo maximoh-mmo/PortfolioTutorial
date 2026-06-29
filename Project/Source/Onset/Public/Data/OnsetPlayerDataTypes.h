@@ -54,6 +54,9 @@ struct FOnsetFullCharacterData
 	int32 Experience = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+	FString CurrentZone;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
 	float SavedMaxHealth = 100.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")

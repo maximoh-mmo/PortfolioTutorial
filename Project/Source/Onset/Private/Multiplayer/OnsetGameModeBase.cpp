@@ -4,11 +4,15 @@
 #include "Multiplayer/OnsetGameModeBase.h"
 
 #include "Engine/Engine.h"
+#include "Engine/PlayerStartPIE.h"
+#include "EngineUtils.h"
+#include "GAS/OnsetAttributeSet.h"
 #include "Multiplayer/OnsetGameState.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
+#include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 
@@ -124,4 +128,77 @@ void AOnsetGameModeBase::ValidateAuthTicket(APlayerController* NewPlayer, const 
 
 	UE_LOG(LogSteamAuth, Log, TEXT("Steam auth ticket accepted for player %s (%d chars)."),
 		*NewPlayer->GetName(), AuthTicket.Len());
+}
+
+AActor* AOnsetGameModeBase::ChoosePlayerStart_Implementation(AController* Player)
+{
+	AOnsetPlayerState* PS = Player ? Player->GetPlayerState<AOnsetPlayerState>() : nullptr;
+
+	// If player has a pending entry point, find a PlayerStart tagged with that name
+	if (PS && !PS->PendingEntryPoint.IsEmpty())
+	{
+		for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+		{
+			APlayerStart* Start = *It;
+			if (Start && Start->Tags.Contains(FName(*PS->PendingEntryPoint)))
+			{
+				UE_LOG(LogSteamAuth, Log, TEXT("ChoosePlayerStart: matched entry point '%s' -> %s"),
+					*PS->PendingEntryPoint, *Start->GetName());
+				PS->PendingEntryPoint.Empty();
+				return Start;
+			}
+		}
+		UE_LOG(LogSteamAuth, Warning, TEXT("ChoosePlayerStart: entry point '%s' not found — falling back to default"),
+			*PS->PendingEntryPoint);
+		PS->PendingEntryPoint.Empty();
+	}
+
+	return Super::ChoosePlayerStart_Implementation(Player);
+}
+
+void AOnsetGameModeBase::TravelToZone(const FString& MapName, const FString& EntryPoint)
+{
+	if (MapName.IsEmpty()) return;
+
+	// Save all connected players' state before traveling
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (DataSubsystem)
+	{
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* PC = It->Get();
+			if (!PC || !PC->GetPawn()) continue;
+
+			AOnsetPlayerState* PS = PC->GetPlayerState<AOnsetPlayerState>();
+			if (!PS || PS->SelectedCharacterSlot < 0) continue;
+
+			AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(PC->GetPawn());
+			if (!PlayerChar) continue;
+
+			FOnsetFullCharacterData CharData;
+			CharData.SlotIndex = PS->SelectedCharacterSlot;
+			CharData.CurrentZone = MapName;
+			CharData.SavedPosition = PlayerChar->GetActorLocation();
+			CharData.SavedRotationYaw = PlayerChar->GetActorRotation().Yaw;
+			if (PlayerChar->AttributeSet)
+				CharData.SavedMaxHealth = PlayerChar->AttributeSet->GetMaxHealth();
+			CharData.InventoryJSON = TEXT("{}");
+			CharData.EquipmentJSON = TEXT("{}");
+			CharData.QuestsJSON = TEXT("{}");
+
+			DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+
+			// Set entry point for this player
+			if (!EntryPoint.IsEmpty())
+				PS->PendingEntryPoint = EntryPoint;
+		}
+	}
+
+	UE_LOG(LogSteamAuth, Log, TEXT("TravelToZone: traveling to '%s' (entry=%s)"), *MapName, *EntryPoint);
+	GetWorld()->ServerTravel(MapName);
+}
+
+void AOnsetGameModeBase::TravelZone(const FString& MapName, const FString& EntryPoint)
+{
+	TravelToZone(MapName, EntryPoint);
 }

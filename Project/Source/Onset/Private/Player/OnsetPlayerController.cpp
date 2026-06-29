@@ -219,8 +219,13 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 	AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(InPawn);
 	if (!PlayerChar) return;
 
-	PlayerChar->SetActorLocation(CharData.SavedPosition);
-	PlayerChar->SetActorRotation(FRotator(0.0f, CharData.SavedRotationYaw, 0.0f));
+	// Only restore saved position on first login (no pending entry point).
+	// Zone travel uses ChoosePlayerStart for placement instead.
+	if (PS->PendingEntryPoint.IsEmpty())
+	{
+		PlayerChar->SetActorLocation(CharData.SavedPosition);
+		PlayerChar->SetActorRotation(FRotator(0.0f, CharData.SavedRotationYaw, 0.0f));
+	}
 
 	if (PlayerChar->AttributeSet)
 	{
@@ -586,6 +591,7 @@ void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotInd
 	NewChar.SavedMaxHealth = 100.0f;
 	NewChar.SavedPosition = FVector(0.0f, 0.0f, 150.0f);
 	NewChar.SavedRotationYaw = 0.0f;
+	NewChar.CurrentZone = TEXT("");
 	NewChar.InventoryJSON = TEXT("{}");
 	NewChar.EquipmentJSON = TEXT("{}");
 	NewChar.QuestsJSON = TEXT("{}");
@@ -620,6 +626,7 @@ void AOnsetPlayerController::Server_SaveCharacter_Implementation()
 	}
 	CharData.SavedPosition = PlayerCharacter->GetActorLocation();
 	CharData.SavedRotationYaw = PlayerCharacter->GetActorRotation().Yaw;
+	CharData.CurrentZone = GetWorld()->GetMapName();
 	CharData.InventoryJSON = TEXT("{}");
 	CharData.EquipmentJSON = TEXT("{}");
 	CharData.QuestsJSON = TEXT("{}");
@@ -645,6 +652,7 @@ void AOnsetPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 					CharData.SlotIndex = PS->SelectedCharacterSlot;
 					CharData.SavedPosition = PlayerCharacter->GetActorLocation();
 					CharData.SavedRotationYaw = PlayerCharacter->GetActorRotation().Yaw;
+					CharData.CurrentZone = GetWorld()->GetMapName();
 					if (PlayerCharacter->AttributeSet)
 					{
 						CharData.SavedMaxHealth = PlayerCharacter->AttributeSet->GetMaxHealth();
