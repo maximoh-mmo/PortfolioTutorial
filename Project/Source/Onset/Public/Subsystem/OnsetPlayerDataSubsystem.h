@@ -19,6 +19,15 @@ public:
 	virtual void Deinitialize() override;
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
+	/** Flush all pending saves to disk / database immediately. */
+	void SaveAll();
+
+	/** Start / stop the auto-save periodic timer. */
+	void StartAutoSaveTimer();
+	void StopAutoSaveTimer();
+
+	IPlayerDataStore* GetStore() const { return Store.Get(); }
+
 	UFUNCTION(BlueprintCallable, Category = "Player Data")
 	bool LoadAccount(const FString& Platform, const FString& PlatformID, FOnsetAccountData& OutAccount);
 
@@ -34,10 +43,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Data")
 	bool DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex);
 
-	void SaveAll();
-
-	IPlayerDataStore* GetStore() const { return Store.Get(); }
-
 private:
 	TUniquePtr<IPlayerDataStore> Store;
+	FTimerHandle AutoSaveTimerHandle;
 };

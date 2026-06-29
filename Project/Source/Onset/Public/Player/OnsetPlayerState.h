@@ -29,6 +29,10 @@ public:
 	UPROPERTY(Replicated)
 	FString PlayerPlatformID;
 
+	/** Character slot selected by this player (0-2, -1 = none). Server-only. */
+	UPROPERTY()
+	int32 SelectedCharacterSlot = -1;
+
 	/** Called when bIsPvPEnabled changes on a client. Updates TargetingComponent validation. */
 	UFUNCTION()
 	void OnRep_PvPEnabled();

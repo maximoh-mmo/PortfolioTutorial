@@ -15,8 +15,13 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerState.h"
 #include "Player/InteractionComponent.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "Player/OnsetPlayerCharacter.h"
+#include "Player/OnsetPlayerState.h"
+#include "Subsystem/OnsetPlayerDataSubsystem.h"
+#include "GAS/OnsetAttributeSet.h"
 #include "Player/OnsetCheatManager.h"
 #include "Player/OnsetPlayerAIController.h"
 #include "Player/OnsetPlayerState.h"
@@ -436,4 +441,177 @@ void AOnsetPlayerController::ResetIdleTimer()
 		GetWorldTimerManager().SetTimer(IdleAutoCombatTimerHandle, this,
 			&AOnsetPlayerController::EnableAutoCombat, IdleAutoCombatDelay, false);
 	}
+}
+
+void AOnsetPlayerController::Client_CharacterData_Implementation(const FOnsetFullCharacterData& CharacterData)
+{
+	UE_LOG(LogTemp, Log, TEXT("Client_CharacterData: received '%s' (slot %d, lvl %d)"),
+		*CharacterData.CharacterName, CharacterData.SlotIndex, CharacterData.Level);
+}
+
+void AOnsetPlayerController::Client_SaveComplete_Implementation(bool bSuccess)
+{
+	UE_LOG(LogTemp, Log, TEXT("Client_SaveComplete: %s"), bSuccess ? TEXT("success") : TEXT("failed"));
+}
+
+void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotIndex)
+{
+	if (SlotIndex < 0 || SlotIndex > 2) return;
+
+	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
+	if (!PS) return;
+
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (!DataSubsystem) return;
+
+	FOnsetFullCharacterData CharData;
+	if (!DataSubsystem->LoadCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, SlotIndex, CharData))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Server_SelectCharacter: failed to load slot %d"), SlotIndex);
+		return;
+	}
+
+	PS->SelectedCharacterSlot = SlotIndex;
+
+	AOnsetPlayerCharacter* PlayerCharacter = Cast<AOnsetPlayerCharacter>(GetPawn());
+	if (!PlayerCharacter)
+	{
+		UClass* PawnClass = AOnsetPlayerCharacter::StaticClass();
+		if (const AGameModeBase* GM = GetWorld()->GetAuthGameMode())
+			PawnClass = GM->DefaultPawnClass;
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+		PlayerCharacter = GetWorld()->SpawnActor<AOnsetPlayerCharacter>(PawnClass, CharData.SavedPosition, FRotator(0.0, CharData.SavedRotationYaw, 0.0), SpawnParams);
+		if (PlayerCharacter)
+		{
+			Possess(PlayerCharacter);
+			PlayerCharacter->InitAbilityActorInfo();
+		}
+	}
+
+	if (PlayerCharacter)
+	{
+		PlayerCharacter->SetActorLocation(CharData.SavedPosition);
+		PlayerCharacter->SetActorRotation(FRotator(0.0f, CharData.SavedRotationYaw, 0.0f));
+
+		if (PlayerCharacter->AttributeSet)
+		{
+			PlayerCharacter->AttributeSet->SetMaxHealth(CharData.SavedMaxHealth);
+			PlayerCharacter->AttributeSet->SetHealth(CharData.SavedMaxHealth);
+		}
+
+		PlayerCharacter->GrantDefaultAbilities();
+	}
+
+	Client_CharacterData(CharData);
+
+	UE_LOG(LogTemp, Log, TEXT("Server_SelectCharacter: player %s selected slot %d (%s)"),
+		*PS->GetPlayerName(), SlotIndex, *CharData.CharacterName);
+}
+
+void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotIndex, const FString& CharacterName)
+{
+	if (SlotIndex < 0 || SlotIndex > 2 || CharacterName.IsEmpty()) return;
+
+	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
+	if (!PS) return;
+
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (!DataSubsystem) return;
+
+	FOnsetAccountData AccountData;
+	if (DataSubsystem->LoadAccount(PS->PlayerPlatform, PS->PlayerPlatformID, AccountData))
+	{
+		for (const auto& Slot : AccountData.Slots)
+		{
+			if (Slot.SlotIndex == SlotIndex && Slot.bOccupied)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Server_CreateCharacter: slot %d already occupied"), SlotIndex);
+				return;
+			}
+		}
+	}
+
+	FOnsetFullCharacterData NewChar;
+	NewChar.SlotIndex = SlotIndex;
+	NewChar.CharacterName = CharacterName;
+	NewChar.Level = 1;
+	NewChar.Experience = 0;
+	NewChar.SavedMaxHealth = 100.0f;
+	NewChar.SavedPosition = FVector(0.0f, 0.0f, 150.0f);
+	NewChar.SavedRotationYaw = 0.0f;
+	NewChar.InventoryJSON = TEXT("{}");
+	NewChar.EquipmentJSON = TEXT("{}");
+	NewChar.QuestsJSON = TEXT("{}");
+
+	if (DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, NewChar))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Server_CreateCharacter: created '%s' in slot %d"), *CharacterName, SlotIndex);
+		Server_SelectCharacter(SlotIndex);
+	}
+}
+
+void AOnsetPlayerController::Server_SaveCharacter_Implementation()
+{
+	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
+	if (!PS || PS->SelectedCharacterSlot < 0) return;
+
+	AOnsetPlayerCharacter* PlayerCharacter = Cast<AOnsetPlayerCharacter>(GetPawn());
+	if (!PlayerCharacter) return;
+
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (!DataSubsystem) return;
+
+	FOnsetFullCharacterData CharData;
+	CharData.SlotIndex = PS->SelectedCharacterSlot;
+	CharData.CharacterName = PS->GetPlayerName();
+	CharData.Level = 1;
+	CharData.Experience = 0;
+
+	if (PlayerCharacter->AttributeSet)
+	{
+		CharData.SavedMaxHealth = PlayerCharacter->AttributeSet->GetMaxHealth();
+	}
+	CharData.SavedPosition = PlayerCharacter->GetActorLocation();
+	CharData.SavedRotationYaw = PlayerCharacter->GetActorRotation().Yaw;
+	CharData.InventoryJSON = TEXT("{}");
+	CharData.EquipmentJSON = TEXT("{}");
+	CharData.QuestsJSON = TEXT("{}");
+
+	bool bSuccess = DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+	Client_SaveComplete(bSuccess);
+}
+
+void AOnsetPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (EndPlayReason == EEndPlayReason::Destroyed || EndPlayReason == EEndPlayReason::RemovedFromWorld)
+	{
+		AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
+		if (PS && PS->SelectedCharacterSlot >= 0)
+		{
+			AOnsetPlayerCharacter* PlayerCharacter = Cast<AOnsetPlayerCharacter>(GetPawn());
+			if (PlayerCharacter)
+			{
+				UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+				if (DataSubsystem)
+				{
+					FOnsetFullCharacterData CharData;
+					CharData.SlotIndex = PS->SelectedCharacterSlot;
+					CharData.SavedPosition = PlayerCharacter->GetActorLocation();
+					CharData.SavedRotationYaw = PlayerCharacter->GetActorRotation().Yaw;
+					if (PlayerCharacter->AttributeSet)
+					{
+						CharData.SavedMaxHealth = PlayerCharacter->AttributeSet->GetMaxHealth();
+					}
+					CharData.InventoryJSON = TEXT("{}");
+					CharData.EquipmentJSON = TEXT("{}");
+					CharData.QuestsJSON = TEXT("{}");
+					DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+				}
+			}
+		}
+	}
+	Super::EndPlay(EndPlayReason);
 }

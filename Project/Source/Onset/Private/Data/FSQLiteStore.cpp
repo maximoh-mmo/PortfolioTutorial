@@ -1,11 +1,11 @@
 #include "Data/FSQLiteStore.h"
-#include "sqlite3.h"
+#include "sqlite/sqlite3.h"
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
 
 static void LogSQLError(struct sqlite3* InDB, const char* Context)
 {
-	UE_LOG(LogTemp, Error, TEXT("SQLite %s: %S"), ANSI_TO_TCHAR(Context), sqlite3_errmsg(InDB));
+	UE_LOG(LogTemp, Error, TEXT("SQLite %s: %hs"), ANSI_TO_TCHAR(Context), sqlite3_errmsg(InDB));
 }
 
 static FString NormalizePath(const FString& Path)
@@ -35,7 +35,7 @@ bool FSQLiteStore::Exec(const char* SQL)
 	char* ErrMsg = nullptr;
 	if (sqlite3_exec(DB, SQL, nullptr, nullptr, &ErrMsg) != SQLITE_OK)
 	{
-		UE_LOG(LogTemp, Error, TEXT("SQLite Exec: %S"), ANSI_TO_TCHAR(ErrMsg));
+		UE_LOG(LogTemp, Error, TEXT("SQLite Exec: %s"), ANSI_TO_TCHAR(ErrMsg));
 		sqlite3_free(ErrMsg);
 		return false;
 	}
@@ -100,7 +100,8 @@ bool FSQLiteStore::EnsureSchema()
 	if (Version > 0)
 		return true;
 
-	return RunMigration(Version);
+	RunMigration(Version);
+	return true;
 }
 
 int32 FSQLiteStore::GetSchemaVersion()

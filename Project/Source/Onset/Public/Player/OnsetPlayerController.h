@@ -10,6 +10,7 @@
 #include "OnsetPlayerController.generated.h"
 
 struct FOnsetAccountData;
+struct FOnsetFullCharacterData;
 class AOnsetPlayerAIController;
 class UInteractionComponent;
 class UGameplayAbility;
@@ -174,10 +175,28 @@ private:
 	UFUNCTION(Server, Reliable)
 	void Server_SetPvPEnabled(bool bEnabled);
 
+public:
 	UFUNCTION(Client, Reliable)
 	void Client_AccountData(const FOnsetAccountData& AccountData);
 
-public:
+	// --- Persistence RPCs ---
+
+	UFUNCTION(Client, Reliable)
+	void Client_CharacterData(const FOnsetFullCharacterData& CharacterData);
+
+	UFUNCTION(Client, Reliable)
+	void Client_SaveComplete(bool bSuccess);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SelectCharacter(int32 SlotIndex);
+
+	UFUNCTION(Server, Reliable)
+	void Server_CreateCharacter(int32 SlotIndex, const FString& CharacterName);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SaveCharacter();
+
+
 	UFUNCTION(Client, Reliable)
 	void Client_ClearAuthTimeout();
 
@@ -188,6 +207,10 @@ public:
 	void Server_ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
 
 	void ClearAuthTimeout();
+
+protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 private:
 	void OnAuthTimeout();
 	FTimerHandle AuthTimeoutTimerHandle;

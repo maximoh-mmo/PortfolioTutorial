@@ -54,13 +54,37 @@ void UOnsetPlayerDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 
 	UE_LOG(LogPlayerData, Log, TEXT("UOnsetPlayerDataSubsystem: initialized with %s (success=%d)"), *DataStoreType, bInitialized);
+
+	StartAutoSaveTimer();
 }
 
 void UOnsetPlayerDataSubsystem::Deinitialize()
 {
+	StopAutoSaveTimer();
 	SaveAll();
 	Store.Reset();
 	Super::Deinitialize();
+}
+
+void UOnsetPlayerDataSubsystem::StartAutoSaveTimer()
+{
+	float Interval = 300.0f; // default 5 minutes
+	GConfig->GetFloat(TEXT("Onset.DataStore"), TEXT("AutoSaveInterval"), Interval, GEngineIni);
+	if (Interval > 0.0f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(AutoSaveTimerHandle, this,
+			&UOnsetPlayerDataSubsystem::SaveAll, Interval, true);
+		UE_LOG(LogPlayerData, Log, TEXT("Auto-save timer started (interval=%.1fs)"), Interval);
+	}
+}
+
+void UOnsetPlayerDataSubsystem::StopAutoSaveTimer()
+{
+	if (AutoSaveTimerHandle.IsValid())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(AutoSaveTimerHandle);
+		UE_LOG(LogPlayerData, Log, TEXT("Auto-save timer stopped"));
+	}
 }
 
 bool UOnsetPlayerDataSubsystem::ShouldCreateSubsystem(UObject* Outer) const
