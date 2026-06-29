@@ -85,11 +85,16 @@ void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 		}
 	}
 
-	// Send account data to the client
+	// If player already selected a character, this is a zone-travel reconnect — skip sending account data
 	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
-	if (PC)
+	if (PC && PS->SelectedCharacterSlot < 0)
 	{
 		PC->Client_AccountData(AccountData);
+	}
+	else if (PC && PS->SelectedCharacterSlot >= 0)
+	{
+		UE_LOG(LogSteamAuth, Log, TEXT("PostLogin: player %s already has slot %d (zone travel) — skipping account UI"),
+			*NewPlayer->GetName(), PS->SelectedCharacterSlot);
 	}
 }
 

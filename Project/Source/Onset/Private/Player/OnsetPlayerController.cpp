@@ -201,6 +201,37 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 	CachedPlayerPawn = InPawn;
 	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
+
+	// After zone travel, restore saved character data onto the new pawn
+	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
+	if (!PS || PS->SelectedCharacterSlot < 0) return;
+
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (!DataSubsystem) return;
+
+	FOnsetFullCharacterData CharData;
+	if (!DataSubsystem->LoadCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, PS->SelectedCharacterSlot, CharData))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnPossess: failed to load character data for slot %d"), PS->SelectedCharacterSlot);
+		return;
+	}
+
+	AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(InPawn);
+	if (!PlayerChar) return;
+
+	PlayerChar->SetActorLocation(CharData.SavedPosition);
+	PlayerChar->SetActorRotation(FRotator(0.0f, CharData.SavedRotationYaw, 0.0f));
+
+	if (PlayerChar->AttributeSet)
+	{
+		PlayerChar->AttributeSet->SetMaxHealth(CharData.SavedMaxHealth);
+		PlayerChar->AttributeSet->SetHealth(CharData.SavedMaxHealth);
+	}
+
+	PlayerChar->GrantDefaultAbilities();
+
+	UE_LOG(LogTemp, Log, TEXT("OnPossess: restored %s (slot %d) at %s"),
+		*CharData.CharacterName, CharData.SlotIndex, *CharData.SavedPosition.ToString());
 }
 
 void AOnsetPlayerController::OnUnPossess()
