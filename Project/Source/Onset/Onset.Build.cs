@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System.IO;
 
 public class Onset : ModuleRules
 {
@@ -17,6 +18,11 @@ public class Onset : ModuleRules
 		// Online features
 		PrivateDependencyModuleNames.Add("OnlineSubsystem");
 		PrivateDependencyModuleNames.Add("OnlineSubsystemSteam");
+
+		// SQLite persistence
+		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "ThirdParty", "SQLite"));
+		PrivateDefinitions.Add("SQLITE_THREADSAFE=1");
+		PrivateDefinitions.Add("SQLITE_OMIT_LOAD_EXTENSION=1");
 	}
 }
 	
