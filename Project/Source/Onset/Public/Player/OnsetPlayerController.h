@@ -9,6 +9,7 @@
 #include "GameFramework/PlayerController.h"
 #include "OnsetPlayerController.generated.h"
 
+struct FOnsetAccountData;
 class AOnsetPlayerAIController;
 class UInteractionComponent;
 class UGameplayAbility;
@@ -172,6 +173,9 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetPvPEnabled(bool bEnabled);
+
+	UFUNCTION(Client, Reliable)
+	void Client_AccountData(const FOnsetAccountData& AccountData);
 
 public:
 	UFUNCTION(Client, Reliable)

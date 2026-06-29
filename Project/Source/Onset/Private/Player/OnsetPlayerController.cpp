@@ -8,6 +8,7 @@
 #include "Multiplayer/OnsetGameModeBase.h"
 #include "Player/CursorManager.h"
 #include "Core/TargetingComponent.h"
+#include "Data/OnsetPlayerDataTypes.h"
 #include "EnhancedInputSubsystems.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"
@@ -78,6 +79,12 @@ void AOnsetPlayerController::OnAuthTimeout()
 void AOnsetPlayerController::ClearAuthTimeout()
 {
 	GetWorldTimerManager().ClearTimer(AuthTimeoutTimerHandle);
+}
+
+void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccountData& AccountData)
+{
+	UE_LOG(LogTemp, Log, TEXT("Client_AccountData received: platform=%s, id=%s, %d slots"),
+		*AccountData.Platform, *AccountData.PlatformID, AccountData.Slots.Num());
 }
 
 void AOnsetPlayerController::Client_ClearAuthTimeout_Implementation()

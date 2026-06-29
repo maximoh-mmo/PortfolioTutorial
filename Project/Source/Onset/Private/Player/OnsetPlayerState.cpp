@@ -36,5 +36,7 @@ void AOnsetPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AOnsetPlayerState, bIsPvPEnabled);
+	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatform);
+	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatformID);
 }
 

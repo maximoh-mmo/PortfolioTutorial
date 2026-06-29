@@ -21,6 +21,14 @@ public:
 	UPROPERTY()
 	FString SteamAuthTicket;
 
+	/** Platform identifier (e.g. "Steam" / "Xbox" / "PSN"). Replicated for client display. */
+	UPROPERTY(Replicated)
+	FString PlayerPlatform;
+
+	/** Platform-specific user ID (e.g. SteamID64 as string). Replicated for client display. */
+	UPROPERTY(Replicated)
+	FString PlayerPlatformID;
+
 	/** Called when bIsPvPEnabled changes on a client. Updates TargetingComponent validation. */
 	UFUNCTION()
 	void OnRep_PvPEnabled();
