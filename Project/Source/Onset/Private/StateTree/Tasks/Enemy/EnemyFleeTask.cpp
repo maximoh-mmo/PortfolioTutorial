@@ -50,6 +50,7 @@ EStateTreeRunStatus FEnemyFleeTask::EnterState(FStateTreeExecutionContext& Conte
 		InstanceData.FleeDestination = Projected.Location;
 		float InitialHealthRatio = Self->AttributeSet->GetHealth() / Self->AttributeSet->GetMaxHealth();                
 		float InitialSpeedMod = FMath::Lerp(InstanceData.MinSpeedMultiplier, 1.0f, InitialHealthRatio);                 
+		InstanceData.LastSpeedModifier = InitialSpeedMod;                                           
 		InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(                           
 			Self, InitialSpeedMod);
 		AIController->MoveToLocation(InstanceData.FleeDestination, InstanceData.AcceptanceRadius);
@@ -72,14 +73,18 @@ EStateTreeRunStatus FEnemyFleeTask::Tick(FStateTreeExecutionContext& Context,
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 		float HealthRatio = Self->AttributeSet->GetHealth() / Self->AttributeSet->GetMaxHealth();
 		float SpeedMod = FMath::Lerp(InstanceData.MinSpeedMultiplier, 1.0f, HealthRatio);
-		// TODO: Cache speed modifier to avoid remove/reapply every tick
-		if (InstanceData.SpeedEffectHandle.IsValid())                                                                   
-		{                                                                                                               
-			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);                   
-		}  
-		
-		InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(                           
-			Self, SpeedMod);
+
+		// Only reapply when the modifier actually changes (health changed)
+		if (!FMath::IsNearlyEqual(InstanceData.LastSpeedModifier, SpeedMod, 0.001f))
+		{
+			if (InstanceData.SpeedEffectHandle.IsValid())
+			{
+				Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);
+			}
+			InstanceData.LastSpeedModifier = SpeedMod;
+			InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(
+				Self, SpeedMod);
+		}
 	}
 
 	return HasMoveCompleted(Context) ? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
@@ -95,6 +100,7 @@ void FEnemyFleeTask::ExitState(FStateTreeExecutionContext& Context,
 		{                                                                                                               
 			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);                   
 			InstanceData.SpeedEffectHandle.Invalidate();                                                                
+			InstanceData.LastSpeedModifier = -1.0f;                                                                     
 		}        
 	}
 

@@ -31,6 +31,8 @@ struct FOnsetStateTreeFleeTaskInstanceData
 
 	/** Handle to the active speed-modifier gameplay effect. */
 	FActiveGameplayEffectHandle SpeedEffectHandle;
+	/** Cached speed modifier value from last apply — avoids remove/reapply every tick. */
+	float LastSpeedModifier = -1.0f;
 	/** Destination point to flee toward. */
 	FVector FleeDestination = FVector::ZeroVector;
 };
