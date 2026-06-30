@@ -9,6 +9,6 @@ AOnsetLobbyGameMode::AOnsetLobbyGameMode()
 
 void AOnsetLobbyGameMode::TravelToGame()
 {
-	FString URL = TEXT("DemoLevel?game=/Game/OnsetGameMode.OnsetGameMode_C");
+	FString URL = TEXT("DemoLevel?game=/Script/Onset.OnsetGameModeBase");
 	GetWorld()->ServerTravel(URL);
 }
