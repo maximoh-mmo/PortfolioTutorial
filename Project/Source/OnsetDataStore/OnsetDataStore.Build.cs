@@ -1,4 +1,5 @@
 using UnrealBuildTool;
+using System.IO;
 
 public class OnsetDataStore : ModuleRules
 {
@@ -14,6 +15,16 @@ public class OnsetDataStore : ModuleRules
 		if (Target.Type != TargetType.Client)
 		{
 			PrivateDependencyModuleNames.Add("SQLiteCore");
+
+			string PostgresPath = Path.Combine(ModuleDirectory, "..", "Onset", "ThirdParty", "PostgreSQL");
+			PublicIncludePaths.Add(Path.Combine(PostgresPath, "include"));
+			PublicAdditionalLibraries.Add(Path.Combine(PostgresPath, "lib", "libpq.lib"));
+
+			string BinariesDir = Path.Combine(PostgresPath, "bin");
+			foreach (string DllFile in Directory.GetFiles(BinariesDir, "*.dll"))
+			{
+				RuntimeDependencies.Add(Path.Combine("$(BinaryOutputDir)", Path.GetFileName(DllFile)), DllFile);
+			}
 		}
 		else
 		{

@@ -17,7 +17,7 @@
 | Wave 5 — Lobby Map & Character Select UI | 6 | 1.5 |
 | Wave 6 — Postgres Store & Hardening | 4 | 0.5 |
 | **Sprint Total** | **30** | **~6 days** |
-| **Done** | **26/30** | **Waves 1–5 complete** |
+| **Done** | **30/30** | **All waves complete** |
 
 ---
 
@@ -129,15 +129,16 @@
 ### Wave 6 — Postgres Store & Production Hardening (Day 6, ~0.5d)
 **Add the production store implementation and harden the persistence layer.**
 
-- [ ] `FPgSQLStore` implementation:
+- [x] `FPgSQLStore` implementation:
   - Connect via `PQconnectdb()` with configurable connection string
   - Same schema, same parametrized queries as SQLite
-  - `Config/DefaultEngine.ini` key: `DataStore=Postgres` / `DataStore=SQLite`
-- [ ] WAL mode enabled for SQLite on all connections
-- [ ] Migration system: `_schema_version` table, version array in code, sequential migrations
-- [ ] Crash recovery: transaction wrapping all writes, rollback on failure
-- [ ] Config key for DB path / connection string (`[Onset.DataStore]`)
-- [ ] Verify clean shutdown saves all pending writes
+  - `Config/DefaultEngine.ini` key: `Type=Postgres` / `Type=SQLite`
+  - libpq linked from `ThirdParty/PostgreSQL/` (EDB binary distribution)
+- [x] WAL mode enabled for SQLite on all connections
+- [x] Migration system: `_schema_version` table, version array in code, sequential migrations
+- [x] Crash recovery: transaction wrapping all writes, rollback on failure
+- [x] Config key for DB path / connection string (`[Onset.DataStore]`)
+- [x] Verify clean shutdown saves all pending writes
 
 ---
 

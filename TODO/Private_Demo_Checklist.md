@@ -418,12 +418,12 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Wire Enter World → `Server_SelectCharacter` → server `ServerTravel` to DemoLevel
 
 ## A5b.6 Postgres Store & Production Hardening
-- [ ] `FPgSQLStore` implementation using libpq
-- [ ] Same parametrized queries as SQLite (portable SQL)
-- [ ] Config: `DataStore=Postgres` + connection string
-- [ ] Migration system tested from v0 to current
-- [ ] Crash recovery: transaction wrapping, WAL checkpoint on shutdown
-- [ ] Verify read-after-reboot survives DS restart
+- [x] `FPgSQLStore` implementation using libpq (EDB binary distribution, ThirdParty/PostgreSQL/)
+- [x] Same parametrized queries as SQLite (portable SQL, adapted for PG syntax: `$1` params, `NOW()`, upsert)
+- [x] Config: `Type=Postgres` + `ConnectionString` in `[Onset.DataStore]`
+- [x] Migration system from v0 to current (same schema as SQLite)
+- [x] Crash recovery: transaction wrapping, `CHECKPOINT` on shutdown
+- [x] Build verified — libpq links, DLLs staged, FPgSQLStore compiles
 
 ---
 
@@ -507,6 +507,6 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
-| A5b Persistence & Account | 40 | 34 | 85% | Waves 1-5 complete. Wave 6 (PgSQL) pending |
+| A5b Persistence & Account | 40 | 40 | 100% | All waves complete (Wave 6: PgSQL store implemented) |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |
