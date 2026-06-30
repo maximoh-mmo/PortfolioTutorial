@@ -1,4 +1,7 @@
-#include "Data/FSQLiteStore.h"
+#include "FSQLiteStore.h"
+
+#ifndef ONSETDATASTORE_CLIENT_ONLY
+
 #include "sqlite/sqlite3.h"
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
@@ -383,3 +386,5 @@ void FSQLiteStore::SaveAll()
 		Exec("PRAGMA wal_checkpoint(PASSIVE);");
 	}
 }
+
+#endif

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
-#include "Data/OnsetPlayerDataTypes.h"
+#include "OnsetPlayerDataTypes.h"
 #include "OnsetLobbyHUD.generated.h"
 
 UCLASS()

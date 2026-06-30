@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
-#include "Data/OnsetPlayerDataTypes.h"
+#include "OnsetPlayerDataTypes.h"
 #include "CharacterSelectWidget.generated.h"
 
 class UButton;

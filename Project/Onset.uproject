@@ -43,6 +43,10 @@
 		{
 			"Name": "SQLiteCore",
 			"Enabled": true
+		},
+		{
+			"Name": "CommonUI",
+			"Enabled": true
 		}
 	]
 }

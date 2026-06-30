@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Data/OnsetPlayerDataTypes.h"
+#include "OnsetPlayerDataTypes.h"
 
 struct IPlayerDataStore
 {

@@ -8,7 +8,7 @@
 #include "Multiplayer/OnsetGameModeBase.h"
 #include "Player/CursorManager.h"
 #include "Core/TargetingComponent.h"
-#include "Data/OnsetPlayerDataTypes.h"
+#include "OnsetPlayerDataTypes.h"
 #include "EnhancedInputSubsystems.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"

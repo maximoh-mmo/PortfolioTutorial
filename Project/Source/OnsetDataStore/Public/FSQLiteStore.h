@@ -1,7 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Data/IPlayerDataStore.h"
+#include "IPlayerDataStore.h"
+
+#ifndef ONSETDATASTORE_CLIENT_ONLY
 
 class FSQLiteStore : public IPlayerDataStore
 {
@@ -35,3 +37,5 @@ private:
 	int32 GetSchemaVersion();
 	void RunMigration(int32 FromVersion);
 };
+
+#endif

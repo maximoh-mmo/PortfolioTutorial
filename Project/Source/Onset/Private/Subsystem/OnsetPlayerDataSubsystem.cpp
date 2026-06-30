@@ -1,6 +1,5 @@
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
-#include "Data/FSQLiteStore.h"
-#include "Data/FPgSQLStore.h"
+#include "DataStoreFactory.h"
 #include "Engine/World.h"
 #include "Misc/ConfigCacheIni.h"
 #include "UObject/UObjectGlobals.h"
@@ -30,28 +29,12 @@ void UOnsetPlayerDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 
 	bool bInitialized = false;
-
-	if (DataStoreType.Equals(TEXT("SQLite"), ESearchCase::IgnoreCase))
+	Store = CreateDataStore(DataStoreType, ConnectionString, bInitialized);
+	if (!Store)
 	{
-		TUniquePtr<FSQLiteStore> SQLiteStore = MakeUnique<FSQLiteStore>();
-		bInitialized = SQLiteStore->Initialize(ConnectionString);
-		if (bInitialized)
-			Store = MoveTemp(SQLiteStore);
-	}
-	else if (DataStoreType.Equals(TEXT("Postgres"), ESearchCase::IgnoreCase) || DataStoreType.Equals(TEXT("PgSQL"), ESearchCase::IgnoreCase))
-	{
-		TUniquePtr<FPgSQLStore> PgStore = MakeUnique<FPgSQLStore>();
-		bInitialized = PgStore->Initialize(ConnectionString);
-		if (bInitialized)
-			Store = MoveTemp(PgStore);
-	}
-	else
-	{
-		UE_LOG(LogPlayerData, Error, TEXT("Unknown DataStore type: %s — falling back to SQLite"), *DataStoreType);
-		TUniquePtr<FSQLiteStore> SQLiteStore = MakeUnique<FSQLiteStore>();
-		bInitialized = SQLiteStore->Initialize(ConnectionString);
-		if (bInitialized)
-			Store = MoveTemp(SQLiteStore);
+		UE_LOG(LogPlayerData, Warning, TEXT("DataStore type '%s' failed or unavailable — falling back to SQLite"), *DataStoreType);
+		DataStoreType = TEXT("SQLite");
+		Store = CreateDataStore(DataStoreType, ConnectionString, bInitialized);
 	}
 
 	UE_LOG(LogPlayerData, Log, TEXT("UOnsetPlayerDataSubsystem: initialized with %s (success=%d)"), *DataStoreType, bInitialized);

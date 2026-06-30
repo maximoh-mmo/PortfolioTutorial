@@ -2,10 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "Data/OnsetPlayerDataTypes.h"
+#include "OnsetPlayerDataTypes.h"
+#include "IPlayerDataStore.h"
 #include "OnsetPlayerDataSubsystem.generated.h"
-
-struct IPlayerDataStore;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogPlayerData, Log, All);
 

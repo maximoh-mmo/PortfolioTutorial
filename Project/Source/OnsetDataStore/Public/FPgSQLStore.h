@@ -1,7 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Data/IPlayerDataStore.h"
+#include "IPlayerDataStore.h"
+
+#ifndef ONSETDATASTORE_CLIENT_ONLY
 
 class FPgSQLStore : public IPlayerDataStore
 {
@@ -20,3 +22,5 @@ public:
 	virtual bool DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex) override;
 	virtual void SaveAll() override;
 };
+
+#endif

@@ -13,14 +13,14 @@ public class Onset : ModuleRules
 			"EnhancedInput", "AIModule", "UMG", "NavigationSystem", "StateTreeModule", "GameplayStateTreeModule",
 			"GameplayAbilities", "GameplayTags", "GameplayTasks"});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "SlateCore", "AITestSuite" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "SlateCore", "AITestSuite", "CommonUI"});
 
 		// Online features
 		PrivateDependencyModuleNames.Add("OnlineSubsystem");
 		PrivateDependencyModuleNames.Add("OnlineSubsystemSteam");
 
-		// SQLite persistence
-		PrivateDependencyModuleNames.Add("SQLiteCore");
+		// Data store (SQLite/PostgreSQL) — abstracted via IPlayerDataStore
+		PublicDependencyModuleNames.Add("OnsetDataStore");
 	}
 }
 	
