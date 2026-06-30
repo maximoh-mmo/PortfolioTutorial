@@ -3,9 +3,16 @@
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
 
-static void LogSQLError(struct sqlite3* InDB, const char* Context)
+static void LogSQLError(struct sqlite3* InDB, const char* Context, bool bFatal = true)
 {
-	UE_LOG(LogTemp, Error, TEXT("SQLite %s: %hs"), ANSI_TO_TCHAR(Context), sqlite3_errmsg(InDB));
+	if (bFatal)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SQLite %s: %hs"), ANSI_TO_TCHAR(Context), sqlite3_errmsg(InDB));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SQLite %s: %hs"), ANSI_TO_TCHAR(Context), sqlite3_errmsg(InDB));
+	}
 }
 
 static FString NormalizePath(const FString& Path)
@@ -63,7 +70,7 @@ bool FSQLiteStore::Initialize(const FString& InConnectionString)
 
 	if (sqlite3_open(TCHAR_TO_UTF8(*DBPath), &DB) != SQLITE_OK)
 	{
-		LogSQLError(DB, "sqlite3_open");
+		LogSQLError(DB, "sqlite3_open", false);
 		return false;
 	}
 
