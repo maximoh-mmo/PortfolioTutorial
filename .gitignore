@@ -67,3 +67,6 @@ Tools/EpisodeExporter/config.local.*
 
 # opencode internal plans
 .opencode/
+
+# Packaged builds
+/Package/

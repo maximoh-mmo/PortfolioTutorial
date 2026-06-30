@@ -41,6 +41,8 @@ AOnsetPlayerController::AOnsetPlayerController()
 		BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
 	}
 	CheatClass = UOnsetCheatManager::StaticClass();
+
+	CharacterSelectWidgetClass = UCharacterSelectWidget::StaticClass();
 }
 
 void AOnsetPlayerController::RequestSteamAuth()
@@ -557,7 +559,7 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 		*PS->GetPlayerName(), SlotIndex, *CharData.CharacterName);
 
 	// Travel all players to the game world
-	GetWorld()->ServerTravel(TEXT("DemoLevel?game=/Game/OnsetGameMode.OnsetGameMode_C"));
+	GetWorld()->ServerTravel(TEXT("/Game/DemoLevel.DemoLevel?game=/Script/Onset.OnsetGameModeBase"));
 }
 
 void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotIndex, const FString& CharacterName)
