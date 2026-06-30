@@ -93,14 +93,24 @@ void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccou
 {
 	UE_LOG(LogTemp, Log, TEXT("Client_AccountData: received %d slots"), AccountData.Slots.Num());
 
-	if (CharacterSelectWidgetClass)
+	bShowMouseCursor = true;
+	SetInputMode(FInputModeGameAndUI());
+
+	if (!CharacterSelectWidgetClass)
 	{
-		CharacterSelectWidget = CreateWidget<UCharacterSelectWidget>(this, CharacterSelectWidgetClass);
-		if (CharacterSelectWidget)
-		{
-			CharacterSelectWidget->SetAccountData(AccountData);
-			CharacterSelectWidget->AddToViewport(200);
-		}
+		CharacterSelectWidgetClass = UCharacterSelectWidget::StaticClass();
+	}
+
+	CharacterSelectWidget = CreateWidget<UCharacterSelectWidget>(this, CharacterSelectWidgetClass);
+	if (CharacterSelectWidget)
+	{
+		CharacterSelectWidget->SetAccountData(AccountData);
+		CharacterSelectWidget->AddToViewport(200);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Client_AccountData: failed to create CharacterSelectWidget (Class=%s)"),
+			CharacterSelectWidgetClass ? *CharacterSelectWidgetClass->GetName() : TEXT("None"));
 	}
 }
 

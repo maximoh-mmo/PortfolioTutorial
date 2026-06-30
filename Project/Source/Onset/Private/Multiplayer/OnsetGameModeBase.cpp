@@ -18,10 +18,11 @@
 
 DEFINE_LOG_CATEGORY(LogSteamAuth);
 
-AOnsetGameModeBase::AOnsetGameModeBase()
+	AOnsetGameModeBase::AOnsetGameModeBase()
 {
 	DefaultPawnClass = AOnsetPlayerCharacter::StaticClass();
 	PlayerControllerClass = AOnsetPlayerController::StaticClass();
+	PlayerStateClass = AOnsetPlayerState::StaticClass();
 	GameStateClass = AOnsetGameState::StaticClass();
 	HUDClass = nullptr;
 }
