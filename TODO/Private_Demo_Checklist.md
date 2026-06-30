@@ -371,50 +371,51 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 # A5b — PLAYER PERSISTENCE & ACCOUNT SYSTEM (est. 6 days)
 
 ## A5b.1 Foundation & Schema Design
-- [ ] Add SQLite amalgamation to `Source/Onset/ThirdParty/SQLite/`
-- [ ] Update `Onset.Build.cs` — add SQLite include path and lib
-- [ ] Create `IPlayerDataStore` abstract interface
-- [ ] Create `FSQLiteStore` implementing `IPlayerDataStore`
-- [ ] Create `FPgSQLStore` stub implementing `IPlayerDataStore`
-- [ ] Create `UOnsetPlayerDataSubsystem` (world subsystem, DS only)
-- [ ] Schema: `accounts` table with composite PK `(platform, platform_id)`
-- [ ] Schema: `characters` table with slot_index (0-2), JSON blobs for inventory/equipment/quests
-- [ ] Schema: `_schema_version` table with migration runner
-- [ ] WAL mode enabled on SQLite connections
-- [ ] Config key for store selection (`DataStore=SQLite|Postgres`)
+- [x] Add SQLite amalgamation to `Source/Onset/ThirdParty/SQLite/`
+- [x] Update `Onset.Build.cs` — add SQLite include path and lib
+- [x] Create `IPlayerDataStore` abstract interface
+- [x] Create `FSQLiteStore` implementing `IPlayerDataStore`
+- [x] Create `FPgSQLStore` stub implementing `IPlayerDataStore`
+- [x] Create `UOnsetPlayerDataSubsystem` (world subsystem, DS only)
+- [x] Schema: `accounts` table with composite PK `(platform, platform_id)`
+- [x] Schema: `characters` table with slot_index (0-2), JSON blobs for inventory/equipment/quests
+- [x] Schema: `_schema_version` table with migration runner
+- [x] WAL mode enabled on SQLite connections
+- [x] Config key for store selection (`DataStore=SQLite|Postgres`)
 
 ## A5b.2 Data Structs & Serialization
-- [ ] Create `FOnsetCharacterSlotData` (BlueprintType) — SlotIndex, CharacterName, Level, bOccupied
-- [ ] Create `FOnsetAccountData` (BlueprintType) — PlatformID, Platform, Slots[3]
-- [ ] Create `FOnsetFullCharacterData` — full character state (progression, attributes, position, JSON blobs)
-- [ ] `UOnsetPlayerDataSubsystem` serialization: DB row → struct / struct → DB bind
+- [x] Create `FOnsetCharacterSlotData` (BlueprintType) — SlotIndex, CharacterName, Level, bOccupied
+- [x] Create `FOnsetAccountData` (BlueprintType) — PlatformID, Platform, Slots[3]
+- [x] Create `FOnsetFullCharacterData` — full character state (progression, attributes, position, JSON blobs)
+- [x] `UOnsetPlayerDataSubsystem` serialization: DB row → struct / struct → DB bind
 
 ## A5b.3 SteamID Extraction & Auth Integration
-- [ ] Include Steamworks SDK headers in GameMode for `ISteamGameServer`
-- [ ] `ValidateAuthTicket()` calls `SteamGameServer()->BeginAuthSession()` to get SteamID
-- [ ] Store `PlayerPlatformID` (FString) and `PlayerPlatform` (FString) on `AOnsetPlayerState`
-- [ ] PostLogin: `LoadAccount(Platform, PlatformID)` → auto-create if first login
-- [ ] Send `Client_AccountData(FOnsetAccountData)` to client
+- [x] Include Steamworks SDK headers in GameMode for `ISteamGameServer`
+- [x] `ValidateAuthTicket()` calls `SteamGameServer()->BeginAuthSession()` to get SteamID
+- [x] Store `PlayerPlatformID` (FString) and `PlayerPlatform` (FString) on `AOnsetPlayerState`
+- [x] PostLogin: `LoadAccount(Platform, PlatformID)` → auto-create if first login
+- [x] Send `Client_AccountData(FOnsetAccountData)` to client
 
 ## A5b.4 Login → Auto-Create → Enter World
-- [ ] Add `Client_AccountData`, `Client_CharacterData`, `Server_SelectCharacter`, `Server_CreateCharacter`, `Server_SaveCharacter` RPCs
-- [ ] `Server_SelectCharacter(int32 SlotIndex)` — loads character, spawns pawn, applies save data, sends `Client_CharacterData`
-- [ ] `Server_CreateCharacter(int32 SlotIndex, FString Name)` — creates default character, auto-selects
-- [ ] Save-on-disconnect in `AOnsetPlayerController::EndPlay` / `Logout`
-- [ ] Periodic auto-save: 5-min timer in `UOnsetPlayerDataSubsystem` saves all connected players
-- [ ] Save on death placeholder (full state saved)
+- [x] Add `Client_AccountData`, `Client_CharacterData`, `Server_SelectCharacter`, `Server_CreateCharacter`, `Server_SaveCharacter` RPCs
+- [x] `Server_SelectCharacter(int32 SlotIndex)` — loads character, spawns pawn, applies save data, sends `Client_CharacterData`
+- [x] `Server_CreateCharacter(int32 SlotIndex, FString Name)` — creates default character, auto-selects
+- [x] Save-on-disconnect in `AOnsetPlayerController::EndPlay` / `Logout`
+- [x] Periodic auto-save: 5-min timer in `UOnsetPlayerDataSubsystem` saves all connected players
+- [x] Save on death placeholder (full state saved)
 
 ## A5b.5 Lobby Map & Character Select UI
-- [ ] Create `/Game/LobbyMap` — lightweight level, no NPCs, no combat
-- [ ] Set as default map for DS launch
-- [ ] Implement `WBP_CharacterSelect` widget:
+- [x] Create `/Game/Maps/MainMenu` — serves as lobby + main menu, no NPCs/combat
+- [x] Set as default map for DS launch (`ServerDefaultMap` in config)
+- [x] Implement `AOnsetLobbyHUD` (canvas-based, replaces UMG):
   - 3 slot panels showing name + level + status
-  - Create button for empty slots
-  - Select + Enter World buttons for occupied slots
-  - Touch-friendly (large hit zones, virtual keyboard for name)
-- [ ] Wire create → `Server_CreateCharacter` → slot fills
-- [ ] Wire select → highlight slot → enable Enter World
-- [ ] Wire Enter World → `Server_SelectCharacter` → server `ServerTravel` to DemoLevel
+  - Create/select on each slot, Enter to confirm
+  - Keyboard input: 1/2/3 select, Enter confirm
+- [x] Implement `AOnsetMenuHUD` (canvas-based main menu)
+- [x] Implement `AOnsetMenuGameMode` (HUDClass = AOnsetMenuHUD)
+- [x] Wire create → `Server_CreateCharacter` → slot fills
+- [x] Wire select → highlight slot → Enter → `Server_SelectCharacter`
+- [x] Wire Enter World → `Server_SelectCharacter` → server `ServerTravel` to DemoLevel
 
 ## A5b.6 Postgres Store & Production Hardening
 - [ ] `FPgSQLStore` implementation using libpq
@@ -506,6 +507,6 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
-| A5b Persistence & Account | 30 | 0 | 0% | New sprint (DB, SteamID, character select, lobby) |
+| A5b Persistence & Account | 40 | 34 | 85% | Waves 1-5 complete. Wave 6 (PgSQL) pending |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |

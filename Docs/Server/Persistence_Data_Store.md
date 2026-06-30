@@ -33,11 +33,20 @@ Provide a clean, swappable persistence backend for the dedicated server. The DS 
 ### **Store Abstraction**
 
 ```
-IPlayerDataStore  ← abstract interface
+IPlayerDataStore  ← abstract interface (in Source/OnsetDataStore/Public/)
       │
       ├── FSQLiteStore   ← file-based, zero dependencies, dev/demo
       │
       └── FPgSQLStore    ← libpq-based, production
+```
+
+**Module structure:** All data store code lives in `Source/OnsetDataStore/`, a separate module from `Onset`. The `OnsetDataStore` module conditionally links `SQLiteCore` — only for non-client targets. Client builds compile only the interface (`IPlayerDataStore`), factory (`DataStoreFactory`), and data types (`OnsetPlayerDataTypes`). Store implementations (`FSQLiteStore`, `FPgSQLStore`) are excluded via the `ONSETDATASTORE_CLIENT_ONLY` define.
+
+The `Onset` module accesses stores only through the factory function:
+
+```cpp
+// DataStoreFactory.h — single entry point
+IPlayerDataStore* CreateDataStore(const FString& StoreType, const FString& ConnectionString);
 ```
 
 The DS selects the implementation via config:
@@ -152,7 +161,7 @@ public:
 
 ### **`UOnsetPlayerDataSubsystem`**
 - World subsystem, DS only
-- `OnWorldBeginPlay()` reads config, calls `CreateStore()`
+- `OnWorldBeginPlay()` reads config, calls `CreateDataStore()` (factory function in `DataStoreFactory.h`)
 - Caches the `IPlayerDataStore*` for the lifetime of the DS
 - `BeginDestroy()` calls `Store->SaveAll()`
 
@@ -165,16 +174,21 @@ DS Startup
     │
     ├── UOnsetPlayerDataSubsystem::Initialize()
     │       │
-    │       ├── Read Config (DataStore=SQLite|Postgres)
+    │       ├── Read Config (DataStore=SQLite|Postgres, path/connection string)
     │       │
-    │       ├── new FSQLiteStore → Initialize(Path)
+    │       ├── CreateDataStore(StoreType, ConnectionString)  ← from OnsetDataStore module
     │       │       │
-    │       │       ├── sqlite3_open(path)
-    │       │       ├── PRAGMA journal_mode=WAL
-    │       │       ├── RunMigrations()
-    │       │       └── Ready
+    │       │       ├── [Server build]: new FSQLiteStore → Initialize(Path)
+    │       │       │       ├── sqlite3_open(path)
+    │       │       │       ├── PRAGMA journal_mode=WAL
+    │       │       │       ├── RunMigrations()
+    │       │       │       └── Ready
+    │       │       │
+    │       │       └── (or) new FPgSQLStore → Initialize(ConnString)
     │       │
-    │       └── (or) new FPgSQLStore → Initialize(ConnString)
+    │       ├── [Client build]: returns stub/null (stores compiled out via ONSETDATASTORE_CLIENT_ONLY)
+    │       │
+    │       └── Caches IPlayerDataStore* for subsystem lifetime
     │
     └── Ready for player connections
 ```
@@ -193,7 +207,8 @@ DS Startup
 
 - The data store is **DS-only**. Clients never connect to the database directly.  
 - All data travels to/from clients via RPCs on `AOnsetPlayerController`.  
-- `UOnsetPlayerDataSubsystem` has `HasAuthority()` guards — no client ever instantiates a store.  
+- The `OnsetDataStore` module compiles store implementations out on client targets (`ONSETDATASTORE_CLIENT_ONLY`). Client builds link only the interface + data types.  
+- `DataStoreFactory` on a client build returns `nullptr` — `UOnsetPlayerDataSubsystem` validates the pointer before use.  
 
 ---
 

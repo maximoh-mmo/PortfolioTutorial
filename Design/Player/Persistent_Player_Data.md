@@ -96,49 +96,55 @@ public:
 Current implementation: **Steam** (via `SteamGameServer()->BeginAuthSession()`).  
 Future implementations: **Xbox Live**, **PSN**, **Nintendo Account** — each adds one `.cpp` file.
 
+**Note:** Auth files (`IPlatformAuth`, `FSteamAuth`) remain in the `Onset` module, not moved to `OnsetDataStore` — they handle platform identity, not data persistence.
+
 ---
 
 ## **Data Flow Diagram**
 
 ```
-Client                     DS (GameMode)              UOnsetPlayerDataSubsystem        IPlayerDataStore
-──────                     ──────────────             ─────────────────────────        ───────────────
-  │                            │                              │                            │
-  │── Connect ───────────────► │                              │                            │
-  │                            │                              │                            │
-  │── Auth Ticket ───────────► │                              │                            │
-  │                            │── BeginAuthSession ────────► │                            │
-  │                            │  ← SteamID (uint64) ─────── │                            │
-  │                            │                              │                            │
-  │                            │── LoadAccount(Steam, ID) ──►│                            │
-  │                            │                              ├── SELECT * FROM accounts ──►│
-  │                            │                              │  ← row or empty ───────────│
-  │                            │                              │                            │
-  │                            │  [if no account:             │                            │
-  │                            │   CreateAccount(Steam, ID)] ─┤── INSERT INTO accounts ──►│
-  │                            │                              │                            │
-  │◄── Client_AccountData ────│                              │                            │
-  │                            │                              │                            │
-  │ [Character Select]         │                              │                            │
-  │                            │                              │                            │
-  │── Server_SelectSlot(1) ──►│                              │                            │
-  │                            │── LoadCharacter(Steam,ID,1)►│                            │
-  │                            │                              ├── SELECT * FROM chars ────►│
-  │                            │                              │  ← full row ──────────────│
-  │                            │                              │                            │
-  │                            │  [Spawn pawn at saved pos]   │                            │
-  │                            │  [Apply saved attributes]    │                            │
-  │◄── Client_CharacterData ──│                              │                            │
-  │                            │                              │                            │
-  │ [Enter World]              │                              │                            │
-  │                            │                              │                            │
-  │   ... gameplay ...         │                              │                            │
-  │                            │                              │                            │
-  │── Server_SaveCharacter ──►│                              │                            │
-  │                            │── SaveCharacter ───────────►│                            │
-  │                            │                              ├── UPDATE characters SET ──►│
-  │                            │                              │  ← done ─────────────────│
-  │◄── Client_SaveComplete ───│                              │                            │
+Client                     DS (GameMode)              UOnsetPlayerDataSubsystem        CreateDataStore()         IPlayerDataStore
+──────                     ──────────────             ─────────────────────────        ────────────────         ───────────────
+  │                            │                              │                            │                           │
+  │── Connect ───────────────► │                              │                            │                           │
+  │                            │                              │                            │                           │
+  │── Auth Ticket ───────────► │                              │                            │                           │
+  │                            │── BeginAuthSession ────────► │                            │                           │
+  │                            │  ← SteamID (uint64) ─────── │                            │                           │
+  │                            │                              │                            │                           │
+  │                            │  [OnWorldBeginPlay:          │                            │                           │
+  │                            │   CreateDataStore("SQLite",  │── factory ───────────────► │                           │
+  │                            │     "path/to/db.db")]        │  ← FSQLiteStore* ──────── │                           │
+  │                            │                              │                            │                           │
+  │                            │── LoadAccount(Steam, ID) ──►│                            │                           │
+  │                            │                              ├── SELECT * FROM accounts ──────────────────────────►│
+  │                            │                              │  ← row or empty ───────────────────────────────────│
+  │                            │                              │                            │                           │
+  │                            │  [if no account:             │                            │                           │
+  │                            │   CreateAccount(Steam, ID)] ─┤── INSERT INTO accounts ───────────────────────────►│
+  │                            │                              │                            │                           │
+  │◄── Client_AccountData ────│                              │                            │                           │
+  │                            │                              │                            │                           │
+  │ [Character Select]         │                              │                            │                           │
+  │                            │                              │                            │                           │
+  │── Server_SelectSlot(1) ──►│                              │                            │                           │
+  │                            │── LoadCharacter(Steam,ID,1)►│                            │                           │
+  │                            │                              ├── SELECT * FROM chars ────────────────────────────►│
+  │                            │                              │  ← full row ─────────────────────────────────────│
+  │                            │                              │                            │                           │
+  │                            │  [Spawn pawn at saved pos]   │                            │                           │
+  │                            │  [Apply saved attributes]    │                            │                           │
+  │◄── Client_CharacterData ──│                              │                            │                           │
+  │                            │                              │                            │                           │
+  │ [Enter World]              │                              │                            │                           │
+  │                            │                              │                            │                           │
+  │   ... gameplay ...         │                              │                            │                           │
+  │                            │                              │                            │                           │
+  │── Server_SaveCharacter ──►│                              │                            │                           │
+  │                            │── SaveCharacter ───────────►│                            │                           │
+  │                            │                              ├── UPDATE characters SET ──────────────────────────►│
+  │                            │                              │  ← done ────────────────────────────────────────│
+  │◄── Client_SaveComplete ───│                              │                            │                           │
 ```
 
 ---
@@ -182,6 +188,8 @@ SQLitePath=../../OnsetDB/playerdata.db
 ; PgSQLConnectionString=host=localhost dbname=onset user=onset password=onset
 ```
 
+The config is read by `UOnsetPlayerDataSubsystem::Initialize()` which then calls `CreateDataStore(StoreType, ConnectionString)` from the `OnsetDataStore` module. On client builds, the factory returns `nullptr` — the subsystem handles this gracefully.
+
 ---
 
 ## **Key Decisions Summary**
@@ -196,3 +204,5 @@ SQLitePath=../../OnsetDB/playerdata.db
 | Future data | JSON blobs with version field | Schema stable while systems evolve |
 | Save timing | On-trigger + 5-min timer + disconnect | No per-tick writes, max 5m loss on crash |
 | Auth abstraction | `IPlatformAuth` interface | One `.cpp` per platform |
+| Module split | `OnsetDataStore` module with factory | Client binary free of SQLiteCore; `ONSETDATASTORE_CLIENT_ONLY` define guards impls |
+| Factory pattern | `CreateDataStore()` entry point | Single include from Onset module; no direct `new FSQLiteStore` in subsystem |
