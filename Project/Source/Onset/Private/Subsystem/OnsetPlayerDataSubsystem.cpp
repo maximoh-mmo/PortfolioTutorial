@@ -11,12 +11,6 @@ void UOnsetPlayerDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	if (IsRunningCommandlet())
-	{
-		UE_LOG(LogPlayerData, Log, TEXT("UOnsetPlayerDataSubsystem: skipping init during commandlet (cook)"));
-		return;
-	}
-
 	UWorld* World = GetWorld();
 	if (!World || World->GetNetMode() == NM_Client)
 	{
@@ -97,9 +91,6 @@ void UOnsetPlayerDataSubsystem::StopAutoSaveTimer()
 bool UOnsetPlayerDataSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
 	if (!Super::ShouldCreateSubsystem(Outer))
-		return false;
-
-	if (IsRunningCommandlet())
 		return false;
 
 	UWorld* World = Cast<UWorld>(Outer);
