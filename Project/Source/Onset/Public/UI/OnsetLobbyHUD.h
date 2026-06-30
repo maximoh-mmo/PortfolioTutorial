@@ -19,4 +19,5 @@ protected:
 private:
 	FOnsetAccountData AccountData;
 	bool bHasAccountData = false;
+	int32 SelectedSlot = -1;
 };
