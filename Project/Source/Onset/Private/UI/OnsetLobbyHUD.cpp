@@ -46,9 +46,27 @@ void AOnsetLobbyHUD::DrawHUD()
 	}
 
 	// Handle slot selection input
-	if (PC->WasInputKeyJustPressed(EKeys::One))   SelectedSlot = 0;
-	if (PC->WasInputKeyJustPressed(EKeys::Two))   SelectedSlot = 1;
-	if (PC->WasInputKeyJustPressed(EKeys::Three)) SelectedSlot = 2;
+	for (int32 i = 0; i < 3; ++i)
+	{
+		bool bPressed = false;
+		if (i == 0) bPressed = PC->WasInputKeyJustPressed(EKeys::One);
+		if (i == 1) bPressed = PC->WasInputKeyJustPressed(EKeys::Two);
+		if (i == 2) bPressed = PC->WasInputKeyJustPressed(EKeys::Three);
+
+		if (bPressed)
+		{
+			bool bOccupied = (i < AccountData.Slots.Num() && AccountData.Slots[i].bOccupied);
+			if (bOccupied)
+			{
+				SelectedSlot = i;
+			}
+			else
+			{
+				FString DefaultName = FString::Printf(TEXT("Hero_%d"), i + 1);
+				PC->Server_CreateCharacter(i, DefaultName);
+			}
+		}
+	}
 
 	for (int32 i = 0; i < 3; ++i)
 	{
