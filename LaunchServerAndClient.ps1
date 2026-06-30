@@ -10,7 +10,7 @@ Get-Process -Name "UnrealEditor-Cmd","Onset" -ErrorAction SilentlyContinue | Sto
 # 2. Start Dedicated Server (editor Cmd process)
 Write-Host "[1/2] Starting Dedicated Server..." -ForegroundColor Green
 $ServerProc = Start-Process -FilePath "$EngineDir\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" `
-    -ArgumentList "`"$ProjectPath`" /Game/DemoLevel.DemoLevel?listen -server -log -PORT=7777" `
+    -ArgumentList "`"$ProjectPath`" /Game/DemoLevel.DemoLevel?game=/Script/Onset.OnsetLobbyGameMode -server -log -PORT=7777" `
     -WindowStyle Normal -PassThru
 Write-Host "  Server PID: $($ServerProc.Id)" -ForegroundColor Gray
 
