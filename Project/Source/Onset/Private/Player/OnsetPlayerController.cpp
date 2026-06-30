@@ -576,7 +576,7 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 		*PS->GetPlayerName(), SlotIndex, *CharData.CharacterName);
 
 	// Travel all players to the game world
-	GetWorld()->ServerTravel(TEXT("/Game/DemoLevel.DemoLevel?game=/Script/Onset.OnsetGameModeBase"));
+	GetWorld()->ServerTravel(TEXT("DemoLevel?game=/Script/Onset.OnsetGameModeBase"));
 }
 
 void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotIndex, const FString& CharacterName)
