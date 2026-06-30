@@ -8,18 +8,33 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Kismet/GameplayStatics.h"
+#include "Styling/CoreStyle.h"
 
 void UMainMenuWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::NativeConstruct"));
 	BuildUI();
 }
 
 void UMainMenuWidget::BuildUI()
 {
+	UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::BuildUI started"));
+
+	if (!WidgetTree)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MainMenuWidget: WidgetTree is null"));
+		return;
+	}
+
 	UCanvasPanel* Root = NewObject<UCanvasPanel>(this);
-	if (!Root) return;
+	if (!Root)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MainMenuWidget: Failed to create CanvasPanel"));
+		return;
+	}
 	WidgetTree->RootWidget = Root;
+	UE_LOG(LogTemp, Log, TEXT("MainMenuWidget: Root CanvasPanel created"));
 
 	UVerticalBox* MainVBox = NewObject<UVerticalBox>(Root);
 	Root->AddChild(MainVBox);
@@ -29,6 +44,7 @@ void UMainMenuWidget::BuildUI()
 		VBoxSlot->SetAlignment(FVector2D(0.5f, 0.5f));
 		VBoxSlot->SetSize(FVector2D(400.0f, 300.0f));
 	}
+	UE_LOG(LogTemp, Log, TEXT("MainMenuWidget: VerticalBox added"));
 
 	UTextBlock* TitleText = NewObject<UTextBlock>(MainVBox);
 	TitleText->SetText(FText::FromString(TEXT("ONLINE")));
@@ -49,6 +65,7 @@ void UMainMenuWidget::BuildUI()
 	ConnectButton->SetContent(BtnLabel);
 	ConnectButton->OnClicked.AddDynamic(this, &UMainMenuWidget::OnConnectClicked);
 	MainVBox->AddChild(ConnectButton);
+	UE_LOG(LogTemp, Log, TEXT("MainMenuWidget: ConnectButton added"));
 
 	StatusText = NewObject<UTextBlock>(MainVBox);
 	StatusText->SetText(FText::FromString(TEXT("")));
@@ -58,6 +75,8 @@ void UMainMenuWidget::BuildUI()
 	{
 		SSlot->SetPadding(FMargin(0.0f, 20.0f, 0.0f, 0.0f));
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::BuildUI completed"));
 }
 
 void UMainMenuWidget::OnConnectClicked()

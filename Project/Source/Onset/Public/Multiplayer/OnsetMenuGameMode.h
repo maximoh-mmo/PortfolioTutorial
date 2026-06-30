@@ -11,6 +11,4 @@ class ONSET_API AOnsetMenuGameMode : public AGameModeBase
 
 public:
 	AOnsetMenuGameMode();
-
-	virtual void BeginPlay() override;
 };

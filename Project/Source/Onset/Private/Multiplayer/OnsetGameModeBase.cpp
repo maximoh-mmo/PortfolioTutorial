@@ -4,6 +4,7 @@
 #include "Multiplayer/OnsetGameModeBase.h"
 
 #include "Engine/Engine.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Engine/PlayerStartPIE.h"
 #include "EngineUtils.h"
 #include "GAS/OnsetAttributeSet.h"
@@ -21,6 +22,11 @@ DEFINE_LOG_CATEGORY(LogSteamAuth);
 	AOnsetGameModeBase::AOnsetGameModeBase()
 {
 	DefaultPawnClass = AOnsetPlayerCharacter::StaticClass();
+	static ConstructorHelpers::FClassFinder<AOnsetPlayerCharacter> PlayerBP(TEXT("/Game/Characters/Player/PlayerCharacter"));
+	if (PlayerBP.Class != nullptr)
+	{
+		DefaultPawnClass = PlayerBP.Class;
+	}
 	PlayerControllerClass = AOnsetPlayerController::StaticClass();
 	PlayerStateClass = AOnsetPlayerState::StaticClass();
 	GameStateClass = AOnsetGameState::StaticClass();
