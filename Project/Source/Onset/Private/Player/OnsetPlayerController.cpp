@@ -19,6 +19,7 @@
 #include "Player/InteractionComponent.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "UI/CharacterSelectWidget.h"
+#include "UI/OnsetLobbyHUD.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerState.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
@@ -89,9 +90,9 @@ void AOnsetPlayerController::ClearAuthTimeout()
 	GetWorldTimerManager().ClearTimer(AuthTimeoutTimerHandle);
 }
 
-void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccountData& AccountData)
+void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccountData& InAccountData)
 {
-	UE_LOG(LogTemp, Log, TEXT("Client_AccountData: received %d slots"), AccountData.Slots.Num());
+	UE_LOG(LogTemp, Log, TEXT("Client_AccountData: received %d slots"), InAccountData.Slots.Num());
 
 	bShowMouseCursor = true;
 	SetInputMode(FInputModeGameAndUI());
@@ -104,13 +105,19 @@ void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccou
 	CharacterSelectWidget = CreateWidget<UCharacterSelectWidget>(this, CharacterSelectWidgetClass);
 	if (CharacterSelectWidget)
 	{
-		CharacterSelectWidget->SetAccountData(AccountData);
+		CharacterSelectWidget->SetAccountData(InAccountData);
 		CharacterSelectWidget->AddToViewport(200);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Client_AccountData: failed to create CharacterSelectWidget (Class=%s)"),
 			CharacterSelectWidgetClass ? *CharacterSelectWidgetClass->GetName() : TEXT("None"));
+	}
+
+	// Also pass to lobby HUD as fallback
+	if (AOnsetLobbyHUD* LobbyHUD = GetHUD<AOnsetLobbyHUD>())
+	{
+		LobbyHUD->ShowAccountData(InAccountData);
 	}
 }
 

@@ -1,10 +1,11 @@
 #include "Multiplayer/OnsetLobbyGameMode.h"
+#include "UI/OnsetLobbyHUD.h"
 #include "Engine/World.h"
 
 AOnsetLobbyGameMode::AOnsetLobbyGameMode()
 {
 	DefaultPawnClass = nullptr;
-	HUDClass = nullptr;
+	HUDClass = AOnsetLobbyHUD::StaticClass();
 }
 
 void AOnsetLobbyGameMode::TravelToGame()
