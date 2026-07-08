@@ -4,8 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
-#include "OnlineSubsystem.h"
-#include "Interfaces/OnlineIdentityInterface.h"
+#include "OnsetPlayerDataTypes.h"
 #include "GameFramework/PlayerController.h"
 #include "OnsetPlayerController.generated.h"
 
@@ -15,7 +14,6 @@ class AOnsetPlayerAIController;
 class UInteractionComponent;
 class UGameplayAbility;
 class UGamepadCursorWidget;
-class UCharacterSelectWidget;
 class UCursorManager;
 class UInputAction;
 class UInputMappingContext;
@@ -41,7 +39,8 @@ public:
 	
 	void EnableAutoCombat();
 	void DisableAutoCombat();
-	const AController* GetActiveController() const;    
+	const AController* GetActiveController() const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -51,6 +50,8 @@ protected:
 	
 	virtual void OnUnPossess() override;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Onset|Auth")           
+	FOnsetAccountData CachedAccountData; 
 private:
 	// --- Auto Combat ---
 	
@@ -65,7 +66,7 @@ private:
 	float IdleAutoCombatDelay = 5.0f;
 	
 	FTimerHandle IdleAutoCombatTimerHandle;
-	
+
 	void ResetIdleTimer();	
 	
 	// --- Input Mapping Contexts ---
@@ -123,13 +124,6 @@ private:
 	TSubclassOf<UGamepadCursorWidget> GamepadCursorWidgetClass;                                                     
 	UPROPERTY()                                                                                                     
 	TObjectPtr<UGamepadCursorWidget> GamepadCursorWidget;
-
-	// --- Character Select ---
-
-	UPROPERTY(EditDefaultsOnly, Category="UI")
-	TSubclassOf<UCharacterSelectWidget> CharacterSelectWidgetClass;
-	UPROPERTY()
-	TObjectPtr<UCharacterSelectWidget> CharacterSelectWidget;         
 	
 	// --- Targeting ---
 	
@@ -182,8 +176,10 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetPvPEnabled(bool bEnabled);
-
+		
 public:
+	const FOnsetAccountData& GetCachedAccountData() const { return CachedAccountData; }  
+
 	UFUNCTION(Client, Reliable)
 	void Client_AccountData(const FOnsetAccountData& AccountData);
 

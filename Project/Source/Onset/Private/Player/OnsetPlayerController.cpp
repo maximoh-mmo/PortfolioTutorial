@@ -5,12 +5,14 @@
 
 #include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
-#include "Multiplayer/OnsetGameModeBase.h"
+#include "Game/OnsetGameModeBase.h"
 #include "Player/CursorManager.h"
 #include "Core/TargetingComponent.h"
 #include "OnsetPlayerDataTypes.h"
 #include "EnhancedInputSubsystems.h"
 #include "NavigationSystem.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
 #include "TimerManager.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
@@ -18,15 +20,12 @@
 #include "GameFramework/PlayerState.h"
 #include "Player/InteractionComponent.h"
 #include "Core/OnsetBaseCharacter.h"
-#include "UI/CharacterSelectWidget.h"
-#include "UI/OnsetLobbyHUD.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerState.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "Player/OnsetCheatManager.h"
 #include "Player/OnsetPlayerAIController.h"
-#include "Player/OnsetPlayerState.h"
 #include "UI/GamepadCursorWidget.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -42,8 +41,6 @@ AOnsetPlayerController::AOnsetPlayerController()
 		BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
 	}
 	CheatClass = UOnsetCheatManager::StaticClass();
-
-	CharacterSelectWidgetClass = UCharacterSelectWidget::StaticClass();
 }
 
 void AOnsetPlayerController::RequestSteamAuth()
@@ -53,7 +50,7 @@ void AOnsetPlayerController::RequestSteamAuth()
 		return;
 	}
 
-	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
+	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld(), STEAM_SUBSYSTEM);
 	if (!Subsystem || !Subsystem->IsEnabled())
 	{
 		UE_LOG(LogSteamAuth, Log, TEXT("Steam not available — skipping auth (LAN mode)."));
@@ -92,33 +89,9 @@ void AOnsetPlayerController::ClearAuthTimeout()
 
 void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccountData& InAccountData)
 {
-	UE_LOG(LogTemp, Log, TEXT("Client_AccountData: received %d slots"), InAccountData.Slots.Num());
-
-	bShowMouseCursor = true;
-	SetInputMode(FInputModeGameAndUI());
-
-	if (!CharacterSelectWidgetClass)
-	{
-		CharacterSelectWidgetClass = UCharacterSelectWidget::StaticClass();
-	}
-
-	CharacterSelectWidget = CreateWidget<UCharacterSelectWidget>(this, CharacterSelectWidgetClass);
-	if (CharacterSelectWidget)
-	{
-		CharacterSelectWidget->SetAccountData(InAccountData);
-		CharacterSelectWidget->AddToViewport(200);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Client_AccountData: failed to create CharacterSelectWidget (Class=%s)"),
-			CharacterSelectWidgetClass ? *CharacterSelectWidgetClass->GetName() : TEXT("None"));
-	}
-
-	// Also pass to lobby HUD as fallback
-	if (AOnsetLobbyHUD* LobbyHUD = GetHUD<AOnsetLobbyHUD>())
-	{
-		LobbyHUD->ShowAccountData(InAccountData);
-	}
+	CachedAccountData = InAccountData;     // new member, consumed by ConnectToServer                           
+	bShowMouseCursor = true;                                                                                    
+	SetInputMode(FInputModeGameAndUI());            
 }
 
 void AOnsetPlayerController::Client_ClearAuthTimeout_Implementation()
