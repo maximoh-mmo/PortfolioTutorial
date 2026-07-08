@@ -1,7 +1,7 @@
 #include "Data/FSteamAuth.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
-#include "Multiplayer/OnsetGameModeBase.h"
+#include "Game/OnsetGameModeBase.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/OnsetPlayerState.h"
 

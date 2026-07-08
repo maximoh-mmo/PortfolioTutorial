@@ -1,6 +1,6 @@
 #include "World/OnsetZoneGate.h"
 #include "Components/BoxComponent.h"
-#include "Multiplayer/OnsetGameModeBase.h"
+#include "Game/OnsetGameModeBase.h"
 #include "Engine/World.h"
 
 AOnsetZoneGate::AOnsetZoneGate()

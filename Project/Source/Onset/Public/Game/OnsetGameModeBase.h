@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OnlineSubsystem.h"
-#include "Interfaces/OnlineIdentityInterface.h"
 #include "GameFramework/GameModeBase.h"
 #include "OnsetGameModeBase.generated.h"
 
+class UOnsetScreenBase;
+class UOnsetRootLayout;
 DECLARE_LOG_CATEGORY_EXTERN(LogSteamAuth, Log, All);
 
 /** Default game mode. Sets the default pawn class OnsetPlayerCharacter and the player controller class. */
@@ -20,6 +20,7 @@ public:
 	AOnsetGameModeBase();
 
 	virtual void StartPlay() override;
+	
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 
