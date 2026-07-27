@@ -20,7 +20,9 @@ param(
     [string]$MapPath = "/Game/DemoLevel",
     [string]$ProjectPath = "E:\Unreal Projects\PortfolioTutorial\Project\Onset.uproject",
     [switch]$NoDS,
-    [switch]$Standalone
+    [switch]$Standalone,
+    [ValidateSet("Game", "Lobby")]
+    [string]$Mode = "Game"
 )
 
 $EngineDir = "C:\Program Files\Epic Games\UE_5.8"
@@ -58,19 +60,25 @@ else {
     # Editor-based (UnrealEditor.exe) — simpler, auto-cooks
     $Binary = "$EngineDir\Engine\Binaries\Win64\UnrealEditor.exe"
 
-    if (-not $NoDS) {
-        Write-Host "Launching Dedicated Server (editor)..." -ForegroundColor Green
-        $dsArgs = """$ProjectPath"" $MapPath?Listen -server -log -NoLiveCoding"
-        Start-Process -FilePath $Binary -ArgumentList $dsArgs -WindowStyle Normal
-        Start-Sleep -Seconds 5
+if (-not $NoDS) {
+    $ServerMap = "/Game/Maps/MainMenu"
+    if ($Mode -eq "Game")
+    {
+        $ServerMap = $MapPath
     }
 
-    for ($i = 1; $i -le $ClientCount; $i++) {
-        Write-Host "Launching Client $i (editor)..." -ForegroundColor Cyan
-        $clientArgs = """$ProjectPath"" $MapPath -game -ResX=1280 -ResY=720 -WinX=$((($i - 1) * 1300) % 2560) -WinY=0 -log -NoLiveCoding"
-        Start-Process -FilePath $Binary -ArgumentList $clientArgs -WindowStyle Normal
-        Start-Sleep -Seconds 3
-    }
+    Write-Host "Launching Dedicated Server ($Mode - $ServerMap)..." -ForegroundColor Green
+    $dsArgs = """$ProjectPath"" $ServerMap?Listen -server -log -NoLiveCoding"
+    Start-Process -FilePath $Binary -ArgumentList $dsArgs -WindowStyle Normal
+    Start-Sleep -Seconds 8
 }
 
-Write-Host "Done. $ClientCount client(s)" $(if (-not $NoDS) { "+ DS" }) -ForegroundColor Green
+for ($i = 1; $i -le $ClientCount; $i++) {
+    Write-Host "Launching Client $i ($Mode)..." -ForegroundColor Cyan
+    $clientArgs = """$ProjectPath"" /Game/Maps/MainMenu -game -ResX=1280 -ResY=720 -WinX=$((($i - 1) * 1300) % 2560) -WinY=0 -log -NoLiveCoding"
+    Start-Process -FilePath $Binary -ArgumentList $clientArgs -WindowStyle Normal
+    Start-Sleep -Seconds 3
+}
+}
+
+Write-Host "Done. Mode=$Mode, $ClientCount client(s)" $(if (-not $NoDS) { "+ DS" }) -ForegroundColor Green

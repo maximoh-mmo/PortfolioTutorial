@@ -534,45 +534,62 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 
 	PS->SelectedCharacterSlot = SlotIndex;
 
-	AOnsetPlayerCharacter* PlayerCharacter = Cast<AOnsetPlayerCharacter>(GetPawn());
-	if (!PlayerCharacter)
+	UOnsetAuthSubsystem* Auth = GetWorld()->GetSubsystem<UOnsetAuthSubsystem>();
+	if (Auth && Auth->GetAuthMode() == EOnsetAuthMode::Direct)
 	{
-		UClass* PawnClass = AOnsetPlayerCharacter::StaticClass();
-		if (const AGameModeBase* GM = GetWorld()->GetAuthGameMode())
-			PawnClass = GM->DefaultPawnClass;
-
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-		PlayerCharacter = GetWorld()->SpawnActor<AOnsetPlayerCharacter>(PawnClass, CharData.SavedPosition, FRotator(0.0, CharData.SavedRotationYaw, 0.0), SpawnParams);
-		if (PlayerCharacter)
+		FString Token = Auth->GenerateToken(PS->PlayerPlatform, PS->PlayerPlatformID, SlotIndex);
+		if (!Token.IsEmpty())
 		{
-			Possess(PlayerCharacter);
-			PlayerCharacter->InitAbilityActorInfo();
+			FString GameServerIP = TEXT("127.0.0.1");
+			FString GameServerPort = TEXT("7777");
+			GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerIP"), GameServerIP, GGameIni);
+			GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerPort"), GameServerPort, GGameIni);
+			Client_TravelToGameServer(GameServerIP, GameServerPort, Token);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Server_SelectCharacter: failed to generate travel token"));
 		}
 	}
-
-	if (PlayerCharacter)
+	else
 	{
-		PlayerCharacter->SetActorLocation(CharData.SavedPosition);
-		PlayerCharacter->SetActorRotation(FRotator(0.0f, CharData.SavedRotationYaw, 0.0f));
-
-		if (PlayerCharacter->AttributeSet)
+		AOnsetPlayerCharacter* PlayerCharacter = Cast<AOnsetPlayerCharacter>(GetPawn());
+		if (!PlayerCharacter)
 		{
-			PlayerCharacter->AttributeSet->SetMaxHealth(CharData.SavedMaxHealth);
-			PlayerCharacter->AttributeSet->SetHealth(CharData.SavedMaxHealth);
+			UClass* PawnClass = AOnsetPlayerCharacter::StaticClass();
+			if (const AGameModeBase* GM = GetWorld()->GetAuthGameMode())
+				PawnClass = GM->DefaultPawnClass;
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+			PlayerCharacter = GetWorld()->SpawnActor<AOnsetPlayerCharacter>(PawnClass, CharData.SavedPosition, FRotator(0.0, CharData.SavedRotationYaw, 0.0), SpawnParams);
+			if (PlayerCharacter)
+			{
+				Possess(PlayerCharacter);
+				PlayerCharacter->InitAbilityActorInfo();
+			}
 		}
 
-		PlayerCharacter->GrantDefaultAbilities();
+		if (PlayerCharacter)
+		{
+			PlayerCharacter->SetActorLocation(CharData.SavedPosition);
+			PlayerCharacter->SetActorRotation(FRotator(0.0f, CharData.SavedRotationYaw, 0.0f));
+
+			if (PlayerCharacter->AttributeSet)
+			{
+				PlayerCharacter->AttributeSet->SetMaxHealth(CharData.SavedMaxHealth);
+				PlayerCharacter->AttributeSet->SetHealth(CharData.SavedMaxHealth);
+			}
+
+			PlayerCharacter->GrantDefaultAbilities();
+		}
 	}
 
 	Client_CharacterData(CharData);
 
 	UE_LOG(LogTemp, Log, TEXT("Server_SelectCharacter: player %s selected slot %d (%s)"),
 		*PS->GetPlayerName(), SlotIndex, *CharData.CharacterName);
-
-	// Clean up UI — player now has a pawn in the world
-	Client_CleanupUI();
 }
 
 void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotIndex, const FString& CharacterName)
@@ -692,6 +709,16 @@ void AOnsetPlayerController::Client_SessionToken_Implementation(const FString& T
 void AOnsetPlayerController::Client_SessionTokenFailed_Implementation(const FString& Reason)
 {
 	UE_LOG(LogOnsetAuth, Error, TEXT("Client_SessionTokenFailed: %s"), *Reason);
+}
+
+void AOnsetPlayerController::Client_TravelToGameServer_Implementation(const FString& ServerIP, const FString& ServerPort, const FString& Token)
+{
+	CachedSessionToken = Token;
+	FString URL = FString::Printf(TEXT("steam://%s:%s/Game/Maps/DemoLevel?Token=%s"),
+		*ServerIP, *ServerPort, *Token);
+
+	UE_LOG(LogOnsetAuth, Log, TEXT("Client_TravelToGameServer: traveling to %s:%s with token"), *ServerIP, *ServerPort);
+	ClientTravel(URL, TRAVEL_Absolute);
 }
 
 void AOnsetPlayerController::ReconnectToGameServer()

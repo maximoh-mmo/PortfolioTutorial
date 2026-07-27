@@ -87,17 +87,15 @@ Write-Host @"
 Read-Key
 
 # ═══════════════════════════════════════════════════════════════
-# PHASE 2 - Direct Auth Mode (DS + Client)
+# PHASE 2 - Lobby DS + Game DS (Two-Server Flow)
 # ═══════════════════════════════════════════════════════════════
-Write-Step "PHASE 2: Direct Auth + Persistence" @"
-  Tests the default flow: Steam auth - account load/create - character select - enter world - save on disconnect.
+Write-Step "PHASE 2: Lobby DS + Game Server (Two-Server Auth Flow)" @"
+  Tests the new architecture:
+    Lobby Server (MainMenu, AuthMode=Direct) handles auth + char select
+    Game Server (DemoLevel, AuthMode=Token) handles gameplay
 
-  Config is already set to:
-    `[Onset.Auth`] AuthMode=Direct
-    `[Onset.DataStore`] Type=HttpApi
-
-  You'll need the Account API Lambda running (already deployed).
-  Verify it's up with: curl https://<lambda-url>/health
+  After character selection, the lobby server generates a session token
+  and the client travels to the game server.
 "@
 
 Write-Section "2.0 - Verify Account API is Reachable"
@@ -118,10 +116,15 @@ if ($LambdaUrl) {
 }
 Read-Key
 
-Write-Section "2.1 - Launch DS + Client"
-Write-Host "Launching DS..." -ForegroundColor Green
-$dsArgs = """$ProjectPath"" /Game/DemoLevel?Listen -server -log -NoLiveCoding"
-$dsProcess = Start-Process -FilePath $Binary -ArgumentList $dsArgs -WindowStyle Normal -PassThru
+Write-Section "2.1 - Launch Lobby DS + Game Server + Client"
+Write-Host "Launching Lobby DS (MainMenu)..." -ForegroundColor Green
+$lobbyArgs = """$ProjectPath"" /Game/Maps/MainMenu?Listen -server -log -NoLiveCoding"
+$lobbyProcess = Start-Process -FilePath $Binary -ArgumentList $lobbyArgs -WindowStyle Normal -PassThru
+Start-Sleep -Seconds 8
+
+Write-Host "Launching Game Server (DemoLevel)..." -ForegroundColor Green
+$gameArgs = """$ProjectPath"" /Game/DemoLevel?Listen -server -log -NoLiveCoding"
+$gameProcess = Start-Process -FilePath $Binary -ArgumentList $gameArgs -WindowStyle Normal -PassThru
 Start-Sleep -Seconds 8
 
 Write-Host "Launching client..." -ForegroundColor Green
@@ -129,19 +132,24 @@ $clientArgs = """$ProjectPath"" /Game/Maps/MainMenu -game -ResX=1280 -ResY=720 -
 $clientProcess = Start-Process -FilePath $Binary -ArgumentList $clientArgs -WindowStyle Normal -PassThru
 
 Write-Host @"
-  `[ `] DS window opened without errors
-  `[ `] Client window opened and connected to DS
+  `[ `]  Lobby server window opened (MainMenu)
+  `[ `]  Game server window opened (DemoLevel)
+  `[ `]  Client window opened and connected to Lobby DS
 "@ -ForegroundColor Gray
 Read-Key
 
-Write-Section "2.2 - First-Time Login"
+Write-Section "2.2 - First-Time Login on Lobby"
 Write-Host @"
-  Check the DS console/log for these lines:
+  Check the Lobby DS console/log for these lines:
   `[ `]  PostLogin: player ... platform=Steam, id=...
   `[ `]  FHttpStore initialized: BaseURL=https://...
   `[ `]  Request returned 404  (first login, account not found)
   `[ `]  PostLogin: auto-created account for Steam/...
   `[ `]  Client opens MainMenu - clicks Connect - Character Select screen appears
+
+  Check Game Server console/log:
+  `[ `]  Server is listening on DemoLevel
+  `[ `]  No client connections yet (client is on lobby)
 
   If the Lambda URL is valid, also check CloudWatch:
   `[ `]  GET /account/Steam/{id} returns 404
@@ -149,34 +157,52 @@ Write-Host @"
 "@ -ForegroundColor Gray
 Read-Key
 
-Write-Section "2.3 - Character Creation + Enter World"
+Write-Section "2.3 - Character Creation + Travel to Game Server"
 Write-Host @"
-  In the Character Select screen:
+  In the Character Select screen (on the lobby):
   `[ `]  Hover an empty slot - Create Character prompt appears
   `[ `]  Click/select empty slot - enter name - create
-  `[ `]  Log shows: Server_CreateCharacter: created '...' in slot N
-  `[ `]  Log shows: Server_SelectCharacter: player ... selected slot N
-  `[ `]  Pawn spawns at default position (0, 0, 150)
-  `[ `]  You're in the game world with WASD/click-to-move working
+
+  After creation, the lobby server should:
+  `[ `]  Log: Server_CreateCharacter: created '...' in slot N
+  `[ `]  Log: Server_SelectCharacter: player ... selected slot N
+  `[ `]  Client should travel to Game Server (DemoLevel)
+  `[ `]  Client_TravelToGameServer RPC triggered (check client log)
+
+  Check Game Server console:
+  `[ `]  Client connects with token
+  `[ `]  PreLogin: token validated for ...
+  `[ `]  PostLogin: player ... with slot N
+  `[ `]  HandleStartingNewPlayer: spawning pawn at default position
 "@ -ForegroundColor Gray
 Read-Key
 
-Write-Section "2.4 - Save-on-Disconnect"
+Write-Section "2.4 - Gameplay Verification (on Game Server)"
+Write-Host @"
+  After traveling to Game Server, the player should be in DemoLevel:
+  `[ `]  Player pawn spawns at position (0, 0, 150)
+  `[ `]  WASD/click-to-move works immediately (no UI overlay)
+  `[ `]  No MainMenu or Character Select UI visible
+  `[ `]  Combat works: target enemy, basic attack fires, NPC reacts
+"@ -ForegroundColor Gray
+Read-Key
+
+Write-Section "2.5 - Save-on-Disconnect (Game Server)"
 Write-Host @"
   `[ `]  Move character to a new position
   `[ `]  Close the client window
-  `[ `]  DS logs show EndPlay - save triggered
+  `[ `]  Game Server logs show EndPlay - save triggered
   `[ `]  Launch client again (same process)
-  `[ `]  Character Select shows occupied slot with correct name/level
-  `[ `]  Select character - enter world at last saved position
-  `[ `]  Lambda CloudWatch shows GET /account then GET /account/Steam/{id}/character/{slot}
+  `[ `]  Client connects to Lobby → selects character → auto-travels to Game Server
+  `[ `]  Character appears at last saved position
 "@ -ForegroundColor Gray
 Read-Key
 
-# Close DS + client from Phase 2
+# Close all Phase 2 processes
 Write-Host "Closing Phase 2 processes..." -ForegroundColor Yellow
 if ($clientProcess -and !$clientProcess.HasExited) { $clientProcess.Kill() }
-if ($dsProcess -and !$dsProcess.HasExited) { $dsProcess.Kill() }
+if ($gameProcess -and !$gameProcess.HasExited) { $gameProcess.Kill() }
+if ($lobbyProcess -and !$lobbyProcess.HasExited) { $lobbyProcess.Kill() }
 Start-Sleep -Seconds 2
 
 # ═══════════════════════════════════════════════════════════════

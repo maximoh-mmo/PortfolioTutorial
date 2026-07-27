@@ -43,13 +43,14 @@ public:
 
 	void ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket);
 
-	FString GenerateToken(const FString& Platform, const FString& PlatformID);
-	bool ValidateToken(const FString& TokenStr, FString& OutPlatform, FString& OutPlatformID);
+	FString GenerateToken(const FString& Platform, const FString& PlatformID, int32 SlotIndex = -1);
+	bool ValidateToken(const FString& TokenStr, FString& OutPlatform, FString& OutPlatformID, int32& OutSlotIndex);
 
 	struct FPendingTokenAuth
 	{
 		FString Platform;
 		FString PlatformID;
+		int32 SlotIndex = -1;
 	};
 
 private:

@@ -67,12 +67,13 @@ FString UOnsetAuthSubsystem::PreLoginTokenAuth(const FString& Options, const FSt
 		return TEXT("Missing session token");
 	}
 
-	if (!ValidateToken(Token, OutPlatform, OutPlatformID))
+	int32 SlotIndex = -1;
+	if (!ValidateToken(Token, OutPlatform, OutPlatformID, SlotIndex))
 	{
 		return TEXT("Invalid or expired session token");
 	}
 
-	PendingTokenAuthMap.Add(Address, {OutPlatform, OutPlatformID});
+	PendingTokenAuthMap.Add(Address, {OutPlatform, OutPlatformID, SlotIndex});
 	UE_LOG(LogOnsetAuth, Log, TEXT("PreLogin: token validated for %s (%s/%s)"), *Address, *OutPlatform, *OutPlatformID);
 	return {};
 }
@@ -96,8 +97,9 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 		{
 			Platform = Pending->Platform;
 			PlatformID = Pending->PlatformID;
+			PlayerState->SelectedCharacterSlot = Pending->SlotIndex;
 			PendingTokenAuthMap.Remove(Address);
-			UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: using token auth — %s/%s"), *Platform, *PlatformID);
+			UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: using token auth — %s/%s slot=%d"), *Platform, *PlatformID, Pending->SlotIndex);
 		}
 		else
 		{
@@ -142,13 +144,13 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 	}
 
 	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
-	if (PC && PlayerState->SelectedCharacterSlot < 0)
+	if (PC)
 	{
 		PC->Client_AccountData(AccountData);
 
 		if (AuthMode == EOnsetAuthMode::Token)
 		{
-			FString Token = GenerateToken(Platform, PlatformID);
+			FString Token = GenerateToken(Platform, PlatformID, PlayerState->SelectedCharacterSlot);
 			if (!Token.IsEmpty())
 			{
 				PC->Client_SessionToken(Token);
@@ -156,24 +158,34 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 			}
 		}
 	}
-	else if (PC && PlayerState->SelectedCharacterSlot >= 0)
-	{
-		UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: player %s already has slot %d (zone travel)"),
-			*NewPlayer->GetName(), PlayerState->SelectedCharacterSlot);
-	}
 }
 
 void UOnsetAuthSubsystem::HandleLogout(AController* Exiting)
 {
 	AOnsetPlayerState* PS = Exiting ? Exiting->GetPlayerState<AOnsetPlayerState>() : nullptr;
-	if (PS && PS->SelectedCharacterSlot >= 0)
+	if (!PS || PS->SelectedCharacterSlot < 0) return;
+
+	AOnsetPlayerCharacter* PlayerChar = Exiting ? Cast<AOnsetPlayerCharacter>(Exiting->GetPawn()) : nullptr;
+
+	if (!PlayerChar) return;
+
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (!DataSubsystem) return;
+
+	FOnsetFullCharacterData CharData;
+	CharData.SlotIndex = PS->SelectedCharacterSlot;
+	CharData.SavedPosition = PlayerChar->GetActorLocation();
+	CharData.SavedRotationYaw = PlayerChar->GetActorRotation().Yaw;
+	CharData.CurrentZone = GetWorld()->GetMapName();
+	if (PlayerChar->AttributeSet)
 	{
-		UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
-		if (DataSubsystem)
-		{
-			DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, FOnsetFullCharacterData());
-		}
+		CharData.SavedMaxHealth = PlayerChar->AttributeSet->GetMaxHealth();
 	}
+	CharData.InventoryJSON = TEXT("{}");
+	CharData.EquipmentJSON = TEXT("{}");
+	CharData.QuestsJSON = TEXT("{}");
+
+	DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
 }
 
 void UOnsetAuthSubsystem::ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket)
@@ -251,14 +263,14 @@ TArray<uint8> UOnsetAuthSubsystem::HmacSha256(const TArray<uint8>& Key, const TA
 	return Result;
 }
 
-FString UOnsetAuthSubsystem::GenerateToken(const FString& Platform, const FString& PlatformID)
+FString UOnsetAuthSubsystem::GenerateToken(const FString& Platform, const FString& PlatformID, int32 SlotIndex)
 {
 	if (AuthTokenSecret.IsEmpty()) return {};
 
 	int64 NowUnix = FDateTime::UtcNow().ToUnixTimestamp();
 	int64 ExpiryUnix = NowUnix + AuthTokenLifetimeSeconds;
 
-	FString PayloadStr = FString::Printf(TEXT("%s|%s|%lld"), *PlatformID, *Platform, ExpiryUnix);
+	FString PayloadStr = FString::Printf(TEXT("%s|%s|%d|%lld"), *PlatformID, *Platform, SlotIndex, ExpiryUnix);
 	FTCHARToUTF8 PayloadConv(*PayloadStr);
 	TArray<uint8> PayloadBytes;
 	PayloadBytes.Append(reinterpret_cast<const uint8*>(PayloadConv.Get()), PayloadConv.Length());
@@ -273,10 +285,11 @@ FString UOnsetAuthSubsystem::GenerateToken(const FString& Platform, const FStrin
 	return PayloadB64 + TEXT(".") + SigB64;
 }
 
-bool UOnsetAuthSubsystem::ValidateToken(const FString& TokenStr, FString& OutPlatform, FString& OutPlatformID)
+bool UOnsetAuthSubsystem::ValidateToken(const FString& TokenStr, FString& OutPlatform, FString& OutPlatformID, int32& OutSlotIndex)
 {
 	OutPlatform.Empty();
 	OutPlatformID.Empty();
+	OutSlotIndex = -1;
 
 	if (TokenStr.IsEmpty()) return false;
 
@@ -299,15 +312,16 @@ bool UOnsetAuthSubsystem::ValidateToken(const FString& TokenStr, FString& OutPla
 
 	TArray<FString> Parts;
 	PayloadStr.ParseIntoArray(Parts, TEXT("|"));
-	if (Parts.Num() != 3)
+	if (Parts.Num() != 4)
 	{
-		UE_LOG(LogOnsetAuth, Warning, TEXT("ValidateToken: payload has %d parts (expected 3)"), Parts.Num());
+		UE_LOG(LogOnsetAuth, Warning, TEXT("ValidateToken: payload has %d parts (expected 4)"), Parts.Num());
 		return false;
 	}
 
 	OutPlatformID = Parts[0];
 	OutPlatform = Parts[1];
-	int64 ExpiryUnix = FCString::Atoi64(*Parts[2]);
+	OutSlotIndex = FCString::Atoi(*Parts[2]);
+	int64 ExpiryUnix = FCString::Atoi64(*Parts[3]);
 
 	if (ExpiryUnix < FDateTime::UtcNow().ToUnixTimestamp())
 	{

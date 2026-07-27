@@ -109,7 +109,15 @@ void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 
 	AOnsetPlayerState* PS = NewPlayer->GetPlayerState<AOnsetPlayerState>();
 	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
-	if (PC && PS && PS->SelectedCharacterSlot < 0)
+
+	if (Auth && Auth->GetAuthMode() == EOnsetAuthMode::Token)
+	{
+		if (PC && PS && PS->SelectedCharacterSlot >= 0)
+		{
+			RestartPlayer(NewPlayer);
+		}
+	}
+	else if (PC && PS && PS->SelectedCharacterSlot < 0)
 	{
 		PC->Client_ShowMainMenuUI(RootLayoutClass, MainMenuScreenClass);
 	}

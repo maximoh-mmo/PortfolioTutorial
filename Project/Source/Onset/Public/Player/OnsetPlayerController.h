@@ -210,6 +210,9 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_SessionTokenFailed(const FString& Reason);
 
+	UFUNCTION(Client, Reliable)
+	void Client_TravelToGameServer(const FString& ServerIP, const FString& ServerPort, const FString& Token);
+
 	UFUNCTION(Server, Reliable)
 	void Server_SelectCharacter(int32 SlotIndex);
 
