@@ -180,7 +180,12 @@ private:
 	void Server_SetPvPEnabled(bool bEnabled);
 		
 public:
-	const FOnsetAccountData& GetCachedAccountData() const { return CachedAccountData; }  
+	const FOnsetAccountData& GetCachedAccountData() const { return CachedAccountData; }
+
+	const FString& GetCachedSessionToken() const { return CachedSessionToken; }
+
+	UFUNCTION(BlueprintCallable, Category="Auth")
+	void ReconnectToGameServer(); 
 
 	UFUNCTION(Client, Reliable)
 	void Client_ShowMainMenuUI(TSubclassOf<UOnsetRootLayout> RootLayoutClass, TSubclassOf<UOnsetScreenBase> MainMenuClass);
@@ -236,4 +241,5 @@ private:
 	UPROPERTY()
 	TObjectPtr<APawn> CachedPlayerPawn;
 
+	FString CachedSessionToken;
 };

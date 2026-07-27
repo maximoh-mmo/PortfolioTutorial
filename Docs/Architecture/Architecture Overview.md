@@ -171,7 +171,16 @@ This document is the technical map for the entire project.
 - Autoplay/testing mode via AIController  
 - StateTree‑driven movement, targeting, and ability usage  
 - Target selection based on proximity/threat  
-- Enables stress tests, demos, and debugging without human input  
+- Enables stress tests, demos, and debugging without human input
+
+### **3b. [Authentication System](../Player/Account_System.md)**
+- `UOnsetAuthSubsystem` — world subsystem, server-only, handles all auth logic
+- Two modes (`[Onset.Auth] AuthMode`):
+  - **Direct** (default) — Steam auth ticket validated inline via `ValidateAuthTicket()`, platform ID extracted from `FUniqueNetId`
+  - **Token** — client presents HMAC-SHA256 signed token in URL (`?Token=...`), validated in `PreLogin`/`PostLogin`
+- Session token system: `GenerateToken()` / `ValidateToken()` with configurable secret and lifetime
+- `AOnsetLoginServerGameMode` — minimal game mode for login-only server: auth → token → kick
+- Client reconnect: stores token via `Client_SessionToken` RPC, then `ReconnectToGameServer()` does `ClientTravel` with token in URL  
 
 ### **4. [Targeting System](../Gameplay/Targeting_System.md) (PvP‑aware)**
 - Data holder for `CurrentTarget` with `IsActorValidTarget()` validation  
@@ -318,6 +327,14 @@ This document is the technical map for the entire project.
 
 ### **[Steam Integration System](../Steam/Steam_Integration_System.md) ↔ [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - Auth tickets for session authentication  
+
+### **[Auth System](../Player/Account_System.md) ↔ [Persistence Data Store](../Server/Persistence_Data_Store.md)**
+- `HandlePostLogin` loads/creates account via `UOnsetPlayerDataSubsystem`
+- Token validation happens before account load (gate check in `PreLogin`)
+
+### **[Auth System](../Player/Account_System.md) ↔ [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
+- Token auth mode validates session tokens in `PreLogin` before connection is accepted
+- Login Server reuses same networking stack (Steam OSS) for auth ticket exchange
 
 ### **[Multiplayer System](../Multiplayer/Multiplayer_System.md) ↔ [Player System](../Player/Player_System.md)**
 - Replicates player state; RPCs for PvP toggle, abilities, movement  

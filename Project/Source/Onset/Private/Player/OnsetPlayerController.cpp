@@ -685,10 +685,31 @@ void AOnsetPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AOnsetPlayerController::Client_SessionToken_Implementation(const FString& Token)
 {
-	UE_LOG(LogOnsetAuth, Log, TEXT("Client_SessionToken: received (%d chars)"), Token.Len());
+	CachedSessionToken = Token;
+	UE_LOG(LogOnsetAuth, Log, TEXT("Client_SessionToken: received (%d chars), stored for reconnect"), Token.Len());
 }
 
 void AOnsetPlayerController::Client_SessionTokenFailed_Implementation(const FString& Reason)
 {
 	UE_LOG(LogOnsetAuth, Error, TEXT("Client_SessionTokenFailed: %s"), *Reason);
+}
+
+void AOnsetPlayerController::ReconnectToGameServer()
+{
+	if (CachedSessionToken.IsEmpty())
+	{
+		UE_LOG(LogOnsetAuth, Warning, TEXT("ReconnectToGameServer: no cached session token"));
+		return;
+	}
+
+	FString GameServerIP = TEXT("127.0.0.1");
+	FString GameServerPort = TEXT("7777");
+	GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerIP"), GameServerIP, GGameIni);
+	GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerPort"), GameServerPort, GGameIni);
+
+	FString URL = FString::Printf(TEXT("steam://%s:%s/Game/Maps/DemoLevel?Token=%s"),
+		*GameServerIP, *GameServerPort, *CachedSessionToken);
+
+	UE_LOG(LogOnsetAuth, Log, TEXT("ReconnectToGameServer: traveling to %s:%s with token"), *GameServerIP, *GameServerPort);
+	ClientTravel(URL, TRAVEL_Absolute);
 }

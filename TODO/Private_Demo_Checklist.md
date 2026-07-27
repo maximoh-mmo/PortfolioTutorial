@@ -468,7 +468,7 @@ Status: ✅ Complete (compressed ~1 day)
 - [x] Game Server: `HandlePostLogin` reads cached platform info → loads account (existing flow)
 - [x] Backward compatibility: `AuthMode=Direct` unchanged
 - [x] Document replay prevention as future enhancement
-- [ ] Client token reconnect flow — deferred to Blueprints/UI
+- [x] Client token reconnect flow — ReconnectToGameServer() BlueprintCallable, stores token on Client_SessionToken
 
 ## A5c.5 Cleanup & Docs (Day 4)
 - [x] Remove stale Steam auth references from `AOnsetGameModeBase`
@@ -560,6 +560,6 @@ Status: ✅ Complete (compressed ~1 day)
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
 | A5b Persistence & Account | 51 | 51 | 100% | All waves complete. Includes FHttpStore + Account API (Lambda + DynamoDB). Wave 5 revised: canvas HUDs → CommonUI screen stack. |
-| A5c Auth Extraction & Login Server | 34 | 30 | 88% | 4 deferred items (client reconnect flow, Content map, episode scripts) |
+| A5c Auth Extraction & Login Server | 34 | 32 | 94% | 2 deferred items (Content map, episode scripts) |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |
