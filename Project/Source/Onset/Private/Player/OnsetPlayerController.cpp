@@ -682,3 +682,13 @@ void AOnsetPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 	Super::EndPlay(EndPlayReason);
 }
+
+void AOnsetPlayerController::Client_SessionToken_Implementation(const FString& Token)
+{
+	UE_LOG(LogOnsetAuth, Log, TEXT("Client_SessionToken: received (%d chars)"), Token.Len());
+}
+
+void AOnsetPlayerController::Client_SessionTokenFailed_Implementation(const FString& Reason)
+{
+	UE_LOG(LogOnsetAuth, Error, TEXT("Client_SessionTokenFailed: %s"), *Reason);
+}

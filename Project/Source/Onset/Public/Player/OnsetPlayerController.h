@@ -199,6 +199,12 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_SaveComplete(bool bSuccess);
 
+	UFUNCTION(Client, Reliable)
+	void Client_SessionToken(const FString& Token);
+
+	UFUNCTION(Client, Reliable)
+	void Client_SessionTokenFailed(const FString& Reason);
+
 	UFUNCTION(Server, Reliable)
 	void Server_SelectCharacter(int32 SlotIndex);
 

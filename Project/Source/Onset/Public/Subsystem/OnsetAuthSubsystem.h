@@ -16,6 +16,16 @@ enum class EOnsetAuthMode : uint8
 	Token  UMETA(DisplayName="Token")
 };
 
+struct FOnsetSessionToken
+{
+	FString PlatformID;
+	FString Platform;
+	int64 ExpiryUnix = 0;
+	FString Signature;
+
+	bool IsValid() const { return !PlatformID.IsEmpty() && !Platform.IsEmpty() && ExpiryUnix > 0; }
+};
+
 UCLASS()
 class ONSET_API UOnsetAuthSubsystem : public UWorldSubsystem
 {
@@ -32,6 +42,13 @@ public:
 
 	void ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket);
 
+	FString GenerateToken(const FString& Platform, const FString& PlatformID);
+	bool ValidateToken(const FString& TokenStr, FString& OutPlatform, FString& OutPlatformID);
+
 private:
+	static TArray<uint8> HmacSha256(const TArray<uint8>& Key, const TArray<uint8>& Data);
+
 	EOnsetAuthMode AuthMode = EOnsetAuthMode::Direct;
+	FString AuthTokenSecret;
+	int32 AuthTokenLifetimeSeconds = 300;
 };
