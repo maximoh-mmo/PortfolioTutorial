@@ -37,6 +37,7 @@ public:
 
 	EOnsetAuthMode GetAuthMode() const { return AuthMode; }
 
+	FString PreLoginTokenAuth(const FString& Options, const FString& Address, FString& OutPlatform, FString& OutPlatformID);
 	void HandlePostLogin(APlayerController* NewPlayer);
 	void HandleLogout(AController* Exiting);
 
@@ -45,10 +46,18 @@ public:
 	FString GenerateToken(const FString& Platform, const FString& PlatformID);
 	bool ValidateToken(const FString& TokenStr, FString& OutPlatform, FString& OutPlatformID);
 
+	struct FPendingTokenAuth
+	{
+		FString Platform;
+		FString PlatformID;
+	};
+
 private:
 	static TArray<uint8> HmacSha256(const TArray<uint8>& Key, const TArray<uint8>& Data);
 
 	EOnsetAuthMode AuthMode = EOnsetAuthMode::Direct;
 	FString AuthTokenSecret;
 	int32 AuthTokenLifetimeSeconds = 300;
+
+	TMap<FString, FPendingTokenAuth> PendingTokenAuthMap;
 };

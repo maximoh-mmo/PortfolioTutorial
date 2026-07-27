@@ -53,6 +53,25 @@ DEFINE_LOG_CATEGORY(LogSteamAuth);
 	}
 }
 
+void AOnsetGameModeBase::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+	if (!ErrorMessage.IsEmpty())
+		return;
+
+	UOnsetAuthSubsystem* Auth = GetWorld()->GetSubsystem<UOnsetAuthSubsystem>();
+	if (Auth && Auth->GetAuthMode() == EOnsetAuthMode::Token)
+	{
+		FString Platform, PlatformID;
+		FString TokenError = Auth->PreLoginTokenAuth(Options, Address, Platform, PlatformID);
+		if (!TokenError.IsEmpty())
+		{
+			ErrorMessage = TokenError;
+			UE_LOG(LogOnsetAuth, Warning, TEXT("PreLogin: rejected connection from %s — %s"), *Address, *TokenError);
+		}
+	}
+}
+
 void AOnsetGameModeBase::StartPlay()
 {
 	Super::StartPlay();

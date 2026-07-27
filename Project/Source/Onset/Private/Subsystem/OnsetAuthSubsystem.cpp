@@ -8,6 +8,7 @@
 #include "Misc/Base64.h"
 #include "Misc/DateTime.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogOnsetAuth);
 
@@ -50,6 +51,32 @@ bool UOnsetAuthSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 	return HasAnyFlags(RF_ClassDefaultObject) || Outer != nullptr;
 }
 
+FString UOnsetAuthSubsystem::PreLoginTokenAuth(const FString& Options, const FString& Address, FString& OutPlatform, FString& OutPlatformID)
+{
+	OutPlatform.Empty();
+	OutPlatformID.Empty();
+
+	if (AuthMode != EOnsetAuthMode::Token)
+	{
+		return {};
+	}
+
+	FString Token = UGameplayStatics::ParseOption(Options, TEXT("Token"));
+	if (Token.IsEmpty())
+	{
+		return TEXT("Missing session token");
+	}
+
+	if (!ValidateToken(Token, OutPlatform, OutPlatformID))
+	{
+		return TEXT("Invalid or expired session token");
+	}
+
+	PendingTokenAuthMap.Add(Address, {OutPlatform, OutPlatformID});
+	UE_LOG(LogOnsetAuth, Log, TEXT("PreLogin: token validated for %s (%s/%s)"), *Address, *OutPlatform, *OutPlatformID);
+	return {};
+}
+
 void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 {
 	if (!NewPlayer || !NewPlayer->HasAuthority())
@@ -62,10 +89,28 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 	FString Platform = TEXT("Steam");
 	FString PlatformID = TEXT("");
 
-	FUniqueNetIdRepl UniqueId = PlayerState->GetUniqueId();
-	if (UniqueId.IsValid())
+	if (AuthMode == EOnsetAuthMode::Token)
 	{
-		PlatformID = UniqueId->ToString();
+		FString Address = NewPlayer->GetPlayerNetworkAddress();
+		if (FPendingTokenAuth* Pending = PendingTokenAuthMap.Find(Address))
+		{
+			Platform = Pending->Platform;
+			PlatformID = Pending->PlatformID;
+			PendingTokenAuthMap.Remove(Address);
+			UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: using token auth — %s/%s"), *Platform, *PlatformID);
+		}
+		else
+		{
+			// Token not found in pending map — might have arrived via PostLogin directly (LoginServer)
+		}
+	}
+	else
+	{
+		FUniqueNetIdRepl UniqueId = PlayerState->GetUniqueId();
+		if (UniqueId.IsValid())
+		{
+			PlatformID = UniqueId->ToString();
+		}
 	}
 
 	PlayerState->PlayerPlatform = Platform;
