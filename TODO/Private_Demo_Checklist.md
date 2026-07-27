@@ -404,15 +404,23 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Periodic auto-save: 5-min timer in `UOnsetPlayerDataSubsystem` saves all connected players
 - [x] Save on death placeholder (full state saved)
 
-## A5b.5 Lobby Map & Character Select UI
+## A5b.5 Lobby Map & Character Select UI → CommonUI Migration
 - [x] Create `/Game/Maps/MainMenu` — serves as lobby + main menu, no NPCs/combat
 - [x] Set as default map for DS launch (`ServerDefaultMap` in config)
-- [x] Implement `AOnsetLobbyHUD` (canvas-based, replaces UMG):
-  - 3 slot panels showing name + level + status
-  - Create/select on each slot, Enter to confirm
-  - Keyboard input: 1/2/3 select, Enter confirm
-- [x] Implement `AOnsetMenuHUD` (canvas-based main menu)
-- [x] Implement `AOnsetMenuGameMode` (HUDClass = AOnsetMenuHUD)
+- [x] Implement CommonUI framework (replaces canvas HUDs):
+  - `UOnsetScreenBase` (CommonActivatableWidget base)
+  - `UOnsetRootLayout` (3 layer stacks: Game, Menu, Modal)
+  - `UOnsetUISubsystem` (PushScreen/PopScreen)
+  - `UOnsetGameViewportClient` (CommonGameViewportClient)
+  - `UOnsetActivatableWidgetStack` + `EOnsetUILayer` enum
+  - `UOnsetButtonBase` (hover/click sounds)
+- [x] Implement `UMainMenuScreen` — `ConnectToServer()` pushes CharacterSelectScreen
+- [x] Implement `UCharacterSelectScreen` — `SelectSlot` handles occupied (enter world) / empty (create character)
+- [x] Convert `AOnsetMenuGameMode` to inherit `AOnsetGameModeBase` (gets PostLogin)
+- [x] Simplify `AOnsetPlayerController::Client_AccountData` — cache data, no widget creation
+- [x] Delete old canvas HUDs: `AOnsetLobbyHUD`, `AOnsetMenuHUD`, `AOnsetLobbyGameMode`
+- [x] Delete old widget screens: `UMainMenuWidget`, `UCharacterSelectWidget`
+- [x] Content assets: `WBP_RootLayout`, `WBP_MainMenu`, `WBP_CharacterSelect`, styles, fonts, textures
 - [x] Wire create → `Server_CreateCharacter` → slot fills
 - [x] Wire select → highlight slot → Enter → `Server_SelectCharacter`
 - [x] Wire Enter World → `Server_SelectCharacter` → server `ServerTravel` to DemoLevel
@@ -424,6 +432,56 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Migration system from v0 to current (same schema as SQLite)
 - [x] Crash recovery: transaction wrapping, `CHECKPOINT` on shutdown
 - [x] Build verified — libpq links, DLLs staged, FPgSQLStore compiles
+
+---
+
+# A5c — AUTH EXTRACTION & LOGIN SERVER (est. 4 days)
+
+Status: ⏳ Not started
+
+## A5c.1 Auth Subsystem Extraction (Day 1)
+- [ ] Create `UOnsetAuthSubsystem` (world subsystem, DS only)
+- [ ] Move `ValidateAuthTicket` from `AOnsetGameModeBase` to subsystem
+- [ ] Move `Server_SendAuthTicket` handling to subsystem
+- [ ] Move `Client_ClearAuthTimeout` RPC handler to subsystem
+- [ ] Add `AuthMode=Direct` config key (preserves existing behavior)
+- [ ] Slim `PostLogin` to delegate to `AuthSubsystem->HandlePostLogin()`
+- [ ] Slim `Logout` to delegate to `AuthSubsystem->HandleLogout()`
+- [ ] Verify regression — DirectAuth mode still works (PIE + DS)
+
+## A5c.2 Session Token System (Day 1-2)
+- [ ] Design `FOnsetSessionToken` struct (PlatformID, Platform, Expiry, HMAC Signature)
+- [ ] Implement `GenerateToken()` — HMAC-SHA256 payload + base64 encoding
+- [ ] Implement `ValidateToken()` — verify HMAC and expiry
+- [ ] Add `AuthTokenSecret` and `AuthTokenLifetimeSeconds` config keys
+- [ ] Add `Client_SessionToken(FString Token)` RPC to PlayerController
+- [ ] Add `Client_SessionTokenFailed(FString Reason)` RPC
+
+## A5c.3 Login Server Target (Day 2-3)
+- [ ] Create `Source/OnsetLoginServer.Target.cs`
+- [ ] Create `Source/OnsetLoginServer/OnsetLoginServer.Build.cs`
+- [ ] Create `ALoginServerGameMode` — minimal: auth → token → kick
+- [ ] Create `ALoginServerGameState` — minimal stub
+- [ ] Create `/Game/Maps/LoginServer` with game mode override
+- [ ] Create `Scripts/RunLoginServer.ps1` launch script
+- [ ] Add `[OnsetLoginServer]` config section to `DefaultEngine.ini`
+
+## A5c.4 Client & Game Server Token Flow (Day 3-4)
+- [ ] Client: connect to Login Server → auth → `Client_SessionToken` → store → disconnect
+- [ ] Client: reconnect to Game Server with `?Token=<token>` in URL
+- [ ] Game Server (TokenAuth mode): extract `?Token` from `PreLogin`/`PostLogin` options
+- [ ] Game Server: call `ValidateToken()` → extract PlatformID → load account (existing flow)
+- [ ] Fallback: if Login Server unreachable, fall back to DirectAuth with warning
+- [ ] Config: `LoginServerIP`, `LoginServerPort` for client config
+- [ ] Backward compatibility: `AuthMode=Direct` unchanged
+- [ ] Document replay prevention as future enhancement
+
+## A5c.5 Cleanup & Docs (Day 4)
+- [ ] Remove stale Steam auth references from `AOnsetGameModeBase`
+- [ ] Add `[Onset.Auth]` section to `DefaultEngine.ini` with defaults
+- [ ] Update `Planning/Sprint_Auth_Extraction.md` with completion notes
+- [ ] Create daily DONE record for this sprint
+- [ ] Update episode scripts to include auth extraction content
 
 ---
 
@@ -507,6 +565,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
-| A5b Persistence & Account | 40 | 40 | 100% | All waves complete (Wave 6: PgSQL store implemented) |
+| A5b Persistence & Account | 51 | 51 | 100% | All waves complete (Wave 5 revised: canvas HUDs → CommonUI screen stack) |
+| A5c Auth Extraction & Login Server | 34 | 0 | 0% | Not started — planned sprint, est. 4 days |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |

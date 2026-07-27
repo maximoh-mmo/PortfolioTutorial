@@ -244,7 +244,14 @@ void AOnsetPlayerController::Server_SaveCharacter_Implementation(bool bForce)
 ---
 
 ## **Next Steps (Post-Sprint)**
-- Episode 44: UI & Feedback (health bars, cooldowns, virtual joystick, gamepad cursor)
-- Episode 45: Final Gameplay Loop (waves, respawn, combat flow)
-- Episode 46: Performance Optimization
-- Episode 47: Final Showcase
+
+The episode numbering has been revised to include a new Auth Extraction & Login Server phase. The post-persistence episodes are now:
+
+- Episode 44: Auth Subsystem Extraction
+- Episode 45: Session Token System
+- Episode 46: Login Server Target
+- Episode 47: Client & Game Server Token Flow
+- Episode 48: UI & Feedback (health bars, cooldowns, virtual joystick, gamepad cursor)
+- Episode 49: Final Gameplay Loop (waves, respawn, combat flow)
+- Episode 50: Performance Optimization
+- Episode 51: Final Showcase

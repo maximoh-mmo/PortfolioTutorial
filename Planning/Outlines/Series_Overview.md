@@ -61,9 +61,10 @@ The series is divided into **10 phases** (see the full [Episode List](Episode_Li
 4. **Advanced AI** — Flee, group assist, dynamic types, debugging  
 5. **Multiplayer** — Replication, dedicated server, Steam, PvP  
 5.5 **Persistence & Account System** — Database architecture, Steam ID resolution, character select, save/load  
+5.6 **Auth Extraction & Login Server** — Auth subsystem, session tokens, Login Server target, client token flow  
 6. **Final Demo & Polish** — UI, gameplay loop, optimization, showcase  
 
-Total: **47 episodes** (Episode 18 split into 18a/18b; episodes 26-28 cover Threat System; episodes 40-43 cover Persistence & Account System). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
+Total: **51 episodes** (Episode 18 split into 18a/18b; episodes 26-28 cover Threat System; episodes 40-43 cover Persistence & Account System; episodes 44-47 cover Auth Extraction & Login Server). See the [Scope Overview](Scope_Overview.md) for project boundaries and the [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) for system design.
 
 ---
 

@@ -1,7 +1,7 @@
 # 📘 **TOP‑DOWN ARPG AI SERIES — FULL EPISODE LIST**
 
 ## **Overview**
-This document contains the complete episode list for the 46‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Scope Overview](Scope_Overview.md) for context).
+This document contains the complete episode list for the 51‑episode tutorial series (see [Series Overview](Series_Overview.md) and [Scope Overview](Scope_Overview.md) for context).
 Episodes are grouped into phases that reflect the natural progression of building the full demo.
 The [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md) provides the full system design that this episode list implements.
 
@@ -262,24 +262,47 @@ End‑to‑end verification: auth → account load → character select → spaw
 
 ---
 
+# **PHASE 5.6 — Auth Extraction & Login Server**
+### *Goal: Extract Steam auth into a dedicated subsystem, add token-based auth, and build a separate Login Server target.*
+
+---
+
+### **Episode 44 — Auth Subsystem Extraction**
+Extract Steam ticket validation, `BeginAuthSession`, and timeout logic from `AOnsetGameModeBase` into a dedicated `UOnsetAuthSubsystem` world subsystem. Slim `PostLogin` to a single delegate call. Keep `DirectAuth` mode as default.
+· [Account System](../../Docs/Player/Account_System.md) · [Steam Integration System](../../Docs/Steam/Steam_Integration_System.md)
+
+### **Episode 45 — Session Token System**
+Design the `FOnsetSessionToken` (PlatformID, Platform, Expiry, HMAC signature). Implement `GenerateToken()` and `ValidateToken()` using HMAC-SHA256. Add `Client_SessionToken` RPC. Config-driven token lifetime and shared secret.
+· [Account System](../../Docs/Player/Account_System.md)
+
+### **Episode 46 — Login Server Target**
+Create a minimal UE dedicated server target (`OnsetLoginServer.Target.cs`) whose only job is auth: receive ticket → validate → issue token → disconnect. Build the `ALoginServerGameMode`, empty LoginServer map, and launch script. Demonstrate multi-target project structure.
+· [Account System](../../Docs/Player/Account_System.md) · [Steam Integration System](../../Docs/Steam/Steam_Integration_System.md)
+
+### **Episode 47 — Client & Game Server Token Flow**
+Update the client to connect to Login Server first, obtain a token, then reconnect to the Game Server with `?Token=<token>` in the URL. Game Server validates the token instead of calling Steam. Backward compatibility via `AuthMode=Direct|Token` config.
+· [Account System](../../Docs/Player/Account_System.md)
+
+---
+
 # **PHASE 6 — Final Demo & Polish**
 ### *Goal: Deliver a polished, impressive final result.*
 
 ---
 
-### **Episode 44 — UI & Feedback**
+### **Episode 48 — UI & Feedback**
 Add health bars, hit indicators, cooldown UI, virtual joystick widget, virtual ability buttons, gamepad cursor overlay, and target highlights.
 · [UI System](../../Docs/Gameplay/UI_System.md) · [GAS System](../../Docs/GAS/GAS_System.md)
 
-### **Episode 45 — Final Gameplay Loop**
+### **Episode 49 — Final Gameplay Loop**
 Implement waves, respawn cycles, and full combat flow with all input methods supported.
 · [Spawner System](../../Docs/AI/Spawner_System.md) · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 
-### **Episode 46 — Performance Optimization**
+### **Episode 50 — Performance Optimization**
 Reduce ticks, add AI LOD, optimize pooling and networking.
 · [Pooling System](../../Docs/AI/Pooling_System.md) · [Multiplayer System](../../Docs/Multiplayer/Multiplayer_System.md)
 
-### **Episode 47 — Final Showcase**
+### **Episode 51 — Final Showcase**
 Record the final demo, recap architecture, and discuss next steps.
 · [Architecture Overview](../../Docs/Architecture/Architecture%20Overview.md)
 

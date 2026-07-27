@@ -102,6 +102,16 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 | Postgres Store & Production Hardening | 0.5 | All above |
 | **Subtotal** | **6 days** | |
 
+## Phase A5c — Auth Extraction & Login Server
+| System | Est. Days | Dependencies |
+|--------|-----------|--------------|
+| Auth Subsystem Extraction (UOnsetAuthSubsystem) | 1 | Steam Auth (A5.4) |
+| Session Token System (HMAC, Generate/Validate) | 0.5 | Auth Subsystem |
+| Login Server Target (OnsetLoginServer) | 1 | Token System |
+| Client & Game Server Token Flow | 1 | Login Server, Persistence (A5b) |
+| Cleanup & Documentation | 0.5 | All above |
+| **Subtotal** | **4 days** | |
+
 ## Phase A6 — UI & Final Demo
 | System | Est. Days | Dependencies |
 |--------|-----------|--------------|
@@ -126,10 +136,11 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 | A3 — AI Systems | 15.5 | ✅ Complete | 17 Jun – 27 Jun |
 | A4 — GAS Combat | 10 | ⚠️ Partial (5.5d done, 4.5d deferred) | 27 Jun (deferred) |
 | A5 — Multiplayer & Steam | 10 | ✅ Complete | 27 Jun – 28 Jun |
-| A5b — Persistence & Account System | 6 | ❌ Not started | — |
+| A5b — Persistence & Account System | 6 | ✅ Complete | 28 Jun – 08 Jul (incl. CommonUI migration) |
+| A5c — Auth Extraction & Login Server | 4 | ❌ Not started | Planned, est. 4 days |
 | A6 — UI & Final Demo (incl. touch/gamepad widgets) | 8 | ❌ Not started | — |
 | A7 — Integration & Buffer | 11 | ❌ Not started | — |
-| **Total** | **~74.5 days (~15 weeks)** | **~49% complete** | **29 Jun — continuing with A5b** |
+| **Total** | **~78.5 days (~16 weeks)** | **~50% complete** | **27 Jul — CommonUI verified in packaged build, movement fixes blocking A5c start** |
 
 ---
 
@@ -141,7 +152,7 @@ Each episode requires:
 - **Editing** (2-3 hours)
 - **Export + README** (1 hour)
 
-## B1 — Scripting (Episodes 6-43)
+## B1 — Scripting (Episodes 6-51)
 
 Episodes 1-3 need script updates for Enhanced Input + multi-device movement. Episodes 4-5 need re-ordering. Remaining episodes need scripts from scratch:
 
@@ -157,8 +168,9 @@ Episodes 1-3 need script updates for Enhanced Input + multi-device movement. Epi
 | Scripts 29-33 | 5 | 3 | 15 |
 | Scripts 34-39 | 6 | 3 | 18 |
 | Scripts 40-43 (Persistence) | 4 | 3 | 12 |
-| Scripts 44-47 | 4 | 3 | 12 |
-| **Total** | **47 scripts** | | **~148 hours (3.7 weeks)** |
+| Scripts 44-47 (Auth Extraction) | 4 | 3 | 12 |
+| Scripts 48-51 (Final Demo) | 4 | 3 | 12 |
+| **Total** | **51 scripts** | | **~162 hours (4.05 weeks)** |
 
 ## B2 — Recording + Editing + Export
 
@@ -184,15 +196,16 @@ Estimated per episode:
 | Phase 4: Advanced AI (incl. Group Assist) | 29-33 | 30 |
 | Phase 5: Multiplayer (incl. PvP) | 34-39 | 36 |
 | Phase 5.5: Persistence & Account System | 40-43 | 24 |
-| Phase 6: Final Demo | 44-47 | 24 |
-| **Total** | **47 episodes** | **~282 hours (7.05 weeks)** |
+| Phase 5.6: Auth Extraction & Login Server | 44-47 | 24 |
+| Phase 6: Final Demo & Polish | 48-51 | 24 |
+| **Total** | **51 episodes** | **~306 hours (7.65 weeks)** |
 
 ## Phase B Total
 | Activity | Time |
 |----------|------|
-| Scripting (rewrites + new) | 3.7 weeks |
-| Recording + Editing + Export | 7.05 weeks |
-| **Total** | **~10.75 weeks** |
+| Scripting (rewrites + new) | 4.05 weeks |
+| Recording + Editing + Export | 7.65 weeks |
+| **Total** | **~11.7 weeks** |
 
 ---
 
@@ -202,17 +215,18 @@ Estimated per episode:
 |-------|----------|-------|
 | ✅ Planning (Phases 1-5) | Complete | Outlines, docs, scripts 1-5, workflow |
 | ✅ Pre-Production Review | Complete | Consistency scan, risk docs, timeline |
-| **Phase A: Private Demo** | **~16 weeks** | Build all systems off-camera. **Started 25 May 2026 — A1-A3 + A5 complete, A4 partial, A5b/A6/A7 remaining (est. ~25 days)** |
-| **Phase B: Episode Production** | **~10.75 weeks** | Record, edit, export 47 episodes (~148h scripting + ~282h recording) |
-| **Total Remaining** | **~26.75 weeks (~6.7 months)** | |
+| **Phase A: Private Demo** | **~16 weeks** | Build all systems off-camera. **Started 25 May 2026 — A1-A3 + A5 + A5b complete, A4 partial (deferred), A5c/A6/A7 remaining (est. ~29 days)** |
+| **Phase B: Episode Production** | **~11.7 weeks** | Record, edit, export 51 episodes (~162h scripting + ~306h recording) |
+| **Total Remaining** | **~27.25 weeks (~6.8 months)** | |
 
 ## Parallel Work
 
 Scripting (Phase B1) can overlap with Phase A development:
 - Script rewriting + Episodes 6-13 during Phase A2/A3 development
 - Script Episodes 14-26 during Phase A4/A5 development
-- Script Episodes 27-43 during Phase A5b/A6/A7 development
-- Script Episodes 44-47 during Phase A6/A7 development
+- Script Episodes 27-43 during Phase A5b/A5c development
+- Script Episodes 44-47 (auth extraction) during Phase A5c development
+- Script Episodes 48-51 (final demo) during Phase A6/A7 development
 
 This reduces total calendar time:
 
@@ -237,10 +251,11 @@ If releasing one episode per week:
 | Phase 4: Advanced AI | 29-33 | 1/week | 5 weeks |
 | Phase 5: Multiplayer | 34-39 | 1/week | 6 weeks |
 | Phase 5.5: Persistence & Account System | 40-43 | 1/week | 4 weeks |
-| Phase 6: Final Demo | 44-47 | 1/week | 4 weeks |
-| **Total release window** | **47 episodes** | **1/week** | **47 weeks (~11.75 months)** |
+| Phase 5.6: Auth Extraction & Login Server | 44-47 | 1/week | 4 weeks |
+| Phase 6: Final Demo & Polish | 48-51 | 1/week | 4 weeks |
+| **Total release window** | **51 episodes** | **1/week** | **51 weeks (~12.75 months)** |
 
-The ~4-month private demo build + ~10-month release window means a **~14-month project** from start to finish of the last episode release. Batch-recording (recording multiple episodes per week) compresses the production phase but not the release schedule.
+The ~4-month private demo build + ~10-month release window means a **~15-month project** from start to finish of the last episode release (expanded from 47 to 51 episodes with auth extraction content). Batch-recording (recording multiple episodes per week) compresses the production phase but not the release schedule.
 
 ---
 
@@ -260,9 +275,10 @@ The ~4-month private demo build + ~10-month release window means a **~14-month p
 | Advanced AI milestone | Week 46 | ❌ Not started | Episodes 29-33 released |
 | Multiplayer milestone | Week 52 | ❌ Not started | Episodes 34-39 released (MP + Steam + PvP) |
 | Persistence milestone | Week 56 | ❌ Not started | Episodes 40-43 released (save/load, character select) |
-| Series complete | Week 60 | ❌ Not started | Episode 47 (Final Showcase) |
+| Auth extraction milestone | Week 60 | ❌ Not started | Episodes 44-47 released (Login Server, tokens) |
+| Series complete | Week 64 | ❌ Not started | Episode 51 (Final Showcase) |
 
 ---
 
-**Total estimated effort:** ~21.5 weeks of work, ~14 months calendar (with weekly release cadence; 47 episodes over 47 weeks)
-**Next step:** Continue Private Demo Development — Sprint A5b (Persistence). **Updated 29 Jun 2026 with actual completion dates.**
+**Total estimated effort:** ~22 weeks of work, ~15 months calendar (with weekly release cadence; 51 episodes over 51 weeks)
+**Next step:** Fix nav mesh + character movement in DemoLevel, then begin Sprint A5c (Auth Extraction & Login Server). **Updated 27 Jul 2026 — CommonUI migration verified in packaged build.**
