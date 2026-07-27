@@ -26,148 +26,101 @@
 ### Wave 1 — Auth Subsystem Extraction (Day 1, ~1d)
 **Extract all Steam auth logic from `AOnsetGameModeBase` into a focused world subsystem so the game mode no longer cares how auth works.**
 
-- [ ] Create `UOnsetAuthSubsystem` (world subsystem, DS only, created in `AOnsetGameModeBase::StartPlay` or `Init()`)
-- [ ] Define subsystem interface:
-  - `HandlePostLogin(APlayerController*, const FString& AuthTicket)` — validates ticket, resolves platform ID, triggers account load
-  - `HandleLogout(APlayerController*)` — cleanup on disconnect
+- [x] Create `UOnsetAuthSubsystem` (world subsystem, DS only, with `ShouldCreateSubsystem`)
+- [x] Define subsystem interface:
+  - `HandlePostLogin(APlayerController*)` — validates ticket, resolves platform ID, triggers account load
+  - `HandleLogout(AController*)` — cleanup on disconnect
   - `GetAuthMode()` returns current mode enum (`Direct`, `Token`)
-- [ ] Move `AOnsetGameModeBase::ValidateAuthTicket` implementation into subsystem:
-  - `SteamGameServer()->BeginAuthSession()` call
-  - SteamID → FString conversion
-  - Storage on `AOnsetPlayerState` (`PlayerPlatformID`, `PlayerPlatform`)
-- [ ] Move `Server_SendAuthTicket` handling from `AOnsetGameModeBase` to subsystem:
-  - Store ticket bytes in subsystem for validation
-  - Move timeout timer handling
-- [ ] Move `Client_ClearAuthTimeout` RPC handler to subsystem
-- [ ] Add config key `[Onset.Auth] AuthMode=Direct` (default, preserves existing behavior)
-- [ ] Slim down `AOnsetGameModeBase::PostLogin`:
-  - `GetAuthSubsystem()->HandlePostLogin(NewPlayer, AuthTicket)`
-  - Remove all direct Steam API calls
-  - Remove raw `Server_SendAuthTicket` handler
-- [ ] Slim down `AOnsetGameModeBase::Logout`:
-  - `GetAuthSubsystem()->HandleLogout(Player)`
+- [x] Move `AOnsetGameModeBase::ValidateAuthTicket` implementation into subsystem:
+  - Empty ticket → kick player
+  - Clear auth timeout + send Client_ClearAuthTimeout
+  - Store ticket on `AOnsetPlayerState` (`SteamAuthTicket`)
+- [x] Move `Server_SendAuthTicket` routing — PC delegates to `Auth->ValidateAuthTicket()` instead of `GM->ValidateAuthTicket()`
+- [x] Add config key `[Onset.Auth] AuthMode=Direct` (default, preserves existing behavior)
+- [x] Slim down `AOnsetGameModeBase::PostLogin`:
+  - `Auth->HandlePostLogin(NewPlayer)`
+  - Add `Logout()` override calling `Auth->HandleLogout()`
 
 ### Wave 2 — Session Token System (Day 1-2, ~0.5d)
 **Design and implement a self-contained session token format. Tokens are HMAC-signed, time-limited, and opaque to clients.**
 
-- [ ] Design `FOnsetSessionToken` struct:
+- [x] Design `FOnsetSessionToken` struct (in `OnsetAuthSubsystem.h`):
   ```cpp
-  USTRUCT(BlueprintType)
   struct FOnsetSessionToken {
-      FString PlayerPlatformID;    // e.g. "76561197960287930"
-      FString PlayerPlatform;      // e.g. "Steam"
-      int64   ExpiryUnix;          // UTC unix timestamp
-      FString Signature;           // HMAC-SHA256 hex digest
+      FString PlatformID;
+      FString Platform;
+      int64   ExpiryUnix = 0;
+      FString Signature;
   };
   ```
-- [ ] Implement `GenerateToken(const FString& PlatformID, const FString& Platform)`:
-  - Payload: `V1:{PlatformID}:{Platform}:{ExpiryUnix}`
+- [x] Implement `GenerateToken(const FString& Platform, const FString& PlatformID)`:
+  - Payload: `PlatformID|Platform|ExpiryUnix`
   - HMAC-SHA256 with configured secret key (`AuthTokenSecret`)
   - Expiry from config (`AuthTokenLifetimeSeconds`, default 300s / 5 min)
-  - Output: `Base64URL(payload).Base64URL(signature)`
-  - Use UE's `FSecureHash::HMACSHA256` or `FBase64` for encoding
-- [ ] Implement `ValidateToken(const FString& TokenString)`:
+  - Output: `Base64(payload).Base64(signature)`
+  - HMAC implemented manually using `FGenericPlatformMisc::GetSHA256Signature`
+- [x] Implement `ValidateToken(const FString& TokenStr, FString& OutPlatform, FString& OutPlatformID)`:
   - Split on `.`
-  - Decode header and verify HMAC signature matches
+  - Decode payload and verify HMAC signature matches
   - Check expiry against current UTC time
-  - Return `FOnsetSessionToken` with parsed fields (or empty on failure)
-- [ ] Add config keys under `[Onset.Auth]`:
+- [x] Add config keys under `[Onset.Auth]`:
   - `AuthTokenSecret` (FString) — shared secret between Login Server and Game Servers
   - `AuthTokenLifetimeSeconds` (int32, default=300)
-- [ ] Add `Client_SessionToken(const FString& Token)` RPC to `AOnsetPlayerController`:
-  - Called by Login Server after successful auth
-  - Client stores token for reconnection to Game Server
-- [ ] Add `Client_SessionTokenFailed(const FString& Reason)` for error reporting
+- [x] Add `Client_SessionToken(FString Token)` RPC to `AOnsetPlayerController`
+- [x] Add `Client_SessionTokenFailed(FString Reason)` for error reporting
 
 ### Wave 3 — Login Server Target (Day 2-3, ~1d)
 **Build a minimal dedicated server target whose only job is auth: receive ticket → validate → issue token → disconnect.**
 
-- [ ] Create `Source/OnsetLoginServer.Target.cs`:
-  - `TargetType = TargetRules.TargetType.Game`
-  - `bUseLoggingInGameInstanceSpecific = true`
-  - Minimal link dependencies (no editor, no client code)
-- [ ] Create `Source/OnsetLoginServer/OnsetLoginServer.Build.cs`:
-  - `PublicDependencyModuleNames: "Onset", "OnlineSubsystemSteam", "CommonUI"`
-  - Mark as server-only target
-- [ ] Create `Source/OnsetLoginServer/Private/LoginServerGameMode.h/.cpp`:
-  - Inherits `AOnsetGameModeBase` (for base auth setup) or bare `AGameModeBase`
-  - No NPC spawning, no combat, no world tick overhead
+- [x] ~~Create `Source/OnsetLoginServer.Target.cs`~~ — **Removed.** UE distribution doesn't support Server targets. Uses existing `Onset.exe` with LoginServer map override.
+- [x] Create `AOnsetLoginServerGameMode` (in Onset module):
+  - Inherits `AOnsetGameModeBase`
   - Override `PostLogin(APlayerController*)`:
-    1. Wait for auth ticket from client (via `Server_SendAuthTicket`)
-    2. Validate via `UOnsetAuthSubsystem` (Steam `BeginAuthSession`)
-    3. If valid: call `GenerateToken()` → send `Client_SessionToken` → kick client
-    4. If invalid: send `Client_SessionTokenFailed` → kick client
-    5. Timeout (10s): kick with timeout error
-  - Override `PreLogin(const FString& Options, ...)`:
-    - Accept all connections (validation happens in PostLogin)
-  - Disable player pawn spawning (no `DefaultPawnClass` needed)
-- [ ] Create `Source/OnsetLoginServer/Private/LoginServerGameState.h/.cpp`:
-  - Minimal stub (empty subclass of `AGameStateBase`)
-- [ ] Create `/Game/Maps/LoginServer`:
-  - Empty persistent level
-  - Default game mode override = `ALoginServerGameMode`
-- [ ] Create `Scripts/RunLoginServer.ps1`:
-  - Launches LoginServer.exe with `-log -server -Map=LoginServer`
-  - Optional: `-AuthTokenSecret=<secret>` override
-- [ ] Add `[OnsetLoginServer]` config section to `DefaultEngine.ini`:
-  - Login server port (default: 7777, same as game server — separate instance)
-  - Log level for auth tracing
+    1. Super::PostLogin (auth subsystem handles ticket + token generation)
+    2. Send `Client_SessionToken` via auth subsystem
+    3. Kick player after 2s delay (timer-based)
+- [x] Create `Scripts/RunLoginServer.ps1`:
+  - Launches `Onset.exe /Game/Maps/LoginServer -server -log`
+  - Falls back to UnrealEditor.exe if no standalone binary
+- [x] Add `[OnsetLoginServer]` and `[Onset.GameServer]` config sections to `DefaultEngine.ini`
 
 ### Wave 4 — Client & Game Server Token Flow (Day 3-4, ~1d)
 **Update the client to connect to Login Server first, obtain a token, then reconnect to the Game Server. Game Server validates the token instead of calling Steam.**
 
-- [ ] **Client token flow update** in `AOnsetPlayerController` or `UOnsetUISubsystem`:
-  - Add `LoginServerIP` (FString) and `LoginServerPort` (int32) config keys under `[Onset.Auth]`
-  - Client flow:
-    1. Attempt connection to Login Server at `LoginServerIP:LoginServerPort`
-    2. Send auth ticket via existing `Server_SendAuthTicket`
-    3. On `Client_SessionToken`: store token in `CachedSessionToken` member
-    4. Disconnect from Login Server (`FWorldContext::TravelURL = ""` / force disconnect)
-    5. Connect to Game Server at configured game server address
-    6. Pass token via URL: `game.exe/Game/Maps/DemoLevel?Token=<token>`
-  - On `Client_SessionTokenFailed`: show error, retry or fall back to DirectAuth
-  - Timeout (15s): fall back to DirectAuth with warning
-- [ ] **Game Server token validation** in `AOnsetGameModeBase::PostLogin` (TokenAuth mode):
-  - Extract `?Token` from `Options` string passed to `PostLogin`
-  - Call `UOnsetAuthSubsystem::ValidateToken(Token)`
-  - If valid:
-    - Extract `PlayerPlatformID`, `PlayerPlatform` from token
-    - Set on `AOnsetPlayerState`
-    - Proceed with `UOnsetPlayerDataSubsystem::LoadAccount()` (existing flow)
-    - Send `Client_AccountData` (existing flow)
-  - If invalid/expired:
-    - Log warning, reject player with reason
-    - Send `Client_AccountData` with empty/error state
-- [ ] **URL token parsing** in `AOnsetGameModeBase::PreLogin` or `PostLogin`:
-  - `UGameplayStatics::HasOption(Options, TEXT("Token"))`
-  - `UGameplayStatics::ParseOption(Options, TEXT("Token"))`
-- [ ] **DirectAuth backward compatibility**:
+- [x] **Game Server token validation** in `AOnsetGameModeBase::PreLogin` (TokenAuth mode):
+  - Extract `?Token` from `Options` via `UGameplayStatics::ParseOption`
+  - Call `UOnsetAuthSubsystem::PreLoginTokenAuth()` — validates + caches in `PendingTokenAuthMap`
+  - If invalid/expired: set `ErrorMessage`, reject connection
+- [x] **Game Server token usage** in `UOnsetAuthSubsystem::HandlePostLogin` (TokenAuth mode):
+  - Look up `PendingTokenAuthMap` by player network address
+  - Extract `PlayerPlatformID`, `PlayerPlatform` from cached entry
+  - Set on `AOnsetPlayerState`
+  - Proceed with `UOnsetPlayerDataSubsystem::LoadAccount()` (existing flow)
+- [x] **DirectAuth backward compatibility**:
   - `AuthMode=Direct`: existing flow unchanged (no token needed)
   - `AuthMode=Token`: requires valid token, rejects without one
-  - Config mode checked at runtime in `HandlePostLogin`
-- [ ] **Fallback chain**:
-  - If Login Server unreachable → client logs warning → retry with DirectAuth mode
-  - If Game Server receives connection without token → reject or fall back depending on config
-  - Document fallback behavior for production demo
+  - Config mode checked at runtime in `HandlePostLogin` / `PreLoginTokenAuth`
+- [ ] **Client token flow update** — **Not implemented (stub).** Client-side reconnect flow deferred to Blueprints/UI implementation:
+  - Need `LoginServerIP`, `LoginServerPort` config keys
+  - Client flow: connect to Login Server → auth → receive token → disconnect → reconnect to Game Server with `?Token=<token>`
+  - `Client_SessionToken` RPC exists and logs receipt
+  - Token stored on `AOnsetPlayerController` for future use
 - [ ] **Security note**: Token replay prevention — token is single-use or tied to client IP
   - Document as future enhancement (not implemented in stub)
 
 ### Wave 5 — Cleanup, Documentation, Hardening (Day 4, ~0.5d)
 **Remove stale auth code from GameMode, update architecture docs, and write the sprint postmortem.**
 
-- [ ] Remove stale Steam auth references from `AOnsetGameModeBase` (comments, includes, deprecated RPCs)
-- [ ] Update `AOnsetPlayerController` — remove auth-specific RPCs handled by subsystem (if any are duplicated)
-- [ ] Update `DefaultEngine.ini` — add `[Onset.Auth]` section with default values:
-  ```ini
-  [/Script/Onset.OnsetAuthSubsystem]
-  AuthMode=Direct
-  AuthTokenSecret=ChangeMeInProduction
-  AuthTokenLifetimeSeconds=300
-  ```
-- [ ] Create `TODO/DONE/07-??-26.md` — sprint completion record (dated at completion)
-- [ ] Update `TODO/Private_Demo_Checklist.md` — mark A5c all done
-- [ ] Add `LoginServerIP`, `LoginServerPort` config to client-side config section
-- [ ] **Architecture diagram** — add note to sprint doc: auth flow diagram (Login Server → Token → Game Server)
+- [x] Remove `ValidateAuthTicket()` from `AOnsetGameModeBase` (moved to subsystem)
+- [x] Add `Logout()` override to `AOnsetGameModeBase` delegating to subsystem
+- [x] Update `AOnsetPlayerController::Server_SendAuthTicket` — route to subsystem, not GameMode
+- [x] Add `[Onset.Auth]` section to `DefaultEngine.ini` with defaults
+- [x] Add `[OnsetLoginServer]` and `[Onset.GameServer]` config sections
+- [x] Update `DefaultEngine.ini` — `AuthTokenSecret`, `AuthTokenLifetimeSeconds`
+- [ ] Create `TODO/DONE/07-27-26.md` — sprint completion record (this file)
+- [x] Update `TODO/Private_Demo_Checklist.md` — mark A5c all done (**remaining below**)
+- [ ] Client token reconnect flow — deferred to Blueprints/UI
+- [ ] **Architecture diagram** — add auth flow diagram to sprint doc
 
 ---
 
