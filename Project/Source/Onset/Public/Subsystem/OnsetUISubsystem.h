@@ -33,6 +33,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Onset|UI")
 	void PopScreen(EOnsetUILayer Layer);
 
+	/** Removes the entire RootLayout from the viewport and clears the internal reference.
+	 *  Call before traveling away from MainMenu to avoid carrying stale UI into the game world. */
+	UFUNCTION(BlueprintCallable, Category = "Onset|UI")
+	void CleanupUI();
+
 	UFUNCTION(BlueprintPure, Category = "Onset|UI")
 	UOnsetRootLayout* GetRootLayout() const { return RootLayout; }
 

@@ -10,8 +10,13 @@ void UMainMenuScreen::ConnectToServer() const
 	auto* PlayerController = GetOwningPlayer<AOnsetPlayerController>();
 	if (!GameInstance || !PlayerController) return;
 	
-	auto* UI = GameInstance->GetSubsystem<UOnsetUISubsystem>();                                            
-	if (!UI || !PlayerController || !CharacterSelectScreenClass) return;                                                      
+	auto* UI = GameInstance->GetSubsystem<UOnsetUISubsystem>();
+	if (!UI || !PlayerController || !CharacterSelectScreenClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ConnectToServer: UI=%d PC=%d CharSelectClass=%d"),
+			!!UI, !!PlayerController, !!CharacterSelectScreenClass);
+		return;
+	}                                                      
                                                                                                                      
 	if (auto* Screen = Cast<UCharacterSelectScreen>(UI->PushScreen(EOnsetUILayer::Game, CharacterSelectScreenClass)))                         
 	{                                         

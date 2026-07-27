@@ -6,7 +6,7 @@
 
 ## **Purpose**
 
-Provide persistent player identity and progression across play sessions. Each Steam account owns up to 3 character slots; characters persist between DS restarts and survive crashes.
+Provide persistent player identity and progression across play sessions. Each Steam account owns up to 3 character slots; characters persist between DS restarts and survive crashes. The account backend is swappable — SQLite (dev), PostgreSQL (self-hosted), or HTTP REST API (Lambda + DynamoDB, live-service).
 
 ---
 
@@ -103,33 +103,39 @@ Combat ephemera (current health, active cooldowns, temporary effects) are **neve
 
 ## **Data Flow**
 
-### **Login Flow**
+### **Login Flow (HTTP API)**
 
 ```
-Client                          DS (GameMode)
-------                          ---------------
-    │                               │
-    ├── Connect ──────────────────► │
-    │                               │  Steam Auth handshake (existing)
-    │                               │  ValidateAuthTicket() extracts SteamID
-    │                               │  via SteamGameServer()->BeginAuthSession()
-    │   ◄─── Client_ClearAuthTimeout│
-    │                               │
-    │                               │  PostLogin:
-    │                               │  UOnsetPlayerDataSubsystem::LoadAccount()
-    │                               │  (auto-creates if first login)
-    │   ◄─── Client_AccountData ─── │
-    │                               │
-    │  [Character Select Screen]    │
-    │                               │
-    ├── Server_SelectCharacter(1) ► │
-    │                               │  LoadCharacter(Platform, PlatformID, 1)
-    │                               │  Spawn AOnsetPlayerCharacter
-    │                               │  ApplySaveData(CharacterData)
-    │   ◄─── Client_CharacterData ── │
-    │                               │
-    │  [Enter World]                │
+Client                          DS (GameMode)                   Account API (Lambda)
+------                          ---------------                 --------------------
+    │                               │                                  │
+    ├── Connect ──────────────────► │                                  │
+    │                               │  Steam Auth handshake            │
+    │                               │  ValidateAuthTicket() → SteamID  │
+    │   ◄─── Client_ClearAuthTimeout│                                  │
+    │                               │                                  │
+    │                               │  PostLogin:                      │
+    │                               │  FHttpStore::LoadAccount() ────► │  GET /account/Steam/{id}
+    │                               │    ◄── 404 (first time) ─────── │
+    │                               │  FHttpStore::CreateAccount() ──► │  POST /account/Steam/{id}
+    │                               │    ◄── 201 Created ──────────── │
+    │                               │  FHttpStore::LoadAccount() ────► │  GET /account/Steam/{id}
+    │                               │    ◄── 200 + account data ────  │
+    │   ◄─── Client_AccountData ─── │                                  │
+    │                               │                                  │
+    │  [Character Select Screen]    │                                  │
+    │                               │                                  │
+    ├── Server_SelectCharacter(1) ► │                                  │
+    │                               │  FHttpStore::LoadCharacter() ──► │  GET /account/Steam/{id}/character/1
+    │                               │    ◄── 200 + character data ─── │
+    │                               │  Spawn AOnsetPlayerCharacter     │
+    │                               │  ApplySaveData(CharacterData)    │
+    │   ◄─── Client_CharacterData ── │                                  │
+    │                               │                                  │
+    │  [Enter World]                │                                  │
 ```
+
+When using SQLite or PostgreSQL, the store is called directly on the DS (no REST hop). The HTTP API path uses `FHttpStore` which serializes requests as JSON and sends them to the Lambda Function URL.
 
 ### **Save Flow**
 
@@ -154,7 +160,7 @@ PlayerController           UOnsetPlayerDataSubsystem       IPlayerDataStore
 
 ## **Interactions With Other Systems**
 
-- **[Persistence Data Store](../Server/Persistence_Data_Store.md)** — `IPlayerDataStore` interface used for all reads/writes  
+- **[Persistence Data Store](../Server/Persistence_Data_Store.md)** — `IPlayerDataStore` interface used for all reads/writes; `FHttpStore` proxies to the [Account API](../Server/Account_Api.md) (Lambda + DynamoDB) when `Type=HttpApi`  
 - **[Steam Integration](../Steam/Steam_Integration_System.md)** — provides the SteamID that anchors the account  
 - **[Multiplayer](../Multiplayer/Multiplayer_System.md)** — all RPCs are server-authenticated and replicated  
 - **[Player System](../Player/Player_System.md)** — character pawn loads/saves state via `ApplySaveData` / `BuildSaveData`  

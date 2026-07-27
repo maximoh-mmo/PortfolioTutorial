@@ -6,7 +6,7 @@
 
 ## **Purpose**
 
-Provide a clean, swappable persistence backend for the dedicated server. The DS reads a config key at startup and instantiates the appropriate store implementation — SQLite for dev/demo, PostgreSQL for production.
+Provide a clean, swappable persistence backend for the dedicated server. The DS reads a config key at startup and instantiates the appropriate store implementation — SQLite for dev/demo, PostgreSQL or HTTP API (Lambda + DynamoDB) for production.
 
 ---
 
@@ -15,6 +15,7 @@ Provide a clean, swappable persistence backend for the dedicated server. The DS 
 - Abstract all database operations behind a pure virtual interface  
 - Implement SQLite storage with WAL mode and migration support  
 - Implement PostgreSQL storage with the same queries and schema  
+- Implement HTTP API store (`FHttpStore`) — proxies all calls to a remote REST API (Lambda + DynamoDB)  
 - Provide safe concurrent access (thread-safe reads/writes)  
 - Handle schema versioning and forward-only migrations  
 
@@ -37,7 +38,9 @@ IPlayerDataStore  ← abstract interface (in Source/OnsetDataStore/Public/)
       │
       ├── FSQLiteStore   ← file-based, zero dependencies, dev/demo
       │
-      └── FPgSQLStore    ← libpq-based, production
+      ├── FPgSQLStore    ← libpq-based, production
+      │
+      └── FHttpStore     ← REST API-backed, serverless production (Lambda + DynamoDB)
 ```
 
 **Module structure:** All data store code lives in `Source/OnsetDataStore/`, a separate module from `Onset`. The `OnsetDataStore` module conditionally links `SQLiteCore` — only for non-client targets. Client builds compile only the interface (`IPlayerDataStore`), factory (`DataStoreFactory`), and data types (`OnsetPlayerDataTypes`). Store implementations (`FSQLiteStore`, `FPgSQLStore`) are excluded via the `ONSETDATASTORE_CLIENT_ONLY` define.
@@ -53,11 +56,16 @@ The DS selects the implementation via config:
 
 ```ini
 [Onset.DataStore]
-DataStore=SQLite
-SQLitePath=../../OnsetDB/playerdata.db
-; DataStore=Postgres
-; PgSQLConnectionString=host=localhost dbname=onset user=onset password=...
+; Type=Postgres
+; ConnectionString=host=localhost dbname=onset user=onset password=...
+; Type=SQLite (default)
+; ConnectionString=
+Type=HttpApi
+ConnectionString=qnghmsigrompw56v5wrlojl7z40dwtqm.lambda-url.us-east-1.on.aws/
+APIKey=dev-api-key-change-me-in-production
 ```
+
+Note: For `HttpApi`, the `ConnectionString` stores only the host (no `https://` prefix) — the store prepends it at runtime to avoid INI parser truncation.
 
 ### **Schema**
 
@@ -158,6 +166,14 @@ public:
 - Same queries (parametrized with `$1`, `$2`, etc.)  
 - `Initialize()` connects and runs migrations
 - `SaveAll()` is a no-op (PostgreSQL handles this internally)
+
+### **`FHttpStore`**
+- No database connection — proxies all calls to a remote REST API via `FHttpModule`
+- `Initialize()` constructs the base URL from config (prepends `https://`)
+- All requests use `FHttpModule::Get().CreateRequest()` with blocking spin-loop + `GetHttpManager().Tick(0.f)` to pump callbacks on the game thread
+- Serializes requests/responses as JSON (FJsonObject/FJsonObjectConverter)
+- `SaveAll()` is a no-op (API is transactional per-call)
+- API key sent via `X-API-Key` header for all requests
 
 ### **`UOnsetPlayerDataSubsystem`**
 - World subsystem, DS only

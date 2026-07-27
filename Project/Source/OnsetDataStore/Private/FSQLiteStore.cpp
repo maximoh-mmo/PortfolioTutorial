@@ -74,7 +74,13 @@ bool FSQLiteStore::Initialize(const FString& InConnectionString)
 	if (sqlite3_open(TCHAR_TO_UTF8(*DBPath), &DB) != SQLITE_OK)
 	{
 		LogSQLError(DB, "sqlite3_open", false);
-		return false;
+		UE_LOG(LogTemp, Warning, TEXT("FSQLiteStore: falling back to in-memory database for dev/PIE"));
+		if (sqlite3_open(":memory:", &DB) != SQLITE_OK)
+		{
+			LogSQLError(DB, "sqlite3_open(:memory:)", false);
+			return false;
+		}
+		DBPath = TEXT(":memory:");
 	}
 
 	if (!Exec("PRAGMA journal_mode=WAL;"))

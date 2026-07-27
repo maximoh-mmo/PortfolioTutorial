@@ -565,7 +565,7 @@ Status: ⏳ Not started
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
-| A5b Persistence & Account | 51 | 51 | 100% | All waves complete (Wave 5 revised: canvas HUDs → CommonUI screen stack) |
+| A5b Persistence & Account | 51 | 51 | 100% | All waves complete. Includes FHttpStore + Account API (Lambda + DynamoDB). Wave 5 revised: canvas HUDs → CommonUI screen stack. |
 | A5c Auth Extraction & Login Server | 34 | 0 | 0% | Not started — planned sprint, est. 4 days |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |

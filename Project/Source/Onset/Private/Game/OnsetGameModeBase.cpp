@@ -6,12 +6,16 @@
 #include "Engine/Engine.h"
 #include "UObject/ConstructorHelpers.h"
 #include "EngineUtils.h"
+#include "Engine/GameInstance.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "Game/OnsetGameState.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
+#include "Subsystem/OnsetUISubsystem.h"
+#include "UI/OnsetRootLayout.h"
+#include "UI/OnsetScreenBase.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
@@ -27,9 +31,25 @@ DEFINE_LOG_CATEGORY(LogSteamAuth);
 		DefaultPawnClass = PlayerBP.Class;
 	}
 	PlayerControllerClass = AOnsetPlayerController::StaticClass();
+	static ConstructorHelpers::FClassFinder<APlayerController> ControllerBP(TEXT("/Game/Input/MyOnsetPlayerController.MyOnsetPlayerController_C"));
+	if (ControllerBP.Class != nullptr)
+	{
+		PlayerControllerClass = ControllerBP.Class;
+	}
 	PlayerStateClass = AOnsetPlayerState::StaticClass();
 	GameStateClass = AOnsetGameState::StaticClass();
 	HUDClass = nullptr;
+
+	static ConstructorHelpers::FClassFinder<UOnsetRootLayout> RootLayoutClassFinder(TEXT("/Game/UI/Core/WBP_RootLayout"));
+	if (RootLayoutClassFinder.Succeeded())
+	{
+		RootLayoutClass = RootLayoutClassFinder.Class;
+	}
+	static ConstructorHelpers::FClassFinder<UOnsetScreenBase> MenuFinder(TEXT("/Game/UI/Screens/WBP_MainMenu"));
+	if (MenuFinder.Succeeded())
+	{
+		MainMenuScreenClass = MenuFinder.Class;
+	}
 }
 
 void AOnsetGameModeBase::StartPlay()
@@ -42,6 +62,18 @@ void AOnsetGameModeBase::StartPlay()
 	}
 }
 
+void AOnsetGameModeBase::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+	AOnsetPlayerState* PS = NewPlayer ? NewPlayer->GetPlayerState<AOnsetPlayerState>() : nullptr;
+
+	// Reconnecting or zone-travel — spawn pawn normally
+	if (PS && PS->SelectedCharacterSlot >= 0)
+	{
+		Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+	}
+	// New player — no pawn until character is selected via Server_SelectCharacter
+}
+
 void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
@@ -49,8 +81,8 @@ void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 	if (!NewPlayer || !HasAuthority())
 		return;
 
-	AOnsetPlayerState* PS = NewPlayer->GetPlayerState<AOnsetPlayerState>();
-	if (!PS)
+	AOnsetPlayerState* PlayerState = NewPlayer->GetPlayerState<AOnsetPlayerState>();
+	if (!PlayerState)
 		return;
 
 	// Platform ID defaults based on the network transport
@@ -58,14 +90,14 @@ void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 	FString PlatformID = TEXT("");
 
 	// Extract platform-specific user ID from the network connection
-	FUniqueNetIdRepl UniqueId = PS->GetUniqueId();
+	FUniqueNetIdRepl UniqueId = PlayerState->GetUniqueId();
 	if (UniqueId.IsValid())
 	{
 		PlatformID = UniqueId->ToString();
 	}
 
-	PS->PlayerPlatform = Platform;
-	PS->PlayerPlatformID = PlatformID;
+	PlayerState->PlayerPlatform = Platform;
+	PlayerState->PlayerPlatformID = PlatformID;
 
 	UE_LOG(LogSteamAuth, Log, TEXT("PostLogin: player %s — platform=%s, id=%s"),
 		*NewPlayer->GetName(), *Platform, *PlatformID);
@@ -95,16 +127,17 @@ void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 		}
 	}
 
-	// If player already selected a character, this is a zone-travel reconnect — skip sending account data
+	// Send account data and show character select UI for new players
 	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
-	if (PC && PS->SelectedCharacterSlot < 0)
+	if (PC && PlayerState->SelectedCharacterSlot < 0)
 	{
 		PC->Client_AccountData(AccountData);
+		PC->Client_ShowMainMenuUI(RootLayoutClass, MainMenuScreenClass);
 	}
-	else if (PC && PS->SelectedCharacterSlot >= 0)
+	else if (PC && PlayerState->SelectedCharacterSlot >= 0)
 	{
 		UE_LOG(LogSteamAuth, Log, TEXT("PostLogin: player %s already has slot %d (zone travel) — skipping account UI"),
-			*NewPlayer->GetName(), PS->SelectedCharacterSlot);
+			*NewPlayer->GetName(), PlayerState->SelectedCharacterSlot);
 	}
 }
 
@@ -138,25 +171,25 @@ void AOnsetGameModeBase::ValidateAuthTicket(APlayerController* NewPlayer, const 
 
 AActor* AOnsetGameModeBase::ChoosePlayerStart_Implementation(AController* Player)
 {
-	AOnsetPlayerState* PS = Player ? Player->GetPlayerState<AOnsetPlayerState>() : nullptr;
+	AOnsetPlayerState* PlayerState = Player ? Player->GetPlayerState<AOnsetPlayerState>() : nullptr;
 
 	// If player has a pending entry point, find a PlayerStart tagged with that name
-	if (PS && !PS->PendingEntryPoint.IsEmpty())
+	if (PlayerState && !PlayerState->PendingEntryPoint.IsEmpty())
 	{
 		for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
 		{
-			APlayerStart* Start = *It;
-			if (Start && Start->Tags.Contains(FName(*PS->PendingEntryPoint)))
+			APlayerStart* PlayerStart = *It;
+			if (PlayerStart && PlayerStart->Tags.Contains(FName(*PlayerState->PendingEntryPoint)))
 			{
 				UE_LOG(LogSteamAuth, Log, TEXT("ChoosePlayerStart: matched entry point '%s' -> %s"),
-					*PS->PendingEntryPoint, *Start->GetName());
-				PS->PendingEntryPoint.Empty();
-				return Start;
+					*PlayerState->PendingEntryPoint, *PlayerStart->GetName());
+				PlayerState->PendingEntryPoint.Empty();
+				return PlayerStart;
 			}
 		}
 		UE_LOG(LogSteamAuth, Warning, TEXT("ChoosePlayerStart: entry point '%s' not found — falling back to default"),
-			*PS->PendingEntryPoint);
-		PS->PendingEntryPoint.Empty();
+			*PlayerState->PendingEntryPoint);
+		PlayerState->PendingEntryPoint.Empty();
 	}
 
 	return Super::ChoosePlayerStart_Implementation(Player);

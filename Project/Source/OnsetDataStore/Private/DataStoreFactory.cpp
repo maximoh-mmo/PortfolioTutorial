@@ -4,6 +4,7 @@
 #ifndef ONSETDATASTORE_CLIENT_ONLY
 #include "FSQLiteStore.h"
 #include "FPgSQLStore.h"
+#include "FHttpStore.h"
 #endif
 
 TUniquePtr<IPlayerDataStore> CreateDataStore(const FString& Type, const FString& ConnectionString, bool& bOutSuccess)
@@ -21,6 +22,13 @@ TUniquePtr<IPlayerDataStore> CreateDataStore(const FString& Type, const FString&
 	else if (Type.Equals(TEXT("Postgres"), ESearchCase::IgnoreCase) || Type.Equals(TEXT("PgSQL"), ESearchCase::IgnoreCase))
 	{
 		TUniquePtr<FPgSQLStore> Store = MakeUnique<FPgSQLStore>();
+		bOutSuccess = Store->Initialize(ConnectionString);
+		if (bOutSuccess)
+			return Store;
+	}
+	else if (Type.Equals(TEXT("HttpApi"), ESearchCase::IgnoreCase))
+	{
+		TUniquePtr<FHttpStore> Store = MakeUnique<FHttpStore>();
 		bOutSuccess = Store->Initialize(ConnectionString);
 		if (bOutSuccess)
 			return Store;

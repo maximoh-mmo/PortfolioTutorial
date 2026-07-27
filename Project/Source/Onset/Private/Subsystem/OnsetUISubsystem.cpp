@@ -29,6 +29,15 @@ UOnsetScreenBase* UOnsetUISubsystem::PushScreen(EOnsetUILayer Layer, TSubclassOf
 	return nullptr;
 }
 
+void UOnsetUISubsystem::CleanupUI()
+{
+	if (RootLayout)
+	{
+		RootLayout->RemoveFromParent();
+		RootLayout = nullptr;
+	}
+}
+
 void UOnsetUISubsystem::PopScreen(EOnsetUILayer Layer)
 {
 	if (UOnsetActivatableWidgetStack* Stack = GetStackForLayer(Layer))

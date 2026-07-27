@@ -17,6 +17,8 @@ class UGamepadCursorWidget;
 class UCursorManager;
 class UInputAction;
 class UInputMappingContext;
+class UOnsetRootLayout;
+class UOnsetScreenBase;
 class UTargetingComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogGamepad, Log, All);
@@ -27,7 +29,7 @@ class ONSET_API AOnsetPlayerController : public APlayerController
 	GENERATED_BODY()
 public:
 	AOnsetPlayerController();
-	
+		
 	UFUNCTION(BlueprintCallable, Category="Steam")
 	void RequestSteamAuth();
 
@@ -179,6 +181,12 @@ private:
 		
 public:
 	const FOnsetAccountData& GetCachedAccountData() const { return CachedAccountData; }  
+
+	UFUNCTION(Client, Reliable)
+	void Client_ShowMainMenuUI(TSubclassOf<UOnsetRootLayout> RootLayoutClass, TSubclassOf<UOnsetScreenBase> MainMenuClass);
+
+	UFUNCTION(Client, Reliable)
+	void Client_CleanupUI();
 
 	UFUNCTION(Client, Reliable)
 	void Client_AccountData(const FOnsetAccountData& AccountData);

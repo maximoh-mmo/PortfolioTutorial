@@ -14,6 +14,8 @@ public class OnsetDataStore : ModuleRules
 
 		if (Target.Type != TargetType.Client)
 		{
+			PrivateDependencyModuleNames.Add("HTTP");
+PrivateDependencyModuleNames.Add("Json");
 			PrivateDependencyModuleNames.Add("SQLiteCore");
 
 			string PostgresPath = Path.Combine(ModuleDirectory, "..", "Onset", "ThirdParty", "PostgreSQL");

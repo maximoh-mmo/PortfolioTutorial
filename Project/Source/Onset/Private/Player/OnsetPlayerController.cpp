@@ -27,6 +27,9 @@
 #include "Player/OnsetCheatManager.h"
 #include "Player/OnsetPlayerAIController.h"
 #include "UI/GamepadCursorWidget.h"
+#include "Subsystem/OnsetUISubsystem.h"
+#include "UI/OnsetRootLayout.h"
+#include "UI/OnsetScreenBase.h"
 #include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogGamepad);
@@ -92,6 +95,22 @@ void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccou
 	CachedAccountData = InAccountData;     // new member, consumed by ConnectToServer                           
 	bShowMouseCursor = true;                                                                                    
 	SetInputMode(FInputModeGameAndUI());            
+}
+
+void AOnsetPlayerController::Client_ShowMainMenuUI_Implementation(
+	TSubclassOf<UOnsetRootLayout> RootLayoutClass,
+	TSubclassOf<UOnsetScreenBase> MainMenuClass)
+{
+	auto* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>();
+	if (!UI) return;
+	if (RootLayoutClass) UI->InitializeRootLayout(RootLayoutClass);
+	if (MainMenuClass)   UI->PushScreen(EOnsetUILayer::Game, MainMenuClass);
+}
+
+void AOnsetPlayerController::Client_CleanupUI_Implementation()
+{
+	auto* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>();
+	if (UI) UI->CleanupUI();
 }
 
 void AOnsetPlayerController::Client_ClearAuthTimeout_Implementation()
@@ -548,8 +567,8 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 	UE_LOG(LogTemp, Log, TEXT("Server_SelectCharacter: player %s selected slot %d (%s)"),
 		*PS->GetPlayerName(), SlotIndex, *CharData.CharacterName);
 
-	// Travel all players to the game world
-	GetWorld()->ServerTravel(TEXT("DemoLevel?game=/Script/Onset.OnsetGameModeBase"));
+	// Clean up UI — player now has a pawn in the world
+	Client_CleanupUI();
 }
 
 void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotIndex, const FString& CharacterName)
