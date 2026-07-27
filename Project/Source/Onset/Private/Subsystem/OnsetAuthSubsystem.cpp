@@ -1,5 +1,6 @@
 #include "Subsystem/OnsetAuthSubsystem.h"
 
+#include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
@@ -177,10 +178,6 @@ void UOnsetAuthSubsystem::HandleLogout(AController* Exiting)
 	CharData.SavedPosition = PlayerChar->GetActorLocation();
 	CharData.SavedRotationYaw = PlayerChar->GetActorRotation().Yaw;
 	CharData.CurrentZone = GetWorld()->GetMapName();
-	if (PlayerChar->AttributeSet)
-	{
-		CharData.SavedMaxHealth = PlayerChar->AttributeSet->GetMaxHealth();
-	}
 	CharData.InventoryJSON = TEXT("{}");
 	CharData.EquipmentJSON = TEXT("{}");
 	CharData.QuestsJSON = TEXT("{}");

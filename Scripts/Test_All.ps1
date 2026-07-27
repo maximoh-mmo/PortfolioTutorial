@@ -324,29 +324,45 @@ Write-Step "PHASE 4: Regression - Direct Mode" @"
 Set-Content -Path $ConfigPath -Value $configBackup
 Write-Host "  `[DONE`] Config restored to original (AuthMode=Direct)" -ForegroundColor Green
 
-Write-Section "4.1 - Launch DS + Client"
-Write-Host "Re-launching DS + 1 client (same as Phase 2)..." -ForegroundColor Gray
-$regressionDSArgs = """$ProjectPath"" /Game/DemoLevel?Listen -server -log -NoLiveCoding"
-$regressionDSProcess = Start-Process -FilePath $Binary -ArgumentList $regressionDSArgs -WindowStyle Normal -PassThru
+Write-Section "4.1 - Launch Lobby DS + Game DS + Client (Direct Mode)"
+Write-Host "Re-launching Lobby DS (MainMenu) + Game DS (DemoLevel) + client..." -ForegroundColor Gray
+
+$lobbyArgs = """$ProjectPath"" /Game/Maps/MainMenu?Listen -server -log -NoLiveCoding"
+$regressionLobbyProcess = Start-Process -FilePath $Binary -ArgumentList $lobbyArgs -WindowStyle Normal -PassThru
+Start-Sleep -Seconds 8
+
+$gameArgs = """$ProjectPath"" /Game/DemoLevel?Listen -server -log -NoLiveCoding"
+$regressionGameProcess = Start-Process -FilePath $Binary -ArgumentList $gameArgs -WindowStyle Normal -PassThru
 Start-Sleep -Seconds 8
 
 $regressionClientArgs = """$ProjectPath"" /Game/Maps/MainMenu -game -ResX=1280 -ResY=720 -WinX=100 -WinY=100 -log -NoLiveCoding"
 $regressionClientProcess = Start-Process -FilePath $Binary -ArgumentList $regressionClientArgs -WindowStyle Normal -PassThru
 
 Write-Host @"
-  `[ `]  DS starts without errors
-  `[ `]  Client connects, Character Select appears
-  `[ `]  Slot shows previously created character (persisted from Phase 2)
-  `[ `]  Create a new character in a different slot (if available)
-  `[ `]  Enter world - full combat + movement works
-  `[ `]  Disconnect - reconnect - position saved
+  `[ `]  Lobby DS launched (AuthMode=Direct, MainMenu)
+  `[ `]  Game DS launched (DemoLevel)
+  `[ `]  Client launched, connected to Lobby DS
+"@ -ForegroundColor Gray
+Read-Key
+
+Write-Section "4.2 - Full Flow with Two Servers"
+Write-Host @"
+  In the Character Select screen:
+  `[ `]  Select an occupied slot (or create a new one)
+  `[ `]  Client_TravelToGameServer triggered (check client log)
+  `[ `]  Lobby logs: Server_SelectCharacter + travel
+  `[ `]  Game Server logs: PreLogin + PostLogin token auth
+  `[ `]  Game Server logs: HandleStartingNewPlayer spawns pawn
+  `[ `]  Player appears at saved position in DemoLevel
+  `[ `]  WASD + click-to-move works from saved position
 "@ -ForegroundColor Gray
 Read-Key
 
 # Close Phase 4
 Write-Host "Closing Phase 4 processes..." -ForegroundColor Yellow
 if ($regressionClientProcess -and !$regressionClientProcess.HasExited) { $regressionClientProcess.Kill() }
-if ($regressionDSProcess -and !$regressionDSProcess.HasExited) { $regressionDSProcess.Kill() }
+if ($regressionGameProcess -and !$regressionGameProcess.HasExited) { $regressionGameProcess.Kill() }
+if ($regressionLobbyProcess -and !$regressionLobbyProcess.HasExited) { $regressionLobbyProcess.Kill() }
 Start-Sleep -Seconds 2
 
 # ═══════════════════════════════════════════════════════════════
@@ -362,9 +378,9 @@ Write-Host @"
 ╠═══════════════════════════════════════════════════════════════╣
 ║                                                              ║
 ║ Phase 1 - Quick PIE Validation   `[  / 8`]                     ║
-║ Phase 2 - Direct Auth            `[  / 18`]                    ║
-║ Phase 3 - Token Auth             `[  / 12`]                    ║
-║ Phase 4 - Regression             `[  / 5`]                     ║
+║ Phase 2 - Lobby DS + Game Server    `[  / 16`]                    ║
+║ Phase 3 - Token Auth (Login Server) `[  / 12`]                    ║
+║ Phase 4 - Regression (Two-Server)   `[  / 6`]                     ║
 ║                                                              ║
 ║ TOTAL                          `[  / 43`]                      ║
 ║                                                              ║
