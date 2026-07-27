@@ -13,6 +13,7 @@
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
+#include "Subsystem/OnsetAuthSubsystem.h"
 #include "Subsystem/OnsetUISubsystem.h"
 #include "UI/OnsetRootLayout.h"
 #include "UI/OnsetScreenBase.h"
@@ -81,93 +82,32 @@ void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 	if (!NewPlayer || !HasAuthority())
 		return;
 
-	AOnsetPlayerState* PlayerState = NewPlayer->GetPlayerState<AOnsetPlayerState>();
-	if (!PlayerState)
-		return;
-
-	// Platform ID defaults based on the network transport
-	FString Platform = TEXT("Steam");
-	FString PlatformID = TEXT("");
-
-	// Extract platform-specific user ID from the network connection
-	FUniqueNetIdRepl UniqueId = PlayerState->GetUniqueId();
-	if (UniqueId.IsValid())
+	UOnsetAuthSubsystem* Auth = GetWorld()->GetSubsystem<UOnsetAuthSubsystem>();
+	if (Auth)
 	{
-		PlatformID = UniqueId->ToString();
-	}
-
-	PlayerState->PlayerPlatform = Platform;
-	PlayerState->PlayerPlatformID = PlatformID;
-
-	UE_LOG(LogSteamAuth, Log, TEXT("PostLogin: player %s — platform=%s, id=%s"),
-		*NewPlayer->GetName(), *Platform, *PlatformID);
-
-	// Load or create persistent account data
-	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
-	if (!DataSubsystem)
-	{
-		UE_LOG(LogSteamAuth, Warning, TEXT("PostLogin: UOnsetPlayerDataSubsystem not available"));
-		return;
-	}
-
-	FOnsetAccountData AccountData;
-	if (!DataSubsystem->LoadAccount(Platform, PlatformID, AccountData))
-	{
-		// No account found — auto-create on first login
-		if (DataSubsystem->CreateAccount(Platform, PlatformID))
-		{
-			UE_LOG(LogSteamAuth, Log, TEXT("PostLogin: auto-created account for %s/%s"), *Platform, *PlatformID);
-			// Reload the freshly-created account
-			DataSubsystem->LoadAccount(Platform, PlatformID, AccountData);
-		}
-		else
-		{
-			UE_LOG(LogSteamAuth, Error, TEXT("PostLogin: failed to create account for %s/%s"), *Platform, *PlatformID);
-			return;
-		}
-	}
-
-	// Send account data and show character select UI for new players
-	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
-	if (PC && PlayerState->SelectedCharacterSlot < 0)
-	{
-		PC->Client_AccountData(AccountData);
-		PC->Client_ShowMainMenuUI(RootLayoutClass, MainMenuScreenClass);
-	}
-	else if (PC && PlayerState->SelectedCharacterSlot >= 0)
-	{
-		UE_LOG(LogSteamAuth, Log, TEXT("PostLogin: player %s already has slot %d (zone travel) — skipping account UI"),
-			*NewPlayer->GetName(), PlayerState->SelectedCharacterSlot);
-	}
-}
-
-void AOnsetGameModeBase::ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket)
-{
-	if (!NewPlayer) return;
-
-	if (AuthTicket.IsEmpty())
-	{
-		UE_LOG(LogSteamAuth, Error, TEXT("Steam auth failed — empty ticket from player, kicking."));
-		NewPlayer->Destroy();
-		return;
-	}
-
-	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
-	if (PC)
-	{
-		PC->ClearAuthTimeout();
-		PC->Client_ClearAuthTimeout();
+		Auth->HandlePostLogin(NewPlayer);
 	}
 
 	AOnsetPlayerState* PS = NewPlayer->GetPlayerState<AOnsetPlayerState>();
-	if (PS)
+	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
+	if (PC && PS && PS->SelectedCharacterSlot < 0)
 	{
-		PS->SteamAuthTicket = AuthTicket;
+		PC->Client_ShowMainMenuUI(RootLayoutClass, MainMenuScreenClass);
 	}
-
-	UE_LOG(LogSteamAuth, Log, TEXT("Steam auth ticket accepted for player %s (%d chars)."),
-		*NewPlayer->GetName(), AuthTicket.Len());
 }
+
+void AOnsetGameModeBase::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	UOnsetAuthSubsystem* Auth = GetWorld()->GetSubsystem<UOnsetAuthSubsystem>();
+	if (Auth)
+	{
+		Auth->HandleLogout(Exiting);
+	}
+}
+
+
 
 AActor* AOnsetGameModeBase::ChoosePlayerStart_Implementation(AController* Player)
 {

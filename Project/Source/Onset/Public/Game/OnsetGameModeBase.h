@@ -22,6 +22,7 @@ public:
 	virtual void StartPlay() override;
 	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
@@ -37,5 +38,4 @@ public:
 	UFUNCTION(Exec)
 	void TravelZone(const FString& MapName, const FString& EntryPoint = TEXT(""));
 
-	void ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket);
 };

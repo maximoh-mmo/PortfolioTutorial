@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
 #include "Game/OnsetGameModeBase.h"
+#include "Subsystem/OnsetAuthSubsystem.h"
 #include "Player/CursorManager.h"
 #include "Core/TargetingComponent.h"
 #include "OnsetPlayerDataTypes.h"
@@ -120,10 +121,10 @@ void AOnsetPlayerController::Client_ClearAuthTimeout_Implementation()
 
 void AOnsetPlayerController::Server_SendAuthTicket_Implementation(const FString& AuthTicket)
 {
-	AOnsetGameModeBase* GM = GetWorld()->GetAuthGameMode<AOnsetGameModeBase>();
-	if (GM)
+	UOnsetAuthSubsystem* Auth = GetWorld()->GetSubsystem<UOnsetAuthSubsystem>();
+	if (Auth)
 	{
-		GM->ValidateAuthTicket(this, AuthTicket);
+		Auth->ValidateAuthTicket(this, AuthTicket);
 	}
 }
 
