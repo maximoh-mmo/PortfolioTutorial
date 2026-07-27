@@ -150,7 +150,7 @@ This document is the technical map for the entire project.
 - `AOnsetPlayerController` handles all input, cursor, and targeting  
 - `UInteractionComponent` — click resolution extracted from controller (SRP), handles raycast → enemy/ground branching  
 - Input handling (mouse + touch + gamepad)  
-- Tap/click‑to‑move + WASD + gamepad L-Stick movement  
+- Tap/click‑to‑move + screen‑relative WASD + gamepad L-Stick movement  
 - Tap/click‑to‑target via `UInteractionComponent`  
 - Gamepad R-Stick software cursor  
 - Ability activation (keyboard + touch buttons + gamepad) *(future)*  

@@ -287,8 +287,11 @@ void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 	if (!ControlledPawn) ControlledPawn = CachedPlayerPawn;
 	if (ControlledPawn)
 	{
-		ControlledPawn->AddMovementInput(ControlledPawn->GetActorForwardVector(), MovementVector.Y);
-		ControlledPawn->AddMovementInput(ControlledPawn->GetActorRightVector(), MovementVector.X);
+		const FRotator CameraYaw(0.0f, GetControlRotation().Yaw, 0.0f);
+		const FVector Forward = FRotationMatrix(CameraYaw).GetUnitAxis(EAxis::X);
+		const FVector Right   = FRotationMatrix(CameraYaw).GetUnitAxis(EAxis::Y);
+		ControlledPawn->AddMovementInput(Forward, MovementVector.Y);
+		ControlledPawn->AddMovementInput(Right, MovementVector.X);
 	}
 }
 

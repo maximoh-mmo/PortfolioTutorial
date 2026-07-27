@@ -12,7 +12,7 @@ Provide top‑down ARPG controls (mouse + touch) and a UI‑driven PvP toggle th
 
 ## **Responsibilities**
 - Input handling (mouse + touch + gamepad)  
-- Tap/click‑to‑move + WASD + gamepad L-Stick movement  
+- Tap/click‑to‑move + screen‑relative WASD + gamepad L-Stick movement  
 - Tap/click‑to‑target  
 - Gamepad R-Stick software cursor  
 - Ability activation (keyboard + touch buttons + gamepad)  
@@ -57,6 +57,23 @@ flowchart TD
     TargetPVP -->|No| MoveTo
     Branch -->|Ground| MoveTo[MoveToLocation]
 ```
+
+---
+
+## **WASD + Gamepad L‑Stick Movement**
+
+`IA_Move` (2D axis) drives movement via `OnMove` in `AOnsetPlayerController`. Movement is **screen‑relative**: the input axis is rotated by the camera's yaw (`GetControlRotation().Yaw`) so that:
+
+| Input | Screen Direction | World Direction |
+|-------|-----------------|-----------------|
+| W / L‑Stick ↑ | Up on screen | Camera forward projected onto ground |
+| S / L‑Stick ↓ | Down on screen | Camera backward projected onto ground |
+| A / L‑Stick ← | Left on screen | Camera left (right vector negated) |
+| D / L‑Stick → | Right on screen | Camera right |
+
+This gives consistent movement regardless of which way the character is facing — W always moves toward the top of the screen, S toward the bottom, etc.
+
+Any WASD/L‑Stick input also calls `Server_DisableAutoCombat()` and `StopMovement()` to interrupt active pathfinding or auto‑combat.
 
 ---
 
@@ -113,6 +130,7 @@ ASC checks PvP rules before applying damage.
 
 ## **Testing Checklist**
 - [x] Tap/click‑to‑move moves character to target location (mouse + touch)  
+- [x] WASD + gamepad L‑Stick movement is screen‑relative (camera yaw, not character facing)  
 - [ ] Tap/click‑to‑target sets `CurrentTarget` correctly (mouse + touch)  
 - [ ] PvP toggle replicates to all clients *(planned)*  
 - [ ] Targeting respects PvP flag (players filtered when OFF) *(planned)*  
