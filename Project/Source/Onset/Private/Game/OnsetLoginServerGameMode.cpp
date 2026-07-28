@@ -47,11 +47,11 @@ void AOnsetLoginServerGameMode::PostLogin(APlayerController* NewPlayer)
 			PC->Client_SessionToken(Token);
 			UE_LOG(LogOnsetAuth, Log, TEXT("LoginServer: sent token, kicking %s in %.1fs"),
 				*NewPlayer->GetName(), KickDelay);
+
+			FTimerHandle Handle;
+			GetWorldTimerManager().SetTimer(Handle, FTimerDelegate::CreateUObject(this, &AOnsetLoginServerGameMode::KickPlayer, NewPlayer), KickDelay, false);
 		}
 	}
-
-	FTimerHandle Handle;
-	GetWorldTimerManager().SetTimer(Handle, FTimerDelegate::CreateUObject(this, &AOnsetLoginServerGameMode::KickPlayer, NewPlayer), KickDelay, false);
 }
 
 void AOnsetLoginServerGameMode::KickPlayer(APlayerController* Player)

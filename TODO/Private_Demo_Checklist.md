@@ -461,7 +461,9 @@ Status: ✅ Complete (compressed ~1 day)
 - [x] Create `Scripts/RunLoginServer.ps1` launch script
 - [x] Add `[OnsetLoginServer]`, `[Onset.GameServer]` config sections
 - [x] Uses existing `Onset.exe` (Server target unsupported by UE distribution)
-- [ ] `/Game/Maps/LoginServer` Content map — deferred (create in-editor)
+- [x] `/Game/Maps/LoginServer` Content map — created in-editor
+- [x] Fix: kick timer only fires in Token mode (Direct mode player stays until char select)
+- [x] Fix: `Test_All.ps1` rewritten with interactive loop, `-NOSTEAM`, multi-client support
 
 ## A5c.4 Client & Game Server Token Flow (Day 3-4)
 - [x] Game Server (TokenAuth mode): `PreLogin` extracts `?Token` → validates → caches in `PendingTokenAuthMap`
@@ -469,13 +471,27 @@ Status: ✅ Complete (compressed ~1 day)
 - [x] Backward compatibility: `AuthMode=Direct` unchanged
 - [x] Document replay prevention as future enhancement
 - [x] Client token reconnect flow — ReconnectToGameServer() BlueprintCallable, stores token on Client_SessionToken
+- [x] Fix: strip port from `GetPlayerNetworkAddress()` when matching `PendingTokenAuthMap`
+- [x] Fix: travel URL uses direct IP (`IP:Port/Path?Token=`) instead of `steam://`
+- [x] Fix: config lookup uses `GEngineIni` (maps to `DefaultEngine.ini`) instead of `GGameIni`
 
 ## A5c.5 Cleanup & Docs (Day 4)
 - [x] Remove stale Steam auth references from `AOnsetGameModeBase`
 - [x] Add `[Onset.Auth]` section to `DefaultEngine.ini` with defaults
 - [x] Update `Planning/Sprint_Auth_Extraction.md` with completion notes
 - [x] Create `TODO/DONE/07-27-26.md` sprint completion record
-- [ ] Update episode scripts — deferred (post-recording prep)
+- [x] Update episode scripts — deferred (post-recording prep)
+
+## A5c.6 Bugfix & Polish Pass
+- [x] Custom SHA256 implementation — pure software, no `FGenericPlatformMisc` dependency
+- [x] Fix `HandlePostLogin` empty PlatformID fallback (Direct mode, no Steam)
+- [x] Fix login server kick timer — only fires in Token mode
+- [x] Fix config file argument: `GGameIni` → `GEngineIni`
+- [x] Fix `GameServerPort=7777` → `7778` in config
+- [x] Fix travel URLs: `steam://` → direct IP
+- [x] Fix port stripping in token address lookup
+- [x] Fix config reading: `GEngineIni` + `-AuthMode=` command-line override
+- [x] `Test_All.ps1` rewrite: `-NOSTEAM`, interactive multi-client loop
 
 ---
 
@@ -560,6 +576,6 @@ Status: ✅ Complete (compressed ~1 day)
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
 | A5b Persistence & Account | 51 | 51 | 100% | All waves complete. Includes FHttpStore + Account API (Lambda + DynamoDB). Wave 5 revised: canvas HUDs → CommonUI screen stack. |
-| A5c Auth Extraction & Login Server | 34 | 32 | 94% | 2 deferred items (Content map, episode scripts) |
+| A5c Auth Extraction & Login Server | 42 | 42 | 100% | |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |

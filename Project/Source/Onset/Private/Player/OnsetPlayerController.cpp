@@ -21,6 +21,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Player/InteractionComponent.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "Engine/GameInstance.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerState.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
@@ -32,6 +33,7 @@
 #include "UI/OnsetRootLayout.h"
 #include "UI/OnsetScreenBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/ConfigCacheIni.h"
 
 DEFINE_LOG_CATEGORY(LogGamepad);
 
@@ -542,8 +544,8 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 		{
 			FString GameServerIP = TEXT("127.0.0.1");
 			FString GameServerPort = TEXT("7777");
-			GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerIP"), GameServerIP, GGameIni);
-			GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerPort"), GameServerPort, GGameIni);
+			GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerIP"), GameServerIP, GEngineIni);
+			GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerPort"), GameServerPort, GEngineIni);
 			Client_TravelToGameServer(GameServerIP, GameServerPort, Token);
 		}
 		else
@@ -714,10 +716,11 @@ void AOnsetPlayerController::Client_SessionTokenFailed_Implementation(const FStr
 void AOnsetPlayerController::Client_TravelToGameServer_Implementation(const FString& ServerIP, const FString& ServerPort, const FString& Token)
 {
 	CachedSessionToken = Token;
-	FString URL = FString::Printf(TEXT("steam://%s:%s/Game/Maps/DemoLevel?Token=%s"),
+	FString URL = FString::Printf(TEXT("%s:%s/Game/Maps/DemoLevel?Token=%s"),
 		*ServerIP, *ServerPort, *Token);
 
 	UE_LOG(LogOnsetAuth, Log, TEXT("Client_TravelToGameServer: traveling to %s:%s with token"), *ServerIP, *ServerPort);
+	UE_LOG(LogOnsetAuth, Log, TEXT("Travel URL: %s"), *URL);
 	ClientTravel(URL, TRAVEL_Absolute);
 }
 
@@ -731,10 +734,10 @@ void AOnsetPlayerController::ReconnectToGameServer()
 
 	FString GameServerIP = TEXT("127.0.0.1");
 	FString GameServerPort = TEXT("7777");
-	GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerIP"), GameServerIP, GGameIni);
-	GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerPort"), GameServerPort, GGameIni);
+	GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerIP"), GameServerIP, GEngineIni);
+	GConfig->GetString(TEXT("Onset.Auth"), TEXT("GameServerPort"), GameServerPort, GEngineIni);
 
-	FString URL = FString::Printf(TEXT("steam://%s:%s/Game/Maps/DemoLevel?Token=%s"),
+	FString URL = FString::Printf(TEXT("%s:%s/Game/Maps/DemoLevel?Token=%s"),
 		*GameServerIP, *GameServerPort, *CachedSessionToken);
 
 	UE_LOG(LogOnsetAuth, Log, TEXT("ReconnectToGameServer: traveling to %s:%s with token"), *GameServerIP, *GameServerPort);

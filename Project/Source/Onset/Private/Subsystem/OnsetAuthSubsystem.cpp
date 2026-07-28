@@ -1,5 +1,6 @@
 #include "Subsystem/OnsetAuthSubsystem.h"
 
+#include "Crypto/SHA256.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
@@ -8,8 +9,10 @@
 #include "Engine/World.h"
 #include "Misc/Base64.h"
 #include "Misc/DateTime.h"
-#include "GenericPlatform/GenericPlatformMisc.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
+#include "Misc/ConfigCacheIni.h"
+
 
 DEFINE_LOG_CATEGORY(LogOnsetAuth);
 
@@ -18,16 +21,26 @@ void UOnsetAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	FString AuthModeStr;
-	if (GConfig->GetString(TEXT("Onset.Auth"), TEXT("AuthMode"), AuthModeStr, GGameIni))
+	GConfig->GetString(TEXT("Onset.Auth"), TEXT("AuthMode"), AuthModeStr, GEngineIni);
+
+	// Command line override: -AuthMode=Token
+	FString CmdLineAuthMode;
+	if (FParse::Value(FCommandLine::Get(), TEXT("AuthMode="), CmdLineAuthMode))
 	{
-		if (AuthModeStr.Equals(TEXT("Token"), ESearchCase::IgnoreCase))
-		{
-			AuthMode = EOnsetAuthMode::Token;
-		}
+		AuthModeStr = CmdLineAuthMode;
+	}
+	if (AuthModeStr.Equals(TEXT("Token"), ESearchCase::IgnoreCase))
+	{
+		AuthMode = EOnsetAuthMode::Token;
+	}
+	else if (AuthModeStr.Equals(TEXT("Direct"), ESearchCase::IgnoreCase))
+	{
+		AuthMode = EOnsetAuthMode::Direct;
 	}
 
 	FString Secret;
-	if (GConfig->GetString(TEXT("Onset.Auth"), TEXT("AuthTokenSecret"), Secret, GGameIni))
+	GConfig->GetString(TEXT("Onset.Auth"), TEXT("AuthTokenSecret"), Secret, GEngineIni);
+	if (!Secret.IsEmpty())
 	{
 		AuthTokenSecret = Secret;
 	}
@@ -38,9 +51,10 @@ void UOnsetAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 
 	int32 Lifetime = 0;
-	if (GConfig->GetInt(TEXT("Onset.Auth"), TEXT("AuthTokenLifetimeSeconds"), Lifetime, GGameIni))
+	GConfig->GetInt(TEXT("Onset.Auth"), TEXT("AuthTokenLifetimeSeconds"), Lifetime, GEngineIni);
+	if (Lifetime >= 30)
 	{
-		AuthTokenLifetimeSeconds = FMath::Max(Lifetime, 30);
+		AuthTokenLifetimeSeconds = Lifetime;
 	}
 
 	UE_LOG(LogOnsetAuth, Log, TEXT("AuthSubsystem initialized: AuthMode=%s, TokenLifetime=%ds"),
@@ -94,7 +108,10 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 	if (AuthMode == EOnsetAuthMode::Token)
 	{
 		FString Address = NewPlayer->GetPlayerNetworkAddress();
-		if (FPendingTokenAuth* Pending = PendingTokenAuthMap.Find(Address))
+		FString CleanAddress;
+		Address.Split(TEXT(":"), &CleanAddress, nullptr, ESearchCase::IgnoreCase, ESearchDir::FromStart);
+		if (CleanAddress.IsEmpty()) CleanAddress = Address;
+		if (FPendingTokenAuth* Pending = PendingTokenAuthMap.Find(CleanAddress))
 		{
 			Platform = Pending->Platform;
 			PlatformID = Pending->PlatformID;
@@ -113,6 +130,15 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 		if (UniqueId.IsValid())
 		{
 			PlatformID = UniqueId->ToString();
+		}
+		if (PlatformID.IsEmpty())
+		{
+			FString Address = NewPlayer->GetPlayerNetworkAddress();
+			FString CleanAddress;
+			Address.Split(TEXT(":"), &CleanAddress, nullptr, ESearchCase::IgnoreCase, ESearchDir::FromStart);
+			if (CleanAddress.IsEmpty()) CleanAddress = Address;
+			PlatformID = TEXT("DEV_") + CleanAddress;
+			UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: no unique ID — using network address as PlatformID (%s)"), *PlatformID);
 		}
 	}
 
@@ -221,7 +247,8 @@ TArray<uint8> UOnsetAuthSubsystem::HmacSha256(const TArray<uint8>& Key, const TA
 	if (K.Num() > BlockSize)
 	{
 		FSHA256Signature Hash;
-		FGenericPlatformMisc::GetSHA256Signature(K.GetData(), K.Num(), Hash);
+		
+		FSHA256::GetSHA256Signature(K.GetData(), K.Num(), Hash);
 		K.Empty();
 	K.Append(Hash.Signature, 32);
 	}
@@ -246,14 +273,14 @@ TArray<uint8> UOnsetAuthSubsystem::HmacSha256(const TArray<uint8>& Key, const TA
 	InnerInput.Append(Data);
 
 	FSHA256Signature InnerHash;
-	FGenericPlatformMisc::GetSHA256Signature(InnerInput.GetData(), InnerInput.Num(), InnerHash);
+	FSHA256::GetSHA256Signature(InnerInput.GetData(), InnerInput.Num(), InnerHash);
 
 	TArray<uint8> OuterInput;
 	OuterInput.Append(oPad);
 	OuterInput.Append(InnerHash.Signature, 32);
 
 	FSHA256Signature OuterHash;
-	FGenericPlatformMisc::GetSHA256Signature(OuterInput.GetData(), OuterInput.Num(), OuterHash);
+	FSHA256::GetSHA256Signature(OuterInput.GetData(), OuterInput.Num(), OuterHash);
 
 	TArray<uint8> Result;
 	Result.Append(OuterHash.Signature, 32);

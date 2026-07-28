@@ -41,8 +41,11 @@ The system uses a composite key `(Platform, PlatformID)` to identify accounts:
 | Xbox (future) | XUID | `"XUID1234567890"` |
 | PSN (future) | Account ID | `"PSN00000001"` |
 | Switch (future) | Nintendo Account ID | `"NA00000001"` |
+| Direct (dev, no Steam) | `"DEV_" + client IP | `"DEV_127.0.0.1"` |
 
 The `Platform` field enables cross-platform account coexistence without collisions.
+
+When Steam is not available (e.g. local dev with `-NOSTEAM`), `UOnsetAuthSubsystem::HandlePostLogin` falls back to `"DEV_" + client network address as the PlatformID. This allows local multi-client testing without a Steam connection.
 
 ### **Character Slots**
 

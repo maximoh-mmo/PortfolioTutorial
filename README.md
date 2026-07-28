@@ -161,6 +161,9 @@ Includes:
 ### **/Scripts/**
 General automation scripts.
 
+### **Root-level scripts**
+- `Test_All.ps1` — launches Login Server (port 7777, Direct auth), Game Server (port 7778, Token auth), and interactive client launcher. Press `[Enter]` for more clients, `[Q]` to quit.
+
 ---
 
 ## 📖 **Documentation Index**
