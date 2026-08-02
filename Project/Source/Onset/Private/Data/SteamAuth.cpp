@@ -1,4 +1,4 @@
-#include "Data/FSteamAuth.h"
+#include "Data/SteamAuth.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Game/OnsetGameModeBase.h"
