@@ -13,7 +13,7 @@ public class Onset : ModuleRules
 			"EnhancedInput", "AIModule", "UMG", "NavigationSystem", "StateTreeModule", "GameplayStateTreeModule",
 			"GameplayAbilities", "GameplayTags", "GameplayTasks", "CommonUI"});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "SlateCore", "AITestSuite"});
+		PrivateDependencyModuleNames.AddRange(new string[] { "SlateCore", "AITestSuite", "Json"});
 
 		// Online features
 		PrivateDependencyModuleNames.Add("OnlineSubsystem");

@@ -3,6 +3,24 @@
 #include "CoreMinimal.h"
 #include "OnsetPlayerDataTypes.generated.h"
 
+UENUM(BlueprintType)
+enum class EOnsetCharacterClass : uint8
+{
+	Tank    UMETA(DisplayName = "Tank"),
+	Ranged  UMETA(DisplayName = "Ranged"),
+	DPS     UMETA(DisplayName = "DPS"),
+	Support UMETA(DisplayName = "Support")
+};
+
+USTRUCT(BlueprintType)
+struct FOnsetCharacterAppearance
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
+	uint8 PresetIndex = 0;
+};
+
 USTRUCT(BlueprintType)
 struct FOnsetCharacterSlotData
 {
@@ -16,6 +34,9 @@ struct FOnsetCharacterSlotData
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Account")
 	int32 Level = 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Account")
+	EOnsetCharacterClass CharacterClass = EOnsetCharacterClass::DPS;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Account")
 	bool bOccupied = false;
@@ -73,4 +94,10 @@ struct FOnsetFullCharacterData
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
 	FString QuestsJSON;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+	EOnsetCharacterClass CharacterClass = EOnsetCharacterClass::DPS;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+	FString AppearanceJSON;
 };

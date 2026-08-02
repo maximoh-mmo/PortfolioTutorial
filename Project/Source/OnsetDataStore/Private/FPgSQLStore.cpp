@@ -73,7 +73,7 @@ bool FPgSQLStore::EnsureSchema()
 	if (Version < 0)
 		return false;
 
-	const int32 LatestVersion = 2;
+	const int32 LatestVersion = 3;
 	while (Version < LatestVersion)
 	{
 		RunMigration(Version);
@@ -160,6 +160,24 @@ void FPgSQLStore::RunMigration(int32 FromVersion)
 		Exec("INSERT INTO _schema_version (version) VALUES (2);");
 		UE_LOG(LogOnsetDataStore, Log, TEXT("FPgSQLStore: migration 2 applied (current_zone column)"));
 	}
+
+	if (FromVersion <= 2)
+	{
+		if (!Exec("ALTER TABLE characters ADD COLUMN character_class INTEGER NOT NULL DEFAULT 0;"))
+		{
+			UE_LOG(LogOnsetDataStore, Error, TEXT("FPgSQLStore: migration 3 failed (character_class column)"));
+			return;
+		}
+
+		if (!Exec("ALTER TABLE characters ADD COLUMN appearance_json TEXT NOT NULL DEFAULT '{}';"))
+		{
+			UE_LOG(LogOnsetDataStore, Error, TEXT("FPgSQLStore: migration 3 failed (appearance_json column)"));
+			return;
+		}
+
+		Exec("INSERT INTO _schema_version (version) VALUES (3);");
+		UE_LOG(LogOnsetDataStore, Log, TEXT("FPgSQLStore: migration 3 applied (character_class + appearance_json)"));
+	}
 }
 
 bool FPgSQLStore::LoadAccount(const FString& Platform, const FString& PlatformID, FOnsetAccountData& OutAccount)
@@ -187,7 +205,7 @@ bool FPgSQLStore::LoadAccount(const FString& Platform, const FString& PlatformID
 	OutAccount.PlatformID = UTF8_TO_TCHAR(PQgetvalue(Res, 0, 1));
 	PQclear(Res);
 
-	const char* SlotSQL = "SELECT slot_index, character_name, level FROM characters WHERE platform = $1 AND platform_id = $2 ORDER BY slot_index;";
+	const char* SlotSQL = "SELECT slot_index, character_name, level, character_class FROM characters WHERE platform = $1 AND platform_id = $2 ORDER BY slot_index;";
 	Res = PQexecParams(Conn, SlotSQL, 2, NULL, Params, NULL, NULL, 0);
 
 	if (PQresultStatus(Res) != PGRES_TUPLES_OK)
@@ -215,6 +233,7 @@ bool FPgSQLStore::LoadAccount(const FString& Platform, const FString& PlatformID
 		Slot.SlotIndex = SlotIdx;
 		Slot.CharacterName = UTF8_TO_TCHAR(PQgetvalue(Res, Row, 1));
 		Slot.Level = atoi(PQgetvalue(Res, Row, 2));
+		Slot.CharacterClass = static_cast<EOnsetCharacterClass>(atoi(PQgetvalue(Res, Row, 3)));
 		Slot.bOccupied = true;
 		ExpectedSlot = SlotIdx + 1;
 	}
@@ -253,7 +272,7 @@ bool FPgSQLStore::LoadCharacter(const FString& Platform, const FString& Platform
 
 	const char* SQL = "SELECT slot_index, character_name, level, experience,"
 		" saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		" inventory_json, equipment_json, quests_json, current_zone"
+		" inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json"
 		" FROM characters WHERE platform = $1 AND platform_id = $2 AND slot_index = $3;";
 
 	const char* Params[3] = { TCHAR_TO_UTF8(*Platform), TCHAR_TO_UTF8(*PlatformID), TCHAR_TO_UTF8(*FString::Printf(TEXT("%d"), SlotIndex)) };
@@ -285,6 +304,8 @@ bool FPgSQLStore::LoadCharacter(const FString& Platform, const FString& Platform
 	OutData.EquipmentJSON = UTF8_TO_TCHAR(PQgetvalue(Res, 0, 10));
 	OutData.QuestsJSON = UTF8_TO_TCHAR(PQgetvalue(Res, 0, 11));
 	OutData.CurrentZone = UTF8_TO_TCHAR(PQgetvalue(Res, 0, 12));
+	OutData.CharacterClass = static_cast<EOnsetCharacterClass>(atoi(PQgetvalue(Res, 0, 13)));
+	OutData.AppearanceJSON = UTF8_TO_TCHAR(PQgetvalue(Res, 0, 14));
 
 	PQclear(Res);
 	return true;
@@ -303,12 +324,14 @@ bool FPgSQLStore::SaveCharacter(const FString& Platform, const FString& Platform
 	FString PosZStr = FString::SanitizeFloat(Data.SavedPosition.Z);
 	FString YawStr = FString::SanitizeFloat(Data.SavedRotationYaw);
 
+	FString ClassStr = FString::Printf(TEXT("%d"), static_cast<int32>(Data.CharacterClass));
+
 	const char* SQL =
 		"INSERT INTO characters"
 		" (platform, platform_id, slot_index, character_name, level, experience,"
 		"  saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		"  inventory_json, equipment_json, quests_json, current_zone, updated_at)"
-		" VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())"
+		"  inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, updated_at)"
+		" VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW())"
 		" ON CONFLICT (platform, platform_id, slot_index) DO UPDATE SET"
 		"  character_name = EXCLUDED.character_name,"
 		"  level = EXCLUDED.level,"
@@ -322,9 +345,11 @@ bool FPgSQLStore::SaveCharacter(const FString& Platform, const FString& Platform
 		"  equipment_json = EXCLUDED.equipment_json,"
 		"  quests_json = EXCLUDED.quests_json,"
 		"  current_zone = EXCLUDED.current_zone,"
+		"  character_class = EXCLUDED.character_class,"
+		"  appearance_json = EXCLUDED.appearance_json,"
 		"  updated_at = NOW();";
 
-	const char* Params[15] = {
+	const char* Params[17] = {
 		TCHAR_TO_UTF8(*Platform),
 		TCHAR_TO_UTF8(*PlatformID),
 		TCHAR_TO_UTF8(*SlotIdxStr),
@@ -339,10 +364,12 @@ bool FPgSQLStore::SaveCharacter(const FString& Platform, const FString& Platform
 		TCHAR_TO_UTF8(*Data.InventoryJSON),
 		TCHAR_TO_UTF8(*Data.EquipmentJSON),
 		TCHAR_TO_UTF8(*Data.QuestsJSON),
-		TCHAR_TO_UTF8(*Data.CurrentZone)
+		TCHAR_TO_UTF8(*Data.CurrentZone),
+		TCHAR_TO_UTF8(*ClassStr),
+		TCHAR_TO_UTF8(*Data.AppearanceJSON)
 	};
 
-	PGresult* Res = PQexecParams(Conn, SQL, 15, NULL, Params, NULL, NULL, 0);
+	PGresult* Res = PQexecParams(Conn, SQL, 17, NULL, Params, NULL, NULL, 0);
 	bool bSuccess = (PQresultStatus(Res) == PGRES_COMMAND_OK);
 	if (!bSuccess)
 		LogPGError(Conn, "SaveCharacter");

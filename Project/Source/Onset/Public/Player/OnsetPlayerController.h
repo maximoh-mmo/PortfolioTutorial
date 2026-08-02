@@ -11,6 +11,7 @@
 struct FOnsetAccountData;
 struct FOnsetFullCharacterData;
 class AOnsetPlayerAIController;
+class AOnsetPlayerCharacter;
 class UInteractionComponent;
 class UGameplayAbility;
 class UGamepadCursorWidget;
@@ -217,7 +218,10 @@ public:
 	void Server_SelectCharacter(int32 SlotIndex);
 
 	UFUNCTION(Server, Reliable)
-	void Server_CreateCharacter(int32 SlotIndex, const FString& CharacterName);
+	void Server_CreateCharacter(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, int32 AppearancePresetIndex);
+
+	UFUNCTION(Server, Reliable)
+	void Server_DeleteCharacter(int32 SlotIndex);
 
 	UFUNCTION(Server, Reliable)
 	void Server_SaveCharacter();
@@ -233,6 +237,13 @@ public:
 	void Server_ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
 
 	void ClearAuthTimeout();
+
+	// --- Character Appearance ---
+	UFUNCTION(BlueprintImplementableEvent, Category = "Character")
+	void BP_ApplyAppearancePreset(AOnsetPlayerCharacter* PlayerChar, int32 PresetIndex);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Account")
+	void BP_OnAccountDataUpdated();
 
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

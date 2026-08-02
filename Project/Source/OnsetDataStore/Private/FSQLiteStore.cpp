@@ -113,7 +113,7 @@ bool FSQLiteStore::EnsureSchema()
 	if (Version < 0)
 		return false;
 
-	const int32 LatestVersion = 2;
+	const int32 LatestVersion = 3;
 	while (Version < LatestVersion)
 	{
 		RunMigration(Version);
@@ -196,6 +196,24 @@ void FSQLiteStore::RunMigration(int32 FromVersion)
 		Exec("INSERT INTO _schema_version (version) VALUES (2);");
 		UE_LOG(LogTemp, Log, TEXT("FSQLiteStore: migration 2 applied (current_zone column)"));
 	}
+
+	if (FromVersion <= 2)
+	{
+		if (!Exec("ALTER TABLE characters ADD COLUMN character_class INTEGER NOT NULL DEFAULT 0;"))
+		{
+			UE_LOG(LogTemp, Error, TEXT("FSQLiteStore: migration 3 failed (character_class column)"));
+			return;
+		}
+
+		if (!Exec("ALTER TABLE characters ADD COLUMN appearance_json TEXT NOT NULL DEFAULT '{}';"))
+		{
+			UE_LOG(LogTemp, Error, TEXT("FSQLiteStore: migration 3 failed (appearance_json column)"));
+			return;
+		}
+
+		Exec("INSERT INTO _schema_version (version) VALUES (3);");
+		UE_LOG(LogTemp, Log, TEXT("FSQLiteStore: migration 3 applied (character_class + appearance_json)"));
+	}
 }
 
 bool FSQLiteStore::LoadAccount(const FString& Platform, const FString& PlatformID, FOnsetAccountData& OutAccount)
@@ -221,7 +239,7 @@ bool FSQLiteStore::LoadAccount(const FString& Platform, const FString& PlatformI
 	sqlite3_finalize(ActiveStmt);
 	ActiveStmt = nullptr;
 
-	const char* SlotSQL = "SELECT slot_index, character_name, level FROM characters WHERE platform = ?1 AND platform_id = ?2 ORDER BY slot_index;";
+	const char* SlotSQL = "SELECT slot_index, character_name, level, character_class FROM characters WHERE platform = ?1 AND platform_id = ?2 ORDER BY slot_index;";
 	if (!PrepareAndBind(SlotSQL))
 		return false;
 
@@ -245,6 +263,7 @@ bool FSQLiteStore::LoadAccount(const FString& Platform, const FString& PlatformI
 		Slot.SlotIndex = SlotIdx;
 		Slot.CharacterName = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 1));
 		Slot.Level = sqlite3_column_int(ActiveStmt, 2);
+		Slot.CharacterClass = static_cast<EOnsetCharacterClass>(sqlite3_column_int(ActiveStmt, 3));
 		Slot.bOccupied = true;
 		ExpectedSlot = SlotIdx + 1;
 	}
@@ -290,7 +309,7 @@ bool FSQLiteStore::LoadCharacter(const FString& Platform, const FString& Platfor
 
 	const char* SQL = "SELECT slot_index, character_name, level, experience,"
 		" saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		" inventory_json, equipment_json, quests_json, current_zone"
+		" inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json"
 		" FROM characters WHERE platform = ?1 AND platform_id = ?2 AND slot_index = ?3;";
 
 	if (!PrepareAndBind(SQL))
@@ -320,6 +339,8 @@ bool FSQLiteStore::LoadCharacter(const FString& Platform, const FString& Platfor
 	OutData.EquipmentJSON = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 10));
 	OutData.QuestsJSON = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 11));
 	OutData.CurrentZone = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 12));
+	OutData.CharacterClass = static_cast<EOnsetCharacterClass>(sqlite3_column_int(ActiveStmt, 13));
+	OutData.AppearanceJSON = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 14));
 
 	sqlite3_finalize(ActiveStmt);
 	ActiveStmt = nullptr;
@@ -333,8 +354,8 @@ bool FSQLiteStore::SaveCharacter(const FString& Platform, const FString& Platfor
 	const char* SQL = "INSERT OR REPLACE INTO characters"
 		" (platform, platform_id, slot_index, character_name, level, experience,"
 		"  saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		"  inventory_json, equipment_json, quests_json, current_zone, updated_at)"
-		" VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, datetime('now'));";
+		"  inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, updated_at)"
+		" VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, datetime('now'));";
 
 	if (!PrepareAndBind(SQL))
 		return false;
@@ -354,6 +375,8 @@ bool FSQLiteStore::SaveCharacter(const FString& Platform, const FString& Platfor
 	sqlite3_bind_text(ActiveStmt, 13, TCHAR_TO_UTF8(*Data.EquipmentJSON), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_text(ActiveStmt, 14, TCHAR_TO_UTF8(*Data.QuestsJSON), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_text(ActiveStmt, 15, TCHAR_TO_UTF8(*Data.CurrentZone), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_int(ActiveStmt, 16, static_cast<int32>(Data.CharacterClass));
+	sqlite3_bind_text(ActiveStmt, 17, TCHAR_TO_UTF8(*Data.AppearanceJSON), -1, SQLITE_TRANSIENT);
 
 	int32 RC = sqlite3_step(ActiveStmt);
 	sqlite3_finalize(ActiveStmt);

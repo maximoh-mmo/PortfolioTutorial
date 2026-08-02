@@ -34,6 +34,12 @@
 #include "UI/OnsetScreenBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/ConfigCacheIni.h"
+#include "Engine/DataTable.h"
+#include "Data/OnsetClassInfoTypes.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
+#include "Dom/JsonObject.h"
 
 DEFINE_LOG_CATEGORY(LogGamepad);
 
@@ -95,9 +101,10 @@ void AOnsetPlayerController::ClearAuthTimeout()
 
 void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccountData& InAccountData)
 {
-	CachedAccountData = InAccountData;     // new member, consumed by ConnectToServer                           
-	bShowMouseCursor = true;                                                                                    
-	SetInputMode(FInputModeGameAndUI());            
+	CachedAccountData = InAccountData;
+	bShowMouseCursor = true;
+	SetInputMode(FInputModeGameAndUI());
+	BP_OnAccountDataUpdated();
 }
 
 void AOnsetPlayerController::Client_ShowMainMenuUI_Implementation(
@@ -248,6 +255,18 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 	}
 
 	PlayerChar->GrantDefaultAbilities();
+
+	// Apply appearance preset if JSON is available
+	if (!CharData.AppearanceJSON.IsEmpty())
+	{
+		TSharedPtr<FJsonObject> AppObj;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(CharData.AppearanceJSON);
+		if (FJsonSerializer::Deserialize(Reader, AppObj) && AppObj.IsValid())
+		{
+			int32 PresetIndex = AppObj->GetIntegerField(TEXT("PresetIndex"));
+			BP_ApplyAppearancePreset(PlayerChar, PresetIndex);
+		}
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("OnPossess: restored %s (slot %d) at %s"),
 		*CharData.CharacterName, CharData.SlotIndex, *CharData.SavedPosition.ToString());
@@ -594,7 +613,7 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 		*PS->GetPlayerName(), SlotIndex, *CharData.CharacterName);
 }
 
-void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotIndex, const FString& CharacterName)
+void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, int32 AppearancePresetIndex)
 {
 	if (SlotIndex < 0 || SlotIndex > 2 || CharacterName.IsEmpty()) return;
 
@@ -617,12 +636,43 @@ void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotInd
 		}
 	}
 
+	float ClassMaxHealth = 100.0f;
+	{
+		FString ClassTablePath;
+		GConfig->GetString(TEXT("Onset.Gameplay"), TEXT("ClassDataTable"), ClassTablePath, GEngineIni);
+		if (!ClassTablePath.IsEmpty())
+		{
+			UDataTable* ClassTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ClassTablePath));
+			if (ClassTable)
+			{
+				FName RowName = *StaticEnum<EOnsetCharacterClass>()->GetValueAsName(CharacterClass).ToString();
+				FOnsetCharacterClassInfo* Row = ClassTable->FindRow<FOnsetCharacterClassInfo>(RowName, nullptr);
+				if (Row)
+				{
+					ClassMaxHealth = Row->StartingMaxHealth;
+				}
+			}
+		}
+	}
+
+	FOnsetCharacterAppearance Appearance;
+	Appearance.PresetIndex = FMath::Clamp(AppearancePresetIndex, 0, 255);
+	FString AppearanceJSON;
+	{
+		TSharedPtr<FJsonObject> AppObj = MakeShareable(new FJsonObject);
+		AppObj->SetNumberField(TEXT("PresetIndex"), Appearance.PresetIndex);
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&AppearanceJSON);
+		FJsonSerializer::Serialize(AppObj.ToSharedRef(), Writer);
+	}
+
 	FOnsetFullCharacterData NewChar;
 	NewChar.SlotIndex = SlotIndex;
 	NewChar.CharacterName = CharacterName;
+	NewChar.CharacterClass = CharacterClass;
+	NewChar.AppearanceJSON = AppearanceJSON;
 	NewChar.Level = 1;
 	NewChar.Experience = 0;
-	NewChar.SavedMaxHealth = 100.0f;
+	NewChar.SavedMaxHealth = ClassMaxHealth;
 	NewChar.SavedPosition = FVector(0.0f, 0.0f, 150.0f);
 	NewChar.SavedRotationYaw = 0.0f;
 	NewChar.CurrentZone = TEXT("");
@@ -632,8 +682,38 @@ void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotInd
 
 	if (DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, NewChar))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Server_CreateCharacter: created '%s' in slot %d"), *CharacterName, SlotIndex);
-		Server_SelectCharacter(SlotIndex);
+		UE_LOG(LogTemp, Log, TEXT("Server_CreateCharacter: created '%s' (class=%d) in slot %d, preset %d"),
+			*CharacterName, static_cast<int32>(CharacterClass), SlotIndex, AppearancePresetIndex);
+	}
+
+	// Send refreshed account data so the client sees the new occupied slot
+	FOnsetAccountData RefreshedAccount;
+	if (DataSubsystem->LoadAccount(PS->PlayerPlatform, PS->PlayerPlatformID, RefreshedAccount))
+	{
+		Client_AccountData(RefreshedAccount);
+	}
+}
+
+void AOnsetPlayerController::Server_DeleteCharacter_Implementation(int32 SlotIndex)
+{
+	if (SlotIndex < 0 || SlotIndex > 2) return;
+
+	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
+	if (!PS) return;
+
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (!DataSubsystem) return;
+
+	if (DataSubsystem->DeleteCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, SlotIndex))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Server_DeleteCharacter: deleted slot %d"), SlotIndex);
+	}
+
+	// Send refreshed account data
+	FOnsetAccountData RefreshedAccount;
+	if (DataSubsystem->LoadAccount(PS->PlayerPlatform, PS->PlayerPlatformID, RefreshedAccount))
+	{
+		Client_AccountData(RefreshedAccount);
 	}
 }
 

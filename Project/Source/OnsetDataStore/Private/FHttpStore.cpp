@@ -143,6 +143,7 @@ bool FHttpStore::LoadAccount(const FString& Platform, const FString& PlatformID,
 			Slot.SlotIndex = SlotObj->GetIntegerField(TEXT("slotIndex"));
 			Slot.CharacterName = SlotObj->GetStringField(TEXT("characterName"));
 			Slot.Level = SlotObj->GetIntegerField(TEXT("level"));
+			Slot.CharacterClass = static_cast<EOnsetCharacterClass>(SlotObj->GetIntegerField(TEXT("characterClass")));
 			Slot.bOccupied = SlotObj->GetBoolField(TEXT("bOccupied"));
 			OutAccount.Slots.Add(Slot);
 		}
@@ -198,6 +199,8 @@ bool FHttpStore::LoadCharacter(const FString& Platform, const FString& PlatformI
 	OutData.InventoryJSON = Json->GetStringField(TEXT("inventoryJson"));
 	OutData.EquipmentJSON = Json->GetStringField(TEXT("equipmentJson"));
 	OutData.QuestsJSON = Json->GetStringField(TEXT("questsJson"));
+	OutData.CharacterClass = static_cast<EOnsetCharacterClass>(Json->GetIntegerField(TEXT("characterClass")));
+	OutData.AppearanceJSON = Json->GetStringField(TEXT("appearanceJson"));
 
 	return true;
 }
@@ -224,6 +227,8 @@ bool FHttpStore::SaveCharacter(const FString& Platform, const FString& PlatformI
 	Json->SetStringField(TEXT("inventoryJson"), Data.InventoryJSON);
 	Json->SetStringField(TEXT("equipmentJson"), Data.EquipmentJSON);
 	Json->SetStringField(TEXT("questsJson"), Data.QuestsJSON);
+	Json->SetNumberField(TEXT("characterClass"), static_cast<int32>(Data.CharacterClass));
+	Json->SetStringField(TEXT("appearanceJson"), Data.AppearanceJSON);
 
 	FString Body;
 	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);
