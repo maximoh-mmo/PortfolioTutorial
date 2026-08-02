@@ -70,6 +70,10 @@ void AOnsetGameModeBase::PreLogin(const FString& Options, const FString& Address
 			UE_LOG(LogOnsetAuth, Warning, TEXT("PreLogin: rejected connection from %s — %s"), *Address, *TokenError);
 		}
 	}
+	else if (Auth)
+	{
+		Auth->PreLoginDirect(Options, Address);
+	}
 }
 
 void AOnsetGameModeBase::StartPlay()

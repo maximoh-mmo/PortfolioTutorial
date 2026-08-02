@@ -31,7 +31,7 @@ $LoginCmd = "-project=`"$ProjectPath`" /Game/Maps/LoginServer -server -log -Auth
 $GameCmd = "-project=`"$ProjectPath`" /Game/DemoLevel -server -log -AuthMode=Token -Port=$GamePort -NOSTEAM" +
            " -AbsLog=`"$GameLog`" -LogCmds=`"$LogFilter`""
 
-$ClientBaseCmd = "-project=`"$ProjectPath`" 127.0.0.1:$LoginPort -game -log -windowed -ResX=1280 -ResY=720 -NOSTEAM" +
+$ClientBaseCmd = "-project=`"$ProjectPath`" 127.0.0.1:${LoginPort}?ClientIndex={1} -game -log -windowed -ResX=1280 -ResY=720 -NOSTEAM" +
                  " -AbsLog=`"{0}`" -LogCmds=`"$LogFilter`""
 
 Write-Host "=== Phase 1: Launching Login Server (port $LoginPort) ===" -ForegroundColor Cyan
@@ -46,11 +46,10 @@ $procs += Start-Process -FilePath $EngineBin -ArgumentList $GameCmd -WindowStyle
 Start-Sleep 10
 
 Write-Host "=== Phase 3: Launching First Client ===" -ForegroundColor Cyan
-$clientCmd = $ClientBaseCmd -f $ClientLog
+$clientCount = 1
+$clientCmd = $ClientBaseCmd -f $ClientLog, $clientCount
 Write-Host "  $EngineBin $clientCmd" -ForegroundColor Gray
 $procs += Start-Process -FilePath $EngineBin -ArgumentList $clientCmd -WindowStyle Normal -PassThru
-
-$clientCount = 1
 
 Write-Host "`nLog files:" -ForegroundColor Green
 Write-Host "  LoginServer -> $LoginLog" -ForegroundColor Gray
@@ -68,7 +67,7 @@ try {
         if ($keyInfo.Key -eq [ConsoleKey]::Enter) {
             $clientCount++
             $clientLog = "$LogDir\Client_$clientCount.log"
-            $clientCmd = $ClientBaseCmd -f $clientLog
+            $clientCmd = $ClientBaseCmd -f $clientLog, $clientCount
             Write-Host "Launching client $clientCount..." -ForegroundColor Cyan
             Write-Host "  $EngineBin $clientCmd" -ForegroundColor Gray
             $procs += Start-Process -FilePath $EngineBin -ArgumentList $clientCmd -WindowStyle Normal -PassThru

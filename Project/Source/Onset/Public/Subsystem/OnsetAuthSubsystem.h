@@ -38,6 +38,7 @@ public:
 	EOnsetAuthMode GetAuthMode() const { return AuthMode; }
 
 	FString PreLoginTokenAuth(const FString& Options, const FString& Address, FString& OutPlatform, FString& OutPlatformID);
+	void PreLoginDirect(const FString& Options, const FString& Address);
 	void HandlePostLogin(APlayerController* NewPlayer);
 	void HandleLogout(AController* Exiting);
 
@@ -61,4 +62,6 @@ private:
 	int32 AuthTokenLifetimeSeconds = 300;
 
 	TMap<FString, FPendingTokenAuth> PendingTokenAuthMap;
+
+	TMap<FString, int32> PendingDevClientIndexMap;
 };

@@ -12,6 +12,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
+#include "HAL/PlatformMisc.h"
+#include "HAL/PlatformProcess.h"
+#include "OnlineSubsystemNames.h"
 
 
 DEFINE_LOG_CATEGORY(LogOnsetAuth);
@@ -93,6 +96,19 @@ FString UOnsetAuthSubsystem::PreLoginTokenAuth(const FString& Options, const FSt
 	return {};
 }
 
+void UOnsetAuthSubsystem::PreLoginDirect(const FString& Options, const FString& Address)
+{
+	FString ClientIndexStr = UGameplayStatics::ParseOption(Options, TEXT("ClientIndex"));
+	if (ClientIndexStr.IsEmpty())
+	{
+		return;
+	}
+
+	int32 ClientIndex = FCString::Atoi(*ClientIndexStr);
+	PendingDevClientIndexMap.Add(Address, ClientIndex);
+	UE_LOG(LogOnsetAuth, Log, TEXT("PreLoginDirect: captured ClientIndex=%d for %s"), ClientIndex, *Address);
+}
+
 void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 {
 	if (!NewPlayer || !NewPlayer->HasAuthority())
@@ -129,7 +145,28 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 		FUniqueNetIdRepl UniqueId = PlayerState->GetUniqueId();
 		if (UniqueId.IsValid())
 		{
-			PlatformID = UniqueId->ToString();
+			if (UniqueId.GetType() == STEAM_SUBSYSTEM)
+			{
+				PlatformID = UniqueId->ToString();
+			}
+			else
+			{
+				// Null OSS (dev/test) — use a stable per-client dev ID if a ClientIndex was provided
+				FString Address = NewPlayer->GetPlayerNetworkAddress();
+				FString CleanAddress;
+				Address.Split(TEXT(":"), &CleanAddress, nullptr, ESearchCase::IgnoreCase, ESearchDir::FromStart);
+				if (CleanAddress.IsEmpty()) CleanAddress = Address;
+				if (int32* FoundIndex = PendingDevClientIndexMap.Find(CleanAddress))
+				{
+					PlatformID = FString::Printf(TEXT("%s-%s-C%d"), FPlatformProcess::ComputerName(), *FPlatformMisc::GetLoginId(), *FoundIndex);
+					PendingDevClientIndexMap.Remove(CleanAddress);
+					UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: dev identity for %s — %s"), *CleanAddress, *PlatformID);
+				}
+				else
+				{
+					PlatformID = UniqueId->ToString();
+				}
+			}
 		}
 		if (PlatformID.IsEmpty())
 		{

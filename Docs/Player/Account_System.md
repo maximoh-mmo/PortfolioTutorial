@@ -41,11 +41,11 @@ The system uses a composite key `(Platform, PlatformID)` to identify accounts:
 | Xbox (future) | XUID | `"XUID1234567890"` |
 | PSN (future) | Account ID | `"PSN00000001"` |
 | Switch (future) | Nintendo Account ID | `"NA00000001"` |
-| Direct (dev, no Steam) | `"DEV_" + client IP | `"DEV_127.0.0.1"` |
+| Direct (dev, no Steam) | `"<host>-<login>-C<client>"` | `"MORPHEUS-maxhe-C1"` |
 
 The `Platform` field enables cross-platform account coexistence without collisions.
 
-When Steam is not available (e.g. local dev with `-NOSTEAM`), `UOnsetAuthSubsystem::HandlePostLogin` falls back to `"DEV_" + client network address as the PlatformID. This allows local multi-client testing without a Steam connection.
+When Steam OSS is active, `UOnsetAuthSubsystem::HandlePostLogin` uses the client's SteamID64 as the PlatformID. When Steam is unavailable (Null OSS fallback), the server builds a stable per-client dev ID from the machine name, OS login ID, and a `ClientIndex` passed via the connect URL (`127.0.0.1:7777?ClientIndex=N`, added by `Test_All.ps1`). This yields IDs like `MORPHEUS-maxhe-C1` — stable across restarts and distinct per client instance. If no `ClientIndex` was provided, it falls back to `"DEV_" + client network address.
 
 ### **Character Slots**
 

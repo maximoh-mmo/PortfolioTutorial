@@ -70,13 +70,14 @@ Phase 3: Client (connects to port 7777)
 Interactive: [Enter] launch more clients, [Q] quit
 ```
 
-All processes run with `-NOSTEAM` in local dev to avoid `incompatible_unique_net_id` errors when Steam DS API is unavailable.
+All processes use the platform OSS directly (no `-NOSTEAM`). When Steam is running, connections use Steam auth; when Steam is unavailable, all processes fall back to Null OSS, which stays type-consistent and avoids `incompatible_unique_net_id` errors.
 
 ### Platform ID Resolution
 | Source | Platform | ID |
 |--------|----------|----|
 | Steam online subsystem | `"Steam"` | SteamID64 string |
-| No Steam (fallback) | `"Steam"` | `"DEV_<client_IP>"` (e.g. `DEV_127.0.0.1`) |
+| Null OSS (dev, no Steam) | `"Steam"` | `"<host>-<login>-C<client>"` (e.g. `MORPHEUS-maxhe-C1`) |
+| No unique ID / no ClientIndex | `"Steam"` | `"DEV_<client_IP>"` (e.g. `DEV_127.0.0.1`) |
 
 ### SHA256 Implementation
 Custom `FSHA256` class in `Source/Onset/Private/Crypto/` — pure software implementation. Replaces `FGenericPlatformMisc::GetSHA256Signature` which asserts on platforms without a platform SHA256 implementation.
