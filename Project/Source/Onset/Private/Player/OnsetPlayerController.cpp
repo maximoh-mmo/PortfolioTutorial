@@ -104,6 +104,7 @@ void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccou
 	CachedAccountData = InAccountData;
 	bShowMouseCursor = true;
 	SetInputMode(FInputModeGameAndUI());
+	OnAccountDataChanged.Broadcast();
 	BP_OnAccountDataUpdated();
 }
 
@@ -684,13 +685,16 @@ void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotInd
 	{
 		UE_LOG(LogTemp, Log, TEXT("Server_CreateCharacter: created '%s' (class=%d) in slot %d, preset %d"),
 			*CharacterName, static_cast<int32>(CharacterClass), SlotIndex, AppearancePresetIndex);
-	}
 
-	// Send refreshed account data so the client sees the new occupied slot
-	FOnsetAccountData RefreshedAccount;
-	if (DataSubsystem->LoadAccount(PS->PlayerPlatform, PS->PlayerPlatformID, RefreshedAccount))
-	{
-		Client_AccountData(RefreshedAccount);
+		// Send refreshed account data so the client cache is up to date.
+		FOnsetAccountData RefreshedAccount;
+		if (DataSubsystem->LoadAccount(PS->PlayerPlatform, PS->PlayerPlatformID, RefreshedAccount))
+		{
+			Client_AccountData(RefreshedAccount);
+		}
+
+		// Enter the world with the newly created character.
+		Server_SelectCharacter(SlotIndex);
 	}
 }
 

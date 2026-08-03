@@ -61,6 +61,7 @@ async function deleteCharacter(platform, platformId, slotIndex) {
 async function listCharacters(platform, platformId) {
   const result = await docClient.send(new QueryCommand({
     TableName: TABLE,
+    ConsistentRead: true,
     KeyConditionExpression: 'PK = :pk AND begins_with(SK, :prefix)',
     ExpressionAttributeValues: {
       ':pk': accountPK(platform, platformId),

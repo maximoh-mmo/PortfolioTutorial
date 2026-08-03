@@ -9,6 +9,8 @@
 
 class AOnsetPlayerController;
 class UCharacterCreationScreen;
+class UCharacterSlot;
+class UPanelWidget;
 
 UCLASS(Abstract)
 class ONSET_API UCharacterSelectScreen : public UOnsetScreenBase
@@ -40,4 +42,32 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Character Selection")
 	TSubclassOf<UCharacterCreationScreen> CharacterCreationScreenClass;
+
+	/** Blueprint widget class used to build each character slot. */
+	UPROPERTY(EditDefaultsOnly, Category = "Character Selection")
+	TSubclassOf<UCharacterSlot> CharacterSlotClass;
+
+	/** Container into which the slot widgets are created. Must be a panel widget named CharacterSlotContainer. */
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UPanelWidget> CharacterSlotContainer;
+
+	//~ Begin UOnsetScreenBase interface
+	virtual void NativeOnActivated() override;
+	//~ End UOnsetScreenBase interface
+
+	virtual void NativeDestruct() override;
+
+private:
+	void BuildSlotWidgets();
+	void RefreshSlotWidgets();
+	TArray<TObjectPtr<UCharacterSlot>> SlotWidgets;
+
+	UFUNCTION()
+	void HandleAccountDataChanged();
+
+	UFUNCTION()
+	void HandleSlotActivated(int32 InSlotIndex);
+
+	UFUNCTION()
+	void HandleDeleteRequested(int32 InSlotIndex);
 };

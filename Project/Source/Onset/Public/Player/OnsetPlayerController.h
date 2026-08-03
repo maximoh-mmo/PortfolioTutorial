@@ -23,6 +23,9 @@ class UOnsetScreenBase;
 class UTargetingComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogGamepad, Log, All);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnsetAccountDataChanged);
+
 UCLASS()
 class ONSET_API AOnsetPlayerController : public APlayerController
 {
@@ -182,6 +185,10 @@ private:
 		
 public:
 	const FOnsetAccountData& GetCachedAccountData() const { return CachedAccountData; }
+
+	/** Broadcast whenever new account data arrives from the server (see Client_AccountData). */
+	UPROPERTY(BlueprintAssignable, Category = "Account")
+	FOnsetAccountDataChanged OnAccountDataChanged;
 
 	const FString& GetCachedSessionToken() const { return CachedSessionToken; }
 
