@@ -214,6 +214,7 @@ DS Startup
 ## **Interactions With Other Systems**
 
 - **[Account System](../Player/Account_System.md)** — consumer of all store methods; translates between USTRUCTs and DB rows  
+- **[Account API](../Server/Account_Api.md)** — the Lambda + DynamoDB backend proxied by `FHttpStore` when `Type=HttpApi`  
 - **[Multiplayer](../Multiplayer/Multiplayer_System.md)** — runs server-only on the DS, never on clients  
 - **[Steam Integration](../Steam/Steam_Integration_System.md)** — provides the platform ID used as the primary key  
 

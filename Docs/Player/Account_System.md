@@ -55,6 +55,8 @@ Each account has exactly 3 slots (indexed 0-2). Slots are:
 
 Slots are independent — deleting slot 1 does not affect slots 0 or 2.
 
+Slot UI is driven in C++ by `UCharacterSlot` (occupied/empty display state, click routing); Blueprints only style it via `BP_OnSlotDataChanged`. The select screen builds slots dynamically into a bound panel container and refreshes on `OnAccountDataChanged`.
+
 ### **Save Triggers**
 
 | Trigger | When | What |
@@ -81,10 +83,11 @@ Combat ephemera (current health, active cooldowns, temporary effects) are **neve
 - `SelectedCharacterSlot` (int32) — which slot is active this session
 
 ### **`AOnsetPlayerController`**
-- `Client_AccountData(FOnsetAccountData)` — receive account overview
+- `Client_AccountData(FOnsetAccountData)` — receive account overview; broadcasts `OnAccountDataChanged` so open screens refresh in place
 - `Client_CharacterData(FOnsetFullCharacterData)` — receive full character on select
-- `Server_SelectCharacter(int32 SlotIndex)` — client picks a slot
-- `Server_CreateCharacter(int32 SlotIndex, FString Name)` — create new character
+- `Server_SelectCharacter(int32 SlotIndex)` — client picks a slot; on the login server this generates a session token and travels to the game server
+- `Server_CreateCharacter(int32 SlotIndex, FString Name, EOnsetCharacterClass Class, int32 AppearancePresetIndex)` — create new character; on success auto-selects the new character and enters the world
+- `Server_DeleteCharacter(int32 SlotIndex)` — delete an occupied slot
 - `Server_SaveCharacter()` — manual save request
 - `Client_SaveComplete(bool bSuccess)` — confirm save
 
@@ -98,9 +101,9 @@ Combat ephemera (current health, active cooldowns, temporary effects) are **neve
 
 | Struct | Fields | Purpose |
 |--------|--------|---------|
-| `FOnsetCharacterSlotData` | SlotIndex, CharacterName, Level, bOccupied | Account overview (lightweight, no full state) |
-| `FOnsetAccountData` | PlatformID, Platform, Slots[3] | Full account sent to client |
-| `FOnsetFullCharacterData` | SlotIndex, CharacterName, Level, XP, MaxHealth, Position, RotationYaw, InventoryJSON, EquipmentJSON, QuestsJSON | Full character state for save/load |
+| `FOnsetCharacterSlotData` | SlotIndex, CharacterName, Level, CharacterClass, bOccupied | Account overview (lightweight, no full state) |
+| `FOnsetAccountData` | PlatformID, Platform, Slots | Full account sent to client |
+| `FOnsetFullCharacterData` | SlotIndex, CharacterName, Level, Experience, CurrentZone, MaxHealth, Position, RotationYaw, InventoryJSON, EquipmentJSON, QuestsJSON, CharacterClass, AppearanceJSON | Full character state for save/load |
 
 ---
 
@@ -140,6 +143,8 @@ Client                          DS (GameMode)                   Account API (Lam
 
 When using SQLite or PostgreSQL, the store is called directly on the DS (no REST hop). The HTTP API path uses `FHttpStore` which serializes requests as JSON and sends them to the Lambda Function URL.
 
+> **Note (two-server flow):** Character selection and creation happen on the **login server**, not the game server. `Server_SelectCharacter` (and `Server_CreateCharacter` auto-select) generates a session token and the client travels to the game server via `Client_TravelToGameServer`. A full-screen loading overlay covers the transition and hides once the client possesses its pawn. See [Multiplayer System](../Multiplayer/Multiplayer_System.md) and [UI System](../Gameplay/UI_System.md).
+
 ### **Save Flow**
 
 ```
@@ -167,7 +172,7 @@ PlayerController           UOnsetPlayerDataSubsystem       IPlayerDataStore
 - **[Steam Integration](../Steam/Steam_Integration_System.md)** — provides the SteamID that anchors the account  
 - **[Multiplayer](../Multiplayer/Multiplayer_System.md)** — all RPCs are server-authenticated and replicated  
 - **[Player System](../Player/Player_System.md)** — character pawn loads/saves state via `ApplySaveData` / `BuildSaveData`  
-- **[UI System (future)](../Gameplay/UI_System.md)** — character select screen, save indicators  
+- **[UI System](../Gameplay/UI_System.md)** — CommonUI screen stack, character select/creation screens, C++ character slots, loading screen  
 
 ---
 
@@ -184,7 +189,7 @@ PlayerController           UOnsetPlayerDataSubsystem       IPlayerDataStore
 
 - **First login (no account)** — auto-create account with 3 empty slots  
 - **First login (account exists, no characters)** — all 3 slots empty, force creation  
-- **All 3 slots full** — must delete a slot before creating another (not implemented in Wave 4 — show dialog)  
+- **All 3 slots full** — delete an occupied slot (slot delete button → `Server_DeleteCharacter`) before creating another  
 - **Save fails (DB error)** — client receives `Client_SaveComplete(false)`, retry on next trigger  
 - **Disconnect during save** — transaction safety: partial write rolls back  
 - **DS crash** — last auto-save checkpoint survives; at most 5 minutes of progress lost  
@@ -211,9 +216,7 @@ PlayerController           UOnsetPlayerDataSubsystem       IPlayerDataStore
 
 ## **Future Extensions**
 
-- **Slot deletion** — confirm dialog, remove from DB
 - **Character rename** — in-game or on character select screen
-- **Appearance save data** — mesh, material, color choices
 - **Last-selected slot auto-pick** — skip character select if only one character
 - **Read-only spectator** — login without selecting a character (watch others play)
 - **Cross-platform merge** — link multiple platform IDs to one account

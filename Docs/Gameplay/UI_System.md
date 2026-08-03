@@ -20,6 +20,36 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 
 ---
 
+## **Status**
+
+- **Implemented:** CommonUI login/character-select screen stack, C++ character slots, world-transition loading screen (see **Current Implementation** below).
+- **Planned (A6):** in-game HUD — player health, enemy health bars, ability bar/cooldowns, target indicators, debug overlays.
+
+---
+
+## **Current Implementation — Menu & Screen Stack (CommonUI)**
+
+### CommonUI Screen Stack
+- `UOnsetScreenBase` — `UCommonActivatableWidget` base for full-screen menus; handles activation/deactivation + input mode; Blueprint hooks `BP_OnScreenActivated` / `BP_OnScreenDeactivated`.
+- `UOnsetRootLayout` (`WBP_RootLayout`) — single viewport-root widget with three layer stacks: **Game**, **Menu**, **Modal**.
+- `UOnsetActivatableWidgetStack` — project subclass of `UCommonActivatableWidgetStack` with an `EOnsetUILayer` label.
+- `UOnsetUISubsystem` — `UGameInstanceSubsystem` owning the root layout; exposes `PushScreen` / `PopScreen` / `CleanupUI` / `ShowLoadingScreen` / `HideLoadingScreen`.
+- `UOnsetButtonBase` (`WBP_ButtonBase`) — button with hover/click sound hooks.
+- `UOnsetGameViewportClient` — `UCommonGameViewportClient` subclass.
+
+### Screens
+- `UMainMenuScreen` (`WBP_MainMenu`) — `ConnectToServer()` pushes the character select screen.
+- `UCharacterSelectScreen` (`WBP_CharacterSelect`) — builds three `UCharacterSlot` widgets dynamically into a bound panel container; occupied slot → `Server_SelectCharacter` (enter world), empty slot → creation screen. Refreshes in place via `OnAccountDataChanged`.
+- `UCharacterCreationScreen` (`WBP_CharacterCreation`) — name input, class select, appearance presets → `Server_CreateCharacter`.
+
+### Character Slot Widget
+`UCharacterSlot` (`WBP_CharacterSlot`) — all logic in C++: occupied/empty display state (name, level, delete-button visibility), click routing via `OnSlotActivated` / `OnDeleteRequested`, and a `BP_OnSlotDataChanged` Blueprint hook for styling.
+
+### Loading Screen
+`UOnsetLoadingScreen` (`WBP_LoadingScreen`, backed by `M_Spinner`) — full-screen overlay shown by `UOnsetUISubsystem::ShowLoadingScreen()` before any world travel (create, select, reconnect). Tears down menu screens first, enforces a 0.5s minimum display, and hides on client pawn possession via `AOnsetPlayerController::OnPossess` (10s timeout fallback). Widget configured via `[Onset.UI] LoadingScreenClass` in `DefaultEngine.ini`.
+
+---
+
 ## **Responsibilities**
 - Display player health  
 - Display enemy health bars  
@@ -31,7 +61,7 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
   - AI state  
   - Autoplay mode  
   - Networking status  
-- Provide minimal menu elements (optional)  
+- Provide login/character-select menus (CommonUI screen stack) and world-transition loading screens  
 
 ---
 
@@ -41,7 +71,7 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 - Quest UI  
 - Dialogue  
 - Complex HUD animations  
-- Full menu systems  
+- Complex menu systems (settings, pause, inventory)  
 
 ---
 
@@ -137,6 +167,10 @@ Target Indicator Widget
 
 ### **[Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - UI reads replicated PlayerState data  
+- Loading screen covers world travel and hides on client possession  
+
+### **[Account System](../Player/Account_System.md)**
+- Drives character select/creation screens; `OnAccountDataChanged` refreshes slots in place  
 
 ---
 
@@ -166,6 +200,9 @@ Target Indicator Widget
 - [ ] Target indicators match ability behaviour *(planned)*  
 - [ ] Debug UI toggles correctly *(planned)*  
 - [ ] UI behaves correctly in multiplayer *(planned)*  
+- [x] Main menu → character select → creation flow works (CommonUI screen stack)
+- [x] Character slots refresh in place after create/delete
+- [x] Loading screen shows during create/select/reconnect travel and hides on possession
 
 ---
 
@@ -173,6 +210,6 @@ Target Indicator Widget
 - Animated ability icons  
 - Damage numbers  
 - Minimap  
-- Full menu system  
+- Settings/pause menus  
 - Style/theme pass  
 - Mobile gesture support (pinch zoom, long-press for details)  

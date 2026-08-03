@@ -27,7 +27,7 @@ Each system is responsible for a specific domain and communicates with others th
 
 ```mermaid
 flowchart TD
-    UI[UI System<br/>HUD, PvP Toggle, Indicators] --> PC[PlayerController]
+    UI[UI System<br/>Menus, Loading Screen, HUD] --> PC[PlayerController]
     PC --> PS[PlayerState<br/>bIsPvPEnabled]
     PC --> Targeting[Targeting System]
     PC --> GAS
@@ -181,6 +181,7 @@ This document is the technical map for the entire project.
 - Session token system: `GenerateToken()` / `ValidateToken()` with configurable secret and lifetime
 - `AOnsetLoginServerGameMode` — minimal game mode for login-only server: auth → token → kick
 - Client reconnect: stores token via `Client_SessionToken` RPC, then `ReconnectToGameServer()` does `ClientTravel` with token in URL  
+- World transitions are covered by a full-screen loading overlay (`UOnsetLoadingScreen`) shown before `ClientTravel` and hidden on client possession  
 
 ### **4. [Targeting System](../Gameplay/Targeting_System.md) (PvP‑aware)**
 - Data holder for `CurrentTarget` with `IsActorValidTarget()` validation  
@@ -223,11 +224,10 @@ This document is the technical map for the entire project.
 - Replicated to all clients  
 
 ### **11. [UI System](../Gameplay/UI_System.md)**
-- HUD  
-- Ability bar  
-- Health bars  
-- Target highlight  
-- PvP toggle  
+- CommonUI screen stack (`UOnsetUISubsystem`, RootLayout + 3 layers) for login/character-select menus
+- C++-driven character slots (`UCharacterSlot`)
+- World-transition loading screen (`UOnsetLoadingScreen`)
+- HUD, ability bar, health bars, target highlight, PvP toggle *(planned, A6)*
 
 ### **12. [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - Server‑authoritative simulation  
@@ -335,6 +335,9 @@ This document is the technical map for the entire project.
 ### **[Auth System](../Player/Account_System.md) ↔ [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - Token auth mode validates session tokens in `PreLogin` before connection is accepted
 - Login Server reuses same networking stack (Steam OSS) for auth ticket exchange
+
+### **[Auth System](../Player/Account_System.md) ↔ [UI System](../Gameplay/UI_System.md)**
+- Loading screen covers world travel after character select/creation
 
 ### **[Multiplayer System](../Multiplayer/Multiplayer_System.md) ↔ [Player System](../Player/Player_System.md)**
 - Replicates player state; RPCs for PvP toggle, abilities, movement  

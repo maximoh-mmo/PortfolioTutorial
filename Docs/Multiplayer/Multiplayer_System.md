@@ -48,17 +48,20 @@ HandlePostLogin:
   LoadAccount / CreateAccount
   Send Client_AccountData
        │
-Server_SelectCharacter:
+Server_SelectCharacter — or Server_CreateCharacter auto-select:
   GenerateToken(Platform, PlatformID, SlotIndex)
   Client_TravelToGameServer(IP, Port, Token)
        │
+       │ Client: ShowLoadingScreen() overlay   │
+       │ (covers menu → world transition)      │
        └────────────────────────────► PreLogin:
-                                       ParseOption("Token")
-                                       ValidateToken → cache in PendingTokenAuthMap
-                                    HandlePostLogin:
-                                       Read cached (Platform, PlatformID, SlotIndex)
-                                       LoadAccount / LoadCharacter
-                                       Spawn pawn
+                                        ParseOption("Token")
+                                        ValidateToken → cache in PendingTokenAuthMap
+                                     HandlePostLogin:
+                                        Read cached (Platform, PlatformID, SlotIndex)
+                                        LoadAccount / LoadCharacter
+                                        Spawn pawn
+                                     Client OnPossess → HideLoadingScreen()
 ```
 
 ### Test Script
@@ -70,7 +73,7 @@ Phase 3: Client (connects to port 7777)
 Interactive: [Enter] launch more clients, [Q] quit
 ```
 
-All processes use the platform OSS directly (no `-NOSTEAM`). When Steam is running, connections use Steam auth; when Steam is unavailable, all processes fall back to Null OSS, which stays type-consistent and avoids `incompatible_unique_net_id` errors.
+All processes launch with `-NOSTEAM`, skipping the Steam plugin entirely. Connections use the Null OSS for a consistent platform identity (see Platform ID Resolution).
 
 ### Platform ID Resolution
 | Source | Platform | ID |
@@ -78,6 +81,9 @@ All processes use the platform OSS directly (no `-NOSTEAM`). When Steam is runni
 | Steam online subsystem | `"Steam"` | SteamID64 string |
 | Null OSS (dev, no Steam) | `"Steam"` | `"<host>-<login>-C<client>"` (e.g. `MORPHEUS-maxhe-C1`) |
 | No unique ID / no ClientIndex | `"Steam"` | `"DEV_<client_IP>"` (e.g. `DEV_127.0.0.1`) |
+
+### World Transition Loading Screen
+Whenever the client travels between servers (`Client_TravelToGameServer` or `ReconnectToGameServer`), the UI subsystem shows a full-screen `UOnsetLoadingScreen` overlay (menu screens are torn down first) and hides it once the new world loads and the client possesses its pawn (`AOnsetPlayerController::OnPossess`). Minimum display 0.5s, 10s timeout fallback. Widget configured via `[Onset.UI] LoadingScreenClass` in `DefaultEngine.ini`.
 
 ### SHA256 Implementation
 Custom `FSHA256` class in `Source/Onset/Private/Crypto/` — pure software implementation. Replaces `FGenericPlatformMisc::GetSHA256Signature` which asserts on platforms without a platform SHA256 implementation.
@@ -96,6 +102,8 @@ Custom `FSHA256` class in `Source/Onset/Private/Crypto/` — pure software imple
 - `UOnsetAuthSubsystem::ValidateToken` — validates token signature + expiry
 - `UOnsetAuthSubsystem::HandlePostLogin` — resolves platform ID, loads account, sends data
 - `AOnsetPlayerController::Client_TravelToGameServer` — direct IP travel with token in URL
+- `UOnsetUISubsystem::ShowLoadingScreen / HideLoadingScreen` — full-screen overlay during world travel
+- `AOnsetPlayerController::OnPossess` — hides the loading screen once the client possesses its pawn
 
 ## Data Flow
 
@@ -147,5 +155,6 @@ sequenceDiagram
 - [ ] Token validation accepts valid tokens and rejects expired/invalid
 - [ ] Direct mode fallback PlatformID works without Steam (`DEV_<IP>`)
 - [ ] Multiple clients can connect to the same game server
+- [ ] Loading screen shows during create/select/reconnect travel and hides when the pawn spawns
 
 ---

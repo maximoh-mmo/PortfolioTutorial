@@ -19,6 +19,8 @@
 | **Sprint Total** | **30** | **~6 days** |
 | **Done** | **30/30** | **All waves complete** |
 
+> **Post-sprint update (2026-08-03):** The login flow now runs on a separate login server (see [Sprint A5c](Sprint_Auth_Extraction.md)). `Server_CreateCharacter` auto-selects the new character and enters the world via two-server token travel (not `ServerTravel`). Character slots are C++-driven (`UCharacterSlot`), and world transitions are covered by a full-screen loading screen (`UOnsetLoadingScreen`).
+
 ---
 
 ## 📋 Sprint Waves

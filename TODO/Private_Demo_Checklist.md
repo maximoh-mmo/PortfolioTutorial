@@ -420,10 +420,10 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Simplify `AOnsetPlayerController::Client_AccountData` — cache data, no widget creation
 - [x] Delete old canvas HUDs: `AOnsetLobbyHUD`, `AOnsetMenuHUD`, `AOnsetLobbyGameMode`
 - [x] Delete old widget screens: `UMainMenuWidget`, `UCharacterSelectWidget`
-- [x] Content assets: `WBP_RootLayout`, `WBP_MainMenu`, `WBP_CharacterSelect`, styles, fonts, textures
+- [x] Content assets: `WBP_RootLayout`, `WBP_MainMenu`, `WBP_CharacterSelect`, `WBP_CharacterCreation`, `WBP_CharacterSlot`, `WBP_LoadingScreen`, `M_Spinner`, styles, fonts, textures
 - [x] Wire create → `Server_CreateCharacter` → slot fills
 - [x] Wire select → highlight slot → Enter → `Server_SelectCharacter`
-- [x] Wire Enter World → `Server_SelectCharacter` → server `ServerTravel` to DemoLevel
+- [x] Wire Enter World → `Server_SelectCharacter` → server `ServerTravel` to DemoLevel (replaced post-A5c by two-server token travel; loading screen covers the transition)
 
 ## A5b.6 Postgres Store & Production Hardening
 - [x] `FPgSQLStore` implementation using libpq (EDB binary distribution, ThirdParty/PostgreSQL/)
@@ -575,7 +575,7 @@ Status: ✅ Complete (compressed ~1 day)
 | A3 AI Systems | 75 | 75 | 100% | |
 | A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
-| A5b Persistence & Account | 51 | 51 | 100% | All waves complete. Includes FHttpStore + Account API (Lambda + DynamoDB). Wave 5 revised: canvas HUDs → CommonUI screen stack. |
+| A5b Persistence & Account | 51 | 51 | 100% | All waves complete. Includes FHttpStore + Account API (Lambda + DynamoDB). Wave 5 revised: canvas HUDs → CommonUI screen stack. Post-sprint (08-03-26): create auto-enters world, C++-driven slots, loading screen transitions. |
 | A5c Auth Extraction & Login Server | 42 | 42 | 100% | |
 | A6 UI & Final Demo | — | — | — | Not started |
 | A7 Integration & Harden | — | — | — | Not started |
