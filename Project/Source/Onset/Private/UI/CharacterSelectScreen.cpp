@@ -43,6 +43,10 @@ void UCharacterSelectScreen::SelectSlot(int32 SlotIndex)
 	if (CachedAccountData.Slots[SlotIndex].bOccupied)
 	{
 		SelectedSlot = SlotIndex;
+		if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>())
+		{
+			UI->ShowLoadingScreen();
+		}
 		CachedPlayerController->Server_SelectCharacter(SelectedSlot);
 	}
 	else
@@ -54,6 +58,10 @@ void UCharacterSelectScreen::SelectSlot(int32 SlotIndex)
 void UCharacterSelectScreen::EnterWorld() const
 {
 	if (SelectedSlot < 0 || !CachedPlayerController) return;
+	if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>())
+	{
+		UI->ShowLoadingScreen();
+	}
 	CachedPlayerController->Server_SelectCharacter(SelectedSlot);	
 }
 
@@ -88,6 +96,10 @@ void UCharacterSelectScreen::RefreshAccountData()
 void UCharacterSelectScreen::CreateCharacter(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, int32 AppearancePresetIndex)
 {
 	if (!CachedPlayerController) return;
+	if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>())
+	{
+		UI->ShowLoadingScreen();
+	}
 	CachedPlayerController->Server_CreateCharacter(SlotIndex, CharacterName, CharacterClass, AppearancePresetIndex);
 }
 

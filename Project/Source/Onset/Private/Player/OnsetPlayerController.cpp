@@ -221,6 +221,16 @@ void AOnsetPlayerController::SetupInputComponent()
 void AOnsetPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+
+	// Once the client possesses a pawn, the new world is loaded and playable — dismiss any loading screen.
+	if (IsLocalController())
+	{
+		if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>())
+		{
+			UI->HideLoadingScreen();
+		}
+	}
+
 	CachedPlayerPawn = InPawn;
 	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
 
@@ -805,6 +815,12 @@ void AOnsetPlayerController::Client_TravelToGameServer_Implementation(const FStr
 
 	UE_LOG(LogOnsetAuth, Log, TEXT("Client_TravelToGameServer: traveling to %s:%s with token"), *ServerIP, *ServerPort);
 	UE_LOG(LogOnsetAuth, Log, TEXT("Travel URL: %s"), *URL);
+
+	if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>())
+	{
+		UI->ShowLoadingScreen();
+	}
+
 	ClientTravel(URL, TRAVEL_Absolute);
 }
 
@@ -825,5 +841,11 @@ void AOnsetPlayerController::ReconnectToGameServer()
 		*GameServerIP, *GameServerPort, *CachedSessionToken);
 
 	UE_LOG(LogOnsetAuth, Log, TEXT("ReconnectToGameServer: traveling to %s:%s with token"), *GameServerIP, *GameServerPort);
+
+	if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>())
+	{
+		UI->ShowLoadingScreen();
+	}
+
 	ClientTravel(URL, TRAVEL_Absolute);
 }

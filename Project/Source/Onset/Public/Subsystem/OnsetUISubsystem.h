@@ -9,6 +9,7 @@
 
 class UOnsetRootLayout;
 class UOnsetScreenBase;
+class UOnsetLoadingScreen;
 
 /**
  * Owns the root UI layout and exposes simple, Blueprint-callable navigation.
@@ -41,9 +42,48 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Onset|UI")
 	UOnsetRootLayout* GetRootLayout() const { return RootLayout; }
 
+	/** Shows the full-screen loading overlay, tearing down any menu UI first.
+	 *  Safe to call multiple times while already showing. */
+	UFUNCTION(BlueprintCallable, Category = "Onset|UI")
+	void ShowLoadingScreen();
+
+	/** Hides the loading overlay once the minimum display time has elapsed. */
+	UFUNCTION(BlueprintCallable, Category = "Onset|UI")
+	void HideLoadingScreen();
+
+	/** True while the loading overlay is on screen. */
+	UFUNCTION(BlueprintPure, Category = "Onset|UI")
+	bool IsLoadingScreenVisible() const { return LoadingScreen != nullptr; }
+
+protected:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
 private:
 	UOnsetActivatableWidgetStack* GetStackForLayer(EOnsetUILayer Layer) const;
 
+	/** Enforced when the travel/auth never completes, so the UI never hangs. */
+	void OnLoadingTimeout();
+
 	UPROPERTY(Transient)
 	TObjectPtr<UOnsetRootLayout> RootLayout;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UOnsetLoadingScreen> LoadingScreen;
+
+	/** Blueprint subclass that provides the loading screen visuals. Resolved from [Onset.UI] LoadingScreenClass. */
+	UPROPERTY(EditDefaultsOnly, Category = "Onset|UI")
+	TSubclassOf<UOnsetLoadingScreen> LoadingScreenClass;
+
+	UPROPERTY(Transient)
+	FTimerHandle LoadingScreenTimerHandle;
+
+	/** Seconds the loading screen stays visible at minimum to avoid a blink. */
+	UPROPERTY(EditDefaultsOnly, Category = "Onset|UI")
+	float MinLoadingScreenTime = 0.5f;
+
+	/** Seconds before the loading screen force-hides and reports a timeout. */
+	UPROPERTY(EditDefaultsOnly, Category = "Onset|UI")
+	float LoadingScreenTimeoutSeconds = 10.0f;
+
+	double LoadingScreenShowTime = 0.0;
 };
