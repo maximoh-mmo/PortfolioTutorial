@@ -134,10 +134,10 @@ Reads the profile and self‑configures: loads the StateTree asset, sets percept
 Handles sight/hearing events — queries `GetCurrentlyPerceivedActors` for sight and hearing, finds the nearest valid enemy (skipping same-side actors via tag comparison), and sets `TargetingComponent.CurrentTarget`. Clears target when no enemies are perceived.  
 **Hearing is the primary assist mechanism:** when an ally is damaged, a noise event broadcasts via `UAIPerceptionSystem`; each AI controller within its own `HearingRange` receives it here. The handler collects these noise sources alongside sight stimuli and feeds them into the same target acquisition flow. Group membership filtering for assist-specific logic is handled in the StateTree tasks.  
 
-### **`SetTarget(AActor*)`** *(future)*
+### **`SetTarget(AActor*)`** *(implemented via `UTargetingComponent`)*
 Assigns a target for chase/attack.
 
-### **`OnDeath()`** *(future)*
+### **`OnDeath()`** *(implemented in `AOnsetEnemy`)*
 Notifies spawner/pool.
 
 ---

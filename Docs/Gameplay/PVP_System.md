@@ -55,7 +55,7 @@ Replicated to all clients.
 
 ---
 
-## **Key Functions** *(planned)*
+## **Key Functions** *(implemented)*
 
 ### AOnsetPlayerController
 - `Server_SetPvPEnabled(bool)`  
@@ -126,12 +126,12 @@ flowchart TD
 ---
 
 ## **Testing Checklist**
-- [ ] PvP toggle replicates correctly  
-- [ ] Player cannot target players when PvP disabled  
-- [ ] Player cannot damage players when PvP disabled  
-- [ ] AoE abilities ignore players when PvP disabled  
-- [ ] Player can target/damage players when PvP enabled  
-- [ ] Works in multiplayer with multiple clients  
+- [x] PvP toggle replicates correctly  
+- [x] Player cannot target players when PvP disabled  
+- [x] Player cannot damage players when PvP disabled  
+- [x] AoE abilities ignore players when PvP disabled  
+- [x] Player can target/damage players when PvP enabled  
+- [x] Works in multiplayer with multiple clients  
 
 ---
 

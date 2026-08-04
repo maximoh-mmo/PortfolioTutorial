@@ -59,13 +59,13 @@ flowchart TD
 
 ## **Target Validation Rules**
 
-### Valid target if: *(planned — not yet implemented)*
+### Valid target if: *(implemented)*
 - Target is alive  
 - Target is within range *(future)*  
 - Target is visible (optional LOS) *(future)*  
-- **PvP rules allow targeting** *(future)*  
+- **PvP rules allow targeting** *(implemented)*
 
-### PvP Filtering *(future)*:
+### PvP Filtering *(implemented)*:
 ```
 if (Target is Player && !SourcePlayer->bIsPvPEnabled)
     return false;
@@ -88,7 +88,7 @@ For `GetHitResultAtScreenPosition` with `ECC_Visibility` to successfully detect 
 
 ---
 
-## **Replication** *(planned)*
+## **Replication** *(implemented)*
 - Target selection is **client‑side**  
 - Server validates target data when ability activates via GAS  
 
@@ -96,10 +96,10 @@ For `GetHitResultAtScreenPosition` with `ECC_Visibility` to successfully detect 
 
 ## **Testing Checklist**
 - [x] Click‑to‑target sets `CurrentTarget` (on tagged actors)  
-- [ ] Auto‑target fallback selects nearest valid enemy *(planned)*  
-- [ ] PvP filtering correctly excludes players when OFF *(planned)*  
-- [ ] AI targeting respects PvP rules *(planned)*  
-- [ ] Target highlight appears/disappears correctly *(planned)*  
+- [ ] Auto‑target fallback selects nearest valid enemy *(future)*  
+- [x] PvP filtering correctly excludes players when OFF  
+- [ ] AI targeting respects PvP rules *(future)*  
+- [ ] Target highlight appears/disappears correctly *(future)*  
 
 ---
 

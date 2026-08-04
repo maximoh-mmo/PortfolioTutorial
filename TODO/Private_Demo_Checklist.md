@@ -497,9 +497,9 @@ Status: ✅ Complete (compressed ~1 day)
 
 ## A6.1 UI System
 - [ ] Create `UHUDWidget` (main HUD container)
-- [ ] Implement **virtual joystick widget** (touch) — thumbstick zone with drag-outline
 - [ ] Implement **virtual ability button widgets** (touch) — 4 ability hotkeys + basic attack
-- [ ] Implement **gamepad cursor overlay widget** (software crosshair)
+- [x] Implement **virtual joystick widget** (touch) — thumbstick zone with drag-outline — **implemented (JoystickWidget.h/.cpp)**
+- [x] Implement **gamepad cursor overlay widget** (software crosshair) — **implemented (GamepadCursorWidget.h/.cpp)**
 - [ ] Implement player health bar
 - [ ] Implement `UEnemyHealthBarWidget` (world-space attached to NPCs)
 - [ ] Implement `UAbilityBarWidget` (cooldown display)
@@ -512,9 +512,9 @@ Status: ✅ Complete (compressed ~1 day)
 - [ ] Verify ability cooldowns update
 - [ ] Verify target indicators match ability behaviour
 - [ ] Verify debug UI toggles correctly
-- [ ] Verify virtual joystick input on touch device
+- [x] Verify virtual joystick input on touch device
 - [ ] Verify virtual ability buttons trigger GAS abilities
-- [ ] Verify gamepad cursor renders and follows R-Stick
+- [x] Verify gamepad cursor renders and follows R-Stick
 
 ## A6.2 Final Demo Loop
 - [ ] Implement wave spawning (multiple spawners, progressive difficulty)
@@ -562,7 +562,7 @@ Status: ✅ Complete (compressed ~1 day)
 - [ ] Full demo loop: multiplayer (2 clients)
 - [ ] Full demo loop: multiplayer (DS + 2 clients)
 - [ ] Export test snapshot to verify workflow
-- [ ] Verify all 37 risks mitigated or accepted
+- [ ] Verify all 49 risks mitigated or accepted
 
 ---
 

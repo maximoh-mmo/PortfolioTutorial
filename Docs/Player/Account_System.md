@@ -193,7 +193,7 @@ PlayerController           UOnsetPlayerDataSubsystem       IPlayerDataStore
 - **Save fails (DB error)** — client receives `Client_SaveComplete(false)`, retry on next trigger  
 - **Disconnect during save** — transaction safety: partial write rolls back  
 - **DS crash** — last auto-save checkpoint survives; at most 5 minutes of progress lost  
-- **Slot deletion** — confirm dialog before deleting a character (deferred)  
+- **Slot deletion** — confirm dialog before deleting a character  
 
 ---
 

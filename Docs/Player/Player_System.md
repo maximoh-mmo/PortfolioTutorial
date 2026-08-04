@@ -77,7 +77,7 @@ Any WASD/L‑Stick input also calls `Server_DisableAutoCombat()` and `StopMoveme
 
 ---
 
-## **PvP Toggle Flow** *(planned — not yet implemented)*
+## **PvP Toggle Flow** *(implemented)*
 
 ### UI → PlayerController
 Player clicks PvP toggle:
@@ -107,7 +107,7 @@ bIsPvPEnabled = bEnabled;
 - If PvP enabled → include player actors  
 - If `CurrentTarget` becomes invalid due to PvP toggle → auto‑select nearest NPC  
 
-## **GAS Integration** *(planned)*
+## **GAS Integration** *(implemented)*
 PlayerController routes ability input → ASC via [GAS System](../GAS/GAS_System.md)  
 ASC checks PvP rules before applying damage.
 
@@ -116,12 +116,12 @@ ASC checks PvP rules before applying damage.
 
 - Virtual joystick (touch) [done]  
 - Gamepad cursor overlay [done]  
-- PvP ON/OFF [planned]  
-- Color‑coded indicator [planned]  
+- PvP ON/OFF [implemented]  
+- Color‑coded indicator [implemented]  
 
 ---
 
-## **Replication** *(planned)*
+## **Replication** *(implemented)*
 - PvP flag replicates via `AOnsetPlayerState`  
 - UI updates on `OnRep_PvPEnabled`  
 - Server enforces all PvP rules  
@@ -131,15 +131,15 @@ ASC checks PvP rules before applying damage.
 ## **Testing Checklist**
 - [x] Tap/click‑to‑move moves character to target location (mouse + touch)  
 - [x] WASD + gamepad L‑Stick movement is screen‑relative (camera yaw, not character facing)  
-- [ ] Tap/click‑to‑target sets `CurrentTarget` correctly (mouse + touch)  
-- [ ] PvP toggle replicates to all clients *(planned)*  
-- [ ] Targeting respects PvP flag (players filtered when OFF) *(planned)*  
-- [ ] Player AI autoplay can be enabled/disabled *(planned)*  
-- [ ] Works in multiplayer with multiple clients *(planned)*  
+- [x] Tap/click‑to‑target sets `CurrentTarget` correctly (mouse + touch)  
+- [x] PvP toggle replicates to all clients  
+- [x] Targeting respects PvP flag (players filtered when OFF)  
+- [x] Player AI autoplay can be enabled/disabled  
+- [x] Works in multiplayer with multiple clients  
 
 ---
 
-## **Edge Cases** *(notes for planned features)*
+## **Edge Cases**
 - Player toggles PvP mid‑combat  
 - Player AI must respect PvP rules  
 - Player targeting a player when PvP is turned OFF  

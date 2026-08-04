@@ -1,7 +1,7 @@
 # 📘 RISK MITIGATION PLAN
 **File:** `Planning/Risk_Mitigation_Plan.md`
 
-Mitigation strategies for all 37 identified risks (see [Risk_Identification](Risk_Identification.md)).
+Mitigation strategies for all 49 identified risks (see [Risk_Identification](Risk_Identification.md)).
 
 ---
 
@@ -372,4 +372,4 @@ These systems should be built and validated in private (Episode 0 / prep work) b
 ---
 
 **Total: 49 risks with mitigation strategies**
-**Next step:** Begin Sprint A5 — Multiplayer & Steam
+**Next step:** Begin A4.6 deferred combat work (AoE, Cone, Shadowstep, montage, stagger) → then A6 UI & Final Demo.

@@ -137,7 +137,7 @@ Goal: Build all 13 systems and the final demo loop. Each system is implemented, 
 | A4 — GAS Combat | 10 | ⚠️ Partial (5.5d done, 4.5d deferred) | 27 Jun (deferred) |
 | A5 — Multiplayer & Steam | 10 | ✅ Complete | 27 Jun – 28 Jun |
 | A5b — Persistence & Account System | 6 | ✅ Complete | 28 Jun – 08 Jul (incl. CommonUI migration) |
-| A5c — Auth Extraction & Login Server | 4 | ❌ Not started | Planned, est. 4 days |
+| A5c — Auth Extraction & Login Server | 4 | ✅ Complete | 08 Jul – 12 Jul |
 | A6 — UI & Final Demo (incl. touch/gamepad widgets) | 8 | ❌ Not started | — |
 | A7 — Integration & Buffer | 11 | ❌ Not started | — |
 | **Total** | **~78.5 days (~16 weeks)** | **~50% complete** | **27 Jul — CommonUI verified in packaged build, movement fixes blocking A5c start** |
@@ -215,7 +215,7 @@ Estimated per episode:
 |-------|----------|-------|
 | ✅ Planning (Phases 1-5) | Complete | Outlines, docs, scripts 1-5, workflow |
 | ✅ Pre-Production Review | Complete | Consistency scan, risk docs, timeline |
-| **Phase A: Private Demo** | **~16 weeks** | Build all systems off-camera. **Started 25 May 2026 — A1-A3 + A5 + A5b complete, A4 partial (deferred), A5c/A6/A7 remaining (est. ~29 days)** |
+| **Phase A: Private Demo** | **~16 weeks** | Build all systems off-camera. **Started 25 May 2026 — A1-A3 + A5 + A5b + A5c complete, A4 partial (deferred), A6/A7 remaining (est. ~19 days)** |
 | **Phase B: Episode Production** | **~11.7 weeks** | Record, edit, export 51 episodes (~162h scripting + ~306h recording) |
 | **Total Remaining** | **~27.25 weeks (~6.8 months)** | |
 
@@ -281,4 +281,4 @@ The ~4-month private demo build + ~10-month release window means a **~15-month p
 ---
 
 **Total estimated effort:** ~22 weeks of work, ~15 months calendar (with weekly release cadence; 51 episodes over 51 weeks)
-**Next step:** Fix nav mesh + character movement in DemoLevel, then begin Sprint A5c (Auth Extraction & Login Server). **Updated 27 Jul 2026 — CommonUI migration verified in packaged build.**
+**Next step:** Begin A4.6 deferred combat work (AoE, Cone, Shadowstep, montage, stagger) → then A6 UI & Final Demo. **Updated 04 Aug 2026 — A5c complete, production timeline refreshed.**
