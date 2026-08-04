@@ -1,6 +1,7 @@
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
 #include "DataStoreFactory.h"
 #include "Engine/World.h"
+#include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -21,6 +22,17 @@ void UOnsetPlayerDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	FString ConnectionString;
 	GConfig->GetString(TEXT("Onset.DataStore"), TEXT("Type"), DataStoreType, GEngineIni);
 	GConfig->GetString(TEXT("Onset.DataStore"), TEXT("ConnectionString"), ConnectionString, GEngineIni);
+
+	FString CmdLineType;
+	if (FParse::Value(FCommandLine::Get(), TEXT("OnsetDataStoreType="), CmdLineType))
+	{
+		DataStoreType = CmdLineType;
+	}
+	FString CmdLineConnectionString;
+	if (FParse::Value(FCommandLine::Get(), TEXT("OnsetDataStoreURL="), CmdLineConnectionString))
+	{
+		ConnectionString = CmdLineConnectionString;
+	}
 
 	if (DataStoreType.IsEmpty())
 	{

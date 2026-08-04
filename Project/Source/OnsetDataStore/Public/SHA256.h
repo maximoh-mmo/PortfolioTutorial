@@ -3,9 +3,10 @@
 
 #include "CoreTypes.h"
 #include "CoreFwd.h"
+#include "Containers/Array.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
 
-class FSHA256
+class ONSETDATASTORE_API FSHA256
 {
 protected:
 	const static uint32 SHA256_K[];
@@ -16,6 +17,7 @@ public:
 	void Final(unsigned char *Digest);
 	static constexpr unsigned int Digest_Size = (256 / 8);
 	static bool GetSHA256Signature(const void* Data, uint32 ByteSize, FSHA256Signature& OutSignature);
+	static TArray<uint8> HmacSha256(const TArray<uint8>& Key, const TArray<uint8>& Data);
  
 protected:
 	void Transform(const unsigned char *Message, unsigned int Block_Nb);

@@ -1,4 +1,4 @@
-﻿#include "Crypto/SHA256.h"
+﻿#include "SHA256.h"
 #include <CoreMinimal.h>
 #include "HAL/UnrealMemory.h"
 
@@ -124,6 +124,53 @@ void FSHA256::Final(unsigned char *Digest)
     for (i = 0 ; i < 8; i++) {
         SHA2_UNPACK32(H[i], &Digest[i << 2]);
     }
+}
+
+TArray<uint8> FSHA256::HmacSha256(const TArray<uint8>& Key, const TArray<uint8>& Data)
+{
+	constexpr int32 BlockSize = 64;
+	TArray<uint8> K = Key;
+
+	if (K.Num() > BlockSize)
+	{
+		FSHA256Signature Hash;
+		FSHA256::GetSHA256Signature(K.GetData(), K.Num(), Hash);
+		K.Empty();
+		K.Append(Hash.Signature, 32);
+	}
+
+	while (K.Num() < BlockSize)
+	{
+		K.Add(0);
+	}
+
+	TArray<uint8> iPad;
+	iPad.SetNum(BlockSize);
+	TArray<uint8> oPad;
+	oPad.SetNum(BlockSize);
+	for (int32 i = 0; i < BlockSize; ++i)
+	{
+		iPad[i] = K[i] ^ 0x36;
+		oPad[i] = K[i] ^ 0x5C;
+	}
+
+	TArray<uint8> InnerInput;
+	InnerInput.Append(iPad);
+	InnerInput.Append(Data);
+
+	FSHA256Signature InnerHash;
+	FSHA256::GetSHA256Signature(InnerInput.GetData(), InnerInput.Num(), InnerHash);
+
+	TArray<uint8> OuterInput;
+	OuterInput.Append(oPad);
+	OuterInput.Append(InnerHash.Signature, 32);
+
+	FSHA256Signature OuterHash;
+	FSHA256::GetSHA256Signature(OuterInput.GetData(), OuterInput.Num(), OuterHash);
+
+	TArray<uint8> Result;
+	Result.Append(OuterHash.Signature, 32);
+	return Result;
 }
 
 FString SHA256(const FString& Input)

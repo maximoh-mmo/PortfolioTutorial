@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import * as path from 'path';
 import { config } from 'dotenv';
 
@@ -38,7 +39,12 @@ export class AccountApiStack extends cdk.Stack {
         TABLE_NAME: table.tableName,
         JWT_SECRET: process.env.JWT_SECRET || '',
         API_KEY: process.env.API_KEY || '',
+        AUTH_TOKEN_SECRET: process.env.AUTH_TOKEN_SECRET || '',
       },
+      loggingFormat: lambda.LoggingFormat.JSON,
+      applicationLogLevel: lambda.ApplicationLogLevel.INFO,
+      systemLogLevel: lambda.SystemLogLevel.INFO,
+      tracing: lambda.Tracing.ACTIVE,
       bundling: {
         externalModules: ['@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb'],
       },
@@ -48,6 +54,39 @@ export class AccountApiStack extends cdk.Stack {
 
     const fnUrl = fn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
+    });
+
+    const webAcl = new wafv2.CfnWebACL(this, 'AccountApiWebAcl', {
+      defaultAction: { allow: {} },
+      scope: 'REGIONAL',
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: 'AccountApiWebAcl',
+        sampledRequestsEnabled: true,
+      },
+      rules: [
+        {
+          name: 'RateLimitPerIp',
+          priority: 1,
+          statement: {
+            rateBasedStatement: {
+              limit: 100,
+              aggregateKeyType: 'IP',
+            },
+          },
+          action: { block: {} },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: 'RateLimitPerIp',
+            sampledRequestsEnabled: true,
+          },
+        },
+      ],
+    });
+
+    new wafv2.CfnWebACLAssociation(this, 'AccountApiWebAclAssociation', {
+      webAclArn: webAcl.attrArn,
+      resourceArn: fnUrl.functionArn,
     });
 
     new cdk.CfnOutput(this, 'ApiUrl', {

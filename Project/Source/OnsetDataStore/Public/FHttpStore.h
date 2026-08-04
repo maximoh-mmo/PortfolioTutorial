@@ -24,10 +24,13 @@ public:
 	virtual void SaveAll() override;
 
 private:
-	bool SendRequest(const FString& Verb, const FString& Path, const FString& Body, FString& OutBody, int32& OutStatusCode);
+	bool SendRequest(const FString& Verb, const FString& Path, const FString& Body, const FString& StoreToken, FString& OutBody, int32& OutStatusCode);
+	FString BuildSignedToken(const FString& Platform, const FString& PlatformID, int32 SlotIndex) const;
 
 	FString BaseURL;
 	FString APIKey;
+	FString AuthTokenSecret;
+	int32 TokenLifetimeSeconds = 300;
 };
 
 #endif

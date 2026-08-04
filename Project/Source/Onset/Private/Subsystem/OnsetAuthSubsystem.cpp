@@ -1,6 +1,6 @@
 #include "Subsystem/OnsetAuthSubsystem.h"
 
-#include "Crypto/SHA256.h"
+#include "SHA256.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"

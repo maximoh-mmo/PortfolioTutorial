@@ -2,7 +2,11 @@ param(
     [int]$LoginPort = 7777,
     [int]$GamePort = 7778,
     [string]$EnginePath = "C:\Program Files\Epic Games\UE_5.8",
-    [string]$ProjectPath = "E:\Unreal Projects\PortfolioTutorial\Project\Onset.uproject"
+    [string]$ProjectPath = "E:\Unreal Projects\PortfolioTutorial\Project\Onset.uproject",
+    [string]$DataStoreType = "HttpApi",
+    [string]$DataStoreURL = "qnghmsigrompw56v5wrlojl7z40dwtqm.lambda-url.us-east-1.on.aws/",
+    [string]$DataStoreAPIKey = "dev-api-key-change-me-in-production",
+    [string]$AuthTokenSecret = "change-me-in-production"
 )
 
 $EngineBin = Join-Path $EnginePath "Engine\Binaries\Win64\UnrealEditor.exe"
@@ -25,11 +29,14 @@ $LoginLog = "$LogDir\LoginServer.log"
 $GameLog  = "$LogDir\GameServer.log"
 $ClientLog = "$LogDir\Client.log"
 
+$DataStoreArgs = " -OnsetDataStoreType=$DataStoreType -OnsetDataStoreURL=$DataStoreURL" +
+                 " -OnsetDataStoreAPIKey=$DataStoreAPIKey -OnsetAuthTokenSecret=$AuthTokenSecret"
+
 $LoginCmd = "-project=`"$ProjectPath`" /Game/Maps/LoginServer -server -log -AuthMode=Direct -Port=$LoginPort -NOSTEAM" +
-            " -AbsLog=`"$LoginLog`" -LogCmds=`"$LogFilter`""
+            " -AbsLog=`"$LoginLog`" -LogCmds=`"$LogFilter`"" + $DataStoreArgs
 
 $GameCmd = "-project=`"$ProjectPath`" /Game/DemoLevel -server -log -AuthMode=Token -Port=$GamePort -NOSTEAM" +
-           " -AbsLog=`"$GameLog`" -LogCmds=`"$LogFilter`""
+           " -AbsLog=`"$GameLog`" -LogCmds=`"$LogFilter`"" + $DataStoreArgs
 
 $ClientBaseCmd = "-project=`"$ProjectPath`" 127.0.0.1:${LoginPort}?ClientIndex={1} -game -log -windowed -ResX=1280 -ResY=720 -NOSTEAM" +
                  " -AbsLog=`"{0}`" -LogCmds=`"$LogFilter`""

@@ -7,7 +7,11 @@
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Misc/Base64.h"
+#include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
+#include "Misc/DateTime.h"
+#include "SHA256.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
@@ -22,6 +26,17 @@ bool FHttpStore::Initialize(const FString& ConnectionString)
 {
 	BaseURL = ConnectionString;
 	GConfig->GetString(TEXT("Onset.DataStore"), TEXT("APIKey"), APIKey, GEngineIni);
+
+	FString CmdLineURL;
+	if (FParse::Value(FCommandLine::Get(), TEXT("OnsetDataStoreURL="), CmdLineURL))
+	{
+		BaseURL = CmdLineURL;
+	}
+	FString CmdLineAPIKey;
+	if (FParse::Value(FCommandLine::Get(), TEXT("OnsetDataStoreAPIKey="), CmdLineAPIKey))
+	{
+		APIKey = CmdLineAPIKey;
+	}
 
 	if (BaseURL.IsEmpty())
 	{
@@ -39,11 +54,53 @@ bool FHttpStore::Initialize(const FString& ConnectionString)
 		return false;
 	}
 
+	GConfig->GetString(TEXT("Onset.Auth"), TEXT("AuthTokenSecret"), AuthTokenSecret, GEngineIni);
+	FString CmdLineTokenSecret;
+	if (FParse::Value(FCommandLine::Get(), TEXT("OnsetAuthTokenSecret="), CmdLineTokenSecret))
+	{
+		AuthTokenSecret = CmdLineTokenSecret;
+	}
+	if (AuthTokenSecret.IsEmpty())
+	{
+		AuthTokenSecret = TEXT("default-dev-secret-change-me");
+		UE_LOG(LogHttpStore, Warning, TEXT("FHttpStore: AuthTokenSecret not configured — using dev default"));
+	}
+
+	int32 Lifetime = 0;
+	GConfig->GetInt(TEXT("Onset.Auth"), TEXT("AuthTokenLifetimeSeconds"), Lifetime, GEngineIni);
+	if (Lifetime >= 30)
+	{
+		TokenLifetimeSeconds = Lifetime;
+	}
+
 	UE_LOG(LogHttpStore, Log, TEXT("FHttpStore initialized: BaseURL=%s"), *BaseURL);
 	return true;
 }
 
-bool FHttpStore::SendRequest(const FString& Verb, const FString& Path, const FString& Body, FString& OutBody, int32& OutStatusCode)
+FString FHttpStore::BuildSignedToken(const FString& Platform, const FString& PlatformID, int32 SlotIndex) const
+{
+	if (AuthTokenSecret.IsEmpty()) return {};
+
+	const int64 NowUnix = FDateTime::UtcNow().ToUnixTimestamp();
+	const int64 ExpiryUnix = NowUnix + TokenLifetimeSeconds;
+
+	const FString PayloadStr = FString::Printf(TEXT("%s|%s|%d|%lld"), *PlatformID, *Platform, SlotIndex, ExpiryUnix);
+	FTCHARToUTF8 PayloadConv(*PayloadStr);
+	TArray<uint8> PayloadBytes;
+	PayloadBytes.Append(reinterpret_cast<const uint8*>(PayloadConv.Get()), PayloadConv.Length());
+	const FString PayloadB64 = FBase64::Encode(PayloadBytes);
+
+	FTCHARToUTF8 KeyConv(*AuthTokenSecret);
+	TArray<uint8> KeyBytes;
+	KeyBytes.Append(reinterpret_cast<const uint8*>(KeyConv.Get()), KeyConv.Length());
+
+	const TArray<uint8> SigBytes = FSHA256::HmacSha256(KeyBytes, PayloadBytes);
+	const FString SigB64 = FBase64::Encode(SigBytes);
+
+	return PayloadB64 + TEXT(".") + SigB64;
+}
+
+bool FHttpStore::SendRequest(const FString& Verb, const FString& Path, const FString& Body, const FString& StoreToken, FString& OutBody, int32& OutStatusCode)
 {
 	FHttpModule& Http = FHttpModule::Get();
 	TSharedRef<IHttpRequest> Request = Http.CreateRequest();
@@ -53,6 +110,10 @@ bool FHttpStore::SendRequest(const FString& Verb, const FString& Path, const FSt
 	Request->SetVerb(Verb);
 	Request->SetHeader(TEXT("X-API-Key"), APIKey);
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+	if (!StoreToken.IsEmpty())
+	{
+		Request->SetHeader(TEXT("X-Store-Token"), StoreToken);
+	}
 
 	if (!Body.IsEmpty())
 	{
@@ -114,7 +175,7 @@ bool FHttpStore::LoadAccount(const FString& Platform, const FString& PlatformID,
 	FString ResponseBody;
 	int32 StatusCode = 0;
 
-	if (!SendRequest(TEXT("GET"), Path, TEXT(""), ResponseBody, StatusCode))
+	if (!SendRequest(TEXT("GET"), Path, TEXT(""), BuildSignedToken(Platform, PlatformID, -1), ResponseBody, StatusCode))
 	{
 		return false;
 	}
@@ -158,7 +219,7 @@ bool FHttpStore::CreateAccount(const FString& Platform, const FString& PlatformI
 	FString ResponseBody;
 	int32 StatusCode = 0;
 
-	return SendRequest(TEXT("POST"), Path, TEXT(""), ResponseBody, StatusCode);
+	return SendRequest(TEXT("POST"), Path, TEXT(""), BuildSignedToken(Platform, PlatformID, -1), ResponseBody, StatusCode);
 }
 
 bool FHttpStore::LoadCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex, FOnsetFullCharacterData& OutData)
@@ -167,7 +228,7 @@ bool FHttpStore::LoadCharacter(const FString& Platform, const FString& PlatformI
 	FString ResponseBody;
 	int32 StatusCode = 0;
 
-	if (!SendRequest(TEXT("GET"), Path, TEXT(""), ResponseBody, StatusCode))
+	if (!SendRequest(TEXT("GET"), Path, TEXT(""), BuildSignedToken(Platform, PlatformID, SlotIndex), ResponseBody, StatusCode))
 	{
 		return false;
 	}
@@ -240,7 +301,7 @@ bool FHttpStore::SaveCharacter(const FString& Platform, const FString& PlatformI
 
 	FString ResponseBody;
 	int32 StatusCode = 0;
-	return SendRequest(TEXT("PUT"), Path, Body, ResponseBody, StatusCode);
+	return SendRequest(TEXT("PUT"), Path, Body, BuildSignedToken(Platform, PlatformID, Data.SlotIndex), ResponseBody, StatusCode);
 }
 
 bool FHttpStore::DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex)
@@ -249,7 +310,7 @@ bool FHttpStore::DeleteCharacter(const FString& Platform, const FString& Platfor
 	FString ResponseBody;
 	int32 StatusCode = 0;
 
-	return SendRequest(TEXT("DELETE"), Path, TEXT(""), ResponseBody, StatusCode);
+	return SendRequest(TEXT("DELETE"), Path, TEXT(""), BuildSignedToken(Platform, PlatformID, SlotIndex), ResponseBody, StatusCode);
 }
 
 void FHttpStore::SaveAll()

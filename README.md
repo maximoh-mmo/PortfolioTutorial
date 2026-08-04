@@ -238,6 +238,8 @@ See the full [Episode Export Workflow](Planning/Workflow/EPISODE_EXPORT_WORKFLOW
 - Steam AppID and SDK must remain private  
 - Dedicated server configs must remain private  
 - No sensitive keys or tokens should ever be exported  
+- `[Onset.DataStore]` credentials are **server-only** (`Config/WindowsServer`/`LinuxServer` or command-line injection) — never in `DefaultEngine.ini`, which ships to clients  
+- Every account API request requires a short-lived `X-Store-Token` bound to the account being accessed (see [Account API](Docs/Server/Account_Api.md))
 
 ---
 

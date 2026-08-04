@@ -57,15 +57,28 @@ The DS selects the implementation via config:
 ```ini
 [Onset.DataStore]
 ; Type=Postgres
-; ConnectionString=host=localhost dbname=onset user=onset password=...
+; ConnectionString=host=localhost dbname=onset user=onset password=onset
 ; Type=SQLite (default)
 ; ConnectionString=
-Type=HttpApi
-ConnectionString=qnghmsigrompw56v5wrlojl7z40dwtqm.lambda-url.us-east-1.on.aws/
-APIKey=dev-api-key-change-me-in-production
+; Type=HttpApi
+; ConnectionString=...
+; APIKey=...
 ```
 
+**Secrets never ship to clients.** `DefaultEngine.ini` is deliberately kept secret-free (it is baked into packaged clients). Real store credentials live only in server-only config layers (`Config/WindowsServer/WindowsServerEngine.ini`, `Config/LinuxServer/LinuxServerEngine.ini`) or are injected at launch:
+
+```
+-OnsetDataStoreType=HttpApi
+-OnsetDataStoreURL=<host>
+-OnsetDataStoreAPIKey=<key>
+-OnsetAuthTokenSecret=<secret>
+```
+
+`Test_All.ps1` passes these via command line so local `UnrealEditor -server` dev keeps working after the strip.
+
 Note: For `HttpApi`, the `ConnectionString` stores only the host (no `https://` prefix) — the store prepends it at runtime to avoid INI parser truncation.
+
+**Per-request authorization:** every `FHttpStore` request also carries an `X-Store-Token` header — a short-lived HMAC-SHA256 token signed with `[Onset.Auth] AuthTokenSecret` and bound to the account (`Platform` + `PlatformID`) being accessed. The Lambda verifies it, so a leaked API key alone cannot read arbitrary accounts. See [Account API](../Server/Account_Api.md).
 
 ### **Schema**
 
