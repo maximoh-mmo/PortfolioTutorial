@@ -435,12 +435,24 @@ void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
+	if (Self && Self->AbilitySystemComponent)
+	{
+		Self->AbilitySystemComponent->AbilityLocalInputPressed(1); // Input ID 1 = AoE
+		Self->AbilitySystemComponent->AbilityLocalInputReleased(1);
+	}
 }
 
 void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
-{	
+{
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
+	if (Self && Self->AbilitySystemComponent)
+	{
+		Self->AbilitySystemComponent->AbilityLocalInputPressed(2); // Input ID 2 = Cone
+		Self->AbilitySystemComponent->AbilityLocalInputReleased(2);
+	}
 }
 
 void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
