@@ -14,13 +14,20 @@ UTargetingComponent::UTargetingComponent() : CurrentTarget(nullptr)
 
 void UTargetingComponent::SetTarget(AActor* NewTarget)
 {
+	if (!NewTarget)
+	{
+		ClearTarget();
+		return;
+	}
 	if (!IsActorTargetValid(NewTarget)) return;
 	CurrentTarget = NewTarget;
+	OnTargetChanged.Broadcast(CurrentTarget);
 }
 
 void UTargetingComponent::ClearTarget()
 {
 	CurrentTarget = nullptr;
+	OnTargetChanged.Broadcast(CurrentTarget);
 }
 
 bool UTargetingComponent::IsActorTargetValid(AActor* Actor) const

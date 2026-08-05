@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "TargetingComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTargetChanged, AActor*, NewTarget);
+
 /**
  * Target management component with validation and accessor methods.
  */
@@ -41,6 +43,10 @@ public:
 	/** Target validation override for pvp checks */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
 	bool IsActorTargetPVPValid(AActor* TargetActor, AActor* SourceActor) const;
+
+	/** Broadcasts whenever the target is set or cleared. */
+	UPROPERTY(BlueprintAssignable, Category = "Targeting")
+	FOnTargetChanged OnTargetChanged;
 
 private:
 	/** The currently targeted actor. */

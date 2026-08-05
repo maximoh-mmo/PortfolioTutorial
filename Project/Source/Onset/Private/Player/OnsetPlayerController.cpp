@@ -29,6 +29,7 @@
 #include "Player/OnsetCheatManager.h"
 #include "Player/OnsetPlayerAIController.h"
 #include "UI/GamepadCursorWidget.h"
+#include "UI/HUDWidget.h"
 #include "Subsystem/OnsetUISubsystem.h"
 #include "UI/OnsetRootLayout.h"
 #include "UI/OnsetScreenBase.h"
@@ -229,6 +230,8 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 		{
 			UI->HideLoadingScreen();
 		}
+
+		CreateHUD(InPawn);
 	}
 
 	CachedPlayerPawn = InPawn;
@@ -281,6 +284,29 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 
 	UE_LOG(LogTemp, Log, TEXT("OnPossess: restored %s (slot %d) at %s"),
 		*CharData.CharacterName, CharData.SlotIndex, *CharData.SavedPosition.ToString());
+}
+
+void AOnsetPlayerController::CreateHUD(APawn* InPawn)
+{
+	if (!IsLocalController() || HUDWidget)
+	{
+		return;
+	}
+
+	if (!HUDWidgetClass)
+	{
+		HUDWidgetClass = UHUDWidget::StaticClass();
+	}
+
+	HUDWidget = CreateWidget<UHUDWidget>(this, HUDWidgetClass);
+	if (HUDWidget)
+	{
+		HUDWidget->AddToViewport(1);
+		if (AOnsetBaseCharacter* PawnChar = Cast<AOnsetBaseCharacter>(InPawn))
+		{
+			HUDWidget->BindToPlayer(this, PawnChar);
+		}
+	}
 }
 
 void AOnsetPlayerController::OnUnPossess()

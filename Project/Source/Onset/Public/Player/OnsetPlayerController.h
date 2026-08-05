@@ -21,6 +21,7 @@ class UInputMappingContext;
 class UOnsetRootLayout;
 class UOnsetScreenBase;
 class UTargetingComponent;
+class UHUDWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogGamepad, Log, All);
 
@@ -29,7 +30,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnsetAccountDataChanged);
 UCLASS()
 class ONSET_API AOnsetPlayerController : public APlayerController
 {
-	
 	GENERATED_BODY()
 public:
 	AOnsetPlayerController();
@@ -55,7 +55,10 @@ protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	
 	virtual void OnUnPossess() override;
-	
+
+	/** Creates + binds the in-game HUD on the local client when a pawn is possessed. */
+	void CreateHUD(APawn* InPawn);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Onset|Auth")           
 	FOnsetAccountData CachedAccountData; 
 private:
@@ -136,6 +139,16 @@ private:
 	/** Stores the current targeting component via OnPossess, clears on UnPossess. */          
 	UPROPERTY()
 	TObjectPtr<UTargetingComponent> TargetingComponent;
+
+	// --- HUD ---
+
+	/** Widget class used to create the in-game HUD on the local client. */
+	UPROPERTY(EditDefaultsOnly, Category="HUD")
+	TSubclassOf<UHUDWidget> HUDWidgetClass;
+
+	/** The live in-game HUD instance (local client only). */
+	UPROPERTY()
+	TObjectPtr<UHUDWidget> HUDWidget;
 	
 	UPROPERTY()
 	TObjectPtr<UInteractionComponent> InteractionComponent;
