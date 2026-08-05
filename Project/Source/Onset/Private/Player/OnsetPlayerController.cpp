@@ -694,7 +694,8 @@ void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotInd
 			UDataTable* ClassTable = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ClassTablePath));
 			if (ClassTable)
 			{
-				FName RowName = *StaticEnum<EOnsetCharacterClass>()->GetValueAsName(CharacterClass).ToString();
+				
+				FName RowName = *UEnum::GetDisplayValueAsText(CharacterClass).ToString();
 				FOnsetCharacterClassInfo* Row = ClassTable->FindRow<FOnsetCharacterClassInfo>(RowName, nullptr);
 				if (Row)
 				{
