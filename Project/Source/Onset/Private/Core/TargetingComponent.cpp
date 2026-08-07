@@ -7,9 +7,22 @@
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
+#include "Net/UnrealNetwork.h"
 
 UTargetingComponent::UTargetingComponent() : CurrentTarget(nullptr)
 {
+	SetIsReplicatedByDefault(true);
+}
+
+void UTargetingComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UTargetingComponent, CurrentTarget);
+}
+
+void UTargetingComponent::OnRep_CurrentTarget()
+{
+	OnTargetChanged.Broadcast(CurrentTarget);
 }
 
 void UTargetingComponent::SetTarget(AActor* NewTarget)

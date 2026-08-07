@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Abilities/GameplayAbility.h"
+#include "Combat/OnsetGameplayAbility.h"
 #include "OnsetGA_Shadowstep.generated.h"
 
 /** Shadowstep passive: on-kill blink behind nearest enemy within distance gate. */
 UCLASS()
-class ONSET_API UOnsetGA_Shadowstep : public UGameplayAbility
+class ONSET_API UOnsetGA_Shadowstep : public UOnsetGameplayAbility
 {
 	GENERATED_BODY()
 
@@ -38,10 +38,6 @@ private:
 	/** Gameplay effect for invulnerability. */
 	UPROPERTY(EditDefaultsOnly, Category = "Shadowstep")
 	TSubclassOf<UGameplayEffect> InvulnerabilityEffectClass;
-
-	/** Cooldown gameplay effect. */
-	UPROPERTY(EditDefaultsOnly, Category = "Shadowstep")
-	TSubclassOf<UGameplayEffect> CooldownEffectClass;
 
 	/** Find nearest valid enemy within distance gate. Returns nullptr if none. */
 	AActor* FindNearestEnemy(AActor* SourceActor, float MaxDistance) const;

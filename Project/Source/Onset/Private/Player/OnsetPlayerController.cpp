@@ -34,6 +34,7 @@
 #include "UI/OnsetRootLayout.h"
 #include "UI/OnsetScreenBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Engine/DataTable.h"
 #include "Data/OnsetClassInfoTypes.h"
@@ -107,6 +108,41 @@ void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccou
 	SetInputMode(FInputModeGameAndUI());
 	OnAccountDataChanged.Broadcast();
 	BP_OnAccountDataUpdated();
+
+	// Test harness: -AutoPlaySlot=N auto-enters an occupied slot (no menu clicks).
+	int32 AutoSlot = -1;
+	if (FParse::Value(FCommandLine::Get(), TEXT("AutoPlaySlot="), AutoSlot) && IsLocalController())
+	{
+		if (AutoSlot < 0 || AutoSlot >= CachedAccountData.Slots.Num() || !CachedAccountData.Slots[AutoSlot].bOccupied)
+		{
+			for (int32 SlotIdx = 0; SlotIdx < CachedAccountData.Slots.Num(); ++SlotIdx)
+			{
+				if (CachedAccountData.Slots[SlotIdx].bOccupied)
+				{
+					AutoSlot = SlotIdx;
+					break;
+				}
+			}
+		}
+		if (AutoSlot >= 0 && AutoSlot < CachedAccountData.Slots.Num() && CachedAccountData.Slots[AutoSlot].bOccupied)
+		{
+			AutoPlaySlotIndex = AutoSlot;
+			GetWorldTimerManager().SetTimer(AutoPlayTimerHandle, this, &AOnsetPlayerController::AutoPlaySelectCharacter, 0.5f, false);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Client_AccountData: AutoPlaySlot requested but no occupied slot found (slots=%d)"), CachedAccountData.Slots.Num());
+		}
+	}
+}
+
+void AOnsetPlayerController::AutoPlaySelectCharacter()
+{
+	if (AutoPlaySlotIndex >= 0 && AutoPlaySlotIndex < CachedAccountData.Slots.Num() && CachedAccountData.Slots[AutoPlaySlotIndex].bOccupied)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AutoPlay: selecting character slot %d"), AutoPlaySlotIndex);
+		Server_SelectCharacter(AutoPlaySlotIndex);
+	}
 }
 
 void AOnsetPlayerController::Client_ShowMainMenuUI_Implementation(
@@ -196,8 +232,6 @@ void AOnsetPlayerController::BeginPlay()
 	}
 
 	RequestSteamAuth();
-	GetWorldTimerManager().SetTimer(IdleAutoCombatTimerHandle, this,
-		&AOnsetPlayerController::EnableAutoCombat, IdleAutoCombatDelay * 4.0f, false);
 }
 
 void AOnsetPlayerController::SetupInputComponent()
@@ -223,16 +257,9 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	// Once the client possesses a pawn, the new world is loaded and playable — dismiss any loading screen.
-	if (IsLocalController())
-	{
-		if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>())
-		{
-			UI->HideLoadingScreen();
-		}
-
-		CreateHUD(InPawn);
-	}
+	const AOnsetPlayerState* PossessPS = GetPlayerState<AOnsetPlayerState>();
+	UE_LOG(LogTemp, Warning, TEXT("OnPossess: local=%d slot=%d pawn=%s"),
+		IsLocalController(), PossessPS ? PossessPS->SelectedCharacterSlot : -1, *GetNameSafe(InPawn));
 
 	CachedPlayerPawn = InPawn;
 	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
@@ -298,6 +325,7 @@ void AOnsetPlayerController::CreateHUD(APawn* InPawn)
 		HUDWidgetClass = UHUDWidget::StaticClass();
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("CreateHUD: creating HUD with class %s"), HUDWidgetClass ? *HUDWidgetClass->GetName() : TEXT("NULL"));
 	HUDWidget = CreateWidget<UHUDWidget>(this, HUDWidgetClass);
 	if (HUDWidget)
 	{
@@ -307,6 +335,25 @@ void AOnsetPlayerController::CreateHUD(APawn* InPawn)
 			HUDWidget->BindToPlayer(this, PawnChar);
 		}
 	}
+}
+
+void AOnsetPlayerController::OnRep_Pawn()
+{
+	Super::OnRep_Pawn();
+
+	if (!IsLocalController()) return;
+
+	APawn* NewPawn = GetPawn();
+	if (!NewPawn) return;
+
+	// The client now possesses a pawn — dismiss the loading screen and build the HUD.
+	if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>())
+	{
+		UI->HideLoadingScreen();
+	}
+
+	CreateHUD(NewPawn);
+	Server_OnClientPossessed();
 }
 
 void AOnsetPlayerController::OnUnPossess()
@@ -464,7 +511,7 @@ void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
-		Self->AbilitySystemComponent->AbilityLocalInputPressed(1); // Input ID 1 = AoE
+		Self->AbilitySystemComponent->AbilityLocalInputPressed(1); // Input ID 1 = slot 1
 		Self->AbilitySystemComponent->AbilityLocalInputReleased(1);
 	}
 }
@@ -476,7 +523,7 @@ void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
-		Self->AbilitySystemComponent->AbilityLocalInputPressed(2); // Input ID 2 = Cone
+		Self->AbilitySystemComponent->AbilityLocalInputPressed(2); // Input ID 2 = slot 2
 		Self->AbilitySystemComponent->AbilityLocalInputReleased(2);
 	}
 }
@@ -485,12 +532,24 @@ void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
+	if (Self && Self->AbilitySystemComponent)
+	{
+		Self->AbilitySystemComponent->AbilityLocalInputPressed(3); // Input ID 3 = slot 3
+		Self->AbilitySystemComponent->AbilityLocalInputReleased(3);
+	}
 }
 
 void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
+	if (Self && Self->AbilitySystemComponent)
+	{
+		Self->AbilitySystemComponent->AbilityLocalInputPressed(4); // Input ID 4 = slot 4
+		Self->AbilitySystemComponent->AbilityLocalInputReleased(4);
+	}
 }
 
 void AOnsetPlayerController::InjectAbilityInput(const int32 AbilityIndex, const bool bPressed) const
@@ -531,6 +590,11 @@ void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(const bool bEna
 void AOnsetPlayerController::Server_DisableAutoCombat_Implementation()
 {
 	DisableAutoCombat();
+}
+
+void AOnsetPlayerController::Server_OnClientPossessed_Implementation()
+{
+	ResetIdleTimer();
 }
 
 void AOnsetPlayerController::EnableAutoCombat()

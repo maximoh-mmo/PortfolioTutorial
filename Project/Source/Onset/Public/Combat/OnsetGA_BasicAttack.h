@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Engine/TimerHandle.h"
-#include "Abilities/GameplayAbility.h"
+#include "Combat/OnsetGameplayAbility.h"
 #include "OnsetGA_BasicAttack.generated.h"
 
 /** Basic attack ability: plays montage and applies damage to the targeted actor within range. */
 UCLASS()
-class ONSET_API UOnsetGA_BasicAttack : public UGameplayAbility
+class ONSET_API UOnsetGA_BasicAttack : public UOnsetGameplayAbility
 {
 	GENERATED_BODY()
 

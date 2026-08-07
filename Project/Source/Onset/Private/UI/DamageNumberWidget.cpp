@@ -2,14 +2,9 @@
 
 #include "UI/DamageNumberWidget.h"
 
-#include "Blueprint/WidgetTree.h"
-#include "Components/CanvasPanel.h"
-#include "Components/CanvasPanelSlot.h"
-#include "Components/TextBlock.h"
-#include "Styling/CoreStyle.h"
-#include "Fonts/SlateFontInfo.h"
+#include "CommonTextBlock.h"
 
-void UDamageNumberWidget::ShowDamage(float Amount, FVector2D ScreenPosition)
+void UDamageNumberWidget::ShowDamage(float Amount, FVector2D ScreenPosition, FLinearColor Color)
 {
 	if (!NumberText)
 	{
@@ -17,8 +12,16 @@ void UDamageNumberWidget::ShowDamage(float Amount, FVector2D ScreenPosition)
 	}
 
 	NumberText->SetText(FText::AsNumber(FMath::RoundToInt(Amount)));
-	StartColor = FLinearColor::White;
+	StartColor = Color;
 	NumberText->SetColorAndOpacity(StartColor);
+
+	static bool bLoggedColor = false;
+	if (!bLoggedColor)
+	{
+		bLoggedColor = true;
+		UE_LOG(LogTemp, Warning, TEXT("[HUDDiag] ShowDamage first call: RequestedColor=%s EffectiveColor=%s StartPos=%s"),
+			*StartColor.ToString(), *NumberText->GetColorAndOpacity().GetSpecifiedColor().ToString(), *ScreenPosition.ToString());
+	}
 
 	// Apply a small random jitter so numbers from the same hit location don't overlap exactly.
 	const float JitterX = FMath::FRandRange(-JitterRadius, JitterRadius);
@@ -32,40 +35,6 @@ void UDamageNumberWidget::ShowDamage(float Amount, FVector2D ScreenPosition)
 	FWidgetTransform Transform;
 	Transform.Translation = StartPosition;
 	SetRenderTransform(Transform);
-}
-
-void UDamageNumberWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	if (!WidgetTree)
-	{
-		return;
-	}
-
-	// Build a minimal visual tree so the widget works standalone (no Blueprint needed).
-	if (UCanvasPanel* RootPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RootPanel")))
-	{
-		WidgetTree->RootWidget = RootPanel;
-
-		if (!NumberText)
-		{
-			NumberText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("NumberText"));
-			if (NumberText)
-			{
-				NumberText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 20, TEXT("Bold")));
-				NumberText->SetJustification(ETextJustify::Center);
-
-				UCanvasPanelSlot* TextSlot = RootPanel->AddChildToCanvas(NumberText);
-				if (TextSlot)
-				{
-					TextSlot->SetAnchors(FAnchors(0.0f, 0.0f));
-					TextSlot->SetAlignment(FVector2D(0.5f, 0.5f));
-					TextSlot->SetAutoSize(true);
-				}
-			}
-		}
-	}
 }
 
 void UDamageNumberWidget::Deactivate()

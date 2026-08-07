@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Abilities/GameplayAbility.h"
+#include "Combat/OnsetGameplayAbility.h"
 #include "OnsetGA_HitReaction.generated.h"
 
 /** Hit reaction ability: plays a stagger effect in response to taking damage. */
 UCLASS()
-class ONSET_API UOnsetGA_HitReaction : public UGameplayAbility
+class ONSET_API UOnsetGA_HitReaction : public UOnsetGameplayAbility
 {
 	GENERATED_BODY()
 public:

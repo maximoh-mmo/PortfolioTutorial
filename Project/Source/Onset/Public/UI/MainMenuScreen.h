@@ -7,7 +7,6 @@
 #include "MainMenuScreen.generated.h"
 
 class UButton;
-class UTextBlock;
 
 UCLASS()
 class ONSET_API UMainMenuScreen : public UOnsetScreenBase

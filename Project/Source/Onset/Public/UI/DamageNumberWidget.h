@@ -6,21 +6,22 @@
 #include "Blueprint/UserWidget.h"
 #include "DamageNumberWidget.generated.h"
 
-class UTextBlock;
+class UCommonTextBlock;
 
 /**
  * A single floating damage number. Owned by a pool in the HUD: ShowDamage starts
  * the float animation and the widget returns to its collapsed, inactive state
- * (it never destroys itself) when the animation completes.
+ * (it never destroys itself) when the animation completes. The text style is
+ * set in WBP_DamageNumber (UCommonTextBlock); all logic lives here in C++.
  */
-UCLASS()
+UCLASS(Blueprintable)
 class ONSET_API UDamageNumberWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
 	/** Displays an amount at a screen-space position and starts the float animation. */
-	void ShowDamage(float Amount, FVector2D ScreenPosition);
+	void ShowDamage(float Amount, FVector2D ScreenPosition, FLinearColor Color);
 
 	/** True while this widget is animating/visible; false once its float has finished. */
 	bool IsActive() const { return bIsAnimating; }
@@ -33,7 +34,6 @@ public:
 	float JitterRadius = 12.0f;
 
 protected:
-	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 	/** Seconds the number is visible before returning to the pool. */
@@ -44,10 +44,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "DamageNumber")
 	float FloatDistance = 60.0f;
 
-private:
-	UPROPERTY()
-	TObjectPtr<UTextBlock> NumberText;
+	/** Designer-bound number text (WBP_DamageNumber). */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UCommonTextBlock> NumberText;
 
+private:
 	float Elapsed = 0.0f;
 	FVector2D StartPosition;
 	FLinearColor StartColor;

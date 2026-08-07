@@ -3,14 +3,8 @@
 #include "UI/PlayerHealthBarWidget.h"
 
 #include "AbilitySystemComponent.h"
-#include "Blueprint/WidgetTree.h"
-#include "Components/CanvasPanel.h"
-#include "Components/CanvasPanelSlot.h"
-#include "Components/ProgressBar.h"
-#include "Components/TextBlock.h"
+#include "CommonTextBlock.h"
 #include "GAS/OnsetAttributeSet.h"
-#include "Styling/CoreStyle.h"
-#include "Fonts/SlateFontInfo.h"
 
 void UPlayerHealthBarWidget::BindToASC(UAbilitySystemComponent* InASC)
 {
@@ -35,54 +29,6 @@ void UPlayerHealthBarWidget::BindToASC(UAbilitySystemComponent* InASC)
 void UPlayerHealthBarWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	if (!WidgetTree)
-	{
-		return;
-	}
-
-	if (UCanvasPanel* RootPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RootPanel")))
-	{
-		WidgetTree->RootWidget = RootPanel;
-
-		if (!HealthBar)
-		{
-			HealthBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("HealthBar"));
-			if (HealthBar)
-			{
-				HealthBar->SetFillColorAndOpacity(FLinearColor(0.6f, 0.0f, 0.0f, 1.0f));
-
-				UCanvasPanelSlot* BarSlot = RootPanel->AddChildToCanvas(HealthBar);
-				if (BarSlot)
-				{
-					BarSlot->SetAnchors(FAnchors(0.5f, 1.0f));
-					BarSlot->SetAlignment(FVector2D(0.5f, 1.0f));
-					BarSlot->SetSize(FVector2D(300.0f, 12.0f));
-					BarSlot->SetPosition(FVector2D(0.0f, -40.0f));
-				}
-			}
-		}
-
-		if (!HealthText)
-		{
-			HealthText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("HealthText"));
-			if (HealthText)
-			{
-				HealthText->SetJustification(ETextJustify::Center);
-				HealthText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 14, TEXT("Bold")));
-
-				UCanvasPanelSlot* TextSlot = RootPanel->AddChildToCanvas(HealthText);
-				if (TextSlot)
-				{
-					TextSlot->SetAnchors(FAnchors(0.5f, 1.0f));
-					TextSlot->SetAlignment(FVector2D(0.5f, 1.0f));
-					TextSlot->SetAutoSize(true);
-					TextSlot->SetPosition(FVector2D(0.0f, -60.0f));
-				}
-			}
-		}
-	}
-
 	RefreshHealth();
 }
 
@@ -112,10 +58,12 @@ void UPlayerHealthBarWidget::RefreshHealth()
 
 	const float MaxHealth = BoundASC->GetNumericAttribute(UOnsetAttributeSet::GetMaxHealthAttribute());
 	const float Health = BoundASC->GetNumericAttribute(UOnsetAttributeSet::GetHealthAttribute());
+	const float NewPercent = MaxHealth > 0.0f ? FMath::Clamp(Health / MaxHealth, 0.0f, 1.0f) : 0.0f;
 
-	if (HealthBar)
+	if (HealthPercent != NewPercent)
 	{
-		HealthBar->SetPercent(MaxHealth > 0.0f ? FMath::Clamp(Health / MaxHealth, 0.0f, 1.0f) : 0.0f);
+		HealthPercent = NewPercent;
+		OnHealthPercentChanged(HealthPercent);
 	}
 
 	if (HealthText)

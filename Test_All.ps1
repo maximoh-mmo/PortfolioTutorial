@@ -6,7 +6,8 @@ param(
     [string]$DataStoreType = "HttpApi",
     [string]$DataStoreURL = "qnghmsigrompw56v5wrlojl7z40dwtqm.lambda-url.us-east-1.on.aws/",
     [string]$DataStoreAPIKey = "dev-api-key-change-me-in-production",
-    [string]$AuthTokenSecret = "change-me-in-production"
+    [string]$AuthTokenSecret = "change-me-in-production",
+    [int]$AutoPlaySlot = -1
 )
 
 $EngineBin = Join-Path $EnginePath "Engine\Binaries\Win64\UnrealEditor.exe"
@@ -23,7 +24,7 @@ if (!(Test-Path $ProjectPath)) {
 }
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
-$LogFilter = "LogOnsetAuth Verbose, LogTemp Verbose, LogOnsetPlayerData Verbose, LogSteamAuth Verbose, Global Warning"
+$LogFilter = "LogOnsetAuth Verbose, LogTemp Verbose, LogOnsetPlayerData Verbose, LogSteamAuth Verbose"
 
 $LoginLog = "$LogDir\LoginServer.log"
 $GameLog  = "$LogDir\GameServer.log"
@@ -35,11 +36,14 @@ $DataStoreArgs = " -OnsetDataStoreType=$DataStoreType -OnsetDataStoreURL=$DataSt
 $LoginCmd = "-project=`"$ProjectPath`" /Game/Maps/LoginServer -server -log -AuthMode=Direct -Port=$LoginPort -NOSTEAM" +
             " -AbsLog=`"$LoginLog`" -LogCmds=`"$LogFilter`"" + $DataStoreArgs
 
-$GameCmd = "-project=`"$ProjectPath`" /Game/DemoLevel -server -log -AuthMode=Token -Port=$GamePort -NOSTEAM" +
+$GameCmd = "-project=`"$ProjectPath`" /Game/Maps/DemoLevel -server -log -AuthMode=Token -Port=$GamePort -NOSTEAM" +
            " -AbsLog=`"$GameLog`" -LogCmds=`"$LogFilter`"" + $DataStoreArgs
 
 $ClientBaseCmd = "-project=`"$ProjectPath`" 127.0.0.1:${LoginPort}?ClientIndex={1} -game -log -windowed -ResX=1280 -ResY=720 -NOSTEAM" +
                  " -AbsLog=`"{0}`" -LogCmds=`"$LogFilter`""
+if ($AutoPlaySlot -ge 0) {
+    $ClientBaseCmd += " -AutoPlaySlot=$AutoPlaySlot"
+}
 
 Write-Host "=== Phase 1: Launching Login Server (port $LoginPort) ===" -ForegroundColor Cyan
 Write-Host "  $EngineBin $LoginCmd" -ForegroundColor Gray

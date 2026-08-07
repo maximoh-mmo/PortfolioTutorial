@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Abilities/GameplayAbility.h"
+#include "Combat/OnsetGameplayAbility.h"
 #include "OnsetGA_Cone.generated.h"
 
 /** Cone ability: directional frontal cone overlap damage with PvP filtering. */
 UCLASS()
-class ONSET_API UOnsetGA_Cone : public UGameplayAbility
+class ONSET_API UOnsetGA_Cone : public UOnsetGameplayAbility
 {
 	GENERATED_BODY()
 

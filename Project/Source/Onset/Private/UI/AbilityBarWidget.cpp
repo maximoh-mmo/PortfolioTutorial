@@ -3,342 +3,219 @@
 #include "UI/AbilityBarWidget.h"
 
 #include "AbilitySystemComponent.h"
-#include "Blueprint/WidgetTree.h"
-#include "Components/Button.h"
-#include "Components/CanvasPanel.h"
-#include "Components/CanvasPanelSlot.h"
-#include "Components/ProgressBar.h"
-#include "Components/TextBlock.h"
-#include "GameplayEffect.h"
+#include "Combat/OnsetGameplayAbility.h"
 #include "GAS/OnsetGameplayTags.h"
-#include "Player/OnsetPlayerController.h"
-#include "Styling/CoreStyle.h"
-#include "Fonts/SlateFontInfo.h"
-#include "TimerManager.h"
-#include "Engine/World.h"
+#include "GameplayAbilitySpec.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
+#include "UI/AbilitySlotWidget.h"
+
+namespace AbilityBarInputIDs
+{
+	// Slots are bound to GAS input IDs 1-4, matching IA_Ability1-4 triggers.
+	constexpr int32 FirstInputID = 1;
+	constexpr int32 SlotCount = 4;
+}
+
+UAbilityBarWidget::UAbilityBarWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+{
+}
 
 void UAbilityBarWidget::BindToPlayer(AOnsetPlayerController* InPlayerController, UAbilitySystemComponent* InASC)
 {
 	if (BoundASC && BoundASC != InASC)
 	{
-		for (FDelegateHandle& Handle : CooldownTagHandles)
-		{
-			if (Handle.IsValid())
-			{
-				BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_BasicAttack, EGameplayTagEventType::AnyCountChange);
-				BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_AoE, EGameplayTagEventType::AnyCountChange);
-				BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_Cone, EGameplayTagEventType::AnyCountChange);
-				BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_Shadowstep, EGameplayTagEventType::AnyCountChange);
-				Handle.Reset();
-			}
-		}
+		UnregisterCooldownEvents();
 	}
 
 	BoundPlayerController = InPlayerController;
 	BoundASC = InASC;
 
-	if (BoundASC)
-	{
-		const FGameplayTag CooldownTags[] = { TAG_Cooldown_BasicAttack, TAG_Cooldown_AoE, TAG_Cooldown_Cone, TAG_Cooldown_Shadowstep };
-		CooldownTagHandles.Reset();
-		for (const FGameplayTag& Tag : CooldownTags)
-		{
-			CooldownTagHandles.Add(
-				BoundASC->RegisterGameplayTagEvent(Tag, EGameplayTagEventType::AnyCountChange)
-					.AddUObject(this, &UAbilityBarWidget::HandleCooldownTagChanged));
-		}
-	}
-
-	NotifyAbilitiesChanged();
-}
-
-void UAbilityBarWidget::HandleCooldownTagChanged(const FGameplayTag Tag, int32 NewCount)
-{
-	// Tag added (cooldown GE applied) — start the lightweight poll. Tag removed — refresh once.
-	NotifyAbilitiesChanged();
-}
-
-void UAbilityBarWidget::NotifyAbilitiesChanged()
-{
-	if (RefreshCooldowns())
-	{
-		if (BoundASC && GetWorld() && !GetWorld()->GetTimerManager().IsTimerActive(CooldownTimerHandle))
-		{
-			GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &UAbilityBarWidget::OnCooldownTick, 0.1f, true);
-		}
-	}
+	BuildSlots();
+	RebuildSlots();
 }
 
 void UAbilityBarWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!WidgetTree)
-	{
-		return;
-	}
-
-	if (UCanvasPanel* RootPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RootPanel")))
-	{
-		WidgetTree->RootWidget = RootPanel;
-		InitCooldownTags();
-		BuildSlotLayout(RootPanel);
-	}
+	BuildSlots();
+	RebuildSlots();
 }
 
 void UAbilityBarWidget::NativeDestruct()
 {
-	if (GetWorld())
-	{
-		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
-	}
+	UnregisterCooldownEvents();
 
 	if (BoundASC)
 	{
-		for (const FDelegateHandle& Handle : CooldownTagHandles)
-		{
-			if (Handle.IsValid())
-			{
-				BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_BasicAttack, EGameplayTagEventType::AnyCountChange);
-				BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_AoE, EGameplayTagEventType::AnyCountChange);
-				BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_Cone, EGameplayTagEventType::AnyCountChange);
-				BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_Shadowstep, EGameplayTagEventType::AnyCountChange);
-			}
-		}
-		CooldownTagHandles.Reset();
 		BoundASC = nullptr;
 	}
 
 	Super::NativeDestruct();
 }
 
-void UAbilityBarWidget::OnCooldownTick()
+void UAbilityBarWidget::BuildSlots()
 {
-	if (!RefreshCooldowns())
+	if (Slots.Num() > 0)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
+		return;
 	}
-}
 
-bool UAbilityBarWidget::RefreshCooldowns()
-{
-	bool bAnyActive = false;
-
-	for (FAbilitySlot& Entry : Slots)
+	if (!SlotContainer)
 	{
-		if (!BoundASC || !Entry.CooldownTag.IsValid())
+		return;
+	}
+
+	Slots.SetNum(AbilityBarInputIDs::SlotCount);
+
+	APlayerController* OwningPC = GetOwningPlayer();
+
+	for (int32 i = 0; i < AbilityBarInputIDs::SlotCount; ++i)
+	{
+		UAbilitySlotWidget* SlotWidget = nullptr;
+		if (AbilitySlotWidgetClass)
+		{
+			SlotWidget = CreateWidget<UAbilitySlotWidget>(OwningPC, AbilitySlotWidgetClass);
+		}
+		if (!SlotWidget)
 		{
 			continue;
 		}
 
-		float TimeRemaining = 0.0f;
-		float Duration = 0.0f;
+		const int32 InputID = AbilityBarInputIDs::FirstInputID + i;
+		SlotWidget->SetSlotInfo(i, FText::FromString(FString::Printf(TEXT("%d"), InputID)));
+		SlotWidget->OnSlotClicked.AddDynamic(this, &UAbilityBarWidget::HandleSlotClicked);
 
-		const TArray<FActiveGameplayEffectHandle> ActiveHandles =
-			BoundASC->GetActiveEffectsWithAllTags(FGameplayTagContainer(Entry.CooldownTag));
-		for (const FActiveGameplayEffectHandle& ActiveHandle : ActiveHandles)
+		if (UHorizontalBoxSlot* BoxSlot = SlotContainer->AddChildToHorizontalBox(SlotWidget))
 		{
-			const FActiveGameplayEffect* ActiveEffect = BoundASC->GetActiveGameplayEffects().GetActiveGameplayEffect(ActiveHandle);
-			if (!ActiveEffect)
+			BoxSlot->SetPadding(FMargin(4.0f));
+		}
+
+		Slots[i].InputID = InputID;
+		Slots[i].Widget = SlotWidget;
+	}
+}
+
+void UAbilityBarWidget::RebuildSlots()
+{
+	if (!BoundASC)
+	{
+		return;
+	}
+
+	UnregisterCooldownEvents();
+
+	for (FSlotEntry& Entry : Slots)
+	{
+		if (!Entry.Widget)
+		{
+			continue;
+		}
+
+		Entry.CooldownTag = FGameplayTag();
+		Entry.Widget->SetLocked(true);
+
+		if (FGameplayAbilitySpec* Spec = BoundASC->FindAbilitySpecFromInputID(Entry.InputID))
+		{
+			if (UOnsetGameplayAbility* AbilityCDO = Cast<UOnsetGameplayAbility>(Spec->Ability))
 			{
-				continue;
+				Entry.Widget->SetAbility(AbilityCDO->AbilityIcon, AbilityCDO->GetPrimaryCooldownTag());
+				Entry.CooldownTag = AbilityCDO->GetPrimaryCooldownTag();
 			}
+		}
 
-			Duration = ActiveEffect->GetDuration();
-			if (Duration > 0.0f)
+		if (Entry.CooldownTag.IsValid())
+		{
+			CooldownTagHandles.Add(
+				BoundASC->RegisterGameplayTagEvent(Entry.CooldownTag, EGameplayTagEventType::AnyCountChange)
+					.AddUObject(this, &UAbilityBarWidget::HandleCooldownTagChanged));
+		}
+	}
+
+	// Restore any cooldown already active before this widget (re)built.
+	for (const FSlotEntry& Entry : Slots)
+	{
+		if (Entry.Widget && Entry.CooldownTag.IsValid() && BoundASC->HasMatchingGameplayTag(Entry.CooldownTag))
+		{
+			SyncCooldownState(Entry.CooldownTag, 1);
+		}
+	}
+}
+
+void UAbilityBarWidget::UnregisterCooldownEvents()
+{
+	if (!BoundASC)
+	{
+		return;
+	}
+
+	for (const FDelegateHandle& Handle : CooldownTagHandles)
+	{
+		if (Handle.IsValid())
+		{
+			BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_BasicAttack, EGameplayTagEventType::AnyCountChange);
+			BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_AoE, EGameplayTagEventType::AnyCountChange);
+			BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_Cone, EGameplayTagEventType::AnyCountChange);
+			BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_Shadowstep, EGameplayTagEventType::AnyCountChange);
+		}
+	}
+	CooldownTagHandles.Reset();
+}
+
+void UAbilityBarWidget::HandleCooldownTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	SyncCooldownState(Tag, NewCount);
+}
+
+void UAbilityBarWidget::SyncCooldownState(const FGameplayTag Tag, int32 NewCount)
+{
+	for (const FSlotEntry& Entry : Slots)
+	{
+		if (Entry.Widget && Entry.CooldownTag == Tag)
+		{
+			if (NewCount > 0)
 			{
-				const float WorldTime = GetWorld()->GetTimeSeconds();
-				const float Remaining = ActiveEffect->GetTimeRemaining(WorldTime);
-				TimeRemaining = FMath::Max(TimeRemaining, Remaining);
-			}
-		}
-
-		if (TimeRemaining > 0.0f)
-		{
-			bAnyActive = true;
-		}
-
-		if (Entry.CooldownBar)
-		{
-			Entry.CooldownBar->SetPercent(Duration > 0.0f ? FMath::Clamp(TimeRemaining / Duration, 0.0f, 1.0f) : 0.0f);
-			Entry.CooldownBar->SetVisibility(TimeRemaining > 0.0f ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		}
-
-		if (Entry.CooldownText)
-		{
-			if (TimeRemaining > 0.0f)
-			{
-				Entry.CooldownText->SetText(FText::AsNumber(FMath::CeilToInt(TimeRemaining)));
-				Entry.CooldownText->SetVisibility(ESlateVisibility::Visible);
+				Entry.Widget->StartCooldown(GetCooldownDuration(Tag));
 			}
 			else
 			{
-				Entry.CooldownText->SetVisibility(ESlateVisibility::Collapsed);
+				Entry.Widget->EndCooldown();
 			}
+			break;
 		}
 	}
-
-	return bAnyActive;
 }
 
-void UAbilityBarWidget::HandleSlot0Clicked()
+float UAbilityBarWidget::GetCooldownDuration(const FGameplayTag Tag) const
 {
-	if (BoundPlayerController)
+	if (!BoundASC)
 	{
-		BoundPlayerController->StartAutoAttack();
-	}
-}
-
-void UAbilityBarWidget::HandleSlot1Clicked()
-{
-	if (BoundASC)
-	{
-		BoundASC->AbilityLocalInputPressed(1);
-		BoundASC->AbilityLocalInputReleased(1);
-	}
-}
-
-void UAbilityBarWidget::HandleSlot2Clicked()
-{
-	if (BoundASC)
-	{
-		BoundASC->AbilityLocalInputPressed(2);
-		BoundASC->AbilityLocalInputReleased(2);
-	}
-}
-
-void UAbilityBarWidget::HandleSlot3Clicked()
-{
-	// Shadowstep is a passive — no manual trigger.
-}
-
-void UAbilityBarWidget::InitCooldownTags()
-{
-	if (Slots.Num() != 4)
-	{
-		Slots.SetNum(4);
+		return 0.0f;
 	}
 
-	Slots[0].CooldownTag = TAG_Cooldown_BasicAttack;
-	Slots[0].InputID = 0;
-	Slots[1].CooldownTag = TAG_Cooldown_AoE;
-	Slots[1].InputID = 1;
-	Slots[2].CooldownTag = TAG_Cooldown_Cone;
-	Slots[2].InputID = 2;
-	Slots[3].CooldownTag = TAG_Cooldown_Shadowstep;
-	Slots[3].InputID = -1;
-}
-
-void UAbilityBarWidget::BuildSlotLayout(UCanvasPanel* RootPanel)
-{
-	const int32 SlotCount = 4;
-
-	for (int32 i = 0; i < SlotCount; ++i)
+	const TArray<FActiveGameplayEffectHandle> ActiveHandles =
+		BoundASC->GetActiveEffectsWithAllTags(FGameplayTagContainer(Tag));
+	for (const FActiveGameplayEffectHandle& ActiveHandle : ActiveHandles)
 	{
-		FAbilitySlot& Entry = Slots[i];
-
-		Entry.Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), *FString::Printf(TEXT("SlotButton_%d"), i));
-		Entry.CooldownBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), *FString::Printf(TEXT("CooldownBar_%d"), i));
-		Entry.KeyLabel = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), *FString::Printf(TEXT("KeyLabel_%d"), i));
-		Entry.CooldownText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), *FString::Printf(TEXT("CooldownText_%d"), i));
-
-		if (Entry.KeyLabel)
+		const FActiveGameplayEffect* ActiveEffect = BoundASC->GetActiveGameplayEffects().GetActiveGameplayEffect(ActiveHandle);
+		if (ActiveEffect)
 		{
-			Entry.KeyLabel->SetText(FText::FromString(GetSlotKeyLabel(i)));
-			Entry.KeyLabel->SetJustification(ETextJustify::Center);
-			Entry.KeyLabel->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 10));
-		}
-
-		if (Entry.CooldownText)
-		{
-			Entry.CooldownText->SetJustification(ETextJustify::Center);
-			Entry.CooldownText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 12, TEXT("Bold")));
-			Entry.CooldownText->SetVisibility(ESlateVisibility::Collapsed);
-		}
-
-		if (Entry.CooldownBar)
-		{
-			Entry.CooldownBar->SetFillColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.6f));
-			Entry.CooldownBar->SetPercent(0.0f);
-			Entry.CooldownBar->SetVisibility(ESlateVisibility::Collapsed);
-		}
-
-		if (Entry.Button)
-		{
-			switch (i)
+			const float Duration = ActiveEffect->GetDuration();
+			if (Duration > 0.0f)
 			{
-			case 0:
-				Entry.Button->OnClicked.AddDynamic(this, &UAbilityBarWidget::HandleSlot0Clicked);
-				break;
-			case 1:
-				Entry.Button->OnClicked.AddDynamic(this, &UAbilityBarWidget::HandleSlot1Clicked);
-				break;
-			case 2:
-				Entry.Button->OnClicked.AddDynamic(this, &UAbilityBarWidget::HandleSlot2Clicked);
-				break;
-			case 3:
-				Entry.Button->OnClicked.AddDynamic(this, &UAbilityBarWidget::HandleSlot3Clicked);
-				break;
-			default:
-				break;
-			}
-
-			UCanvasPanelSlot* ButtonSlot = RootPanel->AddChildToCanvas(Entry.Button);
-			if (ButtonSlot)
-			{
-				ButtonSlot->SetAnchors(FAnchors(0.5f, 1.0f));
-				ButtonSlot->SetAlignment(FVector2D(0.5f, 1.0f));
-				ButtonSlot->SetSize(FVector2D(56.0f, 56.0f));
-				ButtonSlot->SetPosition(FVector2D((i - (SlotCount - 1) * 0.5f) * 64.0f, -30.0f));
-			}
-		}
-
-		if (Entry.CooldownBar)
-		{
-			UCanvasPanelSlot* BarSlot = RootPanel->AddChildToCanvas(Entry.CooldownBar);
-			if (BarSlot)
-			{
-				BarSlot->SetAnchors(FAnchors(0.5f, 1.0f));
-				BarSlot->SetAlignment(FVector2D(0.5f, 1.0f));
-				BarSlot->SetSize(FVector2D(56.0f, 56.0f));
-				BarSlot->SetPosition(FVector2D((i - (SlotCount - 1) * 0.5f) * 64.0f, -30.0f));
-			}
-		}
-
-		if (Entry.KeyLabel)
-		{
-			UCanvasPanelSlot* KeySlot = RootPanel->AddChildToCanvas(Entry.KeyLabel);
-			if (KeySlot)
-			{
-				KeySlot->SetAnchors(FAnchors(0.5f, 1.0f));
-				KeySlot->SetAlignment(FVector2D(0.5f, 1.0f));
-				KeySlot->SetAutoSize(true);
-				KeySlot->SetPosition(FVector2D((i - (SlotCount - 1) * 0.5f) * 64.0f, 30.0f));
-			}
-		}
-
-		if (Entry.CooldownText)
-		{
-			UCanvasPanelSlot* TextSlot = RootPanel->AddChildToCanvas(Entry.CooldownText);
-			if (TextSlot)
-			{
-				TextSlot->SetAnchors(FAnchors(0.5f, 1.0f));
-				TextSlot->SetAlignment(FVector2D(0.5f, 1.0f));
-				TextSlot->SetAutoSize(true);
-				TextSlot->SetPosition(FVector2D((i - (SlotCount - 1) * 0.5f) * 64.0f, -30.0f));
+				return Duration;
 			}
 		}
 	}
+	return 0.0f;
 }
 
-const TCHAR* UAbilityBarWidget::GetSlotKeyLabel(int32 SlotIndex)
+void UAbilityBarWidget::HandleSlotClicked(int32 SlotIndex)
 {
-	switch (SlotIndex)
+	if (Slots.IsValidIndex(SlotIndex) && Slots[SlotIndex].InputID != INDEX_NONE && BoundASC)
 	{
-	case 0: return TEXT("1");
-	case 1: return TEXT("2");
-	case 2: return TEXT("3");
-	case 3: return TEXT("4");
-	default: return TEXT("");
+		BoundASC->AbilityLocalInputPressed(Slots[SlotIndex].InputID);
+		BoundASC->AbilityLocalInputReleased(Slots[SlotIndex].InputID);
 	}
 }

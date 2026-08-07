@@ -4,75 +4,79 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "NativeGameplayTags.h"
+#include "GameplayTagContainer.h"
 #include "AbilityBarWidget.generated.h"
 
 class AOnsetPlayerController;
+class UAbilitySlotWidget;
 class UAbilitySystemComponent;
-class UButton;
-class UCanvasPanel;
-class UCanvasPanelSlot;
-class UProgressBar;
-class UTextBlock;
+class UHorizontalBox;
 
 /**
- * Ability bar showing the 4 ability slots (Basic, AoE, Cone, Shadowstep) with
- * cooldown overlays. Cooldown display starts on activation (cooldown tag event)
- * then polls the ASC's active gameplay effects for real remaining time while
- * any cooldown is live.
+ * Ability bar showing the assignable ability slots (bound to input IDs 1-4).
+ * Slot contents are driven by the ASC: each slot displays whatever ability is
+ * granted for its input ID (via FindAbilitySpecFromInputID) or renders locked
+ * when nothing is assigned. Cooldown fills are event-driven: when a slot's
+ * cooldown tag goes active the widget starts a scaled fill animation
+ * (OnCooldownStarted), which the tag's removal ends (OnCooldownEnded). The
+ * designer owns the visual tree (WBP_AbilityBar); C++ never builds widgets.
  */
-UCLASS()
+UCLASS(Blueprintable)
 class ONSET_API UAbilityBarWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
-	/** Binds to the player controller + its pawn ASC. */
+	UAbilityBarWidget(const FObjectInitializer& ObjectInitializer);
+
+	/** Binds to the player controller + its pawn ASC and (re)builds the slots. */
 	void BindToPlayer(AOnsetPlayerController* InPlayerController, UAbilitySystemComponent* InASC);
 
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
-	/** Refresh all cooldown bars; called on activation / tag change. */
-	void NotifyAbilitiesChanged();
-
-	/** Poll tick while any cooldown is active. */
-	void OnCooldownTick();
-
-	/** Returns true if at least one slot currently has an active cooldown. */
-	bool RefreshCooldowns();
-
 	/** Callback when a cooldown tag count changes on the ASC (add/remove). */
 	void HandleCooldownTagChanged(const FGameplayTag Tag, int32 NewCount);
 
+	/** Slot click routed from the slot widget; activates via input ID. */
 	UFUNCTION()
-	void HandleSlot0Clicked();
-	UFUNCTION()
-	void HandleSlot1Clicked();
-	UFUNCTION()
-	void HandleSlot2Clicked();
-	UFUNCTION()
-	void HandleSlot3Clicked();
+	void HandleSlotClicked(int32 SlotIndex);
 
 private:
-	struct FAbilitySlot
+	/** Rebuilds all slot widgets from the ASC's granted abilities (by input ID). */
+	void RebuildSlots();
+
+	/** Spawns the 4 slot widgets into the designer-provided container. */
+	void BuildSlots();
+
+	/** Unregisters all cooldown-tag event handles from the ASC. */
+	void UnregisterCooldownEvents();
+
+	/** Starts/ends the cooldown fill on the slot matching Tag. */
+	void SyncCooldownState(const FGameplayTag Tag, int32 NewCount);
+
+	/** Returns the duration of the active cooldown effect matching Tag (0 if none). */
+	float GetCooldownDuration(const FGameplayTag Tag) const;
+
+	/** Per-slot descriptor derived from the ASC. */
+	struct FSlotEntry
 	{
-		UButton* Button = nullptr;
-		UProgressBar* CooldownBar = nullptr;
-		UTextBlock* KeyLabel = nullptr;
-		UTextBlock* CooldownText = nullptr;
+		int32 InputID = INDEX_NONE;
+		TObjectPtr<UAbilitySlotWidget> Widget = nullptr;
 		FGameplayTag CooldownTag;
-		int32 InputID = -1;
 	};
 
-	void BuildSlotLayout(UCanvasPanel* RootPanel);
+	/** Designer container (e.g. horizontal bar) that C++ fills with slot widgets. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UHorizontalBox> SlotContainer;
 
-	/** Fills in the cooldown tags for each slot. */
-	void InitCooldownTags();
+	/** Slot widget class to instantiate per slot (override with WBP_AbilitySlot). */
+	UPROPERTY(EditDefaultsOnly, Category = "Ability Bar")
+	TSubclassOf<UAbilitySlotWidget> AbilitySlotWidgetClass;
 
-	/** Array aligned with the 4 slots. */
-	TArray<FAbilitySlot> Slots;
+	/** The 4 assignable slots, aligned with input IDs 1-4. */
+	TArray<FSlotEntry> Slots;
 
 	UPROPERTY()
 	TObjectPtr<AOnsetPlayerController> BoundPlayerController;
@@ -80,9 +84,5 @@ private:
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> BoundASC;
 
-	FTimerHandle CooldownTimerHandle;
-
 	TArray<FDelegateHandle> CooldownTagHandles;
-
-	static const TCHAR* GetSlotKeyLabel(int32 SlotIndex);
 };

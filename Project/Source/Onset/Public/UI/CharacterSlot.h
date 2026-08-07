@@ -7,8 +7,8 @@
 #include "Blueprint/UserWidget.h"
 #include "CharacterSlot.generated.h"
 
-class UTextBlock;
 class UCommonButtonBase;
+class UCommonTextBlock;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnsetCharacterSlotClicked, int32, SlotIndex);
 
@@ -75,10 +75,10 @@ protected:
 	int32 SlotIndex = -1;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> NameLabel;
+	TObjectPtr<UCommonTextBlock> NameLabel;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> LevelLabel;
+	TObjectPtr<UCommonTextBlock> LevelLabel;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UCommonButtonBase> InteractionButton;

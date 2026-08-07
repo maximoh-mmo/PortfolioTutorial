@@ -7,15 +7,17 @@
 #include "PlayerHealthBarWidget.generated.h"
 
 class UAbilitySystemComponent;
-class UProgressBar;
-class UTextBlock;
+class UCommonTextBlock;
 struct FOnAttributeChangeData;
 
 /**
  * Player health bar. Binds to the owning character's ASC Health/MaxHealth
- * attribute change delegates and updates a progress bar + text.
+ * attribute change delegates and exposes the fill ratio to the WBP via a
+ * BlueprintReadOnly percent + OnHealthPercentChanged event; the bar itself is
+ * a shader material in WBP_PlayerHealthBar, not a UProgressBar. The visual
+ * layout is styled in the WBP; this class owns all the logic.
  */
-UCLASS()
+UCLASS(Blueprintable)
 class ONSET_API UPlayerHealthBarWidget : public UUserWidget
 {
 	GENERATED_BODY()
@@ -34,13 +36,19 @@ protected:
 	/** Delegate handler for ASC attribute changes. */
 	void HandleAttributeChanged(const FOnAttributeChangeData& Data);
 
+	/** Current health fill ratio (0..1); the WBP's material reads this. */
+	UPROPERTY(BlueprintReadOnly, Category = "HealthBar")
+	float HealthPercent = 1.0f;
+
+	/** Designer-bound text (WBP_PlayerHealthBar). */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UCommonTextBlock> HealthText;
+
+	/** Fired whenever HealthPercent changes; the WBP drives its material fill. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "HealthBar")
+	void OnHealthPercentChanged(float InPercent);
+
 private:
-	UPROPERTY()
-	TObjectPtr<UProgressBar> HealthBar;
-
-	UPROPERTY()
-	TObjectPtr<UTextBlock> HealthText;
-
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> BoundASC;
 };

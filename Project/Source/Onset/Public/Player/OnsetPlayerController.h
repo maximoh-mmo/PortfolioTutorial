@@ -56,6 +56,9 @@ protected:
 	
 	virtual void OnUnPossess() override;
 
+	/** Fires on the local client when the replicated Pawn property updates; used to build the HUD and dismiss the loading screen. */
+	virtual void OnRep_Pawn() override;
+
 	/** Creates + binds the in-game HUD on the local client when a pawn is possessed. */
 	void CreateHUD(APawn* InPawn);
 
@@ -235,6 +238,9 @@ public:
 	void Client_TravelToGameServer(const FString& ServerIP, const FString& ServerPort, const FString& Token);
 
 	UFUNCTION(Server, Reliable)
+	void Server_OnClientPossessed();
+
+	UFUNCTION(Server, Reliable)
 	void Server_SelectCharacter(int32 SlotIndex);
 
 	UFUNCTION(Server, Reliable)
@@ -276,4 +282,9 @@ private:
 	TObjectPtr<APawn> CachedPlayerPawn;
 
 	FString CachedSessionToken;
+
+	// --- Test harness: -AutoPlaySlot=N auto-enters an occupied character slot. ---
+	FTimerHandle AutoPlayTimerHandle;
+	int32 AutoPlaySlotIndex = -1;
+	void AutoPlaySelectCharacter();
 };

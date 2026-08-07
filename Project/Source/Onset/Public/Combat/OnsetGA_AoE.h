@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Abilities/GameplayAbility.h"
+#include "Combat/OnsetGameplayAbility.h"
 #include "OnsetGA_AoE.generated.h"
 
 /** AoE ability: target-centered sphere overlap damage with PvP filtering. */
 UCLASS()
-class ONSET_API UOnsetGA_AoE : public UGameplayAbility
+class ONSET_API UOnsetGA_AoE : public UOnsetGameplayAbility
 {
 	GENERATED_BODY()
 

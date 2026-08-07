@@ -3,7 +3,7 @@
 #include "UI/CharacterSlot.h"
 
 #include "CommonButtonBase.h"
-#include "Components/TextBlock.h"
+#include "CommonTextBlock.h"
 
 void UCharacterSlot::SetSlotIndex(int32 InSlotIndex)
 {

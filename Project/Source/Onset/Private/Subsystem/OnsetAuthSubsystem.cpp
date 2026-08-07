@@ -92,7 +92,8 @@ FString UOnsetAuthSubsystem::PreLoginTokenAuth(const FString& Options, const FSt
 	}
 
 	PendingTokenAuthMap.Add(Address, {OutPlatform, OutPlatformID, SlotIndex});
-	UE_LOG(LogOnsetAuth, Log, TEXT("PreLogin: token validated for %s (%s/%s)"), *Address, *OutPlatform, *OutPlatformID);
+	UE_LOG(LogOnsetAuth, Log, TEXT("PreLogin: token validated for Address='%s' (%s/%s) slot=%d (pending=%d)"),
+		*Address, *OutPlatform, *OutPlatformID, SlotIndex, PendingTokenAuthMap.Num());
 	return {};
 }
 
@@ -137,7 +138,13 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 		}
 		else
 		{
-			// Token not found in pending map — might have arrived via PostLogin directly (LoginServer)
+			UE_LOG(LogOnsetAuth, Warning, TEXT("PostLogin: NO pending token for CleanAddress='%s' (raw='%s'); pending=%d"),
+				*CleanAddress, *Address, PendingTokenAuthMap.Num());
+			for (const TPair<FString, FPendingTokenAuth>& PendingEntry : PendingTokenAuthMap)
+			{
+				UE_LOG(LogOnsetAuth, Warning, TEXT("PostLogin:   pending key='%s' (slot=%d)"),
+					*PendingEntry.Key, PendingEntry.Value.SlotIndex);
+			}
 		}
 	}
 	else

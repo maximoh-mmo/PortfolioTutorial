@@ -19,6 +19,8 @@ class ONSET_API UTargetingComponent : public UActorComponent
 public:	
 	UTargetingComponent();
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	// --- Target Accessors ---
 
 	/** Sets the current target. Pass nullptr to clear. */
@@ -49,7 +51,11 @@ public:
 	FOnTargetChanged OnTargetChanged;
 
 private:
+	/** Replays OnTargetChanged on clients when the replicated target updates. */
+	UFUNCTION()
+	void OnRep_CurrentTarget();
+
 	/** The currently targeted actor. */
-	UPROPERTY(VisibleAnywhere, Category = "Targeting")
-	AActor* CurrentTarget;	
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_CurrentTarget, Category = "Targeting")
+	TObjectPtr<AActor> CurrentTarget;	
 };

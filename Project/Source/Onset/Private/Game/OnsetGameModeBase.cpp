@@ -118,7 +118,13 @@ void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 	{
 		if (PC && PS && PS->SelectedCharacterSlot >= 0)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("GameMode::PostLogin: RestartPlayer for slot %d"), PS->SelectedCharacterSlot);
 			RestartPlayer(NewPlayer);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GameMode::PostLogin: token mode, NOT restarting (slot=%d) — client will hang on loading screen"),
+				PS ? PS->SelectedCharacterSlot : -1);
 		}
 	}
 	else if (PC && PS && PS->SelectedCharacterSlot < 0)

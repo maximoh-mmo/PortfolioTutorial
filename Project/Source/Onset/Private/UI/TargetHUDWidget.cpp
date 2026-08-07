@@ -3,17 +3,12 @@
 #include "UI/TargetHUDWidget.h"
 
 #include "AbilitySystemComponent.h"
-#include "Blueprint/WidgetTree.h"
-#include "Components/CanvasPanel.h"
-#include "Components/CanvasPanelSlot.h"
+#include "CommonTextBlock.h"
 #include "Components/Border.h"
-#include "Components/ProgressBar.h"
-#include "Components/TextBlock.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "GameFramework/PlayerController.h"
-#include "Styling/CoreStyle.h"
-#include "Fonts/SlateFontInfo.h"
 
 void UTargetHUDWidget::SetTarget(AOnsetBaseCharacter* InTarget)
 {
@@ -46,86 +41,6 @@ void UTargetHUDWidget::SetTarget(AOnsetBaseCharacter* InTarget)
 void UTargetHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	if (!WidgetTree)
-	{
-		return;
-	}
-
-	// Root canvas fills the viewport; the element content lives in a positioned child panel.
-	if (UCanvasPanel* RootPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RootPanel")))
-	{
-		WidgetTree->RootWidget = RootPanel;
-
-		UCanvasPanel* ContentPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("ContentPanel"));
-		if (ContentPanel)
-		{
-			ContentPanelSlot = RootPanel->AddChildToCanvas(ContentPanel);
-			if (ContentPanelSlot)
-			{
-				ContentPanelSlot->SetAnchors(FAnchors(0.0f, 0.0f));
-				ContentPanelSlot->SetAlignment(FVector2D(0.0f, 0.0f));
-				ContentPanelSlot->SetAutoSize(true);
-			}
-
-			if (!ReticleBorder)
-			{
-				ReticleBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("ReticleBorder"));
-				if (ReticleBorder)
-				{
-					ReticleBorder->SetBrushColor(FLinearColor(1.0f, 0.0f, 0.0f, 1.0f));
-					ReticleBorder->SetContentColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-					ReticleBorder->SetPadding(FMargin(24.0f));
-
-					UCanvasPanelSlot* ReticleSlot = ContentPanel->AddChildToCanvas(ReticleBorder);
-					if (ReticleSlot)
-					{
-						ReticleSlot->SetAnchors(FAnchors(0.5f, 0.5f));
-						ReticleSlot->SetAlignment(FVector2D(0.5f, 0.5f));
-						ReticleSlot->SetAutoSize(true);
-					}
-				}
-			}
-
-			if (!NameText)
-			{
-				NameText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("NameText"));
-				if (NameText)
-				{
-					NameText->SetJustification(ETextJustify::Center);
-					NameText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 12, TEXT("Bold")));
-
-					UCanvasPanelSlot* NameSlot = ContentPanel->AddChildToCanvas(NameText);
-					if (NameSlot)
-					{
-						NameSlot->SetAnchors(FAnchors(0.5f, 0.5f));
-						NameSlot->SetAlignment(FVector2D(0.5f, 0.5f));
-						NameSlot->SetAutoSize(true);
-						NameSlot->SetPosition(FVector2D(0.0f, -28.0f));
-					}
-				}
-			}
-
-			if (!HealthBar)
-			{
-				HealthBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("HealthBar"));
-				if (HealthBar)
-				{
-					HealthBar->SetFillColorAndOpacity(FLinearColor(0.6f, 0.0f, 0.0f, 1.0f));
-
-					UCanvasPanelSlot* BarSlot = ContentPanel->AddChildToCanvas(HealthBar);
-					if (BarSlot)
-					{
-						BarSlot->SetAnchors(FAnchors(0.5f, 0.5f));
-						BarSlot->SetAlignment(FVector2D(0.5f, 0.5f));
-						BarSlot->SetSize(FVector2D(120.0f, 8.0f));
-						BarSlot->SetPosition(FVector2D(0.0f, 8.0f));
-					}
-				}
-			}
-		}
-	}
-
 	SetVisibleState(TrackedTarget != nullptr);
 }
 
@@ -157,9 +72,32 @@ void UTargetHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		FVector2D ScreenPos;
 		if (PC->ProjectWorldLocationToScreen(TrackedTarget->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f), ScreenPos, false))
 		{
-			if (ContentPanelSlot)
+			if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(Slot))
 			{
-				ContentPanelSlot->SetPosition(ScreenPos);
+				// The designer placed this slot center-anchored; re-anchor to
+				// top-left so SetPosition is absolute from the canvas origin
+				// (keeping alignment 0.5 so the widget centers on the point).
+				if (CanvasSlot->GetAnchors() != FAnchors(0.0f, 0.0f))
+				{
+					CanvasSlot->SetAnchors(FAnchors(0.0f, 0.0f));
+				}
+
+				// Convert viewport pixels to the HUD's layout units.
+				const float GeometryScale = MyGeometry.Scale > 0.0f ? MyGeometry.Scale : 1.0f;
+				ScreenPos /= GeometryScale;
+
+				static bool bLoggedSlot = false;
+				if (!bLoggedSlot)
+				{
+					bLoggedSlot = true;
+					const FAnchors Anchors = CanvasSlot->GetAnchors();
+					UE_LOG(LogTemp, Warning, TEXT("[HUDDiag] TargetHUD slot: Anchors=(%s,%s,%s,%s) Alignment=%s SlotPos=%s Size=%s LayoutPos=%s"),
+						*FString::SanitizeFloat(Anchors.Minimum.X), *FString::SanitizeFloat(Anchors.Minimum.Y),
+						*FString::SanitizeFloat(Anchors.Maximum.X), *FString::SanitizeFloat(Anchors.Maximum.Y),
+						*CanvasSlot->GetAlignment().ToString(), *CanvasSlot->GetPosition().ToString(), *CanvasSlot->GetSize().ToString(),
+						*ScreenPos.ToString());
+				}
+				CanvasSlot->SetPosition(ScreenPos);
 			}
 			SetVisibleState(true);
 		}
@@ -188,14 +126,20 @@ void UTargetHUDWidget::HandleTargetHealthChanged(const FOnAttributeChangeData& D
 
 void UTargetHUDWidget::RefreshHealth()
 {
-	if (!BoundASC || !HealthBar)
+	if (!BoundASC)
 	{
 		return;
 	}
 
 	const float MaxHealth = BoundASC->GetNumericAttribute(UOnsetAttributeSet::GetMaxHealthAttribute());
 	const float Health = BoundASC->GetNumericAttribute(UOnsetAttributeSet::GetHealthAttribute());
-	HealthBar->SetPercent(MaxHealth > 0.0f ? FMath::Clamp(Health / MaxHealth, 0.0f, 1.0f) : 0.0f);
+	const float NewPercent = MaxHealth > 0.0f ? FMath::Clamp(Health / MaxHealth, 0.0f, 1.0f) : 0.0f;
+
+	if (TargetHealthPercent != NewPercent)
+	{
+		TargetHealthPercent = NewPercent;
+		OnTargetHealthPercentChanged(TargetHealthPercent);
+	}
 }
 
 void UTargetHUDWidget::SetVisibleState(bool bVisible)

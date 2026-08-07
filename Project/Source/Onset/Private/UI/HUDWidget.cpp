@@ -3,11 +3,11 @@
 #include "UI/HUDWidget.h"
 
 #include "AbilitySystemComponent.h"
-#include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Core/TargetingComponent.h"
+#include "Engine/GameViewportClient.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "Player/OnsetPlayerController.h"
 #include "UI/AbilityBarWidget.h"
@@ -54,59 +54,9 @@ void UHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (!WidgetTree)
-	{
-		return;
-	}
-
-	RootPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RootPanel"));
-	if (!RootPanel)
-	{
-		return;
-	}
-	WidgetTree->RootWidget = RootPanel;
-
-	// Damage number layer - full viewport, hit-test transparent.
-	DamageNumberLayer = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("DamageNumberLayer"));
-	if (DamageNumberLayer)
-	{
-		UCanvasPanelSlot* LayerSlot = RootPanel->AddChildToCanvas(DamageNumberLayer);
-		if (LayerSlot)
-		{
-			LayerSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
-		}
-		DamageNumberLayer->SetVisibility(ESlateVisibility::HitTestInvisible);
-	}
-
+	// The visual tree is owned by the Widget Blueprint (WBP_HUD). This only
+	// populates the designer-provided damage-number layer.
 	BuildDamageNumberPool();
-
-	// Sub-widgets are stretched to the full viewport so their internal
-	// canvas anchors resolve against the screen, not against a collapsed child.
-	APlayerController* OwningPC = GetOwningPlayer();
-
-	if (PlayerHealthBar = CreateWidget<UPlayerHealthBarWidget>(OwningPC, UPlayerHealthBarWidget::StaticClass()))
-	{
-		if (UCanvasPanelSlot* HealthBarSlot = RootPanel->AddChildToCanvas(PlayerHealthBar))
-		{
-			HealthBarSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
-		}
-	}
-
-	if (AbilityBar = CreateWidget<UAbilityBarWidget>(OwningPC, UAbilityBarWidget::StaticClass()))
-	{
-		if (UCanvasPanelSlot* AbilityBarSlot = RootPanel->AddChildToCanvas(AbilityBar))
-		{
-			AbilityBarSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
-		}
-	}
-
-	if (TargetHUD = CreateWidget<UTargetHUDWidget>(OwningPC, UTargetHUDWidget::StaticClass()))
-	{
-		if (UCanvasPanelSlot* TargetHUDSlot = RootPanel->AddChildToCanvas(TargetHUD))
-		{
-			TargetHUDSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
-		}
-	}
 }
 
 void UHUDWidget::NativeDestruct()
@@ -174,7 +124,8 @@ void UHUDWidget::HandleTargetHealthChanged(const FOnAttributeChangeData& Data)
 		return;
 	}
 
-	SpawnDamageNumber(TrackedTarget->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f), Damage);
+	// Damage dealt by the player to the tracked target.
+	SpawnDamageNumber(TrackedTarget->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f), Damage, PlayerDamageColor);
 }
 
 void UHUDWidget::HandlePlayerHealthChanged(const FOnAttributeChangeData& Data)
@@ -185,7 +136,8 @@ void UHUDWidget::HandlePlayerHealthChanged(const FOnAttributeChangeData& Data)
 		return;
 	}
 
-	SpawnDamageNumber(BoundPawn->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f), Damage);
+	// Damage taken by the player (dealt by enemies).
+	SpawnDamageNumber(BoundPawn->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f), Damage, EnemyDamageColor);
 }
 
 void UHUDWidget::BuildDamageNumberPool()
@@ -199,7 +151,11 @@ void UHUDWidget::BuildDamageNumberPool()
 
 	for (int32 i = 0; i < MaxDamageNumbers; ++i)
 	{
-		UDamageNumberWidget* DamageNumber = CreateWidget<UDamageNumberWidget>(OwningPC, UDamageNumberWidget::StaticClass());
+		UDamageNumberWidget* DamageNumber = nullptr;
+		if (DamageNumberWidgetClass)
+		{
+			DamageNumber = CreateWidget<UDamageNumberWidget>(OwningPC, DamageNumberWidgetClass);
+		}
 		if (!DamageNumber)
 		{
 			continue;
@@ -219,7 +175,7 @@ void UHUDWidget::BuildDamageNumberPool()
 	NextDamageNumberIndex = 0;
 }
 
-void UHUDWidget::SpawnDamageNumber(const FVector& WorldLocation, float Amount)
+void UHUDWidget::SpawnDamageNumber(const FVector& WorldLocation, float Amount, const FLinearColor& Color)
 {
 	if (DamageNumberPool.IsEmpty() || Amount <= 0.0f)
 	{
@@ -241,7 +197,7 @@ void UHUDWidget::SpawnDamageNumber(const FVector& WorldLocation, float Amount)
 
 	if (DamageNumber)
 	{
-		DamageNumber->ShowDamage(Amount, ScreenPos);
+		DamageNumber->ShowDamage(Amount, ScreenPos, Color);
 	}
 
 	NextDamageNumberIndex = (NextDamageNumberIndex + 1) % DamageNumberPool.Num();
@@ -251,7 +207,36 @@ bool UHUDWidget::ProjectToScreen(const FVector& WorldLocation, FVector2D& OutScr
 {
 	if (const APlayerController* PC = GetOwningPlayer())
 	{
-		return PC->ProjectWorldLocationToScreen(WorldLocation, OutScreenPos, false);
+		// ProjectWorldLocationToScreen returns viewport pixels; the UMG layer is
+		// scaled by the HUD widget's geometry scale, so convert pixels to layout
+		// units before the caller positions widgets on the canvas.
+		FVector2D ViewportPixels;
+		const bool bProjected = PC->ProjectWorldLocationToScreen(WorldLocation, ViewportPixels, false);
+		if (bProjected)
+		{
+			const float GeometryScale = GetCachedGeometry().Scale > 0.0f ? GetCachedGeometry().Scale : 1.0f;
+			OutScreenPos = ViewportPixels / GeometryScale;
+		}
+
+		static bool bLogged = false;
+		if (!bLogged)
+		{
+			bLogged = true;
+			UGameViewportClient* GVC = PC->GetWorld() ? PC->GetWorld()->GetGameViewport() : nullptr;
+			FVector2D ViewportSize(0.0f);
+			if (GVC && GVC->Viewport)
+			{
+				const FIntPoint Sz = GVC->Viewport->GetSizeXY();
+				ViewportSize = FVector2D(Sz.X, Sz.Y);
+			}
+			const float DPIScale = GVC ? GVC->GetDPIScale() : 1.0f;
+			const float GeometryScale = GetCachedGeometry().Scale;
+			UE_LOG(LogTemp, Warning, TEXT("[HUDDiag] ProjectToScreen first call: World=%s Pixels=%s Layout=%s ViewportSize=%s DPIScale=%.3f WidgetGeomScale=%.3f"),
+				*WorldLocation.ToString(), bProjected ? *ViewportPixels.ToString() : TEXT("FAILED"),
+				bProjected ? *OutScreenPos.ToString() : TEXT("FAILED"),
+				*ViewportSize.ToString(), DPIScale, GeometryScale);
+		}
+		return bProjected;
 	}
 	return false;
 }
