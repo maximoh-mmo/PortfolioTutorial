@@ -4,21 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Core/OnsetBaseCharacter.h"
 #include "TargetHUDWidget.generated.h"
 
 class AOnsetBaseCharacter;
 class UAbilitySystemComponent;
-class UBorder;
-class UCommonTextBlock;
 struct FOnAttributeChangeData;
 
 /**
- * Single HUD element for the currently targeted enemy: bracketed reticle,
- * target name, and health fill. Tracks the target's world location each tick.
+ * Static target lifebar: a single top-centered HUD element that shows the
+ * current target's health fill. The widget does NOT move or follow the target —
+ * the designer anchors it once (e.g. top-center of WBP_HUD's canvas). It is used
+ * for every enemy/boss; the WBP picks a "skin" (fill material/colors) based on
+ * the exposed TargetType (Normal/Elite/Boss) when a target is acquired.
+ * The screen-space reticle is gone: a ground decal on the target actor
+ * (AOnsetBaseCharacter::SetTargetReticle) marks the current target instead.
+ *
  * The health bar is a shader material in WBP_TargetHUD driven by a
- * BlueprintReadOnly percent + OnTargetHealthPercentChanged event; the name is
- * a UCommonTextBlock. The widget is repositioned via its own canvas slot each
- * tick. Visual layout is styled in WBP_TargetHUD (a child of WBP_HUD's canvas).
+ * BlueprintReadOnly TargetHealthPercent + OnTargetHealthPercentChanged event.
  */
 UCLASS(Blueprintable)
 class ONSET_API UTargetHUDWidget : public UUserWidget
@@ -42,17 +45,21 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Target HUD")
 	float TargetHealthPercent = 1.0f;
 
-	/** Designer-bound reticle border (WBP_TargetHUD). */
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UBorder> ReticleBorder;
-
-	/** Designer-bound target name text (WBP_TargetHUD). */
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UCommonTextBlock> NameText;
+	/** Target category the WBP uses to pick a lifebar skin. */
+	UPROPERTY(BlueprintReadOnly, Category = "Target HUD")
+	ETargetType TargetType = ETargetType::Normal;
 
 	/** Fired whenever TargetHealthPercent changes; the WBP drives its material fill. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Target HUD")
 	void OnTargetHealthPercentChanged(float InPercent);
+
+	/** Fired when a target is acquired; the WBP swaps its skin from TargetType. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Target HUD")
+	void OnTargetAcquired(ETargetType InTargetType);
+
+	/** Fired when the target is cleared; the WBP hides the lifebar. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Target HUD")
+	void OnTargetCleared();
 
 private:
 	UPROPERTY()

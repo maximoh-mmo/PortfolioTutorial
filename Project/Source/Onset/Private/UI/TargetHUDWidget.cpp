@@ -3,12 +3,8 @@
 #include "UI/TargetHUDWidget.h"
 
 #include "AbilitySystemComponent.h"
-#include "CommonTextBlock.h"
-#include "Components/Border.h"
-#include "Components/CanvasPanelSlot.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "GAS/OnsetAttributeSet.h"
-#include "GameFramework/PlayerController.h"
 
 void UTargetHUDWidget::SetTarget(AOnsetBaseCharacter* InTarget)
 {
@@ -18,20 +14,31 @@ void UTargetHUDWidget::SetTarget(AOnsetBaseCharacter* InTarget)
 		BoundASC = nullptr;
 	}
 
+	// Retire the ground reticle decal on the previous target, then mark the new one.
+	if (TrackedTarget)
+	{
+		TrackedTarget->SetTargetReticle(false);
+	}
+
 	TrackedTarget = IsValid(InTarget) ? InTarget : nullptr;
 
 	if (TrackedTarget)
 	{
+		TrackedTarget->SetTargetReticle(true);
+		TargetType = TrackedTarget->TargetType;
+
 		BoundASC = TrackedTarget->AbilitySystemComponent;
 		if (BoundASC)
 		{
 			BoundASC->GetGameplayAttributeValueChangeDelegate(UOnsetAttributeSet::GetHealthAttribute()).AddUObject(this, &UTargetHUDWidget::HandleTargetHealthChanged);
 		}
 
-		if (NameText)
-		{
-			NameText->SetText(FText::FromString(TrackedTarget->GetName()));
-		}
+		OnTargetAcquired(TargetType);
+	}
+	else
+	{
+		TargetType = ETargetType::Normal;
+		OnTargetCleared();
 	}
 
 	RefreshHealth();
@@ -48,58 +55,13 @@ void UTargetHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (!TrackedTarget || !IsValid(TrackedTarget))
+	// The widget is static (designer-anchored); it never follows the target. Only
+	// clear ourselves when the tracked target dies.
+	if (!IsValid(TrackedTarget) || !TrackedTarget->IsAlive())
 	{
-		if (TrackedTarget == nullptr)
-		{
-			SetVisibleState(false);
-		}
-		else
+		if (TrackedTarget)
 		{
 			SetTarget(nullptr);
-		}
-		return;
-	}
-
-	if (!TrackedTarget->IsAlive())
-	{
-		SetTarget(nullptr);
-		return;
-	}
-
-	if (APlayerController* PC = GetOwningPlayer())
-	{
-		FVector2D ScreenPos;
-		if (PC->ProjectWorldLocationToScreen(TrackedTarget->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f), ScreenPos, false))
-		{
-			if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(Slot))
-			{
-				// The designer placed this slot center-anchored; re-anchor to
-				// top-left so SetPosition is absolute from the canvas origin
-				// (keeping alignment 0.5 so the widget centers on the point).
-				if (CanvasSlot->GetAnchors() != FAnchors(0.0f, 0.0f))
-				{
-					CanvasSlot->SetAnchors(FAnchors(0.0f, 0.0f));
-				}
-
-				// Convert viewport pixels to the HUD's layout units.
-				const float GeometryScale = MyGeometry.Scale > 0.0f ? MyGeometry.Scale : 1.0f;
-				ScreenPos /= GeometryScale;
-
-				static bool bLoggedSlot = false;
-				if (!bLoggedSlot)
-				{
-					bLoggedSlot = true;
-					const FAnchors Anchors = CanvasSlot->GetAnchors();
-					UE_LOG(LogTemp, Warning, TEXT("[HUDDiag] TargetHUD slot: Anchors=(%s,%s,%s,%s) Alignment=%s SlotPos=%s Size=%s LayoutPos=%s"),
-						*FString::SanitizeFloat(Anchors.Minimum.X), *FString::SanitizeFloat(Anchors.Minimum.Y),
-						*FString::SanitizeFloat(Anchors.Maximum.X), *FString::SanitizeFloat(Anchors.Maximum.Y),
-						*CanvasSlot->GetAlignment().ToString(), *CanvasSlot->GetPosition().ToString(), *CanvasSlot->GetSize().ToString(),
-						*ScreenPos.ToString());
-				}
-				CanvasSlot->SetPosition(ScreenPos);
-			}
-			SetVisibleState(true);
 		}
 		else
 		{
@@ -114,6 +76,12 @@ void UTargetHUDWidget::NativeDestruct()
 	{
 		BoundASC->GetGameplayAttributeValueChangeDelegate(UOnsetAttributeSet::GetHealthAttribute()).RemoveAll(this);
 		BoundASC = nullptr;
+	}
+
+	if (TrackedTarget)
+	{
+		TrackedTarget->SetTargetReticle(false);
+		TrackedTarget = nullptr;
 	}
 
 	Super::NativeDestruct();

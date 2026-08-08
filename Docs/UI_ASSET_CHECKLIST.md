@@ -30,7 +30,7 @@ These paths are hardcoded via `ConstructorHelpers::FObjectFinder` / `LoadObject`
 - `Source/Onset/Private/Combat/OnsetGA_AoE.cpp:19-26`
 - `Source/Onset/Private/Combat/OnsetGA_Cone.cpp`
 - `Source/Onset/Private/Combat/OnsetGA_Shadowstep.cpp`
-- `Source/Onset/Private/Core/OnsetBaseCharacter.cpp:48-66` (default grants)
+- `Source/Onset/Private/Core/OnsetBaseCharacter.cpp:62-87` (default grants)
 
 If a GA Blueprint is missing, the C++ class fallback still runs — but the slot icon is
 only set on the Blueprint (`UOnsetGameplayAbility::AbilityIcon`).
@@ -100,19 +100,31 @@ the ratio actually changes. In the WBP, bind that event to drive your fill mater
 (e.g. set a scalar parameter on a `MaterialInstanceDynamic` or play a short fill anim).
 
 ### B4. `WBP_TargetHUD` — parent `UTargetHUDWidget`
-| Widget name | Widget type | Purpose |
-|-------------|-------------|---------|
-| `ReticleBorder` | Border | reticle / bracket around the target |
-| `NameText` | Common Text | target name |
+**Static top-centered target lifebar.** It does **not** follow the target and there
+is **no reticle and no name text** — the reticle is now a **ground decal** spawned on
+the target actor (see C6), and the lifebar is anchored once (top-center) by the designer.
 
-Target health fill uses the same material approach: C++ exposes `TargetHealthPercent`
+Health fill uses the material approach: C++ exposes `TargetHealthPercent`
 (BlueprintReadOnly) and calls `OnTargetHealthPercentChanged(Percent)` on change — bind it
 to your fill material.
 
-- **Must be a direct child of a Canvas Panel** (see B6): the widget repositions itself
-  every tick via `Cast<UCanvasPanelSlot>(Slot)->SetPosition()`
-  (`TargetHUDWidget.cpp:75-77`). Inside a Horizontal/Vertical box the positioning
-  silently fails.
+**Skin swapping (Normal / Elite / Boss).** C++ exposes `TargetType` (BlueprintReadOnly,
+enum `ETargetType`) and fires two blueprint events on acquisition/clear:
+
+| Event | When | Purpose |
+|-------|------|---------|
+| `OnTargetAcquired(TargetType)` | a target is set | swap the lifebar skin (e.g. switch the fill material / colors based on the enum) |
+| `OnTargetCleared()` | target removed/died | hide the lifebar |
+
+Suggested tree (no bound child widgets needed):
+
+```
+Border/Image (root, e.g. lifebar frame; material-driven fill for the bar)
+   └─ (optional) labels you style yourself — C++ never touches text here
+```
+
+Anchor the root **top-center** in `WBP_HUD`. Do **not** place it inside a
+Horizontal/Vertical box.
 
 ### B5. `WBP_DamageNumber` — parent `UDamageNumberWidget`
 | Widget name | Widget type | Purpose |
@@ -129,7 +141,7 @@ does nothing):
 |-------------|-------------|
 | `PlayerHealthBar` | nested child widget **WBP_PlayerHealthBar** |
 | `AbilityBar` | nested child widget **WBP_AbilityBar** |
-| `TargetHUD` | nested child widget **WBP_TargetHUD**, direct child of a Canvas |
+| `TargetHUD` | nested child widget **WBP_TargetHUD** (static; anchored top-center) |
 | `DamageNumberLayer` | **Canvas Panel** (the pool of up to 64 WBP_DamageNumber children is added here) |
 
 Suggested tree:
@@ -138,9 +150,13 @@ Suggested tree:
 Canvas Panel (root)
 ├─ PlayerHealthBar      (anchored bottom-center)
 ├─ AbilityBar           (anchored bottom-center, above health bar)
+├─ TargetHUD            (anchored top-center; static, no tick repositioning)
 └─ DamageNumberLayer    (full-screen canvas)
-   └─ WBP_TargetHUD     (repositioned each tick; collapsed until a target exists)
 ```
+
+> `TargetHUD` is **never repositioned at runtime** anymore. It lives exactly where the
+> designer anchors it; `TargetHUDWidget.cpp` only hides it (Collapsed) when there is no
+> target. Remove any old "reposition every tick" logic you see in the WBP.
 
 ### B7. Wire-up: `Content/Input/MyOnsetPlayerController` — **PENDING**
 Open `MyOnsetPlayerController.uasset` → **HUD → `HUDWidgetClass` = `WBP_HUD`**.
@@ -151,7 +167,29 @@ class (`OnsetPlayerController.cpp:289-310`).
 
 ---
 
-## C. Cleanup (done)
+## C. Reticle decal + cleanup
+
+### C6. Target reticle decal material (required for the ground reticle)
+
+The targeting reticle is now a **world-space decal** rendered under the target
+(`AOnsetBaseCharacter::TargetReticleDecal`), scaled to the enemy's capsule size.
+It is shown/hidden by `SetTargetReticle(bool)` which the target HUD calls when the
+player's target changes.
+
+| Asset | Location | Parent | Required settings |
+|-------|----------|--------|-------------------|
+| `M_TargetReticle` | `Content/UI/HUD/` | `Material` | Deferred Decal domain; blend a ring/arc using the `reticule` texture; scale-independent so it reads at any capsule size |
+
+The C++ fallback uses `/Engine/EngineDebugMaterials/DefaultDeferredDecalMaterial` when
+`TargetReticleMaterial` is unset, so the reticle renders even before you author the
+material. Assign `M_TargetReticle` to the character(s) you target (base
+`AOnsetBaseCharacter.TargetReticleMaterial`, or override per enemy/boss class).
+
+> **Multiplayer note:** the decal is a client-side visual. `SetTargetReticle` toggles
+> visibility locally (component visibility is not replicated), so only the targeting
+> player sees the reticle under their own target.
+
+### C7. Cleanup (previously §C)
 
 - `Content/UI/Testing/*` (`WBP_HUD`, `WBP_AbilityButtons`, `WBP_PVPToggle`,
   `WBP_DebugHealth`, `WBP_GamepadCursorWidget`) and `Content/Game/OnsetHUD` deleted.
@@ -169,6 +207,11 @@ class (`OnsetPlayerController.cpp:289-310`).
 > `Content/UI/HUD/WBP_GamepadCursorWidget`) and `GamepadCursorWidgetClass` is set on
 > `MyOnsetPlayerController`, the gamepad software cursor is inert.
 
+> **Reticle cleanup:** the old screen-space reticle widgets/styling are now unused —
+> `ReticleBorderStyle`, `ReticleTextStyle`, and the `reticule` texture (now only used by
+> the decal material). The `ReticleBorder` / `NameText` bindings were removed from
+> `UTargetHUDWidget`; delete those widgets from `WBP_TargetHUD` when you re-skin it.
+
 ---
 
 ## D. Step-by-step
@@ -178,12 +221,17 @@ class (`OnsetPlayerController.cpp:289-310`).
    `Content/Game/Combat/`.
 3. [x] Build the WBP set B1 → B6 in `Content/UI/HUD/` (`WBP_AbilitySlot`, `WBP_AbilityBar`,
    `WBP_PlayerHealthBar`, `WBP_TargetHUD`, `WBP_DamageNumber`, `WBP_HUD`).
-4. [x] Cleanup §C (delete orphans; move `DemoLevel` to `Content/Maps/`; unify all
+4. [x] Cleanup §C7 (delete orphans; move `DemoLevel` to `Content/Maps/`; unify all
    references on `/Game/Maps/DemoLevel`).
-5. [ ] **Set `HUDWidgetClass = WBP_HUD` on `MyOnsetPlayerController`** (B7) — still
+5. [x] Rework `WBP_TargetHUD` to the static top-centered lifebar (B4): remove
+   `ReticleBorder` / `NameText`, bind `OnTargetAcquired` / `OnTargetCleared` /
+   `OnTargetHealthPercentChanged`, anchor top-center.
+6. [ ] Create `M_TargetReticle` (C6) and assign it to the base character /
+   enemy / boss classes.
+7. [ ] **Set `HUDWidgetClass = WBP_HUD` on `MyOnsetPlayerController`** (B7) — still
    pending. Until set, the runtime falls back to plain `UHUDWidget` (no WBP styling).
-6. [ ] Set `AbilityIcon` on `GA_AoE` / `GA_Cone` (A1/A2).
-7. Open `DemoLevel` and run the PIE test plan below. Iterate on styling as needed.
+8. [ ] Set `AbilityIcon` on `GA_AoE` / `GA_Cone` (A1/A2).
+9. Open `DemoLevel` and run the PIE test plan below. Iterate on styling as needed.
 
 ---
 
@@ -191,12 +239,15 @@ class (`OnsetPlayerController.cpp:289-310`).
 
 - Slots **1 & 2** show the AoE/Cone icons; slots **3 & 4** show the `EmptyIcon`
   placeholder (all slots stay visible; Shadowstep is granted `INDEX_NONE` at
-  `OnsetBaseCharacter.cpp:66`).
+  `OnsetBaseCharacter.cpp:84`).
 - Press **1** → AoE fires; slot 1 shows a fill overlay that empties over the GE
   duration (scaled animation, see B1). Press **2** → same for Cone.
 - **Click** a slot button with the mouse → same as pressing the key
   (`HandleSlotClicked` → `AbilityLocalInputPressed`).
-- Acquire a target → reticle + name + material fill appear above it and follow it;
-  damage dealt spawns floating numbers in `DamageNumberLayer`.
+- Acquire a target → a **ground decal reticle** appears under the target (scaled to its
+  capsule) and the **static top-center lifebar** shows the target's health fill (skin
+  chosen from `TargetType`). Switching targets moves the decal and refreshes the lifebar.
+  Damage dealt spawns floating numbers in `DamageNumberLayer`.
 - Player takes damage → health bar text updates + damage number appears.
-- Target dies → TargetHUD clears itself.
+- Target dies → its decal reticle disappears and TargetHUD clears itself (lifebar hides).
+- Verify the lifebar stays fixed top-center (it does **not** follow the target).
