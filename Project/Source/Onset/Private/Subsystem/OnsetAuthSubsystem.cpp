@@ -252,7 +252,7 @@ void UOnsetAuthSubsystem::HandleLogout(AController* Exiting)
 	CharData.EquipmentJSON = TEXT("{}");
 	CharData.QuestsJSON = TEXT("{}");
 
-	DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+	DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
 }
 
 void UOnsetAuthSubsystem::ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket)

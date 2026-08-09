@@ -39,6 +39,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Data")
 	bool SaveCharacter(const FString& Platform, const FString& PlatformID, const FOnsetFullCharacterData& Data);
 
+	/** Save a character but preserve stored identity fields (name, level, exp, class, appearance)
+	    that the caller may not know about. */
+	UFUNCTION(BlueprintCallable, Category = "Player Data")
+	bool SaveCharacterPreservingIdentity(const FString& Platform, const FString& PlatformID, FOnsetFullCharacterData& Data);
+
 	UFUNCTION(BlueprintCallable, Category = "Player Data")
 	bool DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex);
 

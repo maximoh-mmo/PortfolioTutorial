@@ -11,6 +11,7 @@ class AOnsetPlayerController;
 class UAbilityBarWidget;
 class UAbilitySystemComponent;
 class UCanvasPanel;
+class UCombatToggleWidget;
 class UDamageNumberWidget;
 class UPlayerHealthBarWidget;
 class UTargetHUDWidget;
@@ -66,6 +67,10 @@ private:
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTargetHUDWidget> TargetHUD;
+
+	/** Autoplay + continue-on-disconnect toggles. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UCombatToggleWidget> CombatToggle;
 
 	/** Designer canvas that receives the pooled damage numbers. */
 	UPROPERTY(meta = (BindWidgetOptional))

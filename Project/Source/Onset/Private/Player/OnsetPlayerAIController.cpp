@@ -5,6 +5,10 @@
 #include "StateTree.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Core/TargetingComponent.h"
+#include "GameFramework/Pawn.h"
+#include "GAS/OnsetAttributeSet.h"
+#include "Player/OnsetPlayerCharacter.h"
+#include "Subsystem/OnsetPlayerDataSubsystem.h"
 
 
 // Sets default values
@@ -69,7 +73,91 @@ void AOnsetPlayerAIController::OnUnPossess()
 {
 	StateTreeComponent->StopLogic(TEXT("PlayerOverride"));
 	StateTreeComponent->SetComponentTickEnabled(false);
+	ClearAbandonedTimeout();
 	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Returned control to player"));
 
 	Super::OnUnPossess();
+}
+
+void AOnsetPlayerAIController::AdoptAbandonedPawn(APawn* InPawn, const FString& Platform, const FString& PlatformID, int32 SlotIndex)
+{
+	if (!InPawn || !HasAuthority()) return;
+
+	PendingAbandonedPawn = InPawn;
+	CachedPlatform = Platform;
+	CachedPlatformID = PlatformID;
+	CachedSlotIndex = SlotIndex;
+
+	// Defer possession a tick: the leaving PC is mid-Destroyed() right now, so
+	// possessing its pawn immediately would trigger reentrant controller callbacks.
+	// The despawn countdown is armed after a successful possession (see
+	// PossessAbandonedPawn) so it can't be wiped by a re-possess side effect.
+	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerAIController::PossessAbandonedPawn);
+
+	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: adopted abandoned pawn %s (slot %d, %.1fs timeout)"),
+		*GetNameSafe(InPawn), SlotIndex, AbandonedTimeoutSeconds);
+}
+
+void AOnsetPlayerAIController::PossessAbandonedPawn()
+{
+	APawn* AdoptedPawn = PendingAbandonedPawn;
+	PendingAbandonedPawn = nullptr;
+
+	if (!AdoptedPawn || !HasAuthority() || AdoptedPawn->IsActorBeingDestroyed())
+	{
+		return;
+	}
+
+	// OnPossess starts the StateTree.
+	Possess(AdoptedPawn);
+
+	// Arm the despawn countdown now that possession succeeded. If the pawn dies in
+	// combat first, OnUnPossess clears it.
+	if (GetPawn() == AdoptedPawn)
+	{
+		GetWorldTimerManager().ClearTimer(AbandonedTimeoutHandle);
+		GetWorldTimerManager().SetTimer(AbandonedTimeoutHandle, this,
+			&AOnsetPlayerAIController::OnAbandonedTimeout, AbandonedTimeoutSeconds, false);
+	}
+}
+
+void AOnsetPlayerAIController::OnAbandonedTimeout()
+{
+	if (APawn* AdoptedPawn = GetPawn())
+	{
+		// Save final state before despawning.
+		AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(AdoptedPawn);
+		if (PlayerChar && CachedSlotIndex >= 0)
+		{
+			UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+			if (DataSubsystem)
+			{
+				FOnsetFullCharacterData CharData;
+				CharData.SlotIndex = CachedSlotIndex;
+				CharData.SavedPosition = PlayerChar->GetActorLocation();
+				CharData.SavedRotationYaw = PlayerChar->GetActorRotation().Yaw;
+				CharData.CurrentZone = GetWorld()->GetMapName();
+				if (PlayerChar->AttributeSet)
+				{
+					CharData.SavedMaxHealth = PlayerChar->AttributeSet->GetMaxHealth();
+				}
+				CharData.InventoryJSON = TEXT("{}");
+				CharData.EquipmentJSON = TEXT("{}");
+				CharData.QuestsJSON = TEXT("{}");
+				DataSubsystem->SaveCharacterPreservingIdentity(CachedPlatform, CachedPlatformID, CharData);
+				UE_LOG(LogActor, Log, TEXT("AOnsetPlayerAIController: timeout save for slot %d"), CachedSlotIndex);
+			}
+		}
+
+		UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: abandoned-pawn timeout — despawning %s"), *GetNameSafe(AdoptedPawn));
+		StopStateTree();
+		AdoptedPawn->Destroy();
+	}
+
+	ClearAbandonedTimeout();
+}
+
+void AOnsetPlayerAIController::ClearAbandonedTimeout()
+{
+	GetWorldTimerManager().ClearTimer(AbandonedTimeoutHandle);
 }

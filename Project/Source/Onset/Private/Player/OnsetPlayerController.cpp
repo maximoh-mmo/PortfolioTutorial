@@ -592,6 +592,55 @@ void AOnsetPlayerController::Server_DisableAutoCombat_Implementation()
 	DisableAutoCombat();
 }
 
+void AOnsetPlayerController::Server_SetAutoCombatEnabled_Implementation(bool bEnabled)
+{
+	if (bEnabled)
+	{
+		EnableAutoCombat();
+	}
+	else
+	{
+		DisableAutoCombat();
+	}
+}
+
+void AOnsetPlayerController::Server_SetContinueOnDisconnect_Implementation(bool bEnabled)
+{
+	if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
+	{
+		PS->bContinueOnDisconnect = bEnabled;
+	}
+}
+
+void AOnsetPlayerController::SetAutoCombatEnabled(bool bEnabled)
+{
+	if (HasAuthority())
+	{
+		Server_SetAutoCombatEnabled_Implementation(bEnabled);
+	}
+	else
+	{
+		Server_SetAutoCombatEnabled(bEnabled);
+	}
+}
+
+void AOnsetPlayerController::SetContinueOnDisconnect(bool bEnabled)
+{
+	if (HasAuthority())
+	{
+		Server_SetContinueOnDisconnect_Implementation(bEnabled);
+	}
+	else
+	{
+		Server_SetContinueOnDisconnect(bEnabled);
+	}
+}
+
+AOnsetPlayerAIController* AOnsetPlayerController::GetAutoCombatController() const
+{
+	return AutoCombatController;
+}
+
 void AOnsetPlayerController::Server_OnClientPossessed_Implementation()
 {
 	ResetIdleTimer();
@@ -605,6 +654,10 @@ void AOnsetPlayerController::EnableAutoCombat()
 		AutoCombatController->Possess(MyPawn);
 		UnPossess();
 		bAutoCombatEnabled = true;
+		if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
+		{
+			PS->bAutoplayEnabled = true;
+		}
 	}
 }
 
@@ -618,6 +671,10 @@ void AOnsetPlayerController::DisableAutoCombat()
 		Possess(AIPawn);
 	}
 	bAutoCombatEnabled = false;
+	if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
+	{
+		PS->bAutoplayEnabled = false;
+	}
 	ResetIdleTimer();
 }
 
@@ -847,9 +904,6 @@ void AOnsetPlayerController::Server_SaveCharacter_Implementation()
 
 	FOnsetFullCharacterData CharData;
 	CharData.SlotIndex = PS->SelectedCharacterSlot;
-	CharData.CharacterName = PS->GetPlayerName();
-	CharData.Level = 1;
-	CharData.Experience = 0;
 
 	if (PlayerCharacter->AttributeSet)
 	{
@@ -862,7 +916,7 @@ void AOnsetPlayerController::Server_SaveCharacter_Implementation()
 	CharData.EquipmentJSON = TEXT("{}");
 	CharData.QuestsJSON = TEXT("{}");
 
-	bool bSuccess = DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+	bool bSuccess = DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
 	Client_SaveComplete(bSuccess);
 }
 
@@ -870,33 +924,73 @@ void AOnsetPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (EndPlayReason == EEndPlayReason::Destroyed || EndPlayReason == EEndPlayReason::RemovedFromWorld)
 	{
-		AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
-		if (PS && PS->SelectedCharacterSlot >= 0)
-		{
-			AOnsetPlayerCharacter* PlayerCharacter = Cast<AOnsetPlayerCharacter>(GetPawn());
-			if (PlayerCharacter)
-			{
-				UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
-				if (DataSubsystem)
-				{
-					FOnsetFullCharacterData CharData;
-					CharData.SlotIndex = PS->SelectedCharacterSlot;
-					CharData.SavedPosition = PlayerCharacter->GetActorLocation();
-					CharData.SavedRotationYaw = PlayerCharacter->GetActorRotation().Yaw;
-					CharData.CurrentZone = GetWorld()->GetMapName();
-					if (PlayerCharacter->AttributeSet)
-					{
-						CharData.SavedMaxHealth = PlayerCharacter->AttributeSet->GetMaxHealth();
-					}
-					CharData.InventoryJSON = TEXT("{}");
-					CharData.EquipmentJSON = TEXT("{}");
-					CharData.QuestsJSON = TEXT("{}");
-					DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
-				}
-			}
-		}
+		SaveCurrentCharacter(GetPawn());
 	}
 	Super::EndPlay(EndPlayReason);
+}
+
+bool AOnsetPlayerController::SaveCurrentCharacter(APawn* InPawn)
+{
+	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
+	if (!PS || PS->SelectedCharacterSlot < 0) return false;
+
+	AOnsetPlayerCharacter* PlayerCharacter = Cast<AOnsetPlayerCharacter>(InPawn);
+	if (!PlayerCharacter) return false;
+
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (!DataSubsystem) return false;
+
+	FOnsetFullCharacterData CharData;
+	CharData.SlotIndex = PS->SelectedCharacterSlot;
+	CharData.SavedPosition = PlayerCharacter->GetActorLocation();
+	CharData.SavedRotationYaw = PlayerCharacter->GetActorRotation().Yaw;
+	CharData.CurrentZone = GetWorld()->GetMapName();
+	if (PlayerCharacter->AttributeSet)
+	{
+		CharData.SavedMaxHealth = PlayerCharacter->AttributeSet->GetMaxHealth();
+	}
+	CharData.InventoryJSON = TEXT("{}");
+	CharData.EquipmentJSON = TEXT("{}");
+	CharData.QuestsJSON = TEXT("{}");
+	return DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+}
+
+void AOnsetPlayerController::PawnLeavingGame()
+{
+	// If autoplay is already active, the AI controller already possesses our pawn,
+	// so GetPawn() is null here — adopt from the AI controller instead.
+	APawn* LeavingPawn = GetPawn();
+	if (LeavingPawn == nullptr && AutoCombatController)
+	{
+		LeavingPawn = AutoCombatController->GetPawn();
+	}
+
+	// Nothing to hand over — defer to the default behavior (destroys nothing here).
+	if (!LeavingPawn)
+	{
+		Super::PawnLeavingGame();
+		return;
+	}
+
+	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
+	const bool bShouldContinue = PS && PS->bContinueOnDisconnect && AutoCombatController;
+
+	// Save now while PS + pawn are still valid (EndPlay runs later with no pawn).
+	SaveCurrentCharacter(LeavingPawn);
+
+	if (!bShouldContinue)
+	{
+		Super::PawnLeavingGame();
+		return;
+	}
+
+	// Hand the pawn to the auto-combat controller so it keeps fighting while the
+	// player is offline, instead of destroying it. Leave our Pawn reference intact:
+	// the engine's Destroyed() → UnPossess() will then clear it (and the pawn's
+	// controller reference) cleanly before the AI controller adopts it next tick.
+	UE_LOG(LogTemp, Warning, TEXT("PawnLeavingGame: handing pawn %s to auto-combat controller"),
+		*GetNameSafe(LeavingPawn));
+	AutoCombatController->AdoptAbandonedPawn(LeavingPawn, PS->PlayerPlatform, PS->PlayerPlatformID, PS->SelectedCharacterSlot);
 }
 
 void AOnsetPlayerController::Client_SessionToken_Implementation(const FString& Token)

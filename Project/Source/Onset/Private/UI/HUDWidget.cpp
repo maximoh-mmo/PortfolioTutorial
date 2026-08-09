@@ -11,6 +11,7 @@
 #include "GAS/OnsetAttributeSet.h"
 #include "Player/OnsetPlayerController.h"
 #include "UI/AbilityBarWidget.h"
+#include "UI/CombatToggleWidget.h"
 #include "UI/DamageNumberWidget.h"
 #include "UI/PlayerHealthBarWidget.h"
 #include "UI/TargetHUDWidget.h"
@@ -35,6 +36,11 @@ void UHUDWidget::BindToPlayer(AOnsetPlayerController* InController, AOnsetBaseCh
 	if (AbilityBar)
 	{
 		AbilityBar->BindToPlayer(InController, PlayerASC);
+	}
+
+	if (CombatToggle)
+	{
+		CombatToggle->BindToPlayer(InController);
 	}
 
 	if (BoundTargeting)

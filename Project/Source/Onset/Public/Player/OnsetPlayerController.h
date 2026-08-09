@@ -47,6 +47,18 @@ public:
 	void DisableAutoCombat();
 	const AController* GetActiveController() const;
 
+	/** Enables/disables autoplay (AI possession of the pawn). Server RPC path. */
+	UFUNCTION(BlueprintCallable, Category = "Auto Combat")
+	void SetAutoCombatEnabled(bool bEnabled);
+
+	/** Toggles whether the pawn keeps auto-combating after this player disconnects. */
+	UFUNCTION(BlueprintCallable, Category = "Auto Combat")
+	void SetContinueOnDisconnect(bool bEnabled);
+
+	/** Returns the auto-combat AI controller if it exists (authority). */
+	UFUNCTION(BlueprintCallable, Category = "Auto Combat")
+	AOnsetPlayerAIController* GetAutoCombatController() const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -61,6 +73,13 @@ protected:
 
 	/** Creates + binds the in-game HUD on the local client when a pawn is possessed. */
 	void CreateHUD(APawn* InPawn);
+
+	/**
+	 * Called by the engine when a player leaves and their PC is being destroyed.
+	 * Default destroys the pawn; here we optionally hand it to the auto-combat
+	 * controller so it keeps fighting while the player is offline.
+	 */
+	virtual void PawnLeavingGame() override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Onset|Auth")           
 	FOnsetAccountData CachedAccountData; 
@@ -260,6 +279,12 @@ public:
 	void Server_DisableAutoCombat();
 
 	UFUNCTION(Server, Reliable)
+	void Server_SetAutoCombatEnabled(bool bEnabled);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetContinueOnDisconnect(bool bEnabled);
+
+	UFUNCTION(Server, Reliable)
 	void Server_ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
 
 	void ClearAuthTimeout();
@@ -277,6 +302,9 @@ protected:
 private:
 	void OnAuthTimeout();
 	FTimerHandle AuthTimeoutTimerHandle;
+
+	/** Saves the given pawn's character data (if a slot is available). Returns true on success. */
+	bool SaveCurrentCharacter(APawn* InPawn = nullptr);
 
 	UPROPERTY()
 	TObjectPtr<APawn> CachedPlayerPawn;

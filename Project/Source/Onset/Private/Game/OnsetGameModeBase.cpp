@@ -202,7 +202,7 @@ void AOnsetGameModeBase::TravelToZone(const FString& MapName, const FString& Ent
 			CharData.EquipmentJSON = TEXT("{}");
 			CharData.QuestsJSON = TEXT("{}");
 
-			DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+			DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
 
 			// Set entry point for this player
 			if (!EntryPoint.IsEmpty())

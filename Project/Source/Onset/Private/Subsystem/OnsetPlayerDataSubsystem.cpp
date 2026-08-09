@@ -116,6 +116,20 @@ bool UOnsetPlayerDataSubsystem::SaveCharacter(const FString& Platform, const FSt
 	return Store->SaveCharacter(Platform, PlatformID, Data);
 }
 
+bool UOnsetPlayerDataSubsystem::SaveCharacterPreservingIdentity(const FString& Platform, const FString& PlatformID, FOnsetFullCharacterData& Data)
+{
+	FOnsetFullCharacterData Existing;
+	if (LoadCharacter(Platform, PlatformID, Data.SlotIndex, Existing))
+	{
+		Data.CharacterName = Existing.CharacterName;
+		Data.Level = Existing.Level;
+		Data.Experience = Existing.Experience;
+		Data.CharacterClass = Existing.CharacterClass;
+		Data.AppearanceJSON = Existing.AppearanceJSON;
+	}
+	return SaveCharacter(Platform, PlatformID, Data);
+}
+
 bool UOnsetPlayerDataSubsystem::DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex)
 {
 	if (!Store) return false;

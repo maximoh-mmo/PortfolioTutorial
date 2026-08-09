@@ -32,10 +32,22 @@ void AOnsetPlayerState::OnRep_PvPEnabled()
 	}
 }
 
+void AOnsetPlayerState::OnRep_AutoplayEnabled()
+{
+	OnPlayerSettingsChanged.Broadcast();
+}
+
+void AOnsetPlayerState::OnRep_ContinueOnDisconnect()
+{
+	OnPlayerSettingsChanged.Broadcast();
+}
+
 void AOnsetPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AOnsetPlayerState, bIsPvPEnabled);
+	DOREPLIFETIME(AOnsetPlayerState, bAutoplayEnabled);
+	DOREPLIFETIME(AOnsetPlayerState, bContinueOnDisconnect);
 	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatform);
 	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatformID);
 }
