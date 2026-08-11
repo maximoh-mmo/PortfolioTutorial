@@ -504,14 +504,14 @@ Status: ✅ Complete (compressed ~1 day)
 - [x] Implement enemy health display — **target frame (`UTargetHUDWidget`) + static lifebar**, not world-space attached
 - [x] Implement `UAbilityBarWidget` (cooldown display)
 - [x] Implement targeting reticle — **ground decal** (`UpdateTargetReticle`, per-class material override)
-- [ ] Implement debug overlay (`UAutoplayDebugWidget`)
+- [x] ~~Implement debug overlay (`UAutoplayDebugWidget`)~~ — **SCRAPPED** — autoplay state feedback is carried by the `UCombatToggleWidget` toggle visual
 - [x] Add PvP toggle UI element (virtual button for touch, widget for desktop)
 - [x] Wire up GAS attribute changes → HUD updates
 - [x] Verify health updates correctly
 - [x] Verify enemy health bars appear/disappear
 - [x] Verify ability cooldowns update
 - [x] Verify target indicators match ability behaviour
-- [ ] Verify debug UI toggles correctly
+- [x] ~~Verify debug UI toggles correctly~~ — **SCRAPPED** — no debug overlay exists
 - [x] Verify virtual joystick input on touch device
 - [x] Verify virtual ability buttons trigger GAS abilities
 - [x] Verify gamepad cursor renders and follows R-Stick
@@ -577,5 +577,5 @@ Status: ✅ Complete (compressed ~1 day)
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
 | A5b Persistence & Account | 51 | 51 | 100% | All waves complete. Includes FHttpStore + Account API (Lambda + DynamoDB). Wave 5 revised: canvas HUDs → CommonUI screen stack. Post-sprint (08-03-26): create auto-enters world, C++-driven slots, loading screen transitions. |
 | A5c Auth Extraction & Login Server | 42 | 42 | 100% | |
-| A6 UI & Final Demo | 17 | 30 | 57% | A6.1 HUD foundation + v2 complete (target frame, ground reticle, clickable ability slots). Open: `UAutoplayDebugWidget` debug overlay. A6.2/A6.3 not started. |
+| A6 UI & Final Demo | 19 | 30 | 63% | A6.1 complete (target frame, ground reticle, clickable ability slots, combat toggle). Debug overlay scrapped — CombatToggle toggle visual covers autoplay feedback. A6.2/A6.3 not started. |
 | A7 Integration & Harden | 0 | 23 | 0% | Not started |

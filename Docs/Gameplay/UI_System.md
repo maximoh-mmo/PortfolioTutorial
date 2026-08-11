@@ -59,8 +59,8 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 - Provide on-screen touch controls for mobile (ability buttons, PvP toggle)  
 - Provide debug overlays for:
   - AI state  
-  - Autoplay mode  
   - Networking status  
+- Autoplay state feedback — carried by the `UCombatToggleWidget` toggle visual (dedicated debug overlay scrapped)
 - Provide login/character-select menus (CommonUI screen stack) and world-transition loading screens  
 
 ---
@@ -132,7 +132,7 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 
 ### **Debug**
 - `SetAIState(FName)` *(planned)*  
-- `SetAutoplayEnabled(bool)` *(planned)*  
+- ~~`SetAutoplayEnabled(bool)`~~ *(scrapped — the `UCombatToggleWidget` toggle visual provides autoplay state feedback)*  
 
 ---
 

@@ -179,7 +179,7 @@ General automation scripts.
 - [Targeting System](Docs/Gameplay/Targeting_System.md) — deterministic target selection, PvP-aware filtering
 - [Ability Targeting System](Docs/Gameplay/Ability_Targeting_System.md) — single-target, AoE, directional targeting
 - [PvP System](Docs/Gameplay/PVP_System.md) — player-controlled PvP/PvE toggle, damage filtering
-- [UI System](Docs/Gameplay/UI_System.md) — CommonUI menus/character select, loading screen; in-game HUD (health bar, target frame, ability bar, damage numbers), combat toggle, debug overlays
+- [UI System](Docs/Gameplay/UI_System.md) — CommonUI menus/character select, loading screen; in-game HUD (health bar, target frame, ability bar, damage numbers), combat toggle
 
 ### **AI Systems**
 - [NPC AI System](Docs/AI/NPC_AI_System.md) — enemy StateTree behaviour
