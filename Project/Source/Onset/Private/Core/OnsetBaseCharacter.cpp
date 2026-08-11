@@ -10,12 +10,14 @@
 #include "Combat/OnsetGA_AoE.h"
 #include "Combat/OnsetGA_Cone.h"
 #include "Combat/OnsetGA_Shadowstep.h"
+#include "Combat/OnsetGA_CooldownSlow.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/DecalComponent.h"
 #include "CollisionQueryParams.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GAS/OnsetMovementAttributeSet.h"
+#include "GAS/OnsetCombatAttributeSet.h"
 #include "Materials/MaterialInterface.h"
 #include "Core/TargetingComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -29,6 +31,7 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent"));
 	AttributeSet = CreateDefaultSubobject<UOnsetAttributeSet>(TEXT("AttributeSet"));
 	MovementAttributes = CreateDefaultSubobject<UOnsetMovementAttributeSet>(TEXT("MovementAttributes"));
+	CombatAttributes = CreateDefaultSubobject<UOnsetCombatAttributeSet>(TEXT("CombatAttributes"));
 
 	// Ground reticle decal: hidden until this character becomes the player's target.
 	TargetReticleDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetReticleDecal"));
@@ -94,6 +97,10 @@ void AOnsetBaseCharacter::GrantDefaultAbilities()
 	if (!ShadowstepAbility) ShadowstepAbility = UOnsetGA_Shadowstep::StaticClass();
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ShadowstepAbility, 1, INDEX_NONE, this)); // Passive
 
+	UClass* CooldownSlowAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_CooldownSlow.GA_CooldownSlow_C")));
+	if (!CooldownSlowAbility) CooldownSlowAbility = UOnsetGA_CooldownSlow::StaticClass();
+	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(CooldownSlowAbility, 1, 3, this)); // Input ID 3
+
 	bAbilitiesGranted = true;
 }
 
@@ -115,6 +122,7 @@ void AOnsetBaseCharacter::ResetAttributes()
 	AttributeSet->InitHealth(AttributeSet->GetMaxHealth());
 	AttributeSet->InitMaxHealth(100.0f);
 	MovementAttributes->InitMovementSpeed(600.0f);
+	CombatAttributes->InitCooldownMultiplier(1.0f);
 	bIsAlive = false; // Pool return — OnRespawn() re-enables on retrieval
 }
 

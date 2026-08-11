@@ -7,6 +7,7 @@
 #include "OnsetBaseCharacter.generated.h"
 
 class UOnsetMovementAttributeSet;
+class UOnsetCombatAttributeSet;
 class UTargetingComponent;
 class UOnsetAttributeSet;
 class UAbilitySystemComponent;
@@ -59,6 +60,10 @@ public:
 	/** Attribute set containing movement speed and related properties. */
 	UPROPERTY()
 	TObjectPtr<UOnsetMovementAttributeSet> MovementAttributes;
+
+	/** Attribute set containing combat stats (CooldownMultiplier for the Slow debuff). */
+	UPROPERTY()
+	TObjectPtr<UOnsetCombatAttributeSet> CombatAttributes;
 		
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void OnDeath(AActor* KillingActor = nullptr);

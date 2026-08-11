@@ -20,6 +20,9 @@ public:
 	/** Fully heal the controlled character. */
 	UFUNCTION(exec)
 	void Heal();
+	/** Applies the cooldown-slow debuff to the controlled character (CooldownMultiplier x RateMod for Duration seconds). */
+	UFUNCTION(exec)
+	void ApplyCooldownSlow(float RateMod = 2.0f, float Duration = 5.0f);
 	/** Returns the active controller (player or AI) regardless of possession state. */
 	const AController* GetController() const;
 	/** Returns the controlled base character. */

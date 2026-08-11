@@ -2,6 +2,9 @@
 
 #include "Combat/OnsetGameplayAbility.h"
 
+#include "AbilitySystemComponent.h"
+#include "Core/OnsetBaseCharacter.h"
+#include "GAS/OnsetCombatAttributeSet.h"
 #include "GameplayTagContainer.h"
 
 FGameplayTag UOnsetGameplayAbility::GetPrimaryCooldownTag() const
@@ -12,4 +15,62 @@ FGameplayTag UOnsetGameplayAbility::GetPrimaryCooldownTag() const
 		return CooldownTags->First();
 	}
 	return FGameplayTag();
+}
+
+void UOnsetGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
+										  const FGameplayAbilityActorInfo* ActorInfo,
+										  const FGameplayAbilityActivationInfo ActivationInfo) const
+{
+	UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
+	if (!CooldownGE || !ActorInfo)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+	if (!ASC)
+	{
+		return;
+	}
+
+	const float Level = GetAbilityLevel(Handle, ActorInfo);
+	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), Level);
+	if (!SpecHandle.IsValid())
+	{
+		return;
+	}
+
+	// Cooldowns are fully GE-driven in UE 5.8 (no CooldownTime on the ability),
+	// so the base duration is the cooldown GE's static duration magnitude.
+	float BaseDuration = 0.0f;
+	if (CooldownGE->DurationMagnitude.GetStaticMagnitudeIfPossible(Level, BaseDuration))
+	{
+		// Scale by the source character's CooldownMultiplier: a Slow debuff raises
+		// it above 1, extending the cooldown so the target attacks less often.
+		float Multiplier = 1.0f;
+		if (const AActor* Avatar = ActorInfo->AvatarActor.Get())
+		{
+			if (const AOnsetBaseCharacter* Source = Cast<AOnsetBaseCharacter>(Avatar))
+			{
+				if (Source->CombatAttributes)
+				{
+					Multiplier = Source->CombatAttributes->GetCooldownMultiplier();
+				}
+			}
+		}
+
+		// Guard against a zero/negative multiplier from a misconfigured debuff:
+		// never allow the cooldown to collapse or go negative.
+		Multiplier = FMath::Max(0.1f, Multiplier);
+		const float FinalDuration = FMath::Max(0.1f, BaseDuration * Multiplier);
+		SpecHandle.Data->SetDuration(FinalDuration, true);
+	}
+	else
+	{
+		// Non-static duration (e.g. SetByCaller) can't be scaled here; the cooldown
+		// still applies at its configured duration, but the multiplier is skipped.
+		UE_LOG(LogTemp, Warning, TEXT("UOnsetGameplayAbility::ApplyCooldown: cooldown GE '%s' has a non-static duration; CooldownMultiplier scaling skipped."), *GetNameSafe(CooldownGE));
+	}
+
+	ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 }

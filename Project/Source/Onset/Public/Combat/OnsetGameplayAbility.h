@@ -28,4 +28,13 @@ public:
 	 * (via GetCooldownTags), or an invalid tag if the ability has none.
 	 */
 	FGameplayTag GetPrimaryCooldownTag() const;
+	
+	/**
+	 * Applies the cooldown GE scaled by the source character's CooldownMultiplier
+	 * (Slow debuff => multiplier > 1 => longer cooldown). Falls back to the base
+	 * behavior when the cooldown GE has no static duration.
+	 */
+	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
+							   const FGameplayAbilityActorInfo* ActorInfo,
+							   const FGameplayAbilityActivationInfo ActivationInfo) const override;
 };
