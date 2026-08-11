@@ -34,7 +34,7 @@ flowchart TD
     TargetData --> Execution[GameplayEffect Execution]
     Execution --> Attributes[AttributeSet]
     Attributes --> DeathOrHit{Health <= 0?}
-    DeathOrHit -->|No| HitReaction[Hit Reaction via Event.Heal]
+    DeathOrHit -->|No| HitReaction[Hit Reaction via TAG_Event_HitReaction]
     DeathOrHit -->|Yes| DeathFork[Death Fork]
     DeathFork --> PoolReturn[ReturnToPool]
     DeathFork --> CorpseSpawn[Corpse Actor Spawn]
@@ -80,7 +80,7 @@ If [Targeting System](../Gameplay/Targeting_System.md) rejects a player target d
 - **`UGameplayAbility`** — base class for all abilities  
 - **`UGameplayEffect`** — applies modifiers, damage, and cooldowns  
 - **`UOnsetAttributeSet`** — defines combat attributes (Health, MaxHealth) — lives at `GAS/`  
-- **`UOnsetMovementAttributeSet`** — defines movement attributes (MovementSpeed) with own `PostGameplayEffectExecute` — clamps ≥ 0 and syncs `MaxWalkSpeed` on `GetCharacterMovement()`. Dedicated set keeps movement concerns separate from combat. All speed modifiers apply via `MultiplyCompound` GEs.  
+- **`UOnsetMovementAttributeSet`** — defines movement attributes (MovementSpeed) with own `PostAttributeChange` — clamps ≥ 0 and syncs `MaxWalkSpeed` on `GetCharacterMovement()`. Dedicated set keeps movement concerns separate from combat. All speed modifiers apply via `MultiplyCompound` GEs.  
 
 ---
 
@@ -88,11 +88,11 @@ If [Targeting System](../Gameplay/Targeting_System.md) rejects a player target d
 - All GAS files migrated from `Combat/` to `GAS/` directory: `OnsetAttributeSet.h/.cpp`, `OnsetMovementAttributeSet.h/.cpp`, `OnsetGameplayTags.h/.cpp`  
 
 ## **MovementSpeed Attribute (E22)**
-- `UOnsetMovementAttributeSet` owns `MovementSpeed` as a replicated attribute  
-- `PostGameplayEffectExecute` clamps ≥ 0 and writes to `CharacterMovement->MaxWalkSpeed`  
-- Base value initialises from CDO default (`InitMovementSpeed(600.0f)`), overridable per BP Class Defaults  
-- All StateTree tasks apply speed modifiers via `ApplyMovementSpeedModifier` helper (creates infinite GE with `MultiplyCompound` op, returns `FActiveGameplayEffectHandle`)  
-- Speed effects stack multiplicatively by default (flee × stagger × search = compound)  
+- `UOnsetMovementAttributeSet` owns `MovementSpeed` as a replicated attribute
+- `PostAttributeChange` clamps ≥ 0 and writes to `CharacterMovement->MaxWalkSpeed`
+- Base value initialises from CDO default (`InitMovementSpeed(600.0f)`), overridable per BP Class Defaults
+- All StateTree tasks apply speed modifiers via `ApplyMovementSpeedModifier` helper (creates infinite GE with `MultiplyCompound` op, returns `FActiveGameplayEffectHandle`)
+- Speed effects stack multiplicatively by default (flee × stagger × search = compound)
 - Pool return clears all active GEs via `RemoveActiveEffects`, preventing speed leaks  
 
 ## **Replication**

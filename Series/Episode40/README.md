@@ -16,16 +16,17 @@ This folder contains the **full Unreal project** as it stands at the end of Epis
 ### **Key Files Added/Modified**
 | File | Description |
 |---|---|
-| `Source/Onset/ThirdParty/SQLite/sqlite3.h` | SQLite amalgamation header |
-| `Source/Onset/ThirdParty/SQLite/sqlite3.c` | SQLite amalgamation source |
-| `Source/Onset/Public/Server/IPlayerDataStore.h` | Abstract store interface |
-| `Source/Onset/Public/Server/SQLiteStore.h` | SQLite implementation header |
-| `Source/Onset/Private/Server/SQLiteStore.cpp` | SQLite implementation |
-| `Source/Onset/Public/Server/PgSQLStore.h` | PgSQL stub header |
-| `Source/Onset/Private/Server/PgSQLStore.cpp` | PgSQL stub |
-| `Source/Onset/Public/Multiplayer/OnsetPlayerDataSubsystem.h` | DS world subsystem header |
-| `Source/Onset/Private/Multiplayer/OnsetPlayerDataSubsystem.cpp` | DS world subsystem |
-| `Source/Onset/Onset.Build.cs` | Added SQLite include path + lib |
+| `Source/OnsetDataStore/Public/IPlayerDataStore.h` | Abstract store interface |
+| `Source/OnsetDataStore/Public/FSQLiteStore.h` | SQLite implementation header |
+| `Source/OnsetDataStore/Private/FSQLiteStore.cpp` | SQLite implementation (WAL, migrations, parametrized queries) |
+| `Source/OnsetDataStore/Public/FPgSQLStore.h` | PgSQL stub header |
+| `Source/OnsetDataStore/Private/FPgSQLStore.cpp` | PgSQL stub |
+| `Source/OnsetDataStore/Public/DataStoreFactory.h` | Store factory (SQLite / PgSQL / HTTP) |
+| `Source/OnsetDataStore/Private/DataStoreFactory.cpp` | Store factory impl |
+| `Source/OnsetDataStore/Public/OnsetPlayerDataTypes.h` | Shared account/character structs |
+| `Source/OnsetDataStore/OnsetDataStore.Build.cs` | Links engine `SQLiteCore` + `HTTP` (no bundled `sqlite3.c`) |
+| `Source/Onset/Public/Subsystem/OnsetPlayerDataSubsystem.h` | DS world subsystem header |
+| `Source/Onset/Private/Subsystem/OnsetPlayerDataSubsystem.cpp` | DS world subsystem |
 | `Config/DefaultEngine.ini` | `[Onset.DataStore]` config section |
 
 ### **New Classes**
@@ -39,14 +40,14 @@ This folder contains the **full Unreal project** as it stands at the end of Epis
 ---
 
 ## **How to Test**
-1. Add SQLite amalgamation, update Build.cs, compile
+1. Compile the `OnsetDataStore` module (uses engine `SQLiteCore`, no amalgamation to add)
 2. Launch DS: `Onset.exe ... -server -log`
 3. Check log for:
-   - `SQLite store initialized at ...`
-   - `WAL mode enabled`
-   - `Schema version: 1`
-4. Open `OnsetDB/playerdata.db` in DB Browser → verify tables exist
-5. Stop DS → verify clean shutdown: `SQLite store saved all, WAL checkpoint done`
+   - `UOnsetPlayerDataSubsystem: initialized with SQLite (success=1)`
+   - `FSQLiteStore: opened ... (existing=0)` on first run
+   - `FSQLiteStore: migration N applied` for each of the 3 migrations
+4. Open `Project/Saved/OnsetPlayerData.db` in DB Browser → verify `accounts`, `characters`, `_schema_version` tables exist
+5. Stop DS → verify clean shutdown log: `SaveAll` flushed pending writes
 
 ---
 
@@ -59,29 +60,31 @@ public:
     virtual ~IPlayerDataStore() = default;
     virtual bool Initialize(const FString& ConnectionString) = 0;
     virtual void Shutdown() = 0;
-    virtual FOnsetAccountData LoadAccount(const FString& Platform, const FString& PlatformID) = 0;
-    virtual FOnsetFullCharacterData LoadCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex) = 0;
-    virtual bool SaveCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex, const FOnsetFullCharacterData& Data) = 0;
+    virtual bool LoadAccount(const FString& Platform, const FString& PlatformID, FOnsetAccountData& OutAccount) = 0;
+    virtual bool CreateAccount(const FString& Platform, const FString& PlatformID) = 0;
+    virtual bool LoadCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex, FOnsetFullCharacterData& OutData) = 0;
+    virtual bool SaveCharacter(const FString& Platform, const FString& PlatformID, const FOnsetFullCharacterData& Data) = 0;
+    virtual bool DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex) = 0;
     virtual void SaveAll() = 0;
 };
 
-// FSQLiteStore.cpp — RunMigrations
-void FSQLiteStore::RunMigrations() {
-    int32 Version = 0;
-    // ... read _schema_version ...
-    if (Version < 1) { Exec("CREATE TABLE accounts ..."); Exec("CREATE TABLE characters ..."); Exec("CREATE TABLE _schema_version ..."); SetVersion(1); }
+// FSQLiteStore.cpp — EnsureSchema (3 migrations)
+void FSQLiteStore::EnsureSchema() {
+    // v1: accounts + characters
+    // v2: current_zone column
+    // v3: character_class + appearance_json columns
+    // Each version guarded by _schema_version and applied in order.
 }
 
 // UOnsetPlayerDataSubsystem.cpp
 void UOnsetPlayerDataSubsystem::Initialize(FSubsystemCollectionBase& Collection) {
     Super::Initialize(Collection);
     if (!GetWorld()->IsServer()) return;
-    FString StoreType = GConfig->GetStr(TEXT("/Script/Onset.OnsetSettings"), TEXT("DataStore"), TEXT("SQLite"), GEngineIni);
-    if (StoreType == TEXT("SQLite")) {
-        FString Path = GConfig->GetStr(TEXT("/Script/Onset.OnsetSettings"), TEXT("SQLitePath"), TEXT("../../OnsetDB/playerdata.db"), GEngineIni);
-        Store = MakeUnique<FSQLiteStore>();
-        Store->Initialize(Path);
-    }
+    FString DataStoreType, ConnectionString;
+    GConfig->GetString(TEXT("Onset.DataStore"), TEXT("Type"), DataStoreType, GEngineIni);
+    GConfig->GetString(TEXT("Onset.DataStore"), TEXT("ConnectionString"), ConnectionString, GEngineIni);
+    // -OnsetDataStoreType= / -OnsetDataStoreURL= command-line overrides
+    Store = CreateDataStore(DataStoreType, ConnectionString, bInitialized);
 }
 ```
 
@@ -100,16 +103,16 @@ DS Startup
     │
     ├── UOnsetPlayerDataSubsystem::Initialize()
     │       │
-    │       ├── Read Config (DataStore=SQLite|Postgres)
+    │       ├── Read Config ([Onset.DataStore] Type / ConnectionString)
     │       │
-    │       ├── new FSQLiteStore → Initialize(Path)
+    │       ├── CreateDataStore("SQLite", ...)
     │       │       │
-    │       │       ├── sqlite3_open(path)
+    │       │       ├── FSQLiteStore::Initialize → open Project/Saved/OnsetPlayerData.db
     │       │       ├── PRAGMA journal_mode=WAL
-    │       │       ├── RunMigrations()
+    │       │       ├── EnsureSchema() → migrations v1→v3
     │       │       └── Ready
     │       │
-    │       └── (or) new FPgSQLStore → Initialize(ConnString)
+    │       └── (or) FPgSQLStore / FHttpStore
     │
     └── Ready for player connections
 ```
@@ -117,20 +120,20 @@ DS Startup
 ---
 
 ## **Common Pitfalls**
-- Forgetting to link `sqlite3.c` in Build.cs → unresolved symbols
+- SQLite is linked via the engine `SQLiteCore` module — do not bundle `sqlite3.c`/libpq sources into the module
 - Not enabling WAL mode → DB locks under concurrent access
 - String concatenation in SQL → injection bugs + broken migrations
 - Forgetting `SaveAll()` in `Deinitialize()` → lost writes on DS shutdown
+- Client connections must skip store init (`ShouldCreateSubsystem` server-only)
 
 ---
 
 ## **Episode Checklist**
-- [ ] SQLite amalgamation added and compiling
-- [ ] `IPlayerDataStore` interface defined
-- [ ] `FSQLiteStore` implements all methods with WAL + migrations
-- [ ] `FPgSQLStore` stub compiles
-- [ ] `UOnsetPlayerDataSubsystem` initializes store from config
-- [ ] Schema v1 creates accounts/characters tables
-- [ ] DS starts, opens DB, runs migrations, shuts down cleanly
-- [ ] Snapshot is clean (no stale assets, no temp files)
-- [ ] README updated for public repo
+- [x] `IPlayerDataStore` interface defined (bool + out-param signature)
+- [x] `FSQLiteStore` implements all methods with WAL + migrations
+- [x] `FPgSQLStore` stub compiles
+- [x] `UOnsetPlayerDataSubsystem` initializes store from `[Onset.DataStore]` config
+- [x] Schema migrations v1→v3 create accounts/characters tables
+- [x] DS starts, opens DB, runs migrations, shuts down cleanly
+- [x] Snapshot is clean (no stale assets, no temp files)
+- [x] README updated for public repo

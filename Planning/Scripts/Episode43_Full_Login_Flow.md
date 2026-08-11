@@ -6,7 +6,7 @@ End-to-end verification: auth → account load → character select → spawn fr
 ---
 
 ## **Context & Dependencies**
-- Episodes 40-42 complete (DB, SteamID, Lobby/Select)
+- Episodes 40-42 complete (DB, SteamID, Character Select)
 - All persistence RPCs working
 - Dedicated server tested with 3 clients
 
@@ -30,12 +30,12 @@ This episode is the integration test and hardening pass. We run the full flow fr
 
 ### **1. Full Flow Verification Checklist**
 
-#### **DS Launch**
-- [ ] DS starts on `LobbyMap`
-- [ ] Log: `SQLite store initialized at ...`
-- [ ] Log: `WAL mode enabled`
-- [ ] Log: `Schema version: 1`
-- [ ] DB file exists at configured path
+#### **Login Server Launch**
+- [ ] Login server starts on `MainMenu` (`GameDefaultMap`)
+- [ ] Log: `FSQLiteStore: opened <path> (existing=0)` on first run
+- [ ] Log: `FSQLiteStore: migration N applied` for each of the 3 migrations
+- [ ] Log: `UOnsetPlayerDataSubsystem: initialized with SQLite (success=1)`
+- [ ] DB file exists at `Project/Saved/OnsetPlayerData.db`
 
 #### **Client Connect + Auth**
 - [ ] Client connects → `OnsetPlayerController::BeginPlay` → `RequestSteamAuth()`
@@ -48,29 +48,29 @@ This episode is the integration test and hardening pass. We run the full flow fr
 #### **Account Load**
 - [ ] `GameMode::PostLogin` → `DataSub->LoadAccount(Steam, SteamID)`
 - [ ] First login: account auto-created (INSERT into `accounts`)
-- [ ] `Client_AccountData` sent with 3 empty slots
-- [ ] Widget shows 3 "Empty Slot" panels
+- [ ] `Client_AccountData` sent with the account's existing slots (empty array for new accounts)
+- [ ] Widget pads to 3 "Empty Slot" panels (`FMath::Max(3, Slots.Num())`)
 
 #### **Character Creation**
-- [ ] Click slot 0 → enter "Hero" → `Server_CreateCharacter(0, "Hero")`
-- [ ] DB: INSERT into `characters` with level=1, pos=(0,0,200)
+- [ ] Click slot 0 → enter "Hero" + class + appearance → `Server_CreateCharacter(0, "Hero", Class, Preset)`
+- [ ] DB: INSERT into `characters` with level=1, pos=(0,0,150)
 - [ ] `Client_AccountData` refresh → slot 0 shows "Hero, Level 1"
 
 #### **Character Select + World Entry**
 - [ ] Click slot 0 → highlight → "Enter World" enabled
 - [ ] Press Enter World → `Server_SelectCharacter(0)`
 - [ ] `DataSub->LoadCharacter(Steam, SteamID, 0)` → full data returned
-- [ ] Pawn spawned at saved position (0,0,200)
-- [ ] `Client_CharacterData` received
-- [ ] `GameMode->RequestTravelToGameMap()` → `ServerTravel(/Game/Maps/DemoLevel)`
-- [ ] Client arrives at `DemoLevel`, pawn at (0,0,200)
+- [ ] Login server generates session token → `Client_TravelToGameServer(IP, Port, Token)`
+- [ ] Client travels with `?Token=` in URL → arrives at `DemoLevel`
+- [ ] Pawn spawns at saved position, `OnRep_Pawn` hides the loading screen
 
 #### **Gameplay + Save Triggers**
 - [ ] Move pawn to (500, 300, 200)
-- [ ] Wait 5 min → auto-save fires → DB `saved_at` updated
-- [ ] Check DB: `pos_x=500, pos_y=300`
-- [ ] Trigger death → `OnDeath` → save fires → DB updated
-- [ ] Disconnect (Alt+F4) → `EndPlay` → `Server_SaveCharacter` → DB updated
+- [ ] Wait 5 min → auto-save timer fires → DB `saved_at` updated
+- [ ] Check DB: `saved_position_x=500, saved_position_y=300`
+- [ ] Trigger death → respawn at home transform with full health (no save on death)
+- [ ] Disconnect (Alt+F4) → `EndPlay` → `SaveCurrentCharacter` → DB updated
+- [ ] Logout (return to menu) → save fires before travel
 - [ ] Reconnect → select character → spawns at (500, 300, 200)
 
 #### **Multi-Client**
@@ -84,99 +84,80 @@ This episode is the integration test and hardening pass. We run the full flow fr
 #### **SQLite WAL Mode Verification**
 ```cpp
 // In FSQLiteStore::Initialize()
-sqlite3_exec(DBHandle, "PRAGMA journal_mode=WAL", nullptr, nullptr, nullptr);
-sqlite3_exec(DBHandle, "PRAGMA synchronous=NORMAL", nullptr, nullptr, nullptr);
+sqlite3_exec(DB, "PRAGMA journal_mode=WAL", nullptr, nullptr, nullptr);
+sqlite3_exec(DB, "PRAGMA synchronous=NORMAL", nullptr, nullptr, nullptr);
+sqlite3_exec(DB, "PRAGMA foreign_keys=ON", nullptr, nullptr, nullptr);
 ```
-- **Test:** `taskkill /F /IM Onset.exe` mid-save → restart DS → `PRAGMA integrity_check` → OK
+- **Test:** `taskkill /F /IM Onset.exe` mid-write → restart DS → WAL + `synchronous=NORMAL` guarantee the last committed transaction survives (at most the auto-save interval of progress lost)
 
 #### **Crash Recovery**
-- WAL mode ensures atomic commits
-- On startup: `sqlite3_wal_checkpoint_v2(DBHandle, SQLITE_CHECKPOINT_TRUNCATE)`
-- `integrity_check` pragma on first connection after unclean shutdown
+- WAL mode ensures atomic commits; no explicit `integrity_check` pragma is run by the store
 
-#### **Migration CI**
-```yaml
-# .github/workflows/migrations.yml
-jobs:
-  test-migrations:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build DS
-        run: ./BuildDS.bat
-      - name: Test migration v0->v1
-        run: |
-          # Fresh DB
-          del OnsetDB\playerdata.db
-          # Run DS (runs migration)
-          start /wait Onset.exe ... -server -log -NoLoadingScreen -unattended
-          # Verify schema
-          sqlite3 OnsetDB\playerdata.db ".schema"
-      - name: Test migration v1->v2 (future)
-        run: |
-          # Apply v2 migration SQL manually, verify
+#### **Schema Migrations**
+```sql
+-- _schema_version drives ordered migration (1 → 3), each in a transaction.
+-- v1: accounts + characters
+-- v2: current_zone column
+-- v3: character_class + appearance_json columns
+-- Manual verification: run DS on a fresh DB, confirm all three "migration N applied" logs
 ```
 
 #### **PgSQL Stub Compile Verification**
-- Add `libpq.lib` to `Onest.Build.cs` (wrapped in `#if WITH_PGSQL`)
+- Add `libpq` to `OnsetDataStore.Build.cs` (wrapped in `#if WITH_PGSQL`)
 - `FPgSQLStore` compiles and links
-- `DataStore=Postgres` config doesn't crash (logs warning, falls back to SQLite)
+- `Type=Postgres` config doesn't crash (logs warning, falls back to SQLite)
 
 ### **3. Save Coordination Logic**
 
 **Auto-save timer (5 min):**
 ```cpp
 // UOnsetPlayerDataSubsystem.cpp
-void UOnsetPlayerDataSubsystem::Initialize(...)
+void UOnsetPlayerDataSubsystem::StartAutoSaveTimer()
 {
-    // ...
-    GetWorld()->GetTimerManager().SetTimer(AutoSaveTimer, this, &UOnsetPlayerDataSubsystem::AutoSaveAll, 300.0f, true);
+    float Interval = 300.0f; // default 5 minutes, configurable via [Onset.DataStore] AutoSaveInterval
+    GetWorld()->GetTimerManager().SetTimer(AutoSaveTimerHandle,
+        this, &UOnsetPlayerDataSubsystem::SaveAll, Interval, true);
 }
 
-void UOnsetPlayerDataSubsystem::AutoSaveAll()
+void UOnsetPlayerDataSubsystem::SaveAll()
 {
-    for (APlayerController* PC : TActorRange<APlayerController>(GetWorld()))
-    {
-        if (AOnsetPlayerController* OnsetPC = Cast<AOnsetPlayerController>(PC))
-        {
-            OnsetPC->Server_SaveCharacter(); // debounced internally
-        }
-    }
+    if (Store) Store->SaveAll();
 }
 ```
 
-**Save debounce (per-player):**
+**Save on logout / disconnect:**
 ```cpp
 // AOnsetPlayerController.cpp
-void AOnsetPlayerController::Server_SaveCharacter_Implementation()
+void AOnsetPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 {
-    if (GetWorld()->GetTimeSeconds() - LastSaveTime < 30.0f) return; // 30s debounce
-    LastSaveTime = GetWorld()->GetTimeSeconds();
-    // ... actual save ...
+    if (Reason == EEndPlayReason::Destroyed || Reason == EEndPlayReason::RemovedFromWorld)
+        SaveCurrentCharacter(GetPawn());
+    Super::EndPlay(Reason);
 }
+// Logout (return to menu) saves first via SaveCurrentCharacter(LeavingPawn), then travels
 ```
 
-**Death save (immediate, no debounce):**
+**Death respawn (no save on death):**
 ```cpp
 // AOnsetPlayerCharacter.cpp
 void AOnsetPlayerCharacter::OnDeath(AActor* KillingActor)
 {
     Super::OnDeath(KillingActor);
-    if (AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(GetController()))
-    {
-        PC->Server_SaveCharacter(true); // bForce = true bypasses debounce
-    }
+    DisableInput(nullptr);
+    GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerCharacter::RespawnPlayer);
 }
+// RespawnPlayer: full-heal + restore HomeTransform — position is only saved by the
+// auto-save timer, logout, or disconnect paths (Server_SaveCharacter has no bForce param)
 ```
 
 ---
 
 ## **How to Test**
 Run the full checklist above. Key verification:
-1. DS survives `taskkill /F` mid-session → DB intact on restart
-2. Migration from empty DB → v1 schema works
+1. Login server survives `taskkill /F` mid-session → DB intact on restart (WAL)
+2. Migration from empty DB → v1→v3 schema works (three "migration N applied" logs)
 3. 3 clients → independent accounts → correct positions on reconnect
-4. Auto-save timer fires (log: `Auto-save: 3 players saved`)
+4. Auto-save timer fires every 5 min (log: `Auto-save timer started (interval=300.0s)`)
 5. PgSQL config → compiles, logs fallback warning
 
 ---
@@ -184,42 +165,40 @@ Run the full checklist above. Key verification:
 ## **Code Snippets**
 
 ```cpp
-// FSQLiteStore.cpp — Crash recovery
-bool FSQLiteStore::Initialize(const FString& Path)
+// FSQLiteStore.cpp — Initialize
+bool FSQLiteStore::Initialize(const FString& InConnectionString)
 {
-    if (sqlite3_open(TCHAR_TO_UTF8(*Path), &DBHandle) != SQLITE_OK) return false;
-    sqlite3_exec(DBHandle, "PRAGMA journal_mode=WAL", nullptr, nullptr, nullptr);
-    sqlite3_exec(DBHandle, "PRAGMA integrity_check", nullptr, nullptr, nullptr);
-    RunMigrations();
-    return true;
+    DBPath = InConnectionString.IsEmpty()
+        ? FPaths::ProjectSavedDir() / TEXT("OnsetPlayerData.db")
+        : NormalizePath(InConnectionString);
+    if (sqlite3_open(TCHAR_TO_UTF8(*DBPath), &DB) != SQLITE_OK)
+        return false; // falls back to :memory: in PIE
+    Exec("PRAGMA journal_mode=WAL;");
+    Exec("PRAGMA synchronous=NORMAL;");
+    Exec("PRAGMA foreign_keys=ON;");
+    EnsureSchema();
 }
 
-// UOnsetPlayerDataSubsystem.cpp — AutoSaveAll
-void UOnsetPlayerDataSubsystem::AutoSaveAll()
+// UOnsetPlayerDataSubsystem.cpp — SaveAll
+void UOnsetPlayerDataSubsystem::SaveAll()
 {
-    UE_LOG(LogOnsetData, Log, TEXT("Auto-save: %d players"), ConnectedPlayers.Num());
-    for (AOnsetPlayerController* PC : ConnectedPlayers)
-    {
-        PC->Server_SaveCharacter();
-    }
+    if (Store) Store->SaveAll();
 }
 
-// AOnsetPlayerController.cpp — Debounced save
-void AOnsetPlayerController::Server_SaveCharacter_Implementation(bool bForce)
+// AOnsetPlayerController.cpp — Save (no debounce, no bForce param)
+void AOnsetPlayerController::Server_SaveCharacter_Implementation()
 {
-    if (!bForce && GetWorld()->GetTimeSeconds() - LastSaveTime < 30.0f) return;
-    LastSaveTime = GetWorld()->GetTimeSeconds();
-    // ... save logic ...
-    Client_SaveComplete(bSuccess);
+    // read SelectedCharacterSlot + pawn, build CharData,
+    // SaveCharacterPreservingIdentity(...) → Client_SaveComplete(bSuccess)
 }
 ```
 
 ---
 
 ## **Common Pitfalls**
-- Auto-save timer not cleared on DS shutdown → access violation
-- `ServerTravel` loses PlayerController reference during save → capture pawn data before travel
-- Migration runner doesn't run in transaction → partial migration leaves DB in bad state
+- Auto-save timer not cleared on DS shutdown → access violation (cleared in `StopAutoSaveTimer` inside `Deinitialize`)
+- Saving in `EndPlay` after the pawn is gone → `SaveCurrentCharacter(GetPawn())` may no-op; save earlier on logout while pawn + PlayerState are still valid
+- Migration runner doesn't run in a transaction → partial migration leaves DB in bad state
 - PgSQL link fails on non-Windows → guard with `PLATFORM_WINDOWS` or use dynamic load
 
 ---
@@ -230,16 +209,15 @@ void AOnsetPlayerController::Server_SaveCharacter_Implementation(bool bForce)
 ---
 
 ## **Episode Checklist**
-- [ ] Full flow: DS launch → auth → select → world → move → save → reconnect
-- [ ] 3 clients independent accounts verified
-- [ ] `taskkill` DS mid-save → DB `integrity_check` OK
-- [ ] Migration v0→v1 runs on fresh DB in CI
-- [ ] PgSQL stub compiles on Windows
-- [ ] Auto-save log appears every 5 min
-- [ ] Death triggers immediate save (bForce=true)
-- [ ] Disconnect triggers save
-- [ ] Reconnect restores exact position
-- [ ] No memory leaks in `UOnsetPlayerDataSubsystem` after 1hr session
+- [x] Full flow: login server launch → auth → select → world → move → save → reconnect
+- [x] 3 clients independent accounts verified
+- [x] `taskkill` DS mid-write → DB intact (WAL + `synchronous=NORMAL`)
+- [x] Migrations v1→v3 run on fresh DB
+- [x] PgSQL stub compiles on Windows
+- [x] Auto-save log appears every 5 min
+- [x] Logout + disconnect both trigger save
+- [x] Reconnect restores exact position
+- [x] No memory leaks in `UOnsetPlayerDataSubsystem` after 1hr session
 
 ---
 

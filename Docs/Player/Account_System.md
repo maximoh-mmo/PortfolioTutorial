@@ -45,7 +45,7 @@ The system uses a composite key `(Platform, PlatformID)` to identify accounts:
 
 The `Platform` field enables cross-platform account coexistence without collisions.
 
-When Steam OSS is active, `UOnsetAuthSubsystem::HandlePostLogin` uses the client's SteamID64 as the PlatformID. When Steam is unavailable (Null OSS fallback), the server builds a stable per-client dev ID from the machine name, OS login ID, and a `ClientIndex` passed via the connect URL (`127.0.0.1:7777?ClientIndex=N`, added by `Test_All.ps1`). This yields IDs like `MORPHEUS-maxhe-C1` — stable across restarts and distinct per client instance. If no `ClientIndex` was provided, it falls back to `"DEV_" + client network address.
+When Steam OSS is active, `UOnsetAuthSubsystem::HandlePostLogin` uses the client's SteamID64 as the PlatformID. When Steam is unavailable (Null OSS fallback), the server builds a stable per-client dev ID from the machine name, OS login ID, and a `ClientIndex` passed via the connect URL (`127.0.0.1:7777?ClientIndex=N`, added by `Test_All.ps1`). This yields IDs like `MORPHEUS-maxhe-C1` — stable across restarts and distinct per client instance. If a valid unique ID exists but no `ClientIndex` was provided, the unique ID string is used; `"DEV_" + client network address` only fires when the unique ID is invalid/empty.
 
 ### **Character Slots**
 
@@ -66,10 +66,11 @@ Slot UI is driven in C++ by `UCharacterSlot` (occupied/empty display state, clic
 | Level up (future) | XP threshold crossed | Write |
 | Inventory change (future) | Pickup/drop/equip | Write |
 | Quest stage (future) | Objective complete | Write |
-| Death | OnDeath fires | Write |
-| Disconnect | EndPlay / Logout | Write |
-| Periodic auto-save | 5-min timer | Write |
-| Manual save | Save point in world | Write |
+| Death | OnDeath fires | Respawn (no write — position/health are runtime) |
+| Disconnect | PawnLeavingGame / EndPlay | Write (via `SaveCharacterPreservingIdentity`) |
+| Periodic auto-save | 5-min timer | Write (via `SaveCharacterPreservingIdentity`) |
+| Manual save | `Server_SaveCharacter` | Write |
+| Auto-combat handoff | `OnAbandonedTimeout` (player AI despawn) | Write |
 
 Combat ephemera (current health, active cooldowns, temporary effects) are **never saved**.
 
@@ -103,7 +104,7 @@ Combat ephemera (current health, active cooldowns, temporary effects) are **neve
 |--------|--------|---------|
 | `FOnsetCharacterSlotData` | SlotIndex, CharacterName, Level, CharacterClass, bOccupied | Account overview (lightweight, no full state) |
 | `FOnsetAccountData` | PlatformID, Platform, Slots | Full account sent to client |
-| `FOnsetFullCharacterData` | SlotIndex, CharacterName, Level, Experience, CurrentZone, MaxHealth, Position, RotationYaw, InventoryJSON, EquipmentJSON, QuestsJSON, CharacterClass, AppearanceJSON | Full character state for save/load |
+| `FOnsetFullCharacterData` | SlotIndex, CharacterName, Level, Experience, CurrentZone, SavedMaxHealth, SavedPosition, SavedRotationYaw, InventoryJSON, EquipmentJSON, QuestsJSON, CharacterClass, AppearanceJSON | Full character state for save/load |
 
 ---
 
@@ -111,9 +112,11 @@ Combat ephemera (current health, active cooldowns, temporary effects) are **neve
 
 ### **Login Flow (HTTP API)**
 
+> **Two-server note:** In the current build, the login steps below happen on the **login server** (port 7777, Direct auth). `Server_SelectCharacter` / `Server_CreateCharacter` generate a session token and the client travels to the **game server** (port 7778, Token auth) via `Client_TravelToGameServer`, where the pawn is spawned and `ApplySaveData` runs in `OnPossess`. See [Multiplayer System](../Multiplayer/Multiplayer_System.md). The diagram below is the flow *within* the login server plus the character-select exchange.
+
 ```
-Client                          DS (GameMode)                   Account API (Lambda)
-------                          ---------------                 --------------------
+Client                          Login Server (GameMode)         Account API (Lambda)
+------                          -----------------------         --------------------
     │                               │                                  │
     ├── Connect ──────────────────► │                                  │
     │                               │  Steam Auth handshake            │
@@ -132,18 +135,22 @@ Client                          DS (GameMode)                   Account API (Lam
     │  [Character Select Screen]    │                                  │
     │                               │                                  │
     ├── Server_SelectCharacter(1) ► │                                  │
-    │                               │  FHttpStore::LoadCharacter() ──► │  GET /account/Steam/{id}/character/1
-    │                               │    ◄── 200 + character data ─── │
-    │                               │  Spawn AOnsetPlayerCharacter     │
-    │                               │  ApplySaveData(CharacterData)    │
-    │   ◄─── Client_CharacterData ── │                                  │
+    │                               │  GenerateToken() + Client_SessionToken
+    │                               │  Client_TravelToGameServer(...?Token=...)
+    │                               │                                  │
+    │  [Loading Screen → travel]    │                                  │
+    │                               │                                  │
+    │   ...on game server (7778) ...│                                  │
+    │                               │  PreLogin validates token        │
+    │                               │  OnPossess → LoadCharacter → ApplySaveData
+    │   ◄─── Client_CharacterData ──│                                  │
     │                               │                                  │
     │  [Enter World]                │                                  │
 ```
 
 When using SQLite or PostgreSQL, the store is called directly on the DS (no REST hop). The HTTP API path uses `FHttpStore` which serializes requests as JSON and sends them to the Lambda Function URL.
 
-> **Note (two-server flow):** Character selection and creation happen on the **login server**, not the game server. `Server_SelectCharacter` (and `Server_CreateCharacter` auto-select) generates a session token and the client travels to the game server via `Client_TravelToGameServer`. A full-screen loading overlay covers the transition and hides once the client possesses its pawn. See [Multiplayer System](../Multiplayer/Multiplayer_System.md) and [UI System](../Gameplay/UI_System.md).
+> **Note (character data travel):** The pawn spawn and `ApplySaveData` restore happen on the **game server** in `AOnsetPlayerController::OnPossess`. The login server only performs auth + account overview + character select/creation, then hands off via the session token.
 
 ### **Save Flow**
 
@@ -179,20 +186,22 @@ PlayerController           UOnsetPlayerDataSubsystem       IPlayerDataStore
 ## **Replication Rules**
 
 - Account and character data is **never replicated** — it travels via RPCs (Client_ / Server_)  
-- `PlayerPlatformID` and `PlayerPlatform` on PlayerState are **server-only** (not replicated)  
+- `PlayerPlatformID` and `PlayerPlatform` on PlayerState **replicate** (for client display)  
 - `SelectedCharacterSlot` is **server-only**  
+- `SteamAuthTicket` is **server-only** and never replicated  
 - Auth tickets are **never stored** beyond the validation flow  
 
 ---
 
 ## **Edge Cases**
 
-- **First login (no account)** — auto-create account with 3 empty slots  
+- **First login (no account)** — auto-create account with an empty slots array (client pads to 3)  
 - **First login (account exists, no characters)** — all 3 slots empty, force creation  
 - **All 3 slots full** — delete an occupied slot (slot delete button → `Server_DeleteCharacter`) before creating another  
 - **Save fails (DB error)** — client receives `Client_SaveComplete(false)`, retry on next trigger  
-- **Disconnect during save** — transaction safety: partial write rolls back  
+- **Disconnect during save** — saves are synchronous per-call; a failed write logs and returns false rather than partially committing
 - **DS crash** — last auto-save checkpoint survives; at most 5 minutes of progress lost  
+- **Identity preservation** — all partial saves (disconnect, auto-save, travel, auto-combat timeout) route through `SaveCharacterPreservingIdentity` so name/level/class are never clobbered by a partial save (see Post 19)
 - **Slot deletion** — confirm dialog before deleting a character  
 
 ---

@@ -14,7 +14,7 @@ This commit builds the foundation of the in-game HUD in C++: a container widget 
 
 ## Technical Exposition
 
-### Why push the HUD from OnPossess
+### Why push the HUD from OnRep_Pawn
 
 The HUD needs to bind to an ASC, and the ASC lives on the pawn. The natural moment is `OnRep_Pawn` — the client callback that fires when the server's possession replicates down. At that point the client has a valid pawn, the loading screen from zone travel is ready to dismiss, and we can build the HUD in one place:
 

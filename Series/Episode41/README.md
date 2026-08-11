@@ -38,7 +38,7 @@ Full Unreal project at end of Episode 41.
 1. Launch DS: `Onset.exe ... -server -log`
 2. Launch client: `Onset.exe ... 127.0.0.1 -game`
 3. Client auto-sends auth ticket → DS validates → extracts SteamID
-4. Check log: `Account loaded for Steam: 76561197960265728 (3 slots)`
+4. Check log: `PostLogin: auto-created account for Steam/<SteamID64>` (first login)
 5. Client receives `Client_AccountData` → shows 3 empty slots
 6. Click slot 0 → enter "Hero" → `Server_CreateCharacter(0, "Hero")`
 7. Slot fills → "Hero, Level 1"

@@ -10,7 +10,7 @@ The Group System manages **collections of NPCs that behave as a cohesive unit**.
 It provides:
 
 - Group‑level data (center, direction, alive count)  
- - Attack alerts (all members notified when one is attacked; response handled by AI Perception)  
+ - Assist awareness (damage noise events; response handled by AI Perception)  
 - Cohesion for roaming behaviour  
 - A lightweight communication layer between NPCs  
 
@@ -25,11 +25,10 @@ This system is the backbone of believable group AI.
   - Group center  
   - Group forward direction  
   - Alive count  
-- Broadcast attack notifications when a member is attacked:
-  - Notify all group members (no distance filter)  
-  - Individual response (agro, assist, ignore) determined per-NPC via AI Perception hearing  
 - Provide group data to NPC StateTrees  
 - Reset group state when NPCs return to pool  
+
+> **Note:** The Group System does **not** broadcast attack alerts. When a member is damaged, a noise event is emitted via `UAIPerceptionSystem` (see the [NPC AI System](NPC_AI_System.md) noise flow); each member's individual response (agro, assist, ignore) is determined per‑NPC via AI Perception hearing. The Group System only provides group membership for the group‑identity check in `OnPerceptionUpdated`.
 
 ---
 
@@ -58,8 +57,7 @@ Hosted on `AOnsetSpawner`.
 
 - Tracks all members  
 - Computes group metrics  
-- Broadcasts attack notifications to all group members  
-- Provides data to StateTrees  
+- Provides data to StateTrees
 
 ### **`FGroupData`**
 Lightweight struct containing:
@@ -81,7 +79,7 @@ Removes NPC from group.
 Returns center + alive count (computed on demand).
 
 ### **`GetNearbyAllies(AOnsetEnemy* Source, float Radius)`** *(private helper)*
-Returns members within `Radius` of `Source`. Used internally for cohesion queries (A3.3 Roam). Not part of the assist flow.  
+Returns alive members within `Radius` of `Source`. Used internally for patrol/roam and flee decisions. Not part of the assist flow.  
 
 ---
 

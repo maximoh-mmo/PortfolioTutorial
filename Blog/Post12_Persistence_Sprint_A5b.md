@@ -100,7 +100,7 @@ Six RPCs form the full account lifecycle:
 
 | RPC | Direction | Purpose |
 |---|---|---|
-| `Client_AccountData` | Server → Client | Sends 3 empty slots for new accounts |
+| `Client_AccountData` | Server → Client | Account + its slots (empty array for new accounts; client pads to 3) |
 | `Client_CharacterData` | Server → Client | Full character data after select |
 | `Client_SaveComplete` | Server → Client | Confirms save succeeded |
 | `Server_SelectCharacter` | Client → Server | Loads character, triggers travel |

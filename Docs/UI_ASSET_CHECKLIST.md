@@ -30,7 +30,7 @@ These paths are hardcoded via `ConstructorHelpers::FObjectFinder` / `LoadObject`
 - `Source/Onset/Private/Combat/OnsetGA_AoE.cpp:19-26`
 - `Source/Onset/Private/Combat/OnsetGA_Cone.cpp`
 - `Source/Onset/Private/Combat/OnsetGA_Shadowstep.cpp`
-- `Source/Onset/Private/Core/OnsetBaseCharacter.cpp:62-87` (default grants)
+- `Source/Onset/Private/Core/OnsetBaseCharacter.cpp:73-95` (default grants in `GrantDefaultAbilities`)
 
 If a GA Blueprint is missing, the C++ class fallback still runs — but the slot icon is
 only set on the Blueprint (`UOnsetGameplayAbility::AbilityIcon`).
@@ -158,12 +158,12 @@ Canvas Panel (root)
 > designer anchors it; `TargetHUDWidget.cpp` only hides it (Collapsed) when there is no
 > target. Remove any old "reposition every tick" logic you see in the WBP.
 
-### B7. Wire-up: `Content/Input/MyOnsetPlayerController` — **PENDING**
-Open `MyOnsetPlayerController.uasset` → **HUD → `HUDWidgetClass` = `WBP_HUD`**.
-**Status: not done yet** — verified the asset has no `WBP_HUD` reference, so the runtime
-falls back to plain `UHUDWidget` (no WBP styling) until this is set. The GameMode already
-loads this controller (`OnsetGameModeBase.cpp:34-38`) and `CreateHUD` instantiates the
-class (`OnsetPlayerController.cpp:289-310`).
+### B7. Wire-up: `Content/Input/MyOnsetPlayerController` — **DONE**
+`MyOnsetPlayerController.uasset` → **HUD → `HUDWidgetClass` = `WBP_HUD`**.
+**Status: done** — verified the asset now references `WBP_HUD`, so `CreateHUD`
+instantiates the styled WBP tree (no longer the plain `UHUDWidget` fallback). The
+GameMode loads this controller (`OnsetGameModeBase.cpp:34-38`) and `CreateHUD`
+instantiates the class (`OnsetPlayerController.cpp:289-310`).
 
 ---
 
@@ -178,11 +178,12 @@ player's target changes.
 
 | Asset | Location | Parent | Required settings |
 |-------|----------|--------|-------------------|
-| `M_TargetReticle` | `Content/UI/HUD/` | `Material` | Deferred Decal domain; blend a ring/arc using the `reticule` texture; scale-independent so it reads at any capsule size |
+| `M_TargetReticle` | `Content/Materials/` | `Material` | Deferred Decal domain; blend a ring/arc using the `reticule` texture; scale-independent so it reads at any capsule size |
 
-The C++ fallback uses `/Engine/EngineDebugMaterials/DefaultDeferredDecalMaterial` when
-`TargetReticleMaterial` is unset, so the reticle renders even before you author the
-material. Assign `M_TargetReticle` to the character(s) you target (base
+The C++ default loads `/Game/Materials/M_TargetReticle.M_TargetReticle`
+(`OnsetBaseCharacter.cpp:41`), so the decal renders out of the box; if the asset is
+missing it falls back to `/Engine/EngineDebugMaterials/DefaultDeferredDecalMaterial`.
+Assign `M_TargetReticle` to the character(s) you target (base
 `AOnsetBaseCharacter.TargetReticleMaterial`, or override per enemy/boss class).
 
 > **Multiplayer note:** the decal is a client-side visual. `SetTargetReticle` toggles
@@ -226,10 +227,10 @@ material. Assign `M_TargetReticle` to the character(s) you target (base
 5. [x] Rework `WBP_TargetHUD` to the static top-centered lifebar (B4): remove
    `ReticleBorder` / `NameText`, bind `OnTargetAcquired` / `OnTargetCleared` /
    `OnTargetHealthPercentChanged`, anchor top-center.
-6. [ ] Create `M_TargetReticle` (C6) and assign it to the base character /
-   enemy / boss classes.
-7. [ ] **Set `HUDWidgetClass = WBP_HUD` on `MyOnsetPlayerController`** (B7) — still
-   pending. Until set, the runtime falls back to plain `UHUDWidget` (no WBP styling).
+6. [x] Create `M_TargetReticle` (C6) — exists at `Content/Materials/` and is assigned
+   as the C++ default on `AOnsetBaseCharacter`.
+7. [x] **Set `HUDWidgetClass = WBP_HUD` on `MyOnsetPlayerController`** (B7) — done;
+   verified the asset references `WBP_HUD`.
 8. [ ] Set `AbilityIcon` on `GA_AoE` / `GA_Cone` (A1/A2).
 9. Open `DemoLevel` and run the PIE test plan below. Iterate on styling as needed.
 
@@ -239,7 +240,7 @@ material. Assign `M_TargetReticle` to the character(s) you target (base
 
 - Slots **1 & 2** show the AoE/Cone icons; slots **3 & 4** show the `EmptyIcon`
   placeholder (all slots stay visible; Shadowstep is granted `INDEX_NONE` at
-  `OnsetBaseCharacter.cpp:84`).
+  `OnsetBaseCharacter.cpp:95`).
 - Press **1** → AoE fires; slot 1 shows a fill overlay that empties over the GE
   duration (scaled animation, see B1). Press **2** → same for Cone.
 - **Click** a slot button with the mouse → same as pressing the key

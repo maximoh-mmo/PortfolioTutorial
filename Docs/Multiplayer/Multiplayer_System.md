@@ -37,7 +37,7 @@ Client ──► Game Server (port 7778, AuthMode=Token)
 | Game | 7778 | Token | `/Game/Maps/DemoLevel` | Validate token, spawn pawn, gameplay |
 
 ### Auth Modes
-- **Direct** — no authentication; platform ID derived from `PlayerState->GetUniqueId()` or fallback to `DEV_<client_IP>` when Steam is unavailable. Used by the login server in local dev.
+- **Direct** — no server-side token; platform ID derived from `PlayerState->GetUniqueId()` (SteamID64 or Null-OSS unique ID), or `"DEV_<client_IP>"` when no unique ID exists. Used by the login server in local dev.
 - **Token** — HMAC‑SHA256 signed token validated on PreLogin. Used by the game server. Token contains `(PlatformID, Platform, SlotIndex, ExpiryUnix)` signed with a configurable secret.
 
 ### Token Flow
@@ -61,7 +61,7 @@ Server_SelectCharacter — or Server_CreateCharacter auto-select:
                                         Read cached (Platform, PlatformID, SlotIndex)
                                         LoadAccount / LoadCharacter
                                         Spawn pawn
-                                     Client OnPossess → HideLoadingScreen()
+                                     Client OnRep_Pawn → HideLoadingScreen()
 ```
 
 ### Test Script
@@ -83,10 +83,10 @@ All processes launch with `-NOSTEAM`, skipping the Steam plugin entirely. Connec
 | No unique ID / no ClientIndex | `"Steam"` | `"DEV_<client_IP>"` (e.g. `DEV_127.0.0.1`) |
 
 ### World Transition Loading Screen
-Whenever the client travels between servers (`Client_TravelToGameServer` or `ReconnectToGameServer`), the UI subsystem shows a full-screen `UOnsetLoadingScreen` overlay (menu screens are torn down first) and hides it once the new world loads and the client possesses its pawn (`AOnsetPlayerController::OnPossess`). Minimum display 0.5s, 10s timeout fallback. Widget configured via `[Onset.UI] LoadingScreenClass` in `DefaultEngine.ini`.
+Whenever the client travels between servers (`Client_TravelToGameServer` or `ReconnectToGameServer`), the UI subsystem shows a full-screen `UOnsetLoadingScreen` overlay (menu screens are torn down first) and hides it once the new world loads and the client's pawn replicates in (`AOnsetPlayerController::OnRep_Pawn`). Minimum display 0.5s, 10s timeout fallback. Widget configured via `[Onset.UI] LoadingScreenClass` in `DefaultEngine.ini`.
 
 ### SHA256 Implementation
-Custom `FSHA256` class in `Source/Onset/Private/Crypto/` — pure software implementation. Replaces `FGenericPlatformMisc::GetSHA256Signature` which asserts on platforms without a platform SHA256 implementation.
+Custom `FSHA256` class in `Source/OnsetDataStore/Public/SHA256.h` (`Private/SHA256.cpp`) — pure software implementation. Replaces `FGenericPlatformMisc::GetSHA256Signature` which asserts on platforms without a platform SHA256 implementation.
 
 ## Key Classes
 - **`AOnsetGameModeBase` / `AOnsetGameState`** — server rules + shared state  
@@ -103,7 +103,7 @@ Custom `FSHA256` class in `Source/Onset/Private/Crypto/` — pure software imple
 - `UOnsetAuthSubsystem::HandlePostLogin` — resolves platform ID, loads account, sends data
 - `AOnsetPlayerController::Client_TravelToGameServer` — direct IP travel with token in URL
 - `UOnsetUISubsystem::ShowLoadingScreen / HideLoadingScreen` — full-screen overlay during world travel
-- `AOnsetPlayerController::OnPossess` — hides the loading screen once the client possesses its pawn
+- `AOnsetPlayerController::OnRep_Pawn` — hides the loading screen and builds the HUD once the client's pawn replicates in
 
 ## Data Flow
 

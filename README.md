@@ -1,6 +1,6 @@
 ## 📘 **Private Unreal Project — Internal Repository**
 
-This repository contains the **full private development version** of the Top‑Down ARPG AI Demo and the complete production pipeline for the **47‑episode tutorial series**.
+This repository contains the **full private development version** of the Top‑Down ARPG AI Demo and the complete production pipeline for the **51‑episode tutorial series**.
 
 It includes:
 
@@ -179,7 +179,7 @@ General automation scripts.
 - [Targeting System](Docs/Gameplay/Targeting_System.md) — deterministic target selection, PvP-aware filtering
 - [Ability Targeting System](Docs/Gameplay/Ability_Targeting_System.md) — single-target, AoE, directional targeting
 - [PvP System](Docs/Gameplay/PVP_System.md) — player-controlled PvP/PvE toggle, damage filtering
-- [UI System](Docs/Gameplay/UI_System.md) — CommonUI menus/character select, loading screen; health bars, cooldowns, target highlighting, debug overlays *(planned)*
+- [UI System](Docs/Gameplay/UI_System.md) — CommonUI menus/character select, loading screen; in-game HUD (health bar, target frame, ability bar, damage numbers), combat toggle, debug overlays
 
 ### **AI Systems**
 - [NPC AI System](Docs/AI/NPC_AI_System.md) — enemy StateTree behaviour
@@ -199,7 +199,7 @@ General automation scripts.
 ### **Planning & Tracking**
 - [Series Overview](Planning/Outlines/Series_Overview.md) — tutorial series vision, structure, audience
 - [Scope Overview](Planning/Outlines/Scope_Overview.md) — project boundaries, deliverables, success criteria
-- [Episode List](Planning/Outlines/Episode_List.md) — all 47 episodes by phase
+- [Episode List](Planning/Outlines/Episode_List.md) — all 51 episodes by phase
 
 ### **Workflow**
 - [Branching Strategy](Planning/Workflow/BRANCHING_STRATEGY.md) — branch conventions, merge flow, rules

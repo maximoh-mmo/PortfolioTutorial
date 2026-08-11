@@ -18,11 +18,11 @@ Provide a unified way to produce targeting data for abilities — single‑targe
 - [UI System](UI_System.md) outside of targeting indicators
 
 ## Key Types
-- **`FAbilityTargetData`** — struct holding `TargetActor`, `TargetLocation`, `TargetDirection`
+- **`FOnsetTargetData`** — struct holding `TargetActor`, `TargetLocation`, `TargetDirection`
 - **`UAbilityTargetingLibrary`** — static utility class with `GetTargetData()`
 
 ## Key Functions
-- `UAbilityTargetingLibrary::GetTargetData(TargetingComponent, SourceActor)` — returns `FAbilityTargetData` for current target
+- `UAbilityTargetingLibrary::GetTargetData(TargetingComponent, SourceActor)` — returns `FOnsetTargetData` for current target
   - `TargetActor` → `TargetingComponent->GetTarget()`
   - `TargetLocation` → target actor's location
   - `TargetDirection` → `(TargetLocation - SourceActorLocation).GetSafeNormal()`
@@ -35,7 +35,7 @@ UTargetingComponent (CurrentTarget)
 UAbilityTargetingLibrary::GetTargetData()
         │
         ▼
-FAbilityTargetData → GAS Ability → Execution
+FOnsetTargetData → GAS Ability → Execution
 ```
 
 ## Interactions
@@ -46,7 +46,7 @@ FAbilityTargetData → GAS Ability → Execution
 
 ## Replication
 - Targeting data production is **client‑side** (reads local `CurrentTarget`)
-- `FAbilityTargetData` is sent with ability activation RPC
+- `FOnsetTargetData` is sent with ability activation RPC
 - Server re-validates target data before applying effects
 
 ## Edge Cases

@@ -252,8 +252,8 @@ Design the `IPlayerDataStore` abstraction, implement the SQLite store with schem
 Extract the numeric SteamID from the auth ticket via `SteamGameServer()->BeginAuthSession()`, store on `PlayerState`, and implement the full save/load RPC flow — account auto‑create on first login, load character data on select.
 · [Account System](../../Docs/Player/Account_System.md) · [Steam Integration System](../../Docs/Steam/Steam_Integration_System.md)
 
-### **Episode 42 — Lobby Map & Character Select UI**
-Build a lightweight lobby map on the DS, implement a 3‑slot WBP character select screen, and wire create/select/pick flow. `ServerTravel` to the game map on ready.
+### **Episode 42 — Character Select UI & Login Flow**
+Build a main-menu map on the login server, implement a 3‑slot WBP character select screen, and wire create/select/pick flow. Character select hands off to the game server via a session token (`Client_TravelToGameServer` with `?Token=` in the URL).
 · [Account System](../../Docs/Player/Account_System.md) · [UI System](../../Docs/Gameplay/UI_System.md)
 
 ### **Episode 43 — Full Login → Character Select → Enter World**

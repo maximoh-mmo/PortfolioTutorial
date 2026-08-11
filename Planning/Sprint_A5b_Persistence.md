@@ -28,12 +28,13 @@
 ### Wave 1 — Foundation & Schema Design (Day 1, ~1d)
 **Design the data store abstraction and implement the SQLite backend with schema migrations.**
 
-- [x] Add SQLite amalgamation to `Source/Onset/ThirdParty/SQLite/` (`sqlite3.h` + `sqlite3.c`)
-- [x] Update `Onset.Build.cs` — add SQLite include path and lib to the DS module
+- [x] Create the `OnsetDataStore` module (`Source/OnsetDataStore/`) — SQLite linked via engine `SQLiteCore`, no bundled amalgamation
+- [x] Update `OnsetDataStore.Build.cs` — link `SQLiteCore` + `HTTP`
 - [x] Create `IPlayerDataStore` abstract interface:
-  - `LoadAccount(Platform, PlatformID)` → `FOnsetAccountData`
-  - `LoadCharacter(Platform, PlatformID, SlotIndex)` → `FOnsetFullCharacterData`
-  - `SaveCharacter(Platform, PlatformID, SlotIndex, Data)`
+  - `LoadAccount(Platform, PlatformID, OutAccount)` → `bool`
+  - `LoadCharacter(Platform, PlatformID, SlotIndex, OutData)` → `bool`
+  - `SaveCharacter(Platform, PlatformID, Data)`
+  - `DeleteCharacter(Platform, PlatformID, SlotIndex)`
   - `SaveAll()` — flush on DS shutdown
 - [x] Create `FSQLiteStore` implementing `IPlayerDataStore`:
   - Open/create DB file next to DS executable (configurable path)

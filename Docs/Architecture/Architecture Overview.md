@@ -153,9 +153,9 @@ This document is the technical map for the entire project.
 - Tap/click‑to‑move + screen‑relative WASD + gamepad L-Stick movement  
 - Tap/click‑to‑target via `UInteractionComponent`  
 - Gamepad R-Stick software cursor  
-- Ability activation (keyboard + touch buttons + gamepad) *(future)*  
-- PvP toggle UI → PlayerState *(future)*  
-- Autoplay handoff *(future)*  
+- Ability activation (keyboard + touch buttons + gamepad)  
+- PvP toggle UI → PlayerState  
+- Autoplay handoff — possession swap to `AOnsetPlayerAIController`, replicated `bAutoplayEnabled`
 
 ### **2. [NPC AI System](../AI/NPC_AI_System.md)**
 - Data‑driven via three focused profiles — `UVisualProfile` (mesh, anim, material), `UAIProfile` (StateTree + behaviour params), `UPerceptionProfile` (sight/hearing ranges)
@@ -181,7 +181,7 @@ This document is the technical map for the entire project.
 - Session token system: `GenerateToken()` / `ValidateToken()` with configurable secret and lifetime
 - `AOnsetLoginServerGameMode` — minimal game mode for login-only server: auth → token → kick
 - Client reconnect: stores token via `Client_SessionToken` RPC, then `ReconnectToGameServer()` does `ClientTravel` with token in URL  
-- World transitions are covered by a full-screen loading overlay (`UOnsetLoadingScreen`) shown before `ClientTravel` and hidden on client possession  
+- World transitions are covered by a full-screen loading overlay (`UOnsetLoadingScreen`) shown before `ClientTravel` and hidden once the pawn replicates in (`OnRep_Pawn`)  
 
 ### **4. [Targeting System](../Gameplay/Targeting_System.md) (PvP‑aware)**
 - Data holder for `CurrentTarget` with `IsActorValidTarget()` validation  

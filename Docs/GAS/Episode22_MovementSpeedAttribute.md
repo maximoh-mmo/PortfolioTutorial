@@ -72,7 +72,7 @@ All GAS files moved from `Combat/` to `GAS/`: `OnsetAttributeSet`, `OnsetMovemen
 ### Architecture
 
 - **`UOnsetMovementAttributeSet`** — owns `MovementSpeed` as a replicated attribute
-- **`PostGameplayEffectExecute`** — clamps ≥ 0, writes to `CharacterMovement->MaxWalkSpeed`
+- **`PostAttributeChange`** — clamps ≥ 0, writes to `CharacterMovement->MaxWalkSpeed`
 - **Base value** — initialises from CDO default (`InitMovementSpeed(600.0f)`), overridable per BP Class Defaults
 - **`ApplyMovementSpeedModifier(Self, Magnitude)`** — shared helper on `FOnsetStateTreeTaskBase`:
   - Creates infinite GE via `NewObject<UGameplayEffect>` (dynamic, no BP asset needed)

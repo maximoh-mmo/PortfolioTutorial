@@ -80,10 +80,11 @@ This is not a roadmap — it is a design journal. Ideas live here without scope-
 ## Player StateTree Autoplay
 
 ### AI-vs-AI Testing Harness
-- **Why deferred:** Currently planned as episodes 21-23 within scope. The deeper application (AI vs AI combat loop for performance profiling, balance testing, and demo recording) is worth documenting.
+- **Status:** Player autoplay itself is **implemented** (A3.5 — `AOnsetPlayerAIController`, `PlayerAutoCombat` StateTree, replicated `bAutoplayEnabled`; see [Player AI System](AI/Player_AI_System.md) and [Player System](Player/Player_System.md)).
+- **Still deferred:** The AI-vs-AI harness that enables autoplay on the player and NPCs *simultaneously* for performance profiling, balance testing, and recorded demo loops. Planned as an extension of the existing autoplay work rather than new episodes 21-23.
 - **How it would work:** Enable autoplay on player and NPCs simultaneously. The entire combat loop runs without human input. Used for stress testing, recorded demo loops, and balance iteration.
-- **Architecture impact:** Already planned in A3.5. The documentation here captures the expanded testing use case.
-- **Relevant to:** Episode 23 extension; internal testing workflows.
+- **Architecture impact:** Builds on the existing `AOnsetPlayerAIController` possession-swap flow.
+- **Relevant to:** internal testing workflows; demo recording.
 
 ---
 

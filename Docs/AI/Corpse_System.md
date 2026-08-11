@@ -19,7 +19,7 @@ Decouple world-debris (corpses) from high-cost AI/ASC actors. When an NPC dies, 
 
 ## Key Classes
 - **`AOnsetCorpse`** — minimal `AActor` subclass with a static mesh component, timed self-destruct, optional collision for loot interaction. No Tick unless chasing a fade-out animation.
-- **`UCorpseSubsystem`** (future) — engine subclass that manages the corpse cap, enforces cleanup, and tracks active corpses for the spawning system.
+- **`UOnsetCorpseSubsystem`** — `UWorldSubsystem` that manages the corpse cap (`SweepDeadCorpses` destroys oldest when the cap is reached), tracks active corpses, and spawns them via `SpawnCorpse(Transform, CorpseMesh)`.
 
 ## Data Flow
 

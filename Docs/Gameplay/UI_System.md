@@ -23,7 +23,7 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 ## **Status**
 
 - **Implemented:** CommonUI login/character-select screen stack, C++ character slots, world-transition loading screen (see **Current Implementation** below).
-- **Planned (A6):** in-game HUD — player health, enemy health bars, ability bar/cooldowns, target indicators, debug overlays.
+- **Implemented (A6):** in-game HUD — player health bar, target frame with target-type skins, ability bar with cooldowns, pooled damage numbers, combat (PvP) toggle, ground-reticle decal targeting indicator. Content lives under `Content/UI/` with the new content pipeline (`Docs/UI_ASSET_CHECKLIST.md`).
 
 ---
 
@@ -46,7 +46,7 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 `UCharacterSlot` (`WBP_CharacterSlot`) — all logic in C++: occupied/empty display state (name, level, delete-button visibility), click routing via `OnSlotActivated` / `OnDeleteRequested`, and a `BP_OnSlotDataChanged` Blueprint hook for styling.
 
 ### Loading Screen
-`UOnsetLoadingScreen` (`WBP_LoadingScreen`, backed by `M_Spinner`) — full-screen overlay shown by `UOnsetUISubsystem::ShowLoadingScreen()` before any world travel (create, select, reconnect). Tears down menu screens first, enforces a 0.5s minimum display, and hides on client pawn possession via `AOnsetPlayerController::OnPossess` (10s timeout fallback). Widget configured via `[Onset.UI] LoadingScreenClass` in `DefaultEngine.ini`.
+`UOnsetLoadingScreen` (`WBP_LoadingScreen`, backed by `M_Spinner`) — full-screen overlay shown by `UOnsetUISubsystem::ShowLoadingScreen()` before any world travel (create, select, reconnect). Tears down menu screens first, enforces a 0.5s minimum display, and hides on client pawn possession via `AOnsetPlayerController::OnRep_Pawn` (10s timeout fallback). Widget configured via `[Onset.UI] LoadingScreenClass` in `DefaultEngine.ini`.
 
 ---
 
@@ -77,10 +77,29 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 
 ## **Key Classes**
 
-### **`UHUDWidget`** *(planned)*
-- Main HUD  
-- Contains health, abilities, debug panels  
-- Scales layout for mobile vs desktop  
+### **`UHUDWidget`** (`WBP_HUD`)
+- Main in-game HUD, created and bound in `AOnsetPlayerController::OnRep_Pawn`
+- Owns the player health bar, ability bar, combat toggle, and target frame
+- `BindToPlayer(Controller, Pawn)` wires each sub-widget to the player's `AbilitySystemComponent` and `TargetingComponent`
+- Listens for `OnTargetChanged` → updates `UTargetHUDWidget::SetTarget` and subscribes the target ASC
+- Spawns pooled damage numbers (`SpawnDamageNumber`) on player/target health drops
+- Applies the DPI-corrected `ProjectToScreen` (viewport pixels ÷ widget geometry scale) so damage numbers land on the correct world location
+
+### **`UPlayerHealthBarWidget`** (`WBP_PlayerHealthBar`)
+- Player health bar bound to the player's ASC; `BindToASC` subscribes to health attribute changes
+
+### **`UTargetHUDWidget`** (`WBP_TargetHUD`)
+- Static target frame (does not float above the target); shows target name + health via `SetTarget(AActor*)`
+- Uses target-type skins (player vs NPC) for the frame styling
+
+### **`UAbilityBarWidget`** / **`UAbilitySlotWidget`** (`WBP_AbilityBar` / `WBP_AbilitySlot`)
+- Ability bar with per-slot cooldown overlays; `BindToPlayer` reads granted abilities from the player ASC and reads each ability's icon/cooldown
+
+### **`UDamageNumberWidget`** (`WBP_DamageNumber`)
+- Pooled world-anchored damage number; `ShowDamage(Amount, ScreenPos, Color)` activates, animates, and deactivates; round-robin pool recycling
+
+### **`UCombatToggleWidget`** (`WBP_CombatToggle`)
+- PvP/PvE toggle button; `BindToPlayer` routes to `Server_SetPvPEnabled`
 
 ### **`UJoystickWidget`**
 - Touch virtual joystick (movement thumbstick zone with drag-outline)
@@ -91,38 +110,29 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 - Positioned via `SetRenderTranslation()` from PlayerController
 - Automatically hides after idle timeout  
 
-### **`UEnemyHealthBarWidget`** *(planned)*
-- Attached to NPCs  
-- Shows current health  
-
-### **`UAbilityBarWidget`** *(planned)*
-- Shows abilities + cooldowns  
-
-### **`UTargetIndicatorWidget`** *(planned)*
-- Shows targeting reticles  
-
-### **`UAutoplayDebugWidget`** *(planned)*
-- Shows player AI state  
+### **`UOnsetLoadingScreen`** (`WBP_LoadingScreen`)
+- Full-screen overlay shown by `UOnsetUISubsystem::ShowLoadingScreen()` before any world travel; hides on client pawn possession (`AOnsetPlayerController::OnRep_Pawn`, 10s timeout fallback)
 
 ---
 
 ## **Key Functions**
 
 ### **HUD**
-- `UpdateHealth(float)`  
-- `UpdateAbilityCooldown(int32 AbilityIndex, float TimeRemaining)`  
+- `BindToPlayer(Controller, Pawn)`  
+- `HandleTargetChanged(AActor*)` — swaps target ASC binding and updates `UTargetHUDWidget`
+- `SpawnDamageNumber(WorldLocation, Amount, Color)` — projects to screen and activates a pooled damage number
 
-### **Enemy Health Bars**
-- `SetHealthPercent(float)`  
-- `Show/Hide()`  
+### **Player Health Bar**
+- `BindToASC(UAbilitySystemComponent*)`  
+- Health updates driven by ASC attribute-change delegates
 
 ### **Targeting**
-- `ShowIndicator(FAbilityTargetData)`  
-- `HideIndicator()`  
+- `UTargetHUDWidget::SetTarget(AActor*)` — updates target frame (name/health/skin)
+- Ground-reticle decal: attached to the current target by the targeting flow (see `Targeting_System.md`)
 
 ### **Debug**
-- `SetAIState(FName)`  
-- `SetAutoplayEnabled(bool)`  
+- `SetAIState(FName)` *(planned)*  
+- `SetAutoplayEnabled(bool)` *(planned)*  
 
 ---
 
@@ -142,10 +152,10 @@ HUD / Health Bars Update
 Player Input / AI Targeting
         │
         ▼
-AbilityTargetingComponent
+TargetingComponent (CurrentTarget)
         │
         ▼
-Target Indicator Widget
+Target Frame (UTargetHUDWidget) + Ground Reticle Decal
 ```
 
 ---
@@ -194,10 +204,11 @@ Target Indicator Widget
 ## **Testing Checklist**
 - [x] Virtual joystick moves character on touch/mobile viewport  
 - [x] Gamepad cursor renders and follows R-Stick  
-- [ ] Player health updates correctly *(planned)*  
-- [ ] Enemy health bars appear/disappear correctly *(planned)*  
-- [ ] Ability cooldowns update correctly *(planned)*  
-- [ ] Target indicators match ability behaviour *(planned)*  
+- [x] Player health bar updates from ASC health attribute changes
+- [x] Target frame shows the selected target's name/health with target-type skins
+- [x] Ability bar shows granted abilities with cooldown overlays
+- [x] Pooled damage numbers appear on player/target damage and recycle round-robin
+- [x] Ground-reticle decal tracks the current target
 - [ ] Debug UI toggles correctly *(planned)*  
 - [ ] UI behaves correctly in multiplayer *(planned)*  
 - [x] Main menu → character select → creation flow works (CommonUI screen stack)
@@ -208,7 +219,6 @@ Target Indicator Widget
 
 ## **Future Extensions**
 - Animated ability icons  
-- Damage numbers  
 - Minimap  
 - Settings/pause menus  
 - Style/theme pass  

@@ -49,7 +49,7 @@ The `Onset` module accesses stores only through the factory function:
 
 ```cpp
 // DataStoreFactory.h — single entry point
-IPlayerDataStore* CreateDataStore(const FString& StoreType, const FString& ConnectionString);
+TUniquePtr<IPlayerDataStore> CreateDataStore(const FString& Type, const FString& ConnectionString, bool& bOutSuccess);
 ```
 
 The DS selects the implementation via config:
@@ -82,66 +82,77 @@ Note: For `HttpApi`, the `ConnectionString` stores only the host (no `https://` 
 
 ### **Schema**
 
-Two tables plus a version tracker:
+Two tables plus a version tracker. SQLite DDL (v1 migration):
 
 ```sql
 CREATE TABLE _schema_version (
-    version INTEGER PRIMARY KEY
+    version INTEGER PRIMARY KEY,
+    applied_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE accounts (
-    platform_id   TEXT NOT NULL,
     platform      TEXT NOT NULL,
+    platform_id   TEXT NOT NULL,
     created_at    TEXT NOT NULL DEFAULT (datetime('now')),
-    last_login    TEXT,
+    last_login    TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (platform, platform_id)
 );
 
 CREATE TABLE characters (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    platform_id     TEXT NOT NULL,
-    platform        TEXT NOT NULL,
-    slot_index      INTEGER NOT NULL CHECK(slot_index BETWEEN 0 AND 2),
-    name            TEXT NOT NULL DEFAULT 'Adventurer',
-    level           INTEGER NOT NULL DEFAULT 1,
-    experience      REAL NOT NULL DEFAULT 0,
-    max_health      REAL NOT NULL DEFAULT 100.0,
-    pos_x           REAL NOT NULL DEFAULT 0,
-    pos_y           REAL NOT NULL DEFAULT 0,
-    pos_z           REAL NOT NULL DEFAULT 200,
-    rot_yaw         REAL NOT NULL DEFAULT 0,
-    inventory_json  TEXT NOT NULL DEFAULT '[]',
-    equipment_json  TEXT NOT NULL DEFAULT '{}',
-    quests_json     TEXT NOT NULL DEFAULT '{}',
-    play_time_sec   INTEGER NOT NULL DEFAULT 0,
-    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-    saved_at        TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (platform, platform_id) REFERENCES accounts(platform, platform_id),
-    UNIQUE(platform, platform_id, slot_index)
+    platform          TEXT NOT NULL,
+    platform_id       TEXT NOT NULL,
+    slot_index        INTEGER NOT NULL CHECK(slot_index >= 0 AND slot_index <= 2),
+    character_name    TEXT NOT NULL DEFAULT '',
+    level             INTEGER NOT NULL DEFAULT 1,
+    experience        INTEGER NOT NULL DEFAULT 0,
+    saved_max_health  REAL NOT NULL DEFAULT 100.0,
+    saved_position_x  REAL NOT NULL DEFAULT 0.0,
+    saved_position_y  REAL NOT NULL DEFAULT 0.0,
+    saved_position_z  REAL NOT NULL DEFAULT 0.0,
+    saved_rotation_yaw REAL NOT NULL DEFAULT 0.0,
+    inventory_json    TEXT NOT NULL DEFAULT '{}',
+    equipment_json    TEXT NOT NULL DEFAULT '{}',
+    quests_json       TEXT NOT NULL DEFAULT '{}',
+    created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (platform, platform_id, slot_index),
+    FOREIGN KEY (platform, platform_id) REFERENCES accounts(platform, platform_id) ON DELETE CASCADE
 );
 ```
 
+Migration 2 adds `current_zone TEXT NOT NULL DEFAULT ''`; migration 3 adds `character_class INTEGER NOT NULL DEFAULT 0` and `appearance_json TEXT NOT NULL DEFAULT '{}'`.
+
 Key design choices:
-- **Composite PK `(platform, platform_id)`** — no collisions between Steam `"7656119..."` and future Xbox `"XUID..."`  
+- **Composite PK `(platform, platform_id)` for accounts; `(platform, platform_id, slot_index)` for characters** — no collisions between Steam `"7656119..."` and future Xbox `"XUID..."`; a character's slot is part of its identity  
 - **JSON blobs** (`inventory_json`, `equipment_json`, `quests_json`) — extensible without schema changes; version within the blob  
 - **All queries are parametrized** — identical across SQLite and PostgreSQL; only the connection code differs  
 - **`TEXT` for timestamps** — ISO 8601 strings, portable across DB engines  
+- **`character_name` defaults to `''`** (not a placeholder name) — identity is supplied by `Server_CreateCharacter` and preserved by `SaveCharacterPreservingIdentity` (see [Account System](../Player/Account_System.md))
 
 ### **Migration System**
 
-On startup, the store reads `_schema_version`. If version < current (hardcoded in code), it runs each missing migration sequentially inside a transaction:
+On startup, `EnsureSchema()` creates the `_schema_version` table if missing, reads the current version, and runs each missing migration sequentially via `RunMigration(int32 FromVersion)` until `LatestVersion` (currently **3**) is reached:
 
 ```cpp
-int32 CurrentSchemaVersion = 1;
+const int32 LatestVersion = 3;
 
-void FSQLiteStore::RunMigrations()
+void FSQLiteStore::EnsureSchema()
 {
-    int32 Version = ReadSchemaVersion();
-    if (Version < 1) { /* CREATE TABLE accounts, characters, _schema_version */ }
-    if (Version < 2) { /* ALTER TABLE characters ADD COLUMN ... */ }
-    // Each migration increments _schema_version
+    // CREATE TABLE IF NOT EXISTS _schema_version (version INTEGER PRIMARY KEY, applied_at ...)
+    int32 Version = GetSchemaVersion();   // SELECT COALESCE(MAX(version), 0) FROM _schema_version;
+    while (Version < LatestVersion)
+        RunMigration(Version);            // applies one migration and bumps _schema_version
+}
+
+void FSQLiteStore::RunMigration(int32 FromVersion)
+{
+    if (FromVersion == 0) { /* CREATE TABLE accounts, characters */ }
+    if (FromVersion <= 1) { /* ALTER TABLE characters ADD COLUMN current_zone */ }
+    if (FromVersion <= 2) { /* ALTER TABLE characters ADD COLUMN character_class + appearance_json */ }
 }
 ```
+
+Migrations run **without an explicit transaction** — each statement is executed individually and `_schema_version` is bumped as a separate insert. On an interruption mid-migration, the already-applied statements persist; on the next startup `EnsureSchema()` re-runs the remaining steps (idempotent for `ALTER TABLE`-style additions).
 
 ---
 
@@ -150,35 +161,38 @@ void FSQLiteStore::RunMigrations()
 ### **`IPlayerDataStore`** (abstract interface)
 
 ```cpp
-class IPlayerDataStore
+struct IPlayerDataStore
 {
-public:
     virtual ~IPlayerDataStore() = default;
 
     virtual bool Initialize(const FString& ConnectionString) = 0;
-    virtual void Shutdown() = 0;
-
-    virtual FOnsetAccountData LoadAccount(const FString& Platform, const FString& PlatformID) = 0;
-    virtual FOnsetFullCharacterData LoadCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex) = 0;
-    virtual bool SaveCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex, const FOnsetFullCharacterData& Data) = 0;
+    virtual bool LoadAccount(const FString& Platform, const FString& PlatformID, FOnsetAccountData& OutAccount) = 0;
     virtual bool CreateAccount(const FString& Platform, const FString& PlatformID) = 0;
-    virtual bool CreateCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex, const FString& CharacterName) = 0;
+    virtual bool LoadCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex, FOnsetFullCharacterData& OutData) = 0;
+    virtual bool SaveCharacter(const FString& Platform, const FString& PlatformID, const FOnsetFullCharacterData& Data) = 0;
+    virtual bool DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex) = 0;
     virtual void SaveAll() = 0;
 };
 ```
 
+Notes:
+- There is **no `Shutdown()`** — stores flush via `SaveAll()` (called from the subsystem's `Deinitialize()` and the store destructors).
+- `LoadAccount` / `LoadCharacter` return `bool` and fill out-params.
+- `SaveCharacter` takes the slot from `Data.SlotIndex` — there is no separate `SlotIndex` parameter.
+- There is **no `CreateCharacter`** — characters are created by the `SaveCharacter` upsert (`PUT /character` on the HTTP store). `DeleteCharacter` removes a character row.
+
 ### **`FSQLiteStore`**
 - Owns `sqlite3*` handle
-- Opens file, enables WAL mode, runs migrations on `Initialize()`
+- Opens file, enables WAL mode (`PRAGMA journal_mode=WAL`), `synchronous=NORMAL`, `foreign_keys=ON`, runs migrations on `Initialize()`
 - All queries use `sqlite3_prepare_v2` + `sqlite3_bind_*` (no string concatenation)
-- Transactions on multi-row operations
-- `SaveAll()` calls `sqlite3_wal_checkpoint()` to flush WAL
+- Multi-row reads (e.g. `LoadAccount` slot listing) run as plain sequential queries — no explicit transaction blocks
+- `SaveAll()` runs `PRAGMA wal_checkpoint(TRUNCATE)` to flush the WAL
 
 ### **`FPgSQLStore`**
 - Owns `PGconn*` handle
 - Same queries (parametrized with `$1`, `$2`, etc.)  
 - `Initialize()` connects and runs migrations
-- `SaveAll()` is a no-op (PostgreSQL handles this internally)
+- `SaveAll()` runs `CHECKPOINT;` (PostgreSQL handles most flushing internally)
 
 ### **`FHttpStore`**
 - No database connection — proxies all calls to a remote REST API via `FHttpModule`
@@ -187,12 +201,14 @@ public:
 - Serializes requests/responses as JSON (FJsonObject/FJsonObjectConverter)
 - `SaveAll()` is a no-op (API is transactional per-call)
 - API key sent via `X-API-Key` header for all requests
+- `SaveCharacter` sends `characterClass` + `appearanceJson` in the request body
 
 ### **`UOnsetPlayerDataSubsystem`**
 - World subsystem, DS only
-- `OnWorldBeginPlay()` reads config, calls `CreateDataStore()` (factory function in `DataStoreFactory.h`)
+- `OnWorldBeginPlay()` reads config, calls `CreateDataStore()` (factory function in `DataStoreFactory.h`); on failure or a null result it retries with the fallback store type before giving up
 - Caches the `IPlayerDataStore*` for the lifetime of the DS
-- `BeginDestroy()` calls `Store->SaveAll()`
+- `Deinitialize()` calls `StopAutoSaveTimer()`, `SaveAll()`, then `Store.Reset()`
+- Runs a periodic auto-save timer (default 300s) that calls `SaveAll()`
 
 ---
 
@@ -201,21 +217,21 @@ public:
 ```
 DS Startup
     │
-    ├── UOnsetPlayerDataSubsystem::Initialize()
+    ├── UOnsetPlayerDataSubsystem::OnWorldBeginPlay()
     │       │
-    │       ├── Read Config (DataStore=SQLite|Postgres, path/connection string)
+    │       ├── Read Config (Type=SQLite|Postgres|HttpApi, ConnectionString)
     │       │
-    │       ├── CreateDataStore(StoreType, ConnectionString)  ← from OnsetDataStore module
+    │       ├── CreateDataStore(Type, ConnectionString, bOutSuccess)  ← from OnsetDataStore module
     │       │       │
     │       │       ├── [Server build]: new FSQLiteStore → Initialize(Path)
     │       │       │       ├── sqlite3_open(path)
     │       │       │       ├── PRAGMA journal_mode=WAL
-    │       │       │       ├── RunMigrations()
+    │       │       │       ├── EnsureSchema() / RunMigration()
     │       │       │       └── Ready
     │       │       │
-    │       │       └── (or) new FPgSQLStore → Initialize(ConnString)
+    │       │       └── (or) new FPgSQLStore / FHttpStore → Initialize(...)
     │       │
-    │       ├── [Client build]: returns stub/null (stores compiled out via ONSETDATASTORE_CLIENT_ONLY)
+    │       ├── [Client build]: returns nullptr (stores compiled out via ONSETDATASTORE_CLIENT_ONLY)
     │       │
     │       └── Caches IPlayerDataStore* for subsystem lifetime
     │
@@ -248,8 +264,8 @@ DS Startup
 - **DB file read-only** — `Initialize()` fails, DS logs error and refuses connections  
 - **Migration from unknown version** — version 0 (no `_schema_version` table) treated as fresh install  
 - **Concurrent writes (same SteamID)** — only one DS instance per account; serialized by the store  
-- **DS crashes mid-migration** — transaction rolls back, retries on next startup  
-- **PgSQL connection failure** — log error, fall back to SQLite with warning (configurable)  
+- **DS crashes mid-migration** — partial statements persist (no transaction); `EnsureSchema()` re-runs the remaining steps on next startup  
+- **Store creation failure** — `CreateDataStore` returns false/null; the subsystem logs the error and falls back to the default store type with a warning (any type, not just Postgres)
 
 ---
 
@@ -264,7 +280,7 @@ DS Startup
 - [ ] Migrations idempotent (re-running same version does nothing)
 - [ ] FPgSQLStore connects (with valid connection string)
 - [ ] Config switch between stores works at startup
-- [ ] BeginDestroy() flushes all pending writes
+- [ ] Deinitialize() flushes all pending writes via SaveAll()
 - [ ] DB file survives DS restart (read-after-reboot)
 
 ---

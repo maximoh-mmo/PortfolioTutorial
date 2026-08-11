@@ -1,50 +1,51 @@
-# 🎬 **Episode 42 — Lobby Map & Character Select UI**
+# 🎬 **Episode 42 — Character Select UI & Login Flow**
 
 ## **Episode Goal**
-Build a lightweight lobby map on the DS, implement a 3-slot WBP character select screen, and wire create/select/pick flow. `ServerTravel` to the game map on ready.
+Build the character select flow on the login server: a main-menu map, a 3-slot WBP character select screen, and the create/select/pick flow that ends in a tokenized client travel to the game server.
 
 ---
 
 ## **Context & Dependencies**
 - Requires Episode 41 (SteamID Resolution — `Client_AccountData`, `Server_SelectCharacter`, `Server_CreateCharacter` working)
 - Episode 40 (Database Architecture)
-- Existing WBP pattern from `GamepadCursorWidget` (touch + gamepad + mouse unified)
+- CommonUI screen stack (Episodes 13-14) — `UOnsetScreenBase` + `UOnsetUISubsystem::PushScreen`
 
 ---
 
 ## **High‑Level Summary**
-The lobby map is the "waiting room" where authenticated players pick or create their character before entering the game world. We create a minimal level with no NPCs, no combat — just the character select HUD. The WBP widget shows 3 slots with name/level, handles creation of new characters, and transitions to the game map via `ServerTravel`.
+The login server's **MainMenu** map is the "waiting room" where authenticated players pick or create their character before traveling to the game server. We create a minimal level with no NPCs, no combat — just the character select HUD. The WBP widget shows 3 slots with name/level, handles creation of new characters, and hands off via a session token: the login server calls `Client_TravelToGameServer(IP, Port, Token)` and the client does `ClientTravel` to the game server with `?Token=` in the URL.
 
 ---
 
 ## **Key Concepts Introduced**
-- Separator lobby map pattern (auth + select before gameplay)
+- Separator login-server pattern (auth + select before gameplay)
 - 3-slot character select WBP (touch-first design)
-- `ServerTravel` for seamless map transition with connected players
+- Tokenized client travel between server processes (`Client_TravelToGameServer`)
 - Touch-friendly UI: large hit zones, virtual keyboard for naming
 
 ---
 
 ## **Technical Breakdown**
 
-### **1. Create Lobby Map**
-- **File:** `/Game/Maps/LobbyMap.umap`
+### **1. Create the Main Menu Map**
+- **File:** `/Game/Maps/MainMenu.umap`
 - Minimal level: just a `PlayerStart`, a `GameMode` reference, and a background (skybox or simple plane)
 - No NPCs, no spawners, no AI — pure UI environment
-- Set in **Project Settings → Maps & Modes → Game Default Map** = `LobbyMap`
-- This ensures DS launches on LobbyMap, clients join LobbyMap
+- Set in **Project Settings → Maps & Modes → Game Default Map** = `MainMenu`
+- Login server launches on `MainMenu`; game server launches on `DemoLevel` (`ServerDefaultMap`)
+- On `PostLogin` the server sends `Client_ShowMainMenuUI(RootLayoutClass, MainMenuClass)` which pushes the menu onto the CommonUI stack
 
 ### **2. Character Select WBP — `WBP_CharacterSelect`**
 
 #### **Widget Hierarchy**
 ```
-WBP_CharacterSelect (UserWidget)
+WBP_CharacterSelect (UOnsetScreenBase / UCharacterSelectScreen)
 ├── BackgroundOverlay
 │   ├── TitleText ("Select Your Adventurer")
 │   ├── SlotContainer (HorizontalBox)
-│   │   ├── Slot_0 (CharacterSlotWidget)
-│   │   ├── Slot_1 (CharacterSlotWidget)
-│   │   └── Slot_2 (CharacterSlotWidget)
+│   │   ├── Slot_0 (UCharacterSlot / WBP_CharacterSlot)
+│   │   ├── Slot_1 (UCharacterSlot / WBP_CharacterSlot)
+│   │   └── Slot_2 (UCharacterSlot / WBP_CharacterSlot)
 │   ├── CreateNameEntry (EditableTextBox) — hidden by default
 │   ├── CreateButton (Button) — "Create Character"
 │   ├── SelectButton (Button) — "Enter World" (enabled when slot selected)
@@ -61,52 +62,39 @@ SlotWidget
 │   └── StatusText (TextBlock) — "Available" / "Occupied"
 ```
 
-#### **Key WBP Logic (Blueprint or C++ `UUserWidget` subclass)**
+#### **Key WBP Logic (Blueprint or C++ `UCharacterSelectScreen` subclass)**
 - **On `Client_AccountData` received:**
-  - For each of 3 slots: bind `FOnsetCharacterSlotData` → update `NameText`, `LevelText`, `StatusText`
+  - The controller caches `CachedAccountData`, broadcasts `OnAccountDataChanged`, and calls `BP_OnAccountDataUpdated()`
+  - The screen pads to 3 slots: `const int32 DesiredCount = FMath::Max(3, CachedAccountData.Slots.Num());` (`CharacterSelectScreen.cpp:154`)
+  - For each slot: bind `FOnsetCharacterSlotData` → update `NameText`, `LevelText`, `StatusText`
   - Empty slots: show "Create" button when clicked
   - Occupied slots: show "Select" → enables "Enter World" button
 - **Create flow:**
   - Click empty slot → show `CreateNameEntry` + `CreateButton`
-  - Enter name → `Server_CreateCharacter(SlotIndex, Name)`
+  - Enter name + pick class + appearance preset → `Server_CreateCharacter(SlotIndex, Name, CharacterClass, AppearancePresetIndex)`
   - On `Client_AccountData` refresh → slot now occupied
 - **Select flow:**
   - Click occupied slot → highlight border → store `SelectedSlotIndex`
   - Enable "Enter World" button
   - Press "Enter World" → `Server_SelectCharacter(SelectedSlotIndex)`
-- **On `Client_CharacterData` (after select):**
-  - Server will `ServerTravel` — widget just waits for level transition
+- **Delete flow:** occupied slots expose a delete button → `Server_DeleteCharacter(SlotIndex)`
 
-### **3. ServerTravel to Game Map**
-**In `AOnsetGameModeBase` or `AOnsetPlayerController`:**
+### **3. Tokenized Travel to Game Server**
+**In `AOnsetPlayerController`:**
 ```cpp
 void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotIndex)
 {
-    // ... load character, spawn pawn, apply save data ...
-    
-    // Once all connected players have selected (or after short delay), travel
-    if (AOnsetGameModeBase* GM = GetWorld()->GetAuthGameMode<AOnsetGameModeBase>())
+    // ... load character, set PlayerState.SelectedCharacterSlot ...
+
+    if (UOnsetAuthSubsystem* Auth = GetWorld()->GetSubsystem<UOnsetAuthSubsystem>())
     {
-        GM->RequestTravelToGameMap();
+        FString Token = Auth->GenerateToken(Platform, PlatformID, SlotIndex);
+        Client_TravelToGameServer(GameServerIP, GameServerPort, Token);
     }
 }
 ```
 
-**In `AOnsetGameModeBase`:**
-```cpp
-void AOnsetGameModeBase::RequestTravelToGameMap()
-{
-    // Optional: wait for all players to have SelectedCharacterSlot != INDEX_NONE
-    // For demo: travel immediately after first player selects
-    
-    FString GameMap = TEXT("/Game/Maps/DemoLevel");
-    GetWorld()->ServerTravel(GameMap, true, true); // absolute, notify clients
-}
-```
-
-- `ServerTravel` preserves PlayerController/PlayerState connections
-- Players arrive at `DemoLevel` with their `SelectedCharacterSlot` set
-- `PostLogin` on new map → `GameMode` sees `SelectedCharacterSlot` set → spawns pawn at saved position
+`Client_TravelToGameServer` does `ClientTravel` to `IP:Port?Token=...`. The game server validates the token in `PreLogin`, then `HandlePostLogin` loads the account/character and spawns the pawn. On the client, `OnRep_Pawn` hides the loading screen overlay (`UOnsetLoadingScreen`) shown during the transition.
 
 ### **4. Touch / Gamepad / Mouse Support**
 - **Touch:** Large slot buttons (min 80px), `CreateNameEntry` summons virtual keyboard
@@ -124,12 +112,12 @@ void AOnsetGameModeBase::RequestTravelToGameMap()
 ---
 
 ## **How to Test**
-1. Launch DS → loads `LobbyMap`
-2. Connect client → Steam auth → `Client_AccountData` arrives
-3. Widget shows 3 empty slots
-4. Click slot 0 → enter "Hero" → `Server_CreateCharacter` → slot fills
-5. Click slot 0 → "Enter World" enables → press → `ServerTravel` to `DemoLevel`
-6. Pawn spawns at saved position (0,0,200 for new char)
+1. Launch login server → loads `MainMenu`
+2. Connect client → Steam auth → `Client_ShowMainMenuUI` → `Client_AccountData` arrives
+3. Widget shows 3 empty slots (padded from the account's slots array)
+4. Click slot 0 → enter "Hero" + class + appearance → `Server_CreateCharacter` → slot fills
+5. Click slot 0 → "Enter World" enables → press → token generated → `Client_TravelToGameServer`
+6. Client travels to game server → pawn spawns at saved position (0,0,150 for new char)
 7. Move, disconnect, reconnect → character select shows "Hero, Level 1"
 8. Select → spawns at last saved position
 
@@ -138,11 +126,10 @@ void AOnsetGameModeBase::RequestTravelToGameMap()
 ## **Code Snippets**
 
 ```cpp
-// AOnsetGameModeBase.cpp — ServerTravel
-void AOnsetGameModeBase::RequestTravelToGameMap()
+// AOnsetGameModeBase.cpp — zone travel (not ServerTravel to a second process)
+void AOnsetGameModeBase::TravelToZone(const FString& MapName, const FString& EntryPoint)
 {
-    FString GameMap = TEXT("/Game/Maps/DemoLevel");
-    GetWorld()->ServerTravel(GameMap, true, true);
+    // used for in-process zone gates; login→game handoff is Client_TravelToGameServer
 }
 
 // WBP_CharacterSelect — OnAccountDataReceived (Blueprint)
@@ -153,7 +140,7 @@ ForEach SlotData in AccountData.Slots
         SlotWidgets[SlotData.SlotIndex]->SetEmpty()
 
 // WBP_CharacterSelect — OnCreateClicked
-Server_CreateCharacter(SelectedSlotIndex, CreateNameEntry->GetText())
+Server_CreateCharacter(SelectedSlotIndex, CreateNameEntry->GetText(), SelectedClass, AppearancePreset)
 
 // WBP_CharacterSelect — OnEnterWorldClicked
 Server_SelectCharacter(SelectedSlotIndex)
@@ -162,9 +149,9 @@ Server_SelectCharacter(SelectedSlotIndex)
 ---
 
 ## **Common Pitfalls**
-- `ServerTravel` called on client → must be server-only (`HasAuthority()`)
-- PlayerState not carried over `ServerTravel` → ensure `PlayerStateClass` is set and persists
-- Widget not updating on `Client_AccountData` → bind in `NativeConstruct` or `OnInitialized`
+- `ServerTravel` from the login server does **not** carry the client across processes — the login→game hop uses `Client_TravelToGameServer` with a session token in the URL
+- The game server re-derives identity from the token in `PreLogin` — `PlayerState` is not shared across processes
+- Widget not updating on `Client_AccountData` → the screen must subscribe to `OnAccountDataChanged` or override `BP_OnAccountDataUpdated`
 - Virtual keyboard not showing on touch → `EditableTextBox` needs `SupportsVirtualKeyboard = true`
 - "Enter World" enabled before slot selected → guard with `SelectedSlotIndex != INDEX_NONE`
 
@@ -182,13 +169,13 @@ End-to-end verification: auth → account load → character select → spawn �
 ---
 
 ## **Episode Checklist**
-- [ ] `LobbyMap` created, set as default map
-- [ ] `WBP_CharacterSelect` with 3 slot widgets
-- [ ] Slot shows name/level for occupied, "Create" for empty
-- [ ] Create flow: name entry → `Server_CreateCharacter` → slot fills
-- [ ] Select flow: highlight → "Enter World" enabled
-- [ ] Enter World → `Server_SelectCharacter` → `ServerTravel` to DemoLevel
-- [ ] Touch: virtual keyboard works for name entry
-- [ ] Gamepad: D-pad navigates, A selects, B backs out
-- [ ] PlayerState persists across `ServerTravel`
-- [ ] Pawn spawns at saved position on DemoLevel entry
+- [x] `MainMenu` created, set as default map
+- [x] `WBP_CharacterSelect` with 3 slot widgets (padded to 3)
+- [x] Slot shows name/level for occupied, "Create" for empty
+- [x] Create flow: name/class/appearance → `Server_CreateCharacter` → slot fills
+- [x] Select flow: highlight → "Enter World" enabled
+- [x] Enter World → `Server_SelectCharacter` → `Client_TravelToGameServer` with token
+- [x] Touch: virtual keyboard works for name entry
+- [x] Gamepad: D-pad navigates, A selects, B backs out
+- [x] Identity survives the login → game server hop (token validation)
+- [x] Pawn spawns at saved position on DemoLevel entry

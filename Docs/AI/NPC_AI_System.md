@@ -68,7 +68,7 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - `ApplyAIProfile(const UAIProfile*)` — loads the profile's `StateTreeAsset`, stops/restarts StateTree logic
 - `ApplyPerceptionProfile(const UPerceptionProfile*)` — configures `SightConfig.SightRadius`, `LoseSightRadius`, `PeripheralVisionAngleDegrees`, and `HearingConfig.HearingRange`
 - Includes authority guard — stops the StateTree on clients
-- `bStartAILogicOnPossess = false` — lifecycle is manual (Spawner → ApplyAIProfile → ApplyPerceptionProfile → Possess → StartLogic)
+- `bStartAILogicOnPossess = true` — the StateTree starts automatically on possess (paired with the authority guard to stop it on clients)
 
 ### **`UAIProfile`** (`Onset/Source/Onset/Public/Enemy/Profile/AIProfile.h`)
 - `UDataAsset` subclass — created per enemy type in-editor
@@ -83,39 +83,40 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - `UDataAsset` subclass — perception configuration for the controller
 - Contains: `SightRange`, `SightAngle`, `HearingRange`
 
-### **`UOnsetStateTreeSchema`** (`Onset/Source/Onset/Public/AI/OnsetStateTreeSchema.h`)
+### **`UOnsetStateTreeSchema`** (`Onset/Source/Onset/Public/StateTree/OnsetStateTreeSchema.h`)
 - Defines context data (`FOnsetStateTreeContextData`) and the Global Task (`FOnsetStateTreeContextTask`) for the StateTree
 - Context data includes: Self actor, CurrentTarget (from `TargetingComponent`), AssistTarget, group data, health, bAssistTriggered
 
-### **`AOnsetBaseCharacter`** (`Onset/Source/Onset/Public/Player/`)
+### **`AOnsetBaseCharacter`** (`Onset/Source/Onset/Public/Core/`)
 - Shared base for `AOnsetEnemy` and `AOnsetPlayerCharacter`
 - Stores `FVector HomeLocation` — spawn anchor for territory-based AI and player respawn
 
-### **StateTree Task Base** (`Onset/Source/Onset/Public/AI/Tasks/OnsetStateTreeTaskBase.h`)
-- **`FOnsetStateTreeTaskBase`** — shared base struct, implements moved to `.cpp`. Provides static helpers accessed by every task:
+### **StateTree Task Base** (`Onset/Source/Onset/Public/StateTree/Tasks/OnsetStateTreeTask.h`)
+- **`FOnsetStateTreeTask`** — shared base struct (inherits `FStateTreeTaskCommonBase`), implements moved to `.cpp`. Provides static helpers accessed by every task:
   - `GetController(Context)` — `Cast<AOnsetAIController>(Context.GetOwner())`
-  - `GetTarget(Context)` — `AIC->TargetingComponent->GetTarget()`
-  - `GetSelfBaseCharacter(Context)` — `Cast<AOnsetBaseCharacter>(AIC->GetPawn())`
-  - `GetSelfEnemyCharacter(Context)` — `Cast<AOnsetEnemy>(AIC->GetPawn())`
+  - `GetPlayerController(Context)` — `Cast<AOnsetPlayerAIController>` (player autoplay)
+  - `GetTargetingComponent(Context)` — targeting component from the controller
+  - `GetThreatSubsystem(Context)` — `UOnsetThreatSubsystem` accessor
+  - `GetThreatAngularOffset(Count, Rank, Radius)` — angular spread helper
+  - `GetTarget(Context)` / `SetTarget(Context, NewTarget)` — via `UTargetingComponent`
+  - `GetSelfPawn<T>(Context)` — templated pawn cast from controller
   - `GetPathFollowingComponent(Context)` / `HasMoveCompleted(Context)`
   - `ApplyMovementSpeedModifier(Self, Magnitude)` — applies infinite `MultiplyCompound` GE on `MovementSpeed` attribute, returns `FActiveGameplayEffectHandle`
 
-### **StateTree Tasks** (`Onset/Source/Onset/Public/AI/Tasks/`)
-- **`FOnsetStateTreeIdleTask`** — timer-based idle (3-8s)
-- **`FOnsetStateTreeRoamTask`** — territory patrol via `GetRandomReachablePointInRadius()` anchored at `HomeTransform`
-- **`FOnsetStateTreeAgroTask`** — face target via `SetFocus()`, succeeds on facing angle ≤ 15° + 0.5s duration
-- **`FOnsetStateTreeChaseTask`** — `MoveToActor` with auto-repath; succeeds on arrival
-- **`FOnsetStateTreeAttackTask`** — activates `GA_BasicAttack` on target via ASC, exits on cooldown
-- **`FOnsetStateTreeFleeTask`** — projects flee point away from target (angle variance), applies `MovementSpeed` GE (health-ratio lerp, removed/re-applied per tick for dynamic speed), succeeds on arrival
-- **`FOnsetStateTreeLostTargetTask`** — clear focus, random pause 2-4s
-- **`FOnsetStateTreeInvestigateTask`** — moves to `HeardNoiseLocation`, applies `MovementSpeed` GE (group member vs non-group multiplier), succeeds on arrival or target sighted
-- **`FOnsetStateTreeSearchTask`** — cone-restricted yaw sweep, oscillating focal point, MinCycles + MinSearchDuration dual exit, applies `MovementSpeed` GE (fixes speed leak — ExitState properly removes the GE)
+### **StateTree Tasks** (`Onset/Source/Onset/Public/StateTree/Tasks/Enemy/`)
+- **`FEnemyPatrolTask`** — combines idle + roam (50/50 via `RoamChance`); timer-based idle (2-5s) or `GetRandomReachablePointInRadius()` roam anchored at `HomeTransform`; pauses on arrival
+- **`FEnemyEngageTask`** — single combat state replacing the old Agro/Chase/Attack chain. `EnterState` reads `AttackRange`/`ChaseRange` from `UAIProfile`, selects best target via `UOnsetThreatSubsystem::GetBestTarget()`, registers engagement, sets focus, computes angular-offset position (`GetThreatAngularOffset`) and paths to it. `Tick` re-evaluates target every 1s, position every 3s or when target moves > 200 units, fires ability at throttle within `AttackRange`, 2s timeout when target lost. `ExitState` stops movement.
+- **`FEnemyChaseTask`** — `MoveToActor` chase helper with auto-repath
+- **`FEnemyFleeTask`** — projects flee point away from target (angle variance), applies `MovementSpeed` GE (health-ratio lerp, removed/re-applied per tick for dynamic speed), succeeds on arrival
+- **`FEnemyLostTargetTask`** — clear focus, random pause 2-4s, return to patrol
+- **`FEnemyInvestigateTask`** — moves to `HeardNoiseLocation`, applies `MovementSpeed` GE (group member vs non-group multiplier), succeeds on arrival or target sighted
+- **`FEnemySearchTask`** — cone-restricted yaw sweep, oscillating focal point, MinCycles + MinSearchDuration dual exit, applies `MovementSpeed` GE (fixes speed leak — ExitState properly removes the GE)
 
-### **StateTree Conditions** (`Onset/Source/Onset/Public/AI/Conditions/`)
+### **StateTree Conditions** (`Onset/Source/Onset/Public/StateTree/Conditions/`)
 - **`FOnsetStateTreeDistanceCondition`** — compares `DistSquared` between pawn and `CurrentTarget`/`HomeLocation` against squared threshold. Supports `EOnsetStateTreeDistanceSource` (AttackRange / ChaseRange) reading from `UAIProfile`. `bAllowNoTarget` flag for Lost-range fallback.
 - **`FOnsetStateTreeFleeCondition`** — multi-factor: health ratio `<` flee threshold, group courage (allies within `AssistRadius` raise threshold), `FleeProbability` gate
-- **`FOnsetStateTreeHearingCondition`** — gates Idle/Investigate by `bHasPendingNoise` + `MaxTimeSinceLastNoise` timeout
-- **`FOnsetStateTreeTargetConditions`** — `HasTarget` / `HasNoTarget` shared empty instance data struct, inline implementations
+- **`FOnsetStateTreeHearingCondition`** — gates Patrol/Investigate by `bHasPendingNoise` + `MaxTimeSinceLastNoise` timeout
+- **`FOnsetStateTreeHasTargetCondition`** / **`FOnsetStateTreeHasNoTargetCondition`** — separate condition structs (shared empty instance data)
 
 ### **Noise Event Flow**
 Damage fires `UAISense_Hearing::ReportNoiseEvent` in `PostGameplayEffectExecute`. The controller stores:
@@ -131,52 +132,45 @@ Damage fires `UAISense_Hearing::ReportNoiseEvent` in `PostGameplayEffectExecute`
 Reads the profile and self‑configures: loads the StateTree asset, sets perception configs, binds `OnPerceptionUpdated`.
 
 ### **`OnPerceptionUpdated(const TArray<AActor*>&)`**
-Handles sight/hearing events — queries `GetCurrentlyPerceivedActors` for sight and hearing, finds the nearest valid enemy (skipping same-side actors via tag comparison), and sets `TargetingComponent.CurrentTarget`. Clears target when no enemies are perceived.  
+Handles sight/hearing events — queries `GetCurrentlyPerceivedActors` for sight and hearing, finds the nearest valid enemy (skipping same-side actors via tag comparison), and sets `TargetingComponent.CurrentTarget`. Clears target when no enemies are perceived. Adds a base threat of 1.0 on visual perception of a player (if not already engaged) so NPCs enter combat on sight via the [Threat System](Threat_System.md).  
 **Hearing is the primary assist mechanism:** when an ally is damaged, a noise event broadcasts via `UAIPerceptionSystem`; each AI controller within its own `HearingRange` receives it here. The handler collects these noise sources alongside sight stimuli and feeds them into the same target acquisition flow. Group membership filtering for assist-specific logic is handled in the StateTree tasks.  
 
+### **`UpdateLodTier()`**
+Runs every 30 ticks; throttles or stops the StateTree by distance (Tier 1 within SightRange: full ticks; Tier 2 within HearingRange: 0.2s ticks; Tier 3 beyond: StateTree stopped).
+
 ### **`SetTarget(AActor*)`** *(implemented via `UTargetingComponent`)*
-Assigns a target for chase/attack.
+Assigns a target for engage.
 
 ### **`OnDeath()`** *(implemented in `AOnsetEnemy`)*
-Notifies spawner/pool.
+Notifies spawner/pool and removes the NPC from the [Threat System](Threat_System.md) (`RemoveEnemy`).
 
 ---
 
 ## **StateTree Diagram**
 
-All tasks implemented. Health, perception hearing, and noise events handle assist/investigate/search logic.
+The current NPC StateTree uses a reduced set of 6 top-level states with event-driven transitions (no Selector). Patrol and Engage handle the states the old Idle/Roam/Agro/Chase/Attack tasks used to cover separately.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Idle
+    [*] --> Patrol
 
-    Idle --> Roam: Timer
-    Idle --> Investigate: HearingCondition (pending noise)
+    Patrol --> Investigate: HearingCondition (pending noise)
+    Patrol --> Engage: HasTarget (sight / threat)
 
-    Roam --> Agro: HasTarget (perception)
-    Roam --> Investigate: HearingCondition
-
-    Agro --> Chase: Target acquired
-    Agro --> Flee: FleeCondition (low health, isolated)
-
-    Chase --> Attack: DistanceCondition ≤ AttackRange
-    Chase --> Lost: !HasTarget
-    Chase --> Flee: FleeCondition
-
-    Attack --> Chase: Cooldown / out of range
-    Attack --> Lost: !HasTarget
-    Attack --> Flee: FleeCondition
-
-    Lost --> Idle: OnCompleted
-    Lost --> Agro: HasTarget (re-acquired)
-
-    Flee --> Idle: OnCompleted (safe distance)
-
-    Investigate --> Agro: HasTarget (spotted enemy)
     Investigate --> Search: OnCompleted + !HasTarget (noise only)
+    Investigate --> Engage: HasTarget (spotted enemy)
 
-    Search --> Agro: HasTarget (spotted enemy)
-    Search --> Idle: OnCompleted (search exhausted)
+    Search --> Engage: HasTarget (spotted enemy)
+    Search --> Patrol: OnCompleted (search exhausted)
+
+    Engage --> Flee: FleeCondition (low health, isolated)
+    Engage --> Lost: !HasTarget (2s timeout)
+    Engage --> Patrol: OnCompleted
+
+    Lost --> Patrol: OnCompleted (target lost pause)
+    Lost --> Engage: HasTarget (re-acquired)
+
+    Flee --> Patrol: OnCompleted (safe distance)
 ```
 
 ## **Data Flow Diagram**

@@ -29,8 +29,8 @@ Serverless REST backend for player accounts and characters. `FHttpStore` (`[Onse
 |--------|------|---------|------|
 | GET | `/health` | Liveness check | none |
 | POST | `/auth/validate-token` | Verify a JWT, returns `{platform, platformId}` | none |
-| GET | `/account/:platform/:id` | Account + all 3 character slots | `X-API-Key` + `X-Store-Token` |
-| POST | `/account/:platform/:id` | Create account (3 empty slots) | `X-API-Key` + `X-Store-Token` |
+| GET | `/account/:platform/:id` | Account + character slots (client pads to 3) | `X-API-Key` + `X-Store-Token` |
+| POST | `/account/:platform/:id` | Create account (returns empty `slots: []`) | `X-API-Key` + `X-Store-Token` |
 | GET | `/account/:platform/:id/character/:slot` | Load one character | `X-API-Key` + `X-Store-Token` |
 | POST | `/account/:platform/:id/character/:slot` | Create character (409 if slot occupied) | `X-API-Key` + `X-Store-Token` |
 | PUT | `/account/:platform/:id/character/:slot` | Save/update character | `X-API-Key` + `X-Store-Token` |

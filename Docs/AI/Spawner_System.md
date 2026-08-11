@@ -28,9 +28,10 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 - `InitSlots()` — pre‑computes slot transforms from `SpawnPoints` or fallback ring scatter on `BeginPlay`  
 - `SpawnGroup()` — fills all empty slots; calls `SpawnEnemyAtSlot()` for each  
 - `SpawnEnemyAtSlot(int32 SlotIndex)` — retrieves an NPC from `UOnsetPoolSubsystem.GetPooledEnemy()`, calls `ApplyProfile(Config.EnemyVisualProfile)` on the pawn, calls `ApplyAIProfile(Config.EnemyAIProfile)` + `ApplyPerceptionProfile(Config.EnemyPerceptionProfile)` on the controller, then possesses. Registers with Group System.  
-- `DestroyGroup()` — iterates all slots, destroys any occupant, clears slot references  
-- `DebugKillLast()` — kills the most recently spawned occupant (test helper)  
-- `OnNPCDeath(AOnsetEnemy*)` — called when any single NPC dies; starts its individual respawn timer (future)  
+- `DestroyGroup()` — iterates all slots, unregisters each member from the group, releases occupants back to the pool (`ReleasePooledEnemy`), clears slot references
+- `DebugKillLast()` — releases the most recently spawned occupant back to the pool (test helper)
+- `OnNPCDeath(AOnsetEnemy*)` — called when any single NPC dies (via `DeferredDeathCleanup`); clears the slot, starts its individual respawn timer, and releases the enemy back to the pool
+- `RespawnNPC(int32 SlotIndex)` — timer callback that re-occupies a slot via `SpawnEnemyAtSlot()`
 
 ## Data Flow
 

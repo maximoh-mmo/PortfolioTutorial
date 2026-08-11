@@ -65,8 +65,8 @@ Replicated to all clients.
 - `IsActorValidTarget(AActor*)` called in PlayerController's context resolution  
   - Rejects players if PvP disabled  
 
-### [GAS System](../GAS/GAS_System.md) Damage Execution
-- `ShouldApplyDamage(Source, Target)`  
+### [GAS System](../GAS/GAS_System.md) Damage Abilities
+- AoE/Cone abilities skip player targets when PvP is disabled (checked inline in `OnsetGA_AoE` / `OnsetGA_Cone` via `bIsPvPEnabled`)  
   - Blocks player→player damage if PvP disabled  
 
 ---

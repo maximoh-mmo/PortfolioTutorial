@@ -16,8 +16,8 @@ Provide top‑down ARPG controls (mouse + touch) and a UI‑driven PvP toggle th
 - Tap/click‑to‑target  
 - Gamepad R-Stick software cursor  
 - Ability activation (keyboard + touch buttons + gamepad)  
-- PvP toggle UI → PlayerState (future)  
-- Autoplay handoff (future)  
+- PvP toggle UI → PlayerState (implemented)  
+- Autoplay handoff (implemented)  
 
 ---
 
@@ -32,7 +32,7 @@ Provide top‑down ARPG controls (mouse + touch) and a UI‑driven PvP toggle th
 - **`AOnsetBaseCharacter`** — shared base for player and NPC, inherits `ACharacter`  
 - **`AOnsetPlayerCharacter`** — player character, inherits `AOnsetBaseCharacter`, camera lives here  
 - **`AOnsetPlayerController`** — routes input, cursor management, targeting, PvP toggle; owns `UInteractionComponent`  
-- **`AOnsetPlayerState`** — stores and replicates `bIsPvPEnabled` (future)  
+- **`AOnsetPlayerState`** — stores and replicates `bIsPvPEnabled`, `bAutoplayEnabled`, `bContinueOnDisconnect`  
 - **`UCursorManager`** — provides unified cursor position from mouse, touch, or gamepad R-Stick  
 - **`UTargetingComponent`** — data holder for `CurrentTarget`, target validation — lives on pawn (shared base)  
 - **`UInteractionComponent`** — click resolution extracted from controller (SRP): raycast → enemy targeting or ground movement; resolves pawn via `GetPawn()`; no-op under AI control  

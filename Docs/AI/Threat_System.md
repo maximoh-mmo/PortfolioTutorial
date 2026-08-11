@@ -140,7 +140,7 @@ StateTree was reduced from 9 states to 6 top-level subtrees with event-driven tr
 | `Source/Onset/Public/StateTree/Tasks/Enemy/EnemyPatrolTask.h/.cpp` | New | 50/50 idle vs roam replacing IdleTask + RoamTask |
 | `Source/Onset/Private/AI/OnsetAIController.cpp` | Modify | AI LOD tiers, sight-based threat on perception |
 
-Deleted tasks: AgroTask, ChaseTask, AttackTask, AttackPositionTask, IdleTask, RoamTask.
+Deleted tasks: AgroTask, AttackTask, AttackPositionTask, IdleTask, RoamTask. (`EnemyChaseTask` remains in the source tree but is not part of the current StateTree asset — combat is driven by the single EngageTask.)
 
 ## StateTree Changes
 
@@ -153,13 +153,13 @@ Engage → [target lost 2s] → Lost → Patrol
 
 ## AI LOD Integration
 
-`AOnsetAIController::UpdateLodTier()` runs every 30 ticks:
+`AOnsetAIController::UpdateLodTier()` runs every 30 controller ticks (distance measured to the nearest player pawn):
 
-| Distance | Tier | Tick Interval | StateTree |
-|----------|------|---------------|-----------|
-| ≤ SightRange | 1 (full) | Normal | Running |
+| Distance | Tier | Actor Tick Interval | StateTree |
+|----------|------|---------------------|-----------|
+| ≤ SightRange | 1 (full) | 0.0 (every frame) | Running |
 | ≤ HearingRange | 2 (throttled) | 0.2s | Running |
-| > HearingRange | 3 (paused) | 0.0s | Stopped |
+| > HearingRange | 3 (paused) | 0.5s | Stopped |
 
 ## Implementation Order
 

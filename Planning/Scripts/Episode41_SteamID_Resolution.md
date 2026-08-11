@@ -280,7 +280,7 @@ void AOnsetPlayerCharacter::ApplySaveData(const FOnsetFullCharacterData& Data)
 
 ## **How to Test**
 1. Launch DS + 1 client
-2. Complete Steam auth → client receives `Client_AccountData` (3 empty slots)
+2. Complete Steam auth → client receives `Client_AccountData` (widget pads to 3 slots)
 3. Client calls `Server_CreateCharacter(0, "Hero")` → slot 0 fills
 3. Client calls `Server_SelectCharacter(0)` → pawn spawns at (0,0,200)
 4. Move pawn, disconnect → reconnect → pawn at saved position
@@ -327,7 +327,7 @@ Client_CharacterData(CharData);
 ---
 
 ## **Next Episode Preview**
-Next time we build the lobby map and character select UI — 3-slot WBP widget, create/select flow, and `ServerTravel` to the game map.
+Next time we build the main-menu character select UI — 3-slot WBP widget, create/select flow, and tokenized travel to the game server (`Client_TravelToGameServer`).
 
 ---
 
