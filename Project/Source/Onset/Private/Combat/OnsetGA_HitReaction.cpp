@@ -8,11 +8,11 @@
 
 UOnsetGA_HitReaction::UOnsetGA_HitReaction()
 {
-	static ConstructorHelpers::FObjectFinder<UGameplayEffect> StaggerFinder(
+	static ConstructorHelpers::FClassFinder<UGameplayEffect> StaggerFinder(
 		TEXT("/Game/Game/Combat/GE_Stagger.GE_Stagger_C"));
 	if (StaggerFinder.Succeeded())
 	{
-		StaggerEffect = StaggerFinder.Object;
+		StaggerEffect = StaggerFinder.Class->GetDefaultObject<UGameplayEffect>();
 	}
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	FAbilityTriggerData TriggerData;
