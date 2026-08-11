@@ -200,7 +200,7 @@ Assign `M_TargetReticle` to the character(s) you target (base
   `/Game/Maps/DemoLevel`: `Config/DefaultEngine.ini` (ServerDefaultMap / EditorStartupMap /
   TransitionMap), `Config/DefaultGame.ini` (MapsToCook), `OnsetPlayerController.cpp:864,891`
   (travel URLs), `Test_All.ps1:38`.
-- Import ability icon art if you have it, and assign `AbilityIcon` on `GA_AoE` / `GA_Cone` (A1/A2).
+- Imported ability icon art and assigned `AbilityIcon` on `GA_AoE` / `GA_Cone` / `GA_Shadowstep` (A1–A3). Source art lives untracked under `Assets/Images/UI/` (gitignored); only the imported Content/ textures are tracked.
 
 > **Note — gamepad cursor:** the Testing cleanup also deleted `WBP_GamepadCursorWidget`, the
 > only WBP for the software gamepad cursor (`UGamepadCursorWidget` expects a `Crosshair`
@@ -231,7 +231,7 @@ Assign `M_TargetReticle` to the character(s) you target (base
    as the C++ default on `AOnsetBaseCharacter`.
 7. [x] **Set `HUDWidgetClass = WBP_HUD` on `MyOnsetPlayerController`** (B7) — done;
    verified the asset references `WBP_HUD`.
-8. [ ] Set `AbilityIcon` on `GA_AoE` / `GA_Cone` (A1/A2).
+8. [x] Set `AbilityIcon` on `GA_AoE` / `GA_Cone` / `GA_Shadowstep` (A1–A3).
 9. Open `DemoLevel` and run the PIE test plan below. Iterate on styling as needed.
 
 ---

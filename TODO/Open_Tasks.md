@@ -31,14 +31,13 @@ The remaining checklist sections. Code for the ability set + HUD is committed, s
 
 ---
 
-## Priority 2 — Ability icons (UI_ASSET_CHECKLIST Step 8, still `[ ]`)
+## Priority 2 — Ability icons (UI_ASSET_CHECKLIST Step 8) ✅
 
-Requires an Unreal Editor session — not CLI work.
+Icons assigned in-editor and committed (AoE/Cone previously, Shadowstep now). Source art under `Assets/Images/UI/` is gitignored; only imported Content/ textures are tracked.
 
-- [ ] Import icon art from `Assets/Images/UI/` (`41672.svg`, `7158.svg`, `futuristic-hud-elements-vector-34492474.avif`) as textures
-- [ ] Set `AbilityIcon` on `GA_AoE`, `GA_Cone`, `GA_Shadowstep` Blueprints (verified currently unset)
-- [ ] Verify ability bar slots 1/2 + Shadowstep passive render icons
-- [ ] After `EditorToolPlan.md` lands: icons become data-driven via `DT_Abilities.AbilityIcon` rows
+- [x] Set `AbilityIcon` on `GA_AoE`, `GA_Cone`, `GA_Shadowstep` Blueprints
+- [ ] Verify ability bar slots 1/2 + Shadowstep passive render icons (quick PIE check)
+- [ ] After `EditorToolPlan.md` lands: icons become data-driven via `DT_Abilities.AbilityIcon` rows — tracked under Priority 3 Phase 3
 
 ---
 
