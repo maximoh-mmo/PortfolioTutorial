@@ -115,3 +115,13 @@ This is not a roadmap — it is a design journal. Ideas live here without scope-
 - **How it would work:** During the last 2 seconds of the corpse's lifespan, a material parameter drives a dissolve effect (world-position offset, alpha fade, or particle burst). The corpse is destroyed when the effect completes.
 - **Architecture impact:** Adds material parameter binding to `AOnsetCorpse`. Requires a dissolve-ready material on the static mesh.
 - **Relevant to:** Visual polish pass; potential bonus episode on material effects.
+
+---
+
+## Full Debug Display
+
+### Consolidated On-Screen Debug Overlay
+- **Why deferred:** The original `UAutoplayDebugWidget` plan (A6.1) was scrapped — its autoplay-state feedback is carried by the `UCombatToggleWidget` toggle visual, and the existing AI-state readout (`AOnsetAIController::Tick` drawing the StateTree state name) covers AI debugging. A consolidated overlay is aspirational rather than required, and it has no gameplay impact.
+- **How it would work:** A toggleable (e.g. backquote key) on-screen overlay showing AI state (StateTree state, target, health), autoplay mode, networking status (Ping, NetMode, replication stats), and engine stats (FPS, actor/pool counts). Rendered as a debug-only `UUserWidget` or engine debug text, stripped for release.
+- **Architecture impact:** Reuses debug data sources already exposed — AI state via `AOnsetAIController`, autoplay state via `AOnsetPlayerState::bAutoplayEnabled`, networking via the game instance/player state. No new gameplay dependencies; gated behind a dev-only compile flag.
+- **Relevant to:** Stress tests, demo recording, balance iteration, and the AI-vs-AI autoplay harness idea above.
