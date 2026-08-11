@@ -16,12 +16,6 @@ UOnsetGA_AoE::UOnsetGA_AoE()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	static ConstructorHelpers::FObjectFinder<UGameplayEffect> CooldownFinder(
-		TEXT("/Game/Game/Combat/GE_AoE_Cooldown.GE_AoE_Cooldown_C"));
-	if (CooldownFinder.Succeeded())
-	{
-		CooldownGameplayEffectClass = CooldownFinder.Object;
-	}
 	static ConstructorHelpers::FClassFinder<UGameplayEffect> DamageFinder(
 		TEXT("/Game/Game/Combat/GE_AoE_Damage.GE_AoE_Damage_C"));
 	if (DamageFinder.Succeeded())

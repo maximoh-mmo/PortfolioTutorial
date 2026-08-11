@@ -14,12 +14,6 @@ UOnsetGA_Shadowstep::UOnsetGA_Shadowstep()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	static ConstructorHelpers::FObjectFinder<UGameplayEffect> CooldownFinder(
-		TEXT("/Game/Game/Combat/GE_Shadowstep_Cooldown.GE_Shadowstep_Cooldown_C"));
-	if (CooldownFinder.Succeeded())
-	{
-		CooldownGameplayEffectClass = CooldownFinder.Object;
-	}
 	static ConstructorHelpers::FClassFinder<UGameplayEffect> InvulnFinder(
 		TEXT("/Game/Game/Combat/GE_Shadowstep_Invuln.GE_Shadowstep_Invuln_C"));
 	if (InvulnFinder.Succeeded())

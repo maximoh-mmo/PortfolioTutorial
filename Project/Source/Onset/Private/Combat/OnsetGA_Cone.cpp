@@ -15,12 +15,6 @@ UOnsetGA_Cone::UOnsetGA_Cone()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	static ConstructorHelpers::FObjectFinder<UGameplayEffect> CooldownFinder(
-		TEXT("/Game/Game/Combat/GE_Cone_Cooldown.GE_Cone_Cooldown_C"));
-	if (CooldownFinder.Succeeded())
-	{
-		CooldownGameplayEffectClass = CooldownFinder.Object;
-	}
 	static ConstructorHelpers::FClassFinder<UGameplayEffect> DamageFinder(
 		TEXT("/Game/Game/Combat/GE_Cone_Damage.GE_Cone_Damage_C"));
 	if (DamageFinder.Succeeded())
