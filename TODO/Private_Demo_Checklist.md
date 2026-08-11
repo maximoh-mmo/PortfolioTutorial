@@ -307,17 +307,17 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Verify no performance regression under rapid death cascade
 
 ## A4.6 Multiple Abilities
-- [ ] ~~Create **AoE** ability (target-centered damage volume) — activated GA, slot 1~~ ⏳ **DEFERRED** — pending full design pass
-- [ ] ~~Create **Cone** ability (directional frontal cone) — activated GA, slot 2~~ ⏳ **DEFERRED**
-- [ ] ~~Create **Shadowstep** passive (on-kill blink behind nearest enemy, cooldown-gated) — replaces dash~~ ⏳ **DEFERRED**
-- [ ] ~~Wire `OnAbility1` → AoE, `OnAbility2` → Cone in PlayerController~~ ⏳ **DEFERRED**
-- [ ] ~~Create ability bar UI stub (for testing)~~ ⏳ **DEFERRED**
-- [ ] ~~Verify all abilities activate from input~~ ⏳ **DEFERRED**
-- [ ] ~~Verify AoE respects PvP rules (per-target filtering)~~ ⏳ **DEFERRED**
-- [ ] ~~Verify Cone respects PvP rules (per-target filtering)~~ ⏳ **DEFERRED**
-- [ ] ~~Verify Shadowstep triggers on kill~~ ⏳ **DEFERRED**
-- [ ] ~~Verify Shadowstep respects distance gate~~ ⏳ **DEFERRED**
-- [ ] ~~Verify Shadowstep cooldown prevents spam~~ ⏳ **DEFERRED**
+- [x] Create **AoE** ability (target-centered damage volume) — activated GA, slot 1
+- [x] Create **Cone** ability (directional frontal cone) — activated GA, slot 2
+- [x] Create **Shadowstep** passive (on-kill blink behind nearest enemy, cooldown-gated) — replaces dash
+- [x] Wire `OnAbility1` → AoE, `OnAbility2` → Cone in PlayerController
+- [x] Create ability bar UI stub (for testing)
+- [x] Verify all abilities activate from input
+- [x] Verify AoE respects PvP rules (per-target filtering)
+- [x] Verify Cone respects PvP rules (per-target filtering)
+- [x] Verify Shadowstep triggers on kill
+- [x] Verify Shadowstep respects distance gate
+- [x] Verify Shadowstep cooldown prevents spam
 
 ---
 
@@ -496,24 +496,24 @@ Status: ✅ Complete (compressed ~1 day)
 ---
 
 ## A6.1 UI System
-- [ ] Create `UHUDWidget` (main HUD container)
-- [ ] Implement **virtual ability button widgets** (touch) — 4 ability hotkeys + basic attack
+- [x] Create `UHUDWidget` (main HUD container)
+- [x] Implement **virtual ability button widgets** (touch) — 4 ability hotkeys + basic attack — **clickable ability-bar slots** (`HandleSlotClicked` → `AbilityLocalInputPressed`)
 - [x] Implement **virtual joystick widget** (touch) — thumbstick zone with drag-outline — **implemented (JoystickWidget.h/.cpp)**
 - [x] Implement **gamepad cursor overlay widget** (software crosshair) — **implemented (GamepadCursorWidget.h/.cpp)**
-- [ ] Implement player health bar
-- [ ] Implement `UEnemyHealthBarWidget` (world-space attached to NPCs)
-- [ ] Implement `UAbilityBarWidget` (cooldown display)
-- [ ] Implement `UTargetIndicatorWidget` (targeting reticles)
+- [x] Implement player health bar
+- [x] Implement enemy health display — **target frame (`UTargetHUDWidget`) + static lifebar**, not world-space attached
+- [x] Implement `UAbilityBarWidget` (cooldown display)
+- [x] Implement targeting reticle — **ground decal** (`UpdateTargetReticle`, per-class material override)
 - [ ] Implement debug overlay (`UAutoplayDebugWidget`)
-- [ ] Add PvP toggle UI element (virtual button for touch, widget for desktop)
-- [ ] Wire up GAS attribute changes → HUD updates
-- [ ] Verify health updates correctly
-- [ ] Verify enemy health bars appear/disappear
-- [ ] Verify ability cooldowns update
-- [ ] Verify target indicators match ability behaviour
+- [x] Add PvP toggle UI element (virtual button for touch, widget for desktop)
+- [x] Wire up GAS attribute changes → HUD updates
+- [x] Verify health updates correctly
+- [x] Verify enemy health bars appear/disappear
+- [x] Verify ability cooldowns update
+- [x] Verify target indicators match ability behaviour
 - [ ] Verify debug UI toggles correctly
 - [x] Verify virtual joystick input on touch device
-- [ ] Verify virtual ability buttons trigger GAS abilities
+- [x] Verify virtual ability buttons trigger GAS abilities
 - [x] Verify gamepad cursor renders and follows R-Stick
 
 ## A6.2 Final Demo Loop
@@ -573,9 +573,9 @@ Status: ✅ Complete (compressed ~1 day)
 | A1 Core Player | 38 | 38 | 100% | |
 | A2 NPC Lifecycle | 35 | 35 | 100% | |
 | A3 AI Systems | 75 | 75 | 100% | |
-| A4 GAS Combat | 58 | 45 | 78% | 13 deferred — pending full design pass |
+| A4 GAS Combat | 58 | 56 | 97% | 2 deferred — pending full design pass (attack montage, hitstop/stagger) |
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
 | A5b Persistence & Account | 51 | 51 | 100% | All waves complete. Includes FHttpStore + Account API (Lambda + DynamoDB). Wave 5 revised: canvas HUDs → CommonUI screen stack. Post-sprint (08-03-26): create auto-enters world, C++-driven slots, loading screen transitions. |
 | A5c Auth Extraction & Login Server | 42 | 42 | 100% | |
-| A6 UI & Final Demo | — | — | — | Not started |
-| A7 Integration & Harden | — | — | — | Not started |
+| A6 UI & Final Demo | 17 | 30 | 57% | A6.1 HUD foundation + v2 complete (target frame, ground reticle, clickable ability slots). Open: `UAutoplayDebugWidget` debug overlay. A6.2/A6.3 not started. |
+| A7 Integration & Harden | 0 | 23 | 0% | Not started |
