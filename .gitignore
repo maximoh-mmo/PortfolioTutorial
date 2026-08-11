@@ -37,6 +37,9 @@ Manifest_DebugFiles_Win64.xml
 Content/Paks/
 Content/*.ubulk
 
+# Downloaded/source art (only imported Content/ assets are tracked)
+Assets/
+
 # Plugins
 Plugins/*/Intermediate/
 Plugins/*/Binaries/
