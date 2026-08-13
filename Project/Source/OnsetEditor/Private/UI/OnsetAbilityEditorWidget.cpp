@@ -1,11 +1,12 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "OnsetAbilityEditorWidget.h"
+#include "UI/OnsetAbilityEditorWidget.h"
 
 #include "OnsetEditor.h"
+#include "PackageTools.h"
+#include "Blueprint/WidgetTree.h"
 #include "Combat/OnsetAbilityLibrary.h"
 #include "Combat/OnsetGameplayAbility.h"
-#include "Blueprint/WidgetTree.h"
 #include "Components/DetailsView.h"
 #include "Components/HorizontalBox.h"
 #include "Components/ScrollBox.h"
@@ -13,11 +14,6 @@
 #include "Components/VerticalBox.h"
 #include "Data/OnsetAbilityTypes.h"
 #include "Engine/DataTable.h"
-#include "Misc/PackageName.h"
-#include "Misc/Paths.h"
-#include "PackageTools.h"
-#include "Components/HorizontalBoxSlot.h"
-#include "Framework/Commands/UICommandInfo.h"
 #include "UI/OnsetAbilityRowButton.h"
 #include "UObject/SavePackage.h"
 #include "UObject/UObjectGlobals.h"

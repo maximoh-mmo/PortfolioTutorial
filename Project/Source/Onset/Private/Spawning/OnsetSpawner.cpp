@@ -17,10 +17,6 @@ AOnsetSpawner::AOnsetSpawner()
 	GroupManager = CreateDefaultSubobject<UGroupManagerComponent>(TEXT("GroupManager"));
 }
 
-void AOnsetSpawner::AddSpawnPoint()
-{
-}
-
 void AOnsetSpawner::SpawnGroup()
 {
 	if (!HasAuthority()) return;
@@ -80,10 +76,12 @@ void AOnsetSpawner::InitSlots()
 		
 		if (SpawnPoints.IsValidIndex(i) && SpawnPoints[i])
 		{
-			Slot.SpawnTransform = SpawnPoints[i]->GetChildActor()->GetActorTransform();
+			UE_LOG(LogSpawner, Warning, TEXT("SpawnPoints: %d has valid transform, Slot assigned with %s"), i, *SpawnPoints[i]->GetActorTransform().ToString());
+			Slot.SpawnTransform = SpawnPoints[i]->GetActorTransform();
 		}
 		else
 		{
+			UE_LOG(LogSpawner, Error, TEXT("SpawnPoints: %d has no valid transform"), i);
 			float Angle = (360.0f / Count) * i;
 			float Rad = FMath::DegreesToRadians(Angle);
 			FVector Offset = FVector(FMath::Cos(Rad), FMath::Sin(Rad), 0.0f) * Config.SpawnRadius;
@@ -129,7 +127,100 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	}
 	return Spawned;
 }
+#if WITH_EDITOR
 
+void AOnsetSpawner::UpdateAllSpawnPointPreviews()
+{
+	if (!Config.EnemyVisualProfile)	return;
+	
+	USkeletalMesh* PreviewMesh = 
+		Config.EnemyVisualProfile->SkeletalMesh.LoadSynchronous();
+	
+	UMaterialInterface* PreviewMaterial =
+		Config.EnemyVisualProfile->OverrideMaterial.Get();
+	
+	for (ASpawnPoint* SpawnPoint : SpawnPoints)
+	{
+		if (!IsValid(SpawnPoint)) continue;
+		SpawnPoint->SetPreview(
+			PreviewMesh,
+			PreviewMaterial
+			);
+	}
+}
+
+void AOnsetSpawner::RemoveInvalidSpawnPoints()
+{
+}
+
+void AOnsetSpawner::DestroySpawnPoint(ASpawnPoint* SpawnPoint)
+{
+}
+
+void AOnsetSpawner::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	
+	if (!PropertyChangedEvent.Property) return;
+	
+	const FName PropertyName = PropertyChangedEvent.Property->GetFName();
+	
+	const FName MemberPropertyName = 
+		PropertyChangedEvent.MemberProperty
+			? PropertyChangedEvent.MemberProperty->GetFName() 
+			: NAME_None;
+	
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(
+			AOnsetSpawner, 
+			Config)
+		|| 
+		MemberPropertyName == GET_MEMBER_NAME_CHECKED(
+			AOnsetSpawner,
+			Config))
+	{
+		UpdateAllSpawnPointPreviews();
+	}
+	
+	if (PropertyName ==	GET_MEMBER_NAME_CHECKED(
+		AOnsetSpawner,
+		SpawnPoints))
+	{
+	    UpdateAllSpawnPointPreviews();
+	}
+}
+
+void AOnsetSpawner::SyncSpawnPoints()
+{
+	// Find actors that were removed from the array.
+
+	for (auto CachedPoint : EditorSpawnPointCache)
+	{
+		if (!IsValid(CachedPoint.Get()))
+		{
+			continue;
+		}
+
+		if (!SpawnPoints.Contains(CachedPoint.Get()))
+		{
+			CachedPoint->Destroy();
+		}
+	}
+
+	// Refresh cache.
+
+	EditorSpawnPointCache = SpawnPoints;
+}
+
+void AOnsetSpawner::PostEditUndo()
+{
+	Super::PostEditUndo();
+	
+	UpdateAllSpawnPointPreviews();
+
+	EditorSpawnPointCache = SpawnPoints;
+}
+
+#endif
 
 void AOnsetSpawner::DebugKillAll()
 {

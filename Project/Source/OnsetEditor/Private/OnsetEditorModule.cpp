@@ -1,14 +1,26 @@
 ﻿#include "OnsetEditorModule.h"
 
 #include "LevelEditor.h"
-#include "OnsetAbilityEditorWidget.h"
+#include "PropertyEditorModule.h"
+#include "UI/OnsetAbilityEditorWidget.h"
 #include "Blueprint/UserWidget.h"
+#include "DetailCustomization/SpawnerDetails.h"
 
 void FOnsetEditorModule::StartupModule()
 {	
-	
 	UToolMenus::RegisterStartupCallback(
 				FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FOnsetEditorModule::RegisterMenus));
+	FPropertyEditorModule& PropertyModule =
+			FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
+				"PropertyEditor"
+			);
+
+	PropertyModule.RegisterCustomClassLayout(
+		"OnsetSpawner",
+		FOnGetDetailCustomizationInstance::CreateStatic(
+			&FSpawnerDetails::MakeInstance
+		)
+	);
 }
 
 void FOnsetEditorModule::ShutdownModule()
@@ -16,6 +28,17 @@ void FOnsetEditorModule::ShutdownModule()
 	UToolMenus::UnRegisterStartupCallback(this);
 	UToolMenus::UnregisterOwner(this);
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(AbilityEditorTabID);
+	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
+	{
+		FPropertyEditorModule& PropertyModule =
+			FModuleManager::GetModuleChecked<FPropertyEditorModule>(
+				"PropertyEditor"
+			);
+
+		PropertyModule.UnregisterCustomClassLayout(
+			"OnsetSpawner"
+		);
+	}
 }
 
 void FOnsetEditorModule::RegisterMenus()

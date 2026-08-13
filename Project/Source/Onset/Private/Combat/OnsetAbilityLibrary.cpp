@@ -5,6 +5,7 @@
 #include "Combat/OnsetGameplayAbility.h"
 #include "Data/OnsetAbilityTypes.h"
 #include "Engine/DataTable.h"
+#include "GameplayTagsManager.h"
 #include "Misc/ConfigCacheIni.h"
 namespace OnsetAbilityLibraryInternal
 {
@@ -46,17 +47,19 @@ FGameplayTag UOnsetAbilityLibrary::MakeAbilityIDTag(FName RowName)
 
 const FOnsetAbilityDefinition* UOnsetAbilityLibrary::GetDefinitionFromDynamicTags(const FGameplayTagContainer& DynamicTags)
 {
+	// Ensure AbilityID.<RowName> tags are registered before scanning. On clients the
+	// HUD can rebuild before the local character has run LoadTable(), so the tags may
+	// be plain (unregistered) FNames; GetAbilityTable() also registers them.
+	GetAbilityTable();
+
 	for (const FGameplayTag& Tag : DynamicTags)
 	{
-		if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("AbilityID"), /* ErrorIfNotFound= */ false)))
+		const FString TagString = Tag.ToString();
+		FStringView TagView(TagString);
+		FStringView PrefixView(TEXT("AbilityID."));
+		if (TagView.StartsWith(PrefixView))
 		{
-			const FString TagString = Tag.ToString();
-			FStringView TagView(TagString);
-			FStringView PrefixView(TEXT("AbilityID."));
-			if (TagView.StartsWith(PrefixView))
-			{
-				return GetDefinition(FName(TagView.RightChop(PrefixView.Len())));
-			}
+			return GetDefinition(FName(TagView.RightChop(PrefixView.Len())));
 		}
 	}
 	return nullptr;
@@ -156,6 +159,13 @@ UDataTable* UOnsetAbilityLibrary::LoadTable()
 		{
 			OnsetAbilityLibraryInternal::CachedRows.Add(Entry.Key, *Definition);
 		}
+
+		// Register the AbilityID.<RowName> tag so MakeAbilityIDTag() finds it when
+		// granting the spec. Rows are authored at runtime (editor tool), so the tag
+		// can't be baked in as a native tag. AddNativeGameplayTag is idempotent and
+		// safe to call after startup; it also creates the AbilityID parent chain.
+		UGameplayTagsManager::Get().AddNativeGameplayTag(
+			FName(*FString::Printf(TEXT("AbilityID.%s"), *Entry.Key.ToString())));
 	}
 	return Table;
 }

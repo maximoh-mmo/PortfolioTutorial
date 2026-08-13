@@ -2,21 +2,46 @@
 
 
 #include "Spawning/SpawnPoint.h"
+#if WITH_EDITOR
 #include "Components/SkeletalMeshComponent.h"
-#include "Enemy/Profile/VisualProfile.h"
-#include "Spawning/OnsetSpawner.h"
-#include "VisualLogger/VisualLoggerTypes.h"
-
+#endif
 
 // Sets default values
 ASpawnPoint::ASpawnPoint()
 {
-	if (AOnsetSpawner* ParentActor = Cast<AOnsetSpawner>(GetParentActor()))
-	{
-		USkeletalMeshComponent* Mesh = CreateDefaultSubobject<USkeletalMeshComponent>("SkeletalMeshComponent");
-		USkeletalMesh* MeshAsset = ParentActor->Config.EnemyVisualProfile->SkeletalMesh.LoadSynchronous();
-		UMaterialInterface* Material = ParentActor->Config.EnemyVisualProfile->OverrideMaterial.Get();
-		Mesh->SetSkeletalMesh(MeshAsset);
-		Mesh->SetMaterial(0,Material);
-	}
+	PrimaryActorTick.bCanEverTick = false;
+
+	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
+	RootComponent = SceneRoot;
+
+#if WITH_EDITOR
+	PreviewMesh = CreateDefaultSubobject<USkeletalMeshComponent>(
+		TEXT("PreviewMesh")
+	);
+
+	PreviewMesh->SetupAttachment(SceneRoot);
+
+	PreviewMesh->SetIsVisualizationComponent(true);
+
+	PreviewMesh->SetCollisionEnabled(
+		ECollisionEnabled::NoCollision
+	);
+
+	PreviewMesh->SetGenerateOverlapEvents(false);
+	#endif
 }
+#if WITH_EDITOR
+void ASpawnPoint::SetPreview(
+	USkeletalMesh* Mesh,
+	UMaterialInterface* Material)
+{
+	if (!PreviewMesh)
+	{
+		return;
+	}
+
+	PreviewMesh->SetSkeletalMeshAsset(Mesh);
+	PreviewMesh->SetMaterial(0, Material);
+}
+
+#endif

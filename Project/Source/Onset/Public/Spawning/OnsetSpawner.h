@@ -27,11 +27,8 @@ public:
 
 	/** Optional explicit array of points where actors can be spawned;
 	 *  falls back to ring scatter around the spawner location. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawning")
-	TArray<UChildActorComponent*> SpawnPoints;
-	
-	UFUNCTION()
-	void AddSpawnPoint();
+	UPROPERTY(EditInstanceOnly, Category="Spawning")
+	TArray<TObjectPtr<ASpawnPoint>> SpawnPoints;
 	
 	/** Group manager created automatically as a subobject. Tracks group membership. */
 	UPROPERTY(VisibleAnywhere, Category = "Spawning")
@@ -56,7 +53,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Spawner")
 	void OnNPCDeath(AOnsetEnemy* Enemy);
 	void RespawnNPC(int32 SlotIndex);
-
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -76,6 +73,21 @@ private:
 	UPROPERTY()
 	TArray<FSpawnerSlot> Slots;
 	
-	UPROPERTY()
-	int32 CurrentSpawnPointCount = 0;
+#if WITH_EDITOR
+	void UpdateAllSpawnPointPreviews();
+	void RemoveInvalidSpawnPoints();
+	void DestroySpawnPoint(ASpawnPoint* SpawnPoint);
+	
+	virtual void PostEditChangeProperty(
+		struct FPropertyChangedEvent& PropertyChangedEvent
+		) override;
+	void SyncSpawnPoints();
+
+	virtual void PostEditUndo() override;
+#endif
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASpawnPoint>> EditorSpawnPointCache;
+#endif
+	
 };

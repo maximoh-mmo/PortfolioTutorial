@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Enemy/Profile/VisualProfile.h"
 #include "GameFramework/Actor.h"
 #include "SpawnPoint.generated.h"
 
@@ -16,5 +17,17 @@ class ONSET_API ASpawnPoint : public AActor
 public:
 	// Sets default values for this actor's properties
 	ASpawnPoint();
-	void Init(USkeletalMesh* SkeletonAsset, UMaterialInterface* Material);
+
+	/** Permanent root component so the actor transform is valid in all builds. */
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<USceneComponent> SceneRoot;
+
+#if WITH_EDITOR
+	void SetPreview(USkeletalMesh* Mesh, UMaterialInterface* Material);
+#endif
+	
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(VisibleAnywhere, Transient)
+	TObjectPtr<USkeletalMeshComponent> PreviewMesh;
+#endif
 };
