@@ -13,6 +13,7 @@ param(
 $EngineBin = Join-Path $EnginePath "Engine\Binaries\Win64\UnrealEditor.exe"
 $ProjectDir = Split-Path $ProjectPath -Parent
 $LogDir = "$ProjectDir\Saved\Logs"
+$ExitLog = "$LogDir\ProcessExitCodes.log"
 
 if (!(Test-Path $EngineBin)) {
     Write-Host "UnrealEditor.exe not found at $EngineBin" -ForegroundColor Red
@@ -45,51 +46,122 @@ if ($AutoPlaySlot -ge 0) {
     $ClientBaseCmd += " -AutoPlaySlot=$AutoPlaySlot"
 }
 
+function Write-ExitLog {
+    param([string]$Line)
+    $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Add-Content -Path $ExitLog -Value "[$stamp] $Line"
+}
+
+function Describe-ExitCode {
+    param([int]$Code)
+    $unsigned = [uint32]$Code
+    switch ($unsigned) {
+        0               { return "graceful exit" }
+        1               { return "terminated (killed / TerminateProcess)" }
+        0xC0000005      { return "ACCESS_VIOLATION (crash)" }
+        0xC0000409      { return "STACK_BUFFER_OVERRUN (crash)" }
+        0xC0000135      { return "DLL_NOT_FOUND" }
+        0xC000000D      { return "INVALID_PARAMETER" }
+        0xC00000FD      { return "STACK_OVERFLOW (crash)" }
+        0xC000001D      { return "ILLEGAL_INSTRUCTION (crash)" }
+        default {
+            if ($unsigned -ge 0xC0000000) { return "NTSTATUS 0x$($unsigned.ToString('X8')) (crash)" }
+            return "exit code $Code"
+        }
+    }
+}
+
+# Processes started so far and an exit-code watchdog that polls while we wait for input.
+$procs = @()
+$TrackedProcs = [System.Collections.Generic.List[object]]::new()
+
+function Add-TrackedProc {
+    param($Proc, [string]$Label)
+    $started = Get-Date
+    $TrackedProcs.Add([pscustomobject]@{ Proc = $Proc; Label = $Label; Started = $started })
+    Write-ExitLog "START label=$Label pid=$($Proc.Id) started=$($started.ToString('HH:mm:ss'))"
+    Write-Host "  Watching $Label (PID $($Proc.Id)) for exit code" -ForegroundColor DarkGray
+}
+
+function Update-TrackedProcs {
+    if ($TrackedProcs.Count -eq 0) { return }
+    $toRemove = [System.Collections.Generic.List[object]]::new()
+    foreach ($t in $TrackedProcs) {
+        if ($t.Proc.HasExited) {
+            $code = $t.Proc.ExitCode
+            $desc = Describe-ExitCode -Code $code
+            Write-Host "  [exit] $($t.Label) (PID $($t.Proc.Id)) -> $code ($desc)" -ForegroundColor Yellow
+            Write-ExitLog "EXIT  label=$($t.Label) pid=$($t.Proc.Id) code=$code desc=$desc started=$($t.Started.ToString('HH:mm:ss'))"
+            $toRemove.Add($t)
+        }
+    }
+    foreach ($t in $toRemove) { $TrackedProcs.Remove($t) }
+}
+
+Write-ExitLog "=== Test_All session started ==="
+
 Write-Host "=== Phase 1: Launching Login Server (port $LoginPort) ===" -ForegroundColor Cyan
 Write-Host "  $EngineBin $LoginCmd" -ForegroundColor Gray
-$procs = @()
-$procs += Start-Process -FilePath $EngineBin -ArgumentList $LoginCmd -WindowStyle Normal -PassThru
+$p = Start-Process -FilePath $EngineBin -ArgumentList $LoginCmd -WindowStyle Normal -PassThru
+$procs += $p
+Add-TrackedProc $p "LoginServer"
 Start-Sleep 10
 
 Write-Host "=== Phase 2: Launching Game Server (port $GamePort) ===" -ForegroundColor Cyan
 Write-Host "  $EngineBin $GameCmd" -ForegroundColor Gray
-$procs += Start-Process -FilePath $EngineBin -ArgumentList $GameCmd -WindowStyle Normal -PassThru
+$p = Start-Process -FilePath $EngineBin -ArgumentList $GameCmd -WindowStyle Normal -PassThru
+$procs += $p
+Add-TrackedProc $p "GameServer"
 Start-Sleep 10
 
 Write-Host "=== Phase 3: Launching First Client ===" -ForegroundColor Cyan
 $clientCount = 1
 $clientCmd = $ClientBaseCmd -f $ClientLog, $clientCount
 Write-Host "  $EngineBin $clientCmd" -ForegroundColor Gray
-$procs += Start-Process -FilePath $EngineBin -ArgumentList $clientCmd -WindowStyle Normal -PassThru
+$p = Start-Process -FilePath $EngineBin -ArgumentList $clientCmd -WindowStyle Normal -PassThru
+$procs += $p
+Add-TrackedProc $p "Client 1"
 
 Write-Host "`nLog files:" -ForegroundColor Green
 Write-Host "  LoginServer -> $LoginLog" -ForegroundColor Gray
 Write-Host "  GameServer  -> $GameLog" -ForegroundColor Gray
 Write-Host "  Client 1    -> $ClientLog" -ForegroundColor Gray
+Write-Host "  Exit codes  -> $ExitLog" -ForegroundColor Gray
 
 Write-Host "`nInteractive controls:" -ForegroundColor Green
 Write-Host "  [Enter]  Launch another client" -ForegroundColor Gray
 Write-Host "  [Q]      Quit and clean up all processes" -ForegroundColor Gray
+Write-Host "  Exit codes are logged to ProcessExitCodes.log as processes die." -ForegroundColor DarkGray
 
 try {
-    do {
-        Write-Host "`n> " -ForegroundColor Yellow -NoNewline
-        $keyInfo = [System.Console]::ReadKey($true)
-        if ($keyInfo.Key -eq [ConsoleKey]::Enter) {
-            $clientCount++
-            $clientLog = "$LogDir\Client_$clientCount.log"
-            $clientCmd = $ClientBaseCmd -f $clientLog, $clientCount
-            Write-Host "Launching client $clientCount..." -ForegroundColor Cyan
-            Write-Host "  $EngineBin $clientCmd" -ForegroundColor Gray
-            $procs += Start-Process -FilePath $EngineBin -ArgumentList $clientCmd -WindowStyle Normal -PassThru
-            Write-Host "  Client $clientCount -> $clientLog" -ForegroundColor Gray
+    $running = $true
+    while ($running) {
+        Update-TrackedProcs
+        if ([Console]::KeyAvailable) {
+            $keyInfo = [Console]::ReadKey($true)
+            if ($keyInfo.Key -eq [ConsoleKey]::Enter) {
+                $clientCount++
+                $clientLog = "$LogDir\Client_$clientCount.log"
+                $clientCmd = $ClientBaseCmd -f $clientLog, $clientCount
+                Write-Host "Launching client $clientCount..." -ForegroundColor Cyan
+                Write-Host "  $EngineBin $clientCmd" -ForegroundColor Gray
+                $p = Start-Process -FilePath $EngineBin -ArgumentList $clientCmd -WindowStyle Normal -PassThru
+                $procs += $p
+                Add-TrackedProc $p "Client $clientCount"
+                Write-Host "  Client $clientCount -> $clientLog" -ForegroundColor Gray
+            }
+            elseif ($keyInfo.Key -eq [ConsoleKey]::Q) {
+                $running = $false
+            }
         }
-    } while ($keyInfo.Key -ne [ConsoleKey]::Q)
+        Start-Sleep -Milliseconds 500
+    }
 
     Write-Host "`nQuit requested." -ForegroundColor Yellow
 }
 catch {
     Write-Host "`nCaught exception: $_" -ForegroundColor Red
+    Write-ExitLog "EXCEPTION $_"
 }
 finally {
     Write-Host "`nCleaning up all processes..." -ForegroundColor Yellow
@@ -97,7 +169,12 @@ finally {
         if (!$p.HasExited) {
             Write-Host "  Stopping PID $($p.Id)..." -ForegroundColor Gray
             $p.Kill()
+            $p.WaitForExit(5000) | Out-Null
+            $code = $p.ExitCode
+            Write-ExitLog "KILLED pid=$($p.Id) code=$code desc=$(Describe-ExitCode -Code $code)"
         }
     }
+    Update-TrackedProcs
+    Write-ExitLog "=== Test_All session ended ==="
     Write-Host "Done." -ForegroundColor Green
 }
