@@ -185,6 +185,11 @@ FString SHA256(const FString& Input)
     char buf[2*FSHA256::Digest_Size+1];
     buf[2*FSHA256::Digest_Size] = 0;
     for (int i = 0; i < FSHA256::Digest_Size; i++)
-        sprintf(buf+i*2, "%02x", Digest[i]);
+    {
+        size_t offset = i * 2;
+        size_t rem = sizeof(buf) - offset;
+        if (rem < 3) { buf[sizeof(buf)-1] = '\0'; break; }
+        sprintf_s(buf + offset, rem, "%02x", static_cast<unsigned>(Digest[i]));
+    }
     return FString(buf);
 }
