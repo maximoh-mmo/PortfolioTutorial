@@ -45,10 +45,10 @@ Icons assigned in-editor and committed (AoE/Cone previously, Shadowstep now). So
 
 Biggest code task, fully designed, unstarted. Data-driven `DT_Abilities` replaces hardcoded grants; introduces Slow vs Snare + damage execution pipeline. 5 phases:
 
-- [ ] **Phase 1 — Cooldown plumbing**: `UOnsetCombatAttributeSet` (`CooldownMultiplier`, replicated), `GE_GenericSlow`, `ApplyCooldown` SetDuration override. Verify slow extends enemy cooldowns.
-- [ ] **Phase 2 — Damage pipeline**: `UOnsetDamageExecution` + `GE_GenericDamage` + invulnerability gate (`TAG_State_Invulnerable` → 0). Verify damage numbers intact; invuln targets take 0.
-- [ ] **Phase 3 — Data-driven runtime**: `FOnsetAbilityDefinition`, `UOnsetGA_Generic`, `GE_GenericSnare`/`GE_GenericCooldown`, `UOnsetAbilityLibrary`, tag-based row resolution, data-driven `GrantDefaultAbilities`, row-based ability bar slots. Verify parity with today.
-- [ ] **Phase 4 — Editor tool**: enable `Blutility` + `EditorScriptingUtilities` plugins, EUW + PropertyView form, Add/Delete/Save, build `DT_Abilities` demo loadout (AoE→1, Cone→2). Verify persists + shows in PIE.
+- [x] **Phase 1 — Cooldown plumbing**: `UOnsetCombatAttributeSet` (`CooldownMultiplier`, replicated), `GE_GenericSlow`, `ApplyCooldown` SetDuration override. Verify slow extends enemy cooldowns.
+- [x] **Phase 2 — Damage pipeline**: `UOnsetDamageExecution` + `GE_GenericDamage` + invulnerability gate (`TAG_State_Invulnerable` → 0). Verify damage numbers intact; invuln targets take 0.
+- [x] **Phase 3 — Data-driven runtime**: `FOnsetAbilityDefinition`, `UOnsetGA_Generic`, `GE_GenericSnare`/`GE_GenericCooldown`, `UOnsetAbilityLibrary`, tag-based row resolution, data-driven `GrantDefaultAbilities`, row-based ability bar slots. Verify parity with today.
+- [x] **Phase 4 — Editor tool (code)**: `OnsetEditor` module + `UOnsetAbilityEditorWidget` (list + `UDetailsView` form + Add/Delete/Save), Tools-menu entry hosting it in a nomad tab. **Remaining (in-editor)**: create `DT_Abilities` asset + populate demo loadout (AoE→1, Cone→2). Verify persists + shows in PIE.
 - [ ] **Phase 5 — Extras (optional)**: player `AutoAttackInterval` driven by `CooldownMultiplier`; more effect types; assignment/unlock menu; armor/resist ExecCalc.
 
 ---
