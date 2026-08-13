@@ -15,12 +15,6 @@ UOnsetGA_Cone::UOnsetGA_Cone()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	static ConstructorHelpers::FClassFinder<UGameplayEffect> DamageFinder(
-		TEXT("/Game/Game/Combat/GE_Cone_Damage.GE_Cone_Damage_C"));
-	if (DamageFinder.Succeeded())
-	{
-		DamageEffectClass = DamageFinder.Class;
-	}
 	FGameplayTagContainer AssetTags = GetAssetTags();
 	AssetTags.AddTag(TAG_Ability_Cone);
 	SetAssetTags(AssetTags);
@@ -39,12 +33,6 @@ void UOnsetGA_Cone::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 	AOnsetBaseCharacter* Self = Cast<AOnsetBaseCharacter>(ActorInfo->AvatarActor);
 	if (!Self)
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
-		return;
-	}
-
-	if (!DamageEffectClass)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
@@ -117,15 +105,11 @@ void UOnsetGA_Cone::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		{
 			continue; // Outside the cone
 		}
-		
-		FGameplayAbilityTargetDataHandle TargetData;
-		FGameplayAbilityTargetData_ActorArray* ActorArrayData =
-			new FGameplayAbilityTargetData_ActorArray();
 
-		ActorArrayData->TargetActorArray.Add(HitActor);
-		TargetData.Add(ActorArrayData);
-
-		ApplyGameplayEffectToTarget(Handle, ActorInfo, ActivationInfo, TargetData, DamageEffectClass, GetAbilityLevel());
+		if (HitChar->AbilitySystemComponent)
+		{
+			ApplyDamageToTarget(HitChar->AbilitySystemComponent, Damage, 0.0f, GetAbilityLevel());
+		}
 	}
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);

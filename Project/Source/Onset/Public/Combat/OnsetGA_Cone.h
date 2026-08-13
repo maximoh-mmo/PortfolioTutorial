@@ -23,9 +23,9 @@ protected:
 		const FGameplayEventData* TriggerEventData) override;
 
 private:
-	/** Gameplay effect applied as damage to targets in cone. */
+	/** Base damage applied to each target (physical). Supplied via SetByCaller to GE_GenericDamage. */
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	float Damage = 25.0f;
 
 	/** Angle of the cone in degrees. */
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")

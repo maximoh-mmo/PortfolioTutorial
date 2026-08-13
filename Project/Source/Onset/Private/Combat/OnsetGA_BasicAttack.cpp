@@ -14,12 +14,6 @@ UOnsetGA_BasicAttack::UOnsetGA_BasicAttack()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	static ConstructorHelpers::FClassFinder<UGameplayEffect> DamageFinder(
-		TEXT("/Game/Game/Combat/GE_BasicAttackDamage.GE_BasicAttackDamage_C"));
-	if (DamageFinder.Succeeded())
-	{
-		DamageEffectClass = DamageFinder.Class;
-	}
 	FGameplayTagContainer AssetTags = GetAssetTags();
 	AssetTags.AddTag(TAG_Ability_Attack);
 	SetAssetTags(AssetTags);
@@ -52,12 +46,6 @@ void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	// Range check at activation
 	const float DistSq = FVector::DistSquared(Self->GetActorLocation(), TargetActor->GetActorLocation());
 	if (DistSq > FMath::Square(AttackRange))
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
-		return;
-	}
-
-	if (!DamageEffectClass)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
@@ -103,12 +91,14 @@ void UOnsetGA_BasicAttack::ApplyDamageAfterDelay(const FGameplayAbilitySpecHandl
 		return;
 	}
 
-	FGameplayAbilityTargetDataHandle TargetData;
-	FGameplayAbilityTargetData_ActorArray* ActorArrayData = new FGameplayAbilityTargetData_ActorArray();
-	ActorArrayData->TargetActorArray.Add(TargetActor);
-	TargetData.Add(ActorArrayData);
+	AOnsetBaseCharacter* TargetChar = Cast<AOnsetBaseCharacter>(TargetActor);
+	if (!TargetChar || !TargetChar->AbilitySystemComponent)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+		return;
+	}
 
-	(void)ApplyGameplayEffectToTarget(Handle, ActorInfo, ActivationInfo, TargetData, DamageEffectClass, GetAbilityLevel());
+	ApplyDamageToTarget(TargetChar->AbilitySystemComponent, Damage, 0.0f, GetAbilityLevel());
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }

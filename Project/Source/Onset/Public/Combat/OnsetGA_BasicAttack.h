@@ -24,9 +24,9 @@ protected:
 		const FGameplayEventData* TriggerEventData) override;
 
 private:
-	/** Gameplay effect applied as damage to the target. */
+	/** Base damage applied to the target (physical). Supplied via SetByCaller to GE_GenericDamage. */
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	float Damage = 25.0f;
 
 	/** Maximum range at which this ability can hit a target. */
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")

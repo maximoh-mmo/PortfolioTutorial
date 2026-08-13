@@ -3,16 +3,22 @@
 #include "TimerManager.h"
 #include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
+#include "Engine/NetDriver.h"
 #include "Engine/World.h"
 #include "Spawning/GroupManagerComponent.h"
 #include "Subsystem/OnsetPoolSubsystem.h"
 #include "Spawning/SpawnerSlot.h"
+#include "Spawning/SpawnPoint.h"
 
 DEFINE_LOG_CATEGORY(LogSpawner);
 
 AOnsetSpawner::AOnsetSpawner()
 {
 	GroupManager = CreateDefaultSubobject<UGroupManagerComponent>(TEXT("GroupManager"));
+}
+
+void AOnsetSpawner::AddSpawnPoint()
+{
 }
 
 void AOnsetSpawner::SpawnGroup()
@@ -74,7 +80,7 @@ void AOnsetSpawner::InitSlots()
 		
 		if (SpawnPoints.IsValidIndex(i) && SpawnPoints[i])
 		{
-			Slot.SpawnTransform = SpawnPoints[i]->GetActorTransform();
+			Slot.SpawnTransform = SpawnPoints[i]->GetChildActor()->GetActorTransform();
 		}
 		else
 		{

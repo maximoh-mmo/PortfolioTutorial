@@ -20,3 +20,6 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Shadowstep, "Ability.Type.Shadowstep");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Buff, "Ability.Type.Buff");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Debuff, "Ability.Type.Debuff");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Heal, "Ability.Type.Heal");
+UE_DEFINE_GAMEPLAY_TAG(TAG_AbilityID_BasicAttack, "AbilityID.BasicAttack");
+UE_DEFINE_GAMEPLAY_TAG(TAG_AbilityID_AoE, "AbilityID.AoE");
+UE_DEFINE_GAMEPLAY_TAG(TAG_AbilityID_Cone, "AbilityID.Cone");

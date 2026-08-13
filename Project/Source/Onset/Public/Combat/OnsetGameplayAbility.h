@@ -7,6 +7,7 @@
 #include "OnsetGameplayAbility.generated.h"
 
 class UTexture2D;
+class UAbilitySystemComponent;
 
 /**
  * Shared base for all combat abilities. Adds UI metadata (icon) and a helper
@@ -37,4 +38,15 @@ public:
 	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
 							   const FGameplayAbilityActorInfo* ActorInfo,
 							   const FGameplayAbilityActivationInfo ActivationInfo) const override;
+
+protected:
+	/**
+	 * Applies the shared GE_GenericDamage to TargetASC with the given SetByCaller
+	 * physical/magical magnitudes. Damage values are never baked into the GE; they
+	 * travel as SetByCaller on the spec and are resolved by UOnsetDamageExecution.
+	 */
+	void ApplyDamageToTarget(UAbilitySystemComponent* TargetASC,
+							 float Physical,
+							 float Magical,
+							 float Level) const;
 };

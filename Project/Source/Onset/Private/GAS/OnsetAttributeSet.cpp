@@ -25,18 +25,6 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 		// Clamp Health to [0, MaxHealth]
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 		
-		if (Data.EvaluatedData.Magnitude < 0.0f)                                                                    
-		{                                                                                                           
-			if (const UAbilitySystemComponent* AbilitySystemComponent = GetOwningAbilitySystemComponent())                                   
-			{                                                                                                       
-				if (AbilitySystemComponent->HasMatchingGameplayTag(TAG_State_Invulnerable))                                            
-				{                                                                                                   
-					SetHealth(OldHealth);                                                                           
-					return;                                                                                         
-				}                                                                                                   
-			}                                                                                                       
-		}              
-		
 		if (GetHealth() == 0.0f)
 		{
 			if (OldHealth != GetHealth())

@@ -8,6 +8,7 @@
 #include "GameFramework/Actor.h"
 #include "OnsetSpawner.generated.h"
 
+class ASpawnPoint;
 class UGroupManagerComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSpawner, Log, All);
@@ -20,7 +21,6 @@ class ONSET_API AOnsetSpawner : public AActor
 
 public:
 	AOnsetSpawner();
-
 	/** Configuration for spawning */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawning")
 	FSpawnConfig Config;
@@ -28,8 +28,11 @@ public:
 	/** Optional explicit array of points where actors can be spawned;
 	 *  falls back to ring scatter around the spawner location. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawning")
-	TArray<AActor*> SpawnPoints;
-
+	TArray<UChildActorComponent*> SpawnPoints;
+	
+	UFUNCTION()
+	void AddSpawnPoint();
+	
 	/** Group manager created automatically as a subobject. Tracks group membership. */
 	UPROPERTY(VisibleAnywhere, Category = "Spawning")
 	UGroupManagerComponent* GroupManager;
@@ -72,4 +75,7 @@ private:
 	/** Internal slot array holding spawn transforms and occupant pointers. */
 	UPROPERTY()
 	TArray<FSpawnerSlot> Slots;
+	
+	UPROPERTY()
+	int32 CurrentSpawnPointCount = 0;
 };

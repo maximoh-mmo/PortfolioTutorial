@@ -16,12 +16,6 @@ UOnsetGA_AoE::UOnsetGA_AoE()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	static ConstructorHelpers::FClassFinder<UGameplayEffect> DamageFinder(
-		TEXT("/Game/Game/Combat/GE_AoE_Damage.GE_AoE_Damage_C"));
-	if (DamageFinder.Succeeded())
-	{
-		DamageEffectClass = DamageFinder.Class;
-	}
 	FGameplayTagContainer AssetTags = GetAssetTags();
 	AssetTags.AddTag(TAG_Ability_AoE);
 	SetAssetTags(AssetTags);
@@ -51,12 +45,6 @@ void UOnsetGA_AoE::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	if (IsValid(TargetActor))
 	{
 		TargetLocation = TargetActor->GetActorLocation();
-	}
-
-	if (!DamageEffectClass)
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
-		return;
 	}
 
 	UWorld* World = Self->GetWorld();
@@ -116,14 +104,10 @@ void UOnsetGA_AoE::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 			}
 		}
 
-		FGameplayAbilityTargetDataHandle TargetData;
-		FGameplayAbilityTargetData_ActorArray* ActorArrayData =
-			new FGameplayAbilityTargetData_ActorArray();
-
-		ActorArrayData->TargetActorArray.Add(HitActor);
-		TargetData.Add(ActorArrayData);
-
-		ApplyGameplayEffectToTarget(Handle, ActorInfo, ActivationInfo, TargetData, DamageEffectClass, GetAbilityLevel());
+		if (HitChar && HitChar->AbilitySystemComponent)
+		{
+			ApplyDamageToTarget(HitChar->AbilitySystemComponent, Damage, 0.0f, GetAbilityLevel());
+		}
 	}
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);

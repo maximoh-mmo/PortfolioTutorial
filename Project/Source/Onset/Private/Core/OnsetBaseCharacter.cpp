@@ -11,6 +11,9 @@
 #include "Combat/OnsetGA_Cone.h"
 #include "Combat/OnsetGA_Shadowstep.h"
 #include "Combat/OnsetGA_CooldownSlow.h"
+#include "Combat/OnsetGA_Generic.h"
+#include "Combat/OnsetAbilityLibrary.h"
+#include "Data/OnsetAbilityTypes.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/DecalComponent.h"
 #include "CollisionQueryParams.h"
@@ -77,6 +80,8 @@ void AOnsetBaseCharacter::GrantDefaultAbilities()
 {
 	if (!AbilitySystemComponent || bAbilitiesGranted) return;
 
+	// System abilities are not input-bound in DT_Abilities; grant them directly.
+	// These are required for combat regardless of the table.
 	UClass* BasicAttackAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_BasicAttack.GA_BasicAttack_C")));
 	if (!BasicAttackAbility) BasicAttackAbility = UOnsetGA_BasicAttack::StaticClass();
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(BasicAttackAbility, 1, INDEX_NONE, this));
@@ -85,21 +90,56 @@ void AOnsetBaseCharacter::GrantDefaultAbilities()
 	if (!HitReaction) HitReaction = UOnsetGA_HitReaction::StaticClass();
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(HitReaction, 1, INDEX_NONE, this));
 
-	UClass* AoEAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_AoE.GA_AoE_C")));
-	if (!AoEAbility) AoEAbility = UOnsetGA_AoE::StaticClass();
-	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AoEAbility, 1, 1, this)); // Input ID 1
-
-	UClass* ConeAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_Cone.GA_Cone_C")));
-	if (!ConeAbility) ConeAbility = UOnsetGA_Cone::StaticClass();
-	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ConeAbility, 1, 2, this)); // Input ID 2
-
 	UClass* ShadowstepAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_Shadowstep.GA_Shadowstep_C")));
 	if (!ShadowstepAbility) ShadowstepAbility = UOnsetGA_Shadowstep::StaticClass();
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ShadowstepAbility, 1, INDEX_NONE, this)); // Passive
 
-	UClass* CooldownSlowAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_CooldownSlow.GA_CooldownSlow_C")));
-	if (!CooldownSlowAbility) CooldownSlowAbility = UOnsetGA_CooldownSlow::StaticClass();
-	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(CooldownSlowAbility, 1, 3, this)); // Input ID 3
+	// Input-bound abilities come from DT_Abilities. Each row with InputID >= 0 is
+	// granted as the row's AbilityClass (default UOnsetGA_Generic) with its ID tag
+	// (AbilityID.<RowName>) in DynamicAbilityTags so the generic runtime can resolve
+	// the row. Falls back to the legacy hardcoded grants when the table is missing.
+	UDataTable* AbilityTable = UOnsetAbilityLibrary::GetAbilityTable();
+	bool bGrantedFromTable = false;
+	if (AbilityTable && AbilityTable->GetRowMap().Num() > 0)
+	{
+		UOnsetAbilityLibrary::ValidateDefinitions();
+
+		for (const TPair<FName, uint8*>& RowPair : AbilityTable->GetRowMap())
+		{
+			const FOnsetAbilityDefinition* Definition = reinterpret_cast<const FOnsetAbilityDefinition*>(RowPair.Value);
+			if (!Definition || Definition->InputID < 0)
+			{
+				continue;
+			}
+
+			TSubclassOf<UOnsetGameplayAbility> AbilityClass =
+				UOnsetAbilityLibrary::ResolveAbilityClass(RowPair.Key);
+			if (!AbilityClass)
+			{
+				AbilityClass = UOnsetGA_Generic::StaticClass();
+			}
+
+			FGameplayAbilitySpec Spec(AbilityClass, 1, Definition->InputID, this);
+			Spec.DynamicAbilityTags.AddTag(UOnsetAbilityLibrary::MakeAbilityIDTag(RowPair.Key));
+			AbilitySystemComponent->GiveAbility(Spec);
+			bGrantedFromTable = true;
+		}
+	}
+
+	if (!bGrantedFromTable)
+	{
+		UClass* AoEAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_AoE.GA_AoE_C")));
+		if (!AoEAbility) AoEAbility = UOnsetGA_AoE::StaticClass();
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AoEAbility, 1, 1, this)); // Input ID 1
+
+		UClass* ConeAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_Cone.GA_Cone_C")));
+		if (!ConeAbility) ConeAbility = UOnsetGA_Cone::StaticClass();
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ConeAbility, 1, 2, this)); // Input ID 2
+
+		UClass* CooldownSlowAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_CooldownSlow.GA_CooldownSlow_C")));
+		if (!CooldownSlowAbility) CooldownSlowAbility = UOnsetGA_CooldownSlow::StaticClass();
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(CooldownSlowAbility, 1, 3, this)); // Input ID 3
+	}
 
 	bAbilitiesGranted = true;
 }

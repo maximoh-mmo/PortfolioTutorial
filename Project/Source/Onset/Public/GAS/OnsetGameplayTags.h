@@ -24,6 +24,12 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Buff)
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Debuff)
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Heal)
 
+// Ability ID namespace: the row-name suffix (AbilityID.<RowName>) is carried in a
+// spec's DynamicAbilityTags so UOnsetGA_Generic can resolve its DT_Abilities row.
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_AbilityID_BasicAttack)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_AbilityID_AoE)
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_AbilityID_Cone)
+
 // Cooldown tags
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Cooldown_BasicAttack)
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Cooldown_AoE)

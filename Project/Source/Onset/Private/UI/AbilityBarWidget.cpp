@@ -3,7 +3,9 @@
 #include "UI/AbilityBarWidget.h"
 
 #include "AbilitySystemComponent.h"
+#include "Combat/OnsetAbilityLibrary.h"
 #include "Combat/OnsetGameplayAbility.h"
+#include "Data/OnsetAbilityTypes.h"
 #include "GAS/OnsetGameplayTags.h"
 #include "GameplayAbilitySpec.h"
 #include "Components/HorizontalBox.h"
@@ -118,7 +120,15 @@ void UAbilityBarWidget::RebuildSlots()
 
 		if (FGameplayAbilitySpec* Spec = BoundASC->FindAbilitySpecFromInputID(Entry.InputID))
 		{
-			if (UOnsetGameplayAbility* AbilityCDO = Cast<UOnsetGameplayAbility>(Spec->Ability))
+			// Data-driven abilities resolve their icon + cooldown tag from the
+			// DT_Abilities row (via the spec's AbilityID.<RowName> tag).
+			if (const FOnsetAbilityDefinition* Definition =
+					UOnsetAbilityLibrary::GetDefinitionFromDynamicTags(Spec->DynamicAbilityTags))
+			{
+				Entry.Widget->SetAbility(Definition->AbilityIcon, Definition->CooldownTag);
+				Entry.CooldownTag = Definition->CooldownTag;
+			}
+			else if (UOnsetGameplayAbility* AbilityCDO = Cast<UOnsetGameplayAbility>(Spec->Ability))
 			{
 				Entry.Widget->SetAbility(AbilityCDO->AbilityIcon, AbilityCDO->GetPrimaryCooldownTag());
 				Entry.CooldownTag = AbilityCDO->GetPrimaryCooldownTag();
@@ -127,9 +137,10 @@ void UAbilityBarWidget::RebuildSlots()
 
 		if (Entry.CooldownTag.IsValid())
 		{
-			CooldownTagHandles.Add(
+			FDelegateHandle Handle =
 				BoundASC->RegisterGameplayTagEvent(Entry.CooldownTag, EGameplayTagEventType::AnyCountChange)
-					.AddUObject(this, &UAbilityBarWidget::HandleCooldownTagChanged));
+					.AddUObject(this, &UAbilityBarWidget::HandleCooldownTagChanged);
+			CooldownTagHandles.Add({ Entry.CooldownTag, Handle });
 		}
 	}
 
@@ -150,14 +161,11 @@ void UAbilityBarWidget::UnregisterCooldownEvents()
 		return;
 	}
 
-	for (const FDelegateHandle& Handle : CooldownTagHandles)
+	for (const FCooldownTagHandle& Entry : CooldownTagHandles)
 	{
-		if (Handle.IsValid())
+		if (Entry.Handle.IsValid() && Entry.Tag.IsValid())
 		{
-			BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_BasicAttack, EGameplayTagEventType::AnyCountChange);
-			BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_AoE, EGameplayTagEventType::AnyCountChange);
-			BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_Cone, EGameplayTagEventType::AnyCountChange);
-			BoundASC->UnregisterGameplayTagEvent(Handle, TAG_Cooldown_Shadowstep, EGameplayTagEventType::AnyCountChange);
+			BoundASC->UnregisterGameplayTagEvent(Entry.Handle, Entry.Tag, EGameplayTagEventType::AnyCountChange);
 		}
 	}
 	CooldownTagHandles.Reset();

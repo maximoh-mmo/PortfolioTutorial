@@ -67,6 +67,13 @@ private:
 		FGameplayTag CooldownTag;
 	};
 
+	/** A registered cooldown-tag event handle paired with the tag it was bound to. */
+	struct FCooldownTagHandle
+	{
+		FGameplayTag Tag;
+		FDelegateHandle Handle;
+	};
+
 	/** Designer container (e.g. horizontal bar) that C++ fills with slot widgets. */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UHorizontalBox> SlotContainer;
@@ -84,5 +91,5 @@ private:
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> BoundASC;
 
-	TArray<FDelegateHandle> CooldownTagHandles;
+	TArray<FCooldownTagHandle> CooldownTagHandles;
 };

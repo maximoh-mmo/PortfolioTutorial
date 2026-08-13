@@ -5,6 +5,8 @@
 #include "AbilitySystemComponent.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "GAS/OnsetCombatAttributeSet.h"
+#include "GAS/OnsetGameplayTags.h"
+#include "GAS/OnsetGenericDamageEffect.h"
 #include "GameplayTagContainer.h"
 
 FGameplayTag UOnsetGameplayAbility::GetPrimaryCooldownTag() const
@@ -73,4 +75,39 @@ void UOnsetGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handl
 	}
 
 	ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+}
+
+void UOnsetGameplayAbility::ApplyDamageToTarget(UAbilitySystemComponent* TargetASC,
+												float Physical,
+												float Magical,
+												float Level) const
+{
+	if (!TargetASC)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
+	if (!SourceASC)
+	{
+		return;
+	}
+
+	FGameplayEffectContextHandle Context = SourceASC->MakeEffectContext();
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		Context.AddInstigator(Avatar, Avatar->GetInstigatorController());
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(
+		UOnsetGenericDamageEffect::StaticClass(), Level, Context);
+	if (!SpecHandle.IsValid())
+	{
+		return;
+	}
+
+	SpecHandle.Data->SetSetByCallerMagnitude(TAG_Damage_Physical, Physical);
+	SpecHandle.Data->SetSetByCallerMagnitude(TAG_Damage_Magical, Magical);
+
+	TargetASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 }
