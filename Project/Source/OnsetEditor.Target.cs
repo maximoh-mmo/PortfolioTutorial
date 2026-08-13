@@ -11,5 +11,6 @@ public class OnsetEditorTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V7;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_8;
 		ExtraModuleNames.Add("Onset");
+		ExtraModuleNames.Add("OnsetEditor");
 	}
 }

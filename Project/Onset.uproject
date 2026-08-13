@@ -14,11 +14,28 @@
 				"AIModule",
 				"StateTreeModule"
 			]
+		},
+		{
+			"Name": "OnsetEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit",
+			"AdditionalDependencies": [
+				"Blutility",
+				"ScriptableEditorWidgets",
+				"EditorScriptingUtilities"
+			]
 		}
 	],
 	"Plugins": [
 		{
 			"Name": "ModelingToolsEditorMode",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
+			"Name": "EditorScriptingUtilities",
 			"Enabled": true,
 			"TargetAllowList": [
 				"Editor"
