@@ -7,7 +7,8 @@
 #include "CombatToggleWidget.generated.h"
 
 class AOnsetPlayerController;
-class UButton;
+class AOnsetPlayerState;
+class UCommonButtonBase;
 
 /**
  * Autoplay + "continue on disconnect" toggles for the in-game HUD.
@@ -35,6 +36,12 @@ protected:
 	/** Reads the owning PlayerState and exposes the current toggle states to the WBP. */
 	void RefreshToggleStates();
 
+	/** Retries subscribing to the PlayerState delegate if it wasn't replicated yet when BindToPlayer ran. */
+	void RetryBindToPlayer();
+
+	/** Subscribes the widget to the given PlayerState's settings-change delegate. */
+	void SubscribeToPlayerState(AOnsetPlayerState* PS);
+
 	/** Autoplay toggle button click. */
 	UFUNCTION()
 	void OnAutoplayToggled();
@@ -61,13 +68,19 @@ protected:
 
 	/** Designer-bound autoplay toggle button (WBP_CombatToggle). */
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UButton> AutoplayToggleButton;
+	TObjectPtr<UCommonButtonBase> AutoplayToggleButton;
 
 	/** Designer-bound continue-on-disconnect toggle button (WBP_CombatToggle). */
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UButton> ContinueOnDisconnectToggleButton;
+	TObjectPtr<UCommonButtonBase> ContinueOnDisconnectToggleButton;
 
 private:
 	UPROPERTY()
 	TObjectPtr<AOnsetPlayerController> BoundController;
+
+	UPROPERTY()
+	TObjectPtr<AOnsetPlayerState> BoundPlayerState;
+
+	/** Re-arm handle for RetryBindToPlayer while the PlayerState hasn't replicated yet. */
+	FTimerHandle RetryBindTimerHandle;
 };

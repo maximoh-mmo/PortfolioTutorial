@@ -261,8 +261,19 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 	UE_LOG(LogTemp, Warning, TEXT("OnPossess: local=%d slot=%d pawn=%s"),
 		IsLocalController(), PossessPS ? PossessPS->SelectedCharacterSlot : -1, *GetNameSafe(InPawn));
 
+	// Re-possessing a pawn this controller already owned this session (e.g. when
+	// the auto-combat AI hands control back) must NOT re-apply the saved state.
+	// Otherwise players could toggle auto-combat to warp back to their last save
+	// position or refill to full health.
+	const bool bIsRePossess = (InPawn == CachedPlayerPawn);
 	CachedPlayerPawn = InPawn;
 	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
+
+	if (bIsRePossess)
+	{
+		UE_LOG(LogTemp, Log, TEXT("OnPossess: re-possessing %s, skipping saved-state restore"), *GetNameSafe(InPawn));
+		return;
+	}
 
 	// After zone travel, restore saved character data onto the new pawn
 	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
@@ -658,6 +669,8 @@ void AOnsetPlayerController::EnableAutoCombat()
 		{
 			PS->bAutoplayEnabled = true;
 		}
+		UE_LOG(LogTemp, Warning, TEXT("EnableAutoCombat: AI now controls %s (bAutoplayEnabled=%d)"),
+			*GetNameSafe(MyPawn), bAutoCombatEnabled);
 	}
 }
 
@@ -675,6 +688,8 @@ void AOnsetPlayerController::DisableAutoCombat()
 	{
 		PS->bAutoplayEnabled = false;
 	}
+	UE_LOG(LogTemp, Warning, TEXT("DisableAutoCombat: player regained control of %s (bAutoplayEnabled=%d)"),
+		*GetNameSafe(AIPawn), bAutoCombatEnabled);
 	ResetIdleTimer();
 }
 

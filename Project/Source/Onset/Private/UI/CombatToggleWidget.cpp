@@ -2,7 +2,7 @@
 
 #include "UI/CombatToggleWidget.h"
 
-#include "Components/Button.h"
+#include "CommonButtonBase.h"
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
 
@@ -15,19 +15,30 @@ void UCombatToggleWidget::BindToPlayer(AOnsetPlayerController* InController)
 
 	BoundController = InController;
 
-	if (AOnsetPlayerState* PS = BoundController->GetPlayerState<AOnsetPlayerState>())
+	AOnsetPlayerState* PS = BoundController->GetPlayerState<AOnsetPlayerState>();
+	if (PS)
 	{
-		PS->OnPlayerSettingsChanged.AddDynamic(this, &UCombatToggleWidget::HandlePlayerSettingsChanged);
+		SubscribeToPlayerState(PS);
 	}
+	else if (UWorld* World = GetWorld())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CombatToggle BindToPlayer: PS not replicated yet, scheduling retry"));
+		World->GetTimerManager().SetTimer(RetryBindTimerHandle, this, &UCombatToggleWidget::RetryBindToPlayer, 0.5f, true);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("CombatToggle BindToPlayer: AutoplayBtn=%s ContinueBtn=%s PS=%s"),
+		AutoplayToggleButton ? TEXT("bound") : TEXT("NULL"),
+		ContinueOnDisconnectToggleButton ? TEXT("bound") : TEXT("NULL"),
+		PS ? *PS->GetName() : TEXT("NULL"));
 
 	if (AutoplayToggleButton)
 	{
-		AutoplayToggleButton->OnClicked.AddDynamic(this, &UCombatToggleWidget::OnAutoplayToggled);
+		AutoplayToggleButton->OnClicked().AddUObject(this, &UCombatToggleWidget::OnAutoplayToggled);
 	}
 
 	if (ContinueOnDisconnectToggleButton)
 	{
-		ContinueOnDisconnectToggleButton->OnClicked.AddDynamic(this, &UCombatToggleWidget::OnContinueOnDisconnectToggled);
+		ContinueOnDisconnectToggleButton->OnClicked().AddUObject(this, &UCombatToggleWidget::OnContinueOnDisconnectToggled);
 	}
 
 	RefreshToggleStates();
@@ -35,16 +46,55 @@ void UCombatToggleWidget::BindToPlayer(AOnsetPlayerController* InController)
 
 void UCombatToggleWidget::NativeDestruct()
 {
-	if (BoundController)
+	if (UWorld* World = GetWorld())
 	{
-		if (AOnsetPlayerState* PS = BoundController->GetPlayerState<AOnsetPlayerState>())
-		{
-			PS->OnPlayerSettingsChanged.RemoveDynamic(this, &UCombatToggleWidget::HandlePlayerSettingsChanged);
-		}
-		BoundController = nullptr;
+		World->GetTimerManager().ClearTimer(RetryBindTimerHandle);
 	}
 
+	if (BoundPlayerState)
+	{
+		BoundPlayerState->OnPlayerSettingsChanged.RemoveDynamic(this, &UCombatToggleWidget::HandlePlayerSettingsChanged);
+		BoundPlayerState = nullptr;
+	}
+
+	BoundController = nullptr;
+
 	Super::NativeDestruct();
+}
+
+void UCombatToggleWidget::RetryBindToPlayer()
+{
+	if (!BoundController || BoundPlayerState)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(RetryBindTimerHandle);
+		}
+		return;
+	}
+
+	if (AOnsetPlayerState* PS = BoundController->GetPlayerState<AOnsetPlayerState>())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CombatToggle RetryBindToPlayer: PS now available (%s)"), *PS->GetName());
+		SubscribeToPlayerState(PS);
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(RetryBindTimerHandle);
+		}
+		RefreshToggleStates();
+	}
+}
+
+void UCombatToggleWidget::SubscribeToPlayerState(AOnsetPlayerState* PS)
+{
+	if (!PS || BoundPlayerState == PS)
+	{
+		return;
+	}
+
+	BoundPlayerState = PS;
+	PS->OnPlayerSettingsChanged.AddDynamic(this, &UCombatToggleWidget::HandlePlayerSettingsChanged);
+	UE_LOG(LogTemp, Warning, TEXT("CombatToggle SubscribeToPlayerState: subscribed to %s"), *PS->GetName());
 }
 
 void UCombatToggleWidget::HandlePlayerSettingsChanged()
@@ -59,14 +109,20 @@ void UCombatToggleWidget::RefreshToggleStates()
 		return;
 	}
 
-	AOnsetPlayerState* PS = BoundController->GetPlayerState<AOnsetPlayerState>();
+	AOnsetPlayerState* PS = BoundPlayerState;
 	const bool bNewAutoplay = PS && PS->bAutoplayEnabled;
 	const bool bNewContinue = !PS || PS->bContinueOnDisconnect;
 
 	if (bNewAutoplay != bAutoplayEnabled)
 	{
 		bAutoplayEnabled = bNewAutoplay;
+		UE_LOG(LogTemp, Warning, TEXT("CombatToggle: autoplay UI -> %d"), bAutoplayEnabled);
 		OnAutoplayStateChanged(bAutoplayEnabled);
+	}
+
+	if (AutoplayToggleButton)
+	{
+		AutoplayToggleButton->SetIsSelected(bAutoplayEnabled, false);
 	}
 
 	if (bNewContinue != bContinueOnDisconnect)
@@ -74,10 +130,17 @@ void UCombatToggleWidget::RefreshToggleStates()
 		bContinueOnDisconnect = bNewContinue;
 		OnContinueOnDisconnectStateChanged(bContinueOnDisconnect);
 	}
+
+	if (ContinueOnDisconnectToggleButton)
+	{
+		ContinueOnDisconnectToggleButton->SetIsSelected(bContinueOnDisconnect, false);
+	}
 }
 
 void UCombatToggleWidget::OnAutoplayToggled()
 {
+	UE_LOG(LogTemp, Warning, TEXT("CombatToggle OnAutoplayToggled: current widget state=%d -> sending %d"),
+		bAutoplayEnabled ? 1 : 0, bAutoplayEnabled ? 0 : 1);
 	if (BoundController)
 	{
 		BoundController->SetAutoCombatEnabled(!bAutoplayEnabled);

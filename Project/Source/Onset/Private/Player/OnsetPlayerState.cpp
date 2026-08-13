@@ -34,6 +34,10 @@ void AOnsetPlayerState::OnRep_PvPEnabled()
 
 void AOnsetPlayerState::OnRep_AutoplayEnabled()
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnRep_AutoplayEnabled: bAutoplayEnabled=%d (Net=%s, IsLocallyControlled=%d)"),
+		bAutoplayEnabled ? 1 : 0,
+		GetWorld() && GetWorld()->GetNetDriver() ? (GetWorld()->GetNetDriver()->IsServer() ? TEXT("Server") : TEXT("Client")) : TEXT("None"),
+		GetPlayerController() ? GetPlayerController()->IsLocalController() ? 1 : 0 : 0);
 	OnPlayerSettingsChanged.Broadcast();
 }
 
