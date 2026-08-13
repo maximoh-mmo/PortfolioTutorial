@@ -54,18 +54,22 @@ function Write-ExitLog {
 
 function Describe-ExitCode {
     param([int]$Code)
-    $unsigned = [uint32]$Code
-    switch ($unsigned) {
-        0               { return "graceful exit" }
-        1               { return "terminated (killed / TerminateProcess)" }
-        0xC0000005      { return "ACCESS_VIOLATION (crash)" }
-        0xC0000409      { return "STACK_BUFFER_OVERRUN (crash)" }
-        0xC0000135      { return "DLL_NOT_FOUND" }
-        0xC000000D      { return "INVALID_PARAMETER" }
-        0xC00000FD      { return "STACK_OVERFLOW (crash)" }
-        0xC000001D      { return "ILLEGAL_INSTRUCTION (crash)" }
+    # Exit codes are signed Int32 (e.g. STATUS_CONTROL_C_EXIT == 0xC000013A == -1073741510).
+    # PowerShell parses hex literals as signed Int32 too, so compare directly.
+    switch ($Code) {
+        0             { return "graceful exit" }
+        -1            { return "killed (TerminateProcess)" }
+        0xC0000005    { return "ACCESS_VIOLATION (crash)" }
+        0xC0000409    { return "STACK_BUFFER_OVERRUN (crash)" }
+        0xC0000135    { return "DLL_NOT_FOUND" }
+        0xC000000D    { return "INVALID_PARAMETER" }
+        0xC00000FD    { return "STACK_OVERFLOW (crash)" }
+        0xC000001D    { return "ILLEGAL_INSTRUCTION (crash)" }
+        0xC000013A    { return "CTRL_C_EXIT (console Ctrl+C or window close)" }
         default {
-            if ($unsigned -ge 0xC0000000) { return "NTSTATUS 0x$($unsigned.ToString('X8')) (crash)" }
+            $u = [int64]$Code
+            if ($u -lt 0) { $u += 4294967296 }
+            if ($u -ge 3221225472) { return "NTSTATUS 0x$($u.ToString('X8')) (crash)" }
             return "exit code $Code"
         }
     }
