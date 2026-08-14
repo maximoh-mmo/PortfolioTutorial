@@ -78,14 +78,14 @@ public:
 
 	/** Ground reticle decal shown under this character while it is the player's target. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Target Reticle")
-	TObjectPtr<UDecalComponent> TargetReticleDecal;
+	TObjectPtr<UDecalComponent> TargetReticuleDecal;
 
 	/**
 	 * Material used by the ground reticle decal. Assignable per class (e.g. a boss or
 	 * elite variant); falls back to the default ring material when left unset.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Target Reticle")
-	TObjectPtr<UMaterialInterface> TargetReticleMaterial;
+	TObjectPtr<UMaterialInterface> TargetReticuleMaterial;
 
 	/** Broad category used by the target HUD to pick a lifebar skin. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
@@ -93,7 +93,7 @@ public:
 
 	/** Shows/hides the ground reticle decal, scaled to this character's capsule size. */
 	UFUNCTION(BlueprintCallable, Category = "Target Reticle")
-	void SetTargetReticle(bool bShow);
+	void SetTargetReticule(bool bShow);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -108,7 +108,7 @@ protected:
 	bool bTargetReticleVisible = false;
 
 	/** Line-trace straight down and place the reticle decal on the first surface, following terrain. */
-	void UpdateTargetReticle();
+	void UpdateTargetReticule();
 
 	UPROPERTY(ReplicatedUsing = OnRep_bIsAlive)
 	bool bIsAlive = true;

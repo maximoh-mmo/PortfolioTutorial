@@ -18,7 +18,7 @@ struct FOnAttributeChangeData;
  * for every enemy/boss; the WBP picks a "skin" (fill material/colors) based on
  * the exposed TargetType (Normal/Elite/Boss) when a target is acquired.
  * The screen-space reticle is gone: a ground decal on the target actor
- * (AOnsetBaseCharacter::SetTargetReticle) marks the current target instead.
+ * (AOnsetBaseCharacter::SetTargetReticule) marks the current target instead.
  *
  * The health bar is a shader material in WBP_TargetHUD driven by a
  * BlueprintReadOnly TargetHealthPercent + OnTargetHealthPercentChanged event.

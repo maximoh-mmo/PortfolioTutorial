@@ -18,7 +18,6 @@
 #include "Components/DecalComponent.h"
 #include "CollisionQueryParams.h"
 #include "Engine/World.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "GAS/OnsetMovementAttributeSet.h"
 #include "GAS/OnsetCombatAttributeSet.h"
 #include "Materials/MaterialInterface.h"
@@ -36,26 +35,26 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 	MovementAttributes = CreateDefaultSubobject<UOnsetMovementAttributeSet>(TEXT("MovementAttributes"));
 	CombatAttributes = CreateDefaultSubobject<UOnsetCombatAttributeSet>(TEXT("CombatAttributes"));
 
-	// Ground reticle decal: hidden until this character becomes the player's target.
-	TargetReticleDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetReticleDecal"));
-	TargetReticleDecal->SetupAttachment(GetCapsuleComponent());
-	TargetReticleDecal->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
-	TargetReticleDecal->SetRelativeLocation(FVector(0.0f, 0.0f, -(GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 60.0f)));
-	TargetReticleDecal->DecalSize = FVector(120.0f, 50.0f, 50.0f);
-	TargetReticleDecal->SetHiddenInGame(true);
+	// Ground reticule decal: hidden until this character becomes the player's target.
+	TargetReticuleDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetReticuleDecal"));
+	TargetReticuleDecal->SetupAttachment(GetCapsuleComponent());
+	TargetReticuleDecal->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
+	TargetReticuleDecal->SetRelativeLocation(FVector(0.0f, 0.0f, -(GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 60.0f)));
+	TargetReticuleDecal->DecalSize = FVector(120.0f, 50.0f, 50.0f);
+	TargetReticuleDecal->SetHiddenInGame(true);
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> DefaultReticleMat(TEXT("/Game/Materials/M_TargetReticle.M_TargetReticle"));
-	if (DefaultReticleMat.Succeeded())
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> DefaultReticuleMat(TEXT("/Game/Materials/M_TargetReticule.M_TargetReticule"));
+	if (DefaultReticuleMat.Succeeded())
 	{
-		TargetReticleMaterial = DefaultReticleMat.Object;
+		TargetReticuleMaterial = DefaultReticuleMat.Object;
 	}
 	else
 	{
-		// Fallback so the reticle still renders if the content asset is missing.
-		static ConstructorHelpers::FObjectFinder<UMaterialInterface> FallbackReticleMat(TEXT("/Engine/EngineDebugMaterials/DefaultDeferredDecalMaterial.DefaultDeferredDecalMaterial"));
-		if (FallbackReticleMat.Succeeded())
+		// Fallback so the reticule still renders if the content asset is missing.
+		static ConstructorHelpers::FObjectFinder<UMaterialInterface> FallbackReticuleMat(TEXT("/Engine/EngineDebugMaterials/DefaultDeferredDecalMaterial.DefaultDeferredDecalMaterial"));
+		if (FallbackReticuleMat.Succeeded())
 		{
-			TargetReticleMaterial = FallbackReticleMat.Object;
+			TargetReticuleMaterial = FallbackReticuleMat.Object;
 		}
 	}
 }
@@ -90,9 +89,9 @@ void AOnsetBaseCharacter::GrantDefaultAbilities()
 	if (!HitReaction) HitReaction = UOnsetGA_HitReaction::StaticClass();
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(HitReaction, 1, INDEX_NONE, this));
 
-	UClass* ShadowstepAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_Shadowstep.GA_Shadowstep_C")));
-	if (!ShadowstepAbility) ShadowstepAbility = UOnsetGA_Shadowstep::StaticClass();
-	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ShadowstepAbility, 1, INDEX_NONE, this)); // Passive
+	UClass* ShadowStepAbility = LoadObject<UClass>(nullptr, (TEXT("/Game/Game/Combat/GA_ShadowStep.GA_ShadowStep_C")));
+	if (!ShadowStepAbility) ShadowStepAbility = UOnsetGA_Shadowstep::StaticClass();
+	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ShadowStepAbility, 1, INDEX_NONE, this)); // Passive
 
 	// Input-bound abilities come from DT_Abilities. Each row with InputID >= 0 is
 	// granted as the row's AbilityClass (default UOnsetGA_Generic) with its ID tag
@@ -169,7 +168,7 @@ void AOnsetBaseCharacter::ResetAttributes()
 void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)
 {
 	bIsAlive = false;
-	SetTargetReticle(false);
+	SetTargetReticule(false);
 }
 
 bool AOnsetBaseCharacter::IsAlive() const
@@ -185,9 +184,9 @@ void AOnsetBaseCharacter::OnRespawn()
 	SetActorEnableCollision(true);
 }
 
-void AOnsetBaseCharacter::SetTargetReticle(bool bShow)
+void AOnsetBaseCharacter::SetTargetReticule(bool bShow)
 {
-	if (!TargetReticleDecal)
+	if (!TargetReticuleDecal)
 	{
 		return;
 	}
@@ -196,17 +195,17 @@ void AOnsetBaseCharacter::SetTargetReticle(bool bShow)
 
 	if (bShow)
 	{
-		if (TargetReticleMaterial)
+		if (TargetReticuleMaterial)
 		{
-			TargetReticleDecal->SetDecalMaterial(TargetReticleMaterial);
+			TargetReticuleDecal->SetDecalMaterial(TargetReticuleMaterial);
 		}
 
-		UpdateTargetReticle();
-		TargetReticleDecal->SetHiddenInGame(false);
+		UpdateTargetReticule();
+		TargetReticuleDecal->SetHiddenInGame(false);
 	}
 	else
 	{
-		TargetReticleDecal->SetHiddenInGame(true);
+		TargetReticuleDecal->SetHiddenInGame(true);
 	}
 }
 
@@ -216,40 +215,40 @@ void AOnsetBaseCharacter::Tick(float DeltaSeconds)
 
 	if (bTargetReticleVisible)
 	{
-		UpdateTargetReticle();
+		UpdateTargetReticule();
 	}
 }
 
-void AOnsetBaseCharacter::UpdateTargetReticle()
+void AOnsetBaseCharacter::UpdateTargetReticule()
 {
-	if (!TargetReticleDecal || !GetWorld())
+	if (!TargetReticuleDecal || !GetWorld())
 	{
 		return;
 	}
 
-	// Trace straight down from the capsule center to find the surface below,
+	// Trace straight down from the capsule centre to find the surface below,
 	// then park the decal there so it hugs uneven terrain. The projection box
 	// is centered on the decal (DecalSize is a half-extent), so sink it by the
-	// full depth: the top face sits at the surface and it never reaches back
+	// full depth: the top face sits at the surface, and it never reaches back
 	// up into the character's body.
 	const FVector TraceStart = GetCapsuleComponent()->GetComponentLocation();
 	const FVector TraceEnd = TraceStart - FVector(0.0f, 0.0f, 2000.0f);
 
 	FHitResult Hit;
-	FCollisionQueryParams QueryParams(FName(TEXT("TargetReticleTrace")), false, this);
+	FCollisionQueryParams QueryParams(FName(TEXT("TargetReticuleTrace")), false, this);
 	QueryParams.bTraceComplex = false;
 
 	if (GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, QueryParams) && Hit.bBlockingHit)
 	{
 		const float Radius = GetCapsuleComponent()->GetScaledCapsuleRadius();
-		constexpr float ReticleDepth = 80.0f;
+		constexpr float ReticuleDepth = 80.0f;
 
 		// Decals project along local +X, so point +X against the surface normal.
 		const FRotator SurfaceRotation = FRotationMatrix::MakeFromX(-Hit.ImpactNormal).Rotator();
 
 		// Slight margin above the surface so the ground plane is strictly inside the box.
-		const FVector ReticleCenter = Hit.ImpactPoint - Hit.ImpactNormal * (ReticleDepth - 5.0f);
-		TargetReticleDecal->SetWorldLocationAndRotation(ReticleCenter, SurfaceRotation);
-		TargetReticleDecal->DecalSize = FVector(ReticleDepth, Radius * 1.4f, Radius * 1.4f);
+		const FVector ReticuleCenter = Hit.ImpactPoint - Hit.ImpactNormal * (ReticuleDepth - 5.0f);
+		TargetReticuleDecal->SetWorldLocationAndRotation(ReticuleCenter, SurfaceRotation);
+		TargetReticuleDecal->DecalSize = FVector(ReticuleDepth, Radius * 1.4f, Radius * 1.4f);
 	}
 }

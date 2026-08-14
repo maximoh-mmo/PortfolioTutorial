@@ -17,14 +17,14 @@ void UTargetHUDWidget::SetTarget(AOnsetBaseCharacter* InTarget)
 	// Retire the ground reticle decal on the previous target, then mark the new one.
 	if (TrackedTarget)
 	{
-		TrackedTarget->SetTargetReticle(false);
+		TrackedTarget->SetTargetReticule(false);
 	}
 
 	TrackedTarget = IsValid(InTarget) ? InTarget : nullptr;
 
 	if (TrackedTarget)
 	{
-		TrackedTarget->SetTargetReticle(true);
+		TrackedTarget->SetTargetReticule(true);
 		TargetType = TrackedTarget->TargetType;
 
 		BoundASC = TrackedTarget->AbilitySystemComponent;
@@ -80,7 +80,7 @@ void UTargetHUDWidget::NativeDestruct()
 
 	if (TrackedTarget)
 	{
-		TrackedTarget->SetTargetReticle(false);
+		TrackedTarget->SetTargetReticule(false);
 		TrackedTarget = nullptr;
 	}
 
