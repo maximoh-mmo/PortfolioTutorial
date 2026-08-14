@@ -9,32 +9,182 @@
 #include "Combat/OnsetGameplayAbility.h"
 #include "Components/DetailsView.h"
 #include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Components/ScrollBox.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Data/OnsetAbilityTypes.h"
 #include "Engine/DataTable.h"
+#include "Fonts/FontMeasure.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Rendering/SlateRenderer.h"
+#include "Styling/CoreStyle.h"
+#include "Styling/SlateBrush.h"
+#include "Styling/SlateTypes.h"
+#include "Styling/StyleDefaults.h"
 #include "UI/OnsetAbilityRowButton.h"
+#include "UObject/Class.h"
 #include "UObject/SavePackage.h"
 #include "UObject/UObjectGlobals.h"
 
 namespace OnsetAbilityEditorWidgetConstants
 {
-	constexpr float ListEntryHeight = 24.0f;
+	constexpr float ListEntryHeight = 22.0f;
+
+	/** Extra horizontal padding per cell so text isn't flush against the column edge. */
+	constexpr float NamePadding = 8.0f;
+	constexpr float OtherPadding = 12.0f;
 }
 
-/** Creates a UButton whose content is a single centered text block. Generates unique names to avoid WidgetTree name collisions. */
+/** Generates a unique widget name so WidgetTree names never collide across rows. */
+static FName NextWidgetName(const FString& Base)
+{
+	static int32 WidgetCounter = 0;
+	return FName(*FString::Printf(TEXT("%s_%d"), *Base, ++WidgetCounter));
+}
+
+/** Pixel width of a string in the given font, with a fallback estimate when the measure service isn't ready. */
+static float MeasureTextWidth(const FString& Text, const FSlateFontInfo& Font)
+{
+	const TSharedPtr<FSlateFontMeasure>& Measure = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
+	if (Measure.IsValid())
+	{
+		const FVector2f Size = Measure->Measure(Text, Font, 1.0f);
+		if (Size.X > 0.0f)
+		{
+			return Size.X;
+		}
+	}
+	return static_cast<float>(Text.Len()) * 7.0f;
+}
+
+/**
+ * Computes the column widths:
+ *  - Name: encompasses the longest name currently in the list.
+ *  - Type: fixed width that accommodates the longest type display name (all enum values).
+ *  - Input & Cooldown: fixed widths, equal to one another.
+ */
+static void ComputeColumnWidths(const UDataTable* Table, TArray<float>& OutWidths)
+{
+	const FSlateFontInfo RowFont = FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 10);
+	const FSlateFontInfo HeaderFont = FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), 10);
+
+	float NameW = MeasureTextWidth(NSLOCTEXT("OnsetAbilityEditor", "ColumnName", "Name").ToString(), HeaderFont);
+	float TypeW = MeasureTextWidth(NSLOCTEXT("OnsetAbilityEditor", "ColumnType", "Type").ToString(), HeaderFont);
+	float InputW = MeasureTextWidth(NSLOCTEXT("OnsetAbilityEditor", "ColumnInput", "Input").ToString(), HeaderFont);
+	float CooldownW = MeasureTextWidth(NSLOCTEXT("OnsetAbilityEditor", "ColumnCooldown", "Cooldown").ToString(), HeaderFont);
+
+	UEnum* AbilityTypeEnum = StaticEnum<EOnsetAbilityType>();
+	if (AbilityTypeEnum)
+	{
+		for (int32 Index = 0; Index < AbilityTypeEnum->NumEnums(); ++Index)
+		{
+			const EOnsetAbilityType EnumValue = static_cast<EOnsetAbilityType>(AbilityTypeEnum->GetValueByIndex(Index));
+			const FString TypeName = AbilityTypeEnum->GetDisplayValueAsText(EnumValue).ToString();
+			TypeW = FMath::Max(TypeW, MeasureTextWidth(TypeName, RowFont));
+		}
+	}
+
+	if (Table)
+	{
+		for (const TPair<FName, uint8*>& RowPair : Table->GetRowMap())
+		{
+			const FOnsetAbilityDefinition* Definition = reinterpret_cast<const FOnsetAbilityDefinition*>(RowPair.Value);
+			if (!Definition)
+			{
+				continue;
+			}
+
+			const FString NameText = Definition->DisplayName.IsEmpty() ? RowPair.Key.ToString() : Definition->DisplayName.ToString();
+			NameW = FMath::Max(NameW, MeasureTextWidth(NameText, RowFont));
+
+			const FString InputText = (Definition->InputID == INDEX_NONE) ? FString(TEXT("—")) : FString::FromInt(Definition->InputID);
+			InputW = FMath::Max(InputW, MeasureTextWidth(InputText, RowFont));
+
+			const FString CooldownText = FString::Printf(TEXT("%.1fs"), Definition->CooldownSeconds);
+			CooldownW = FMath::Max(CooldownW, MeasureTextWidth(CooldownText, RowFont));
+		}
+	}
+
+	const float InputCooldownW = FMath::Max(InputW, CooldownW);
+
+	OutWidths.SetNum(4);
+	OutWidths[0] = NameW + OnsetAbilityEditorWidgetConstants::NamePadding;
+	OutWidths[1] = TypeW + OnsetAbilityEditorWidgetConstants::OtherPadding;
+	OutWidths[2] = InputCooldownW + OnsetAbilityEditorWidgetConstants::OtherPadding;
+	OutWidths[3] = InputCooldownW + OnsetAbilityEditorWidgetConstants::OtherPadding;
+}
+
+/** Flat, compact button style: no chrome, subtle hover/press fill. */
+static FButtonStyle MakeBaseFlatStyle()
+{
+	FButtonStyle Style;
+	Style.SetNormal(*FStyleDefaults::GetNoBrush());
+
+	FSlateBrush Hover = *FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
+	Hover.TintColor = FSlateColor(FLinearColor(1.0f, 1.0f, 1.0f, 0.10f));
+	FSlateBrush Pressed = Hover;
+	Pressed.TintColor = FSlateColor(FLinearColor(1.0f, 1.0f, 1.0f, 0.18f));
+
+	Style.SetHovered(Hover);
+	Style.SetPressed(Pressed);
+	Style.SetDisabled(*FStyleDefaults::GetNoBrush());
+	Style.SetNormalPadding(FMargin(4.0f, 1.0f));
+	Style.SetPressedPadding(FMargin(4.0f, 2.0f));
+	return Style;
+}
+
+/** Row style: transparent normally; tinted fill when the row is selected. */
+static FButtonStyle MakeRowStyle(bool bSelected)
+{
+	FButtonStyle Style = MakeBaseFlatStyle();
+	// Zero horizontal padding so the row content aligns with the column header.
+	Style.SetNormalPadding(FMargin(0.0f, 1.0f));
+	Style.SetPressedPadding(FMargin(0.0f, 2.0f));
+	if (bSelected)
+	{
+		FSlateBrush Selected = *FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
+		Selected.TintColor = FSlateColor(FLinearColor(0.15f, 0.35f, 0.75f, 0.35f));
+		FSlateBrush SelectedHover = Selected;
+		SelectedHover.TintColor = FSlateColor(FLinearColor(0.20f, 0.40f, 0.80f, 0.45f));
+		Style.SetNormal(Selected);
+		Style.SetHovered(SelectedHover);
+		Style.SetPressed(SelectedHover);
+	}
+	return Style;
+}
+
+/** A fixed-width text cell (used for both the column header and row values). */
+static USizeBox* MakeCell(UWidgetTree* WidgetTree, const FString& BaseName, float Width, const FText& Text, bool bHeader, ETextJustify::Type Justification)
+{
+	USizeBox* CellBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), NextWidgetName(BaseName + TEXT("_Cell")));
+	CellBox->SetWidthOverride(Width);
+
+	UTextBlock* TextBlock = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), NextWidgetName(BaseName + TEXT("_Label")));
+	TextBlock->SetText(Text);
+	TextBlock->SetJustification(Justification);
+	TextBlock->SetFont(bHeader ? FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), 10) : FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 10));
+	if (bHeader)
+	{
+		TextBlock->SetColorAndOpacity(FSlateColor(FLinearColor(0.65f, 0.65f, 0.65f, 1.0f)));
+	}
+
+	CellBox->AddChild(TextBlock);
+	return CellBox;
+}
+
+/** Creates a compact UButton whose content is a single centered text block. */
 static UButton* MakeTextButton(UWidgetTree* WidgetTree, const FText& Label, const FString& BaseName)
 {
-	static int32 ButtonCounter = 0;
-	++ButtonCounter;
-	FName ButtonName = FName(*FString::Printf(TEXT("%s_Button_%d"), *BaseName, ButtonCounter));
-	FName LabelName = FName(*FString::Printf(TEXT("%s_Label_%d"), *BaseName, ButtonCounter));
-	UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), ButtonName);
-	UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), LabelName);
+	UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), NextWidgetName(BaseName + TEXT("_Button")));
+	UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), NextWidgetName(BaseName + TEXT("_Label")));
 	Text->SetText(Label);
 	Text->SetJustification(ETextJustify::Center);
+	Text->SetFont(FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 10));
 	Button->SetContent(Text);
+	Button->SetStyle(MakeBaseFlatStyle());
 	return Button;
 }
 
@@ -67,39 +217,65 @@ void UOnsetAbilityEditorWidget::BuildUI()
 		return;
 	}
 
-	// Root: horizontal split — list (left) + property view (right).
-	UHorizontalBox* RootBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("RootLayout"));
-	
-	// --- Left: scrollable list + add/delete/save buttons ---
+	// Root: vertical — content (list + details) on top, buttons pinned to the bottom.
+	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RootLayout"));
+	UHorizontalBox* ContentRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ContentRow"));
+
+	// --- Left: column header + scrollable spreadsheet list ---
 	UVerticalBox* LeftPanel = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("LeftPanel"));
-	
-	RootBox->AddChild(LeftPanel);
+
+	// Size the columns to their content up front so the header matches the rows.
+	TArray<float> Widths;
+	ComputeColumnWidths(GetAbilityTable(), Widths);
+	ColumnWidths = Widths;
+
+	UHorizontalBox* HeaderRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ColumnHeader"));
+	HeaderCells.Reset();
+	HeaderCells.Add(MakeCell(WidgetTree, TEXT("HeaderName"), Widths[0], NSLOCTEXT("OnsetAbilityEditor", "ColumnName", "Name"), true, ETextJustify::Left));
+	HeaderCells.Add(MakeCell(WidgetTree, TEXT("HeaderType"), Widths[1], NSLOCTEXT("OnsetAbilityEditor", "ColumnType", "Type"), true, ETextJustify::Center));
+	HeaderCells.Add(MakeCell(WidgetTree, TEXT("HeaderInput"), Widths[2], NSLOCTEXT("OnsetAbilityEditor", "ColumnInput", "Input"), true, ETextJustify::Center));
+	HeaderCells.Add(MakeCell(WidgetTree, TEXT("HeaderCooldown"), Widths[3], NSLOCTEXT("OnsetAbilityEditor", "ColumnCooldown", "Cooldown"), true, ETextJustify::Center));
+	for (USizeBox* Cell : HeaderCells)
+	{
+		HeaderRow->AddChild(Cell);
+	}
+	LeftPanel->AddChildToVerticalBox(HeaderRow);
 
 	UScrollBox* ListScroll = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(), TEXT("RowList"));
-	LeftPanel->AddChild(ListScroll);
+	ListScroll->SetAlwaysShowScrollbar(true);
+	ListScroll->SetAlwaysShowScrollbarTrack(true);
+	LeftPanel->AddChildToVerticalBox(ListScroll)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 
 	RowListBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RowListBox"));
 	ListScroll->AddChild(RowListBox);
 
 	// --- Right: property view bound to the selected row ---
 	PropertyView = WidgetTree->ConstructWidget<UDetailsView>(UDetailsView::StaticClass(), TEXT("PropertyView"));
-	RootBox->AddChild(PropertyView);
 
-	// --- Bottom buttons ---
+	// The list panel hugs its columns (minimum width); the details panel takes the rest.
+	ContentRow->AddChildToHorizontalBox(LeftPanel)->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+	ContentRow->AddChildToHorizontalBox(PropertyView)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	RootBox->AddChildToVerticalBox(ContentRow)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+
+	// --- Bottom: full-width action bar pinned under the content ---
 	UHorizontalBox* ButtonRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ButtonRow"));
-	LeftPanel->AddChild(ButtonRow);
-	
+
 	UButton* AddButton = MakeTextButton(WidgetTree, NSLOCTEXT("OnsetAbilityEditor", "Add", "Add"), TEXT("Add"));
 	AddButton->OnClicked.AddDynamic(this, &UOnsetAbilityEditorWidget::AddDefinition);
-	ButtonRow->AddChild(AddButton);
+	ButtonRow->AddChildToHorizontalBox(AddButton)->SetPadding(FMargin(0.0f, 0.0f, 4.0f, 0.0f));
 
 	UButton* DeleteButton = MakeTextButton(WidgetTree, NSLOCTEXT("OnsetAbilityEditor", "Delete", "Delete"), TEXT("Delete"));
 	DeleteButton->OnClicked.AddDynamic(this, &UOnsetAbilityEditorWidget::DeleteDefinition);
-	ButtonRow->AddChild(DeleteButton);
+	ButtonRow->AddChildToHorizontalBox(DeleteButton)->SetPadding(FMargin(0.0f, 0.0f, 4.0f, 0.0f));
 
 	UButton* SaveButton = MakeTextButton(WidgetTree, NSLOCTEXT("OnsetAbilityEditor", "Save", "Save"), TEXT("Save"));
 	SaveButton->OnClicked.AddDynamic(this, &UOnsetAbilityEditorWidget::SaveDefinition);
-	ButtonRow->AddChild(SaveButton);
+	ButtonRow->AddChildToHorizontalBox(SaveButton);
+
+	UVerticalBoxSlot* ButtonRowSlot = RootBox->AddChildToVerticalBox(ButtonRow);
+	ButtonRowSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+	ButtonRowSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Right);
+	ButtonRowSlot->SetPadding(FMargin(0.0f, 4.0f, 0.0f, 0.0f));
 
 	WidgetTree->RootWidget = RootBox;
 }
@@ -117,12 +293,28 @@ void UOnsetAbilityEditorWidget::RebuildList()
 	}
 
 	RowListBox->ClearChildren();
+	RowButtons.Reset();
 
 	UDataTable* Table = GetAbilityTable();
 	if (!Table)
 	{
 		return;
 	}
+
+	// Recompute column widths (the Name column tracks the longest name in the list)
+	// and resize the header cells to match.
+	TArray<float> Widths;
+	ComputeColumnWidths(Table, Widths);
+	ColumnWidths = Widths;
+	for (int32 i = 0; i < HeaderCells.Num() && i < Widths.Num(); ++i)
+	{
+		if (HeaderCells[i])
+		{
+			HeaderCells[i]->SetWidthOverride(Widths[i]);
+		}
+	}
+
+	UEnum* AbilityTypeEnum = StaticEnum<EOnsetAbilityType>();
 
 	for (const TPair<FName, uint8*>& RowPair : Table->GetRowMap())
 	{
@@ -135,16 +327,34 @@ void UOnsetAbilityEditorWidget::RebuildList()
 
 		UOnsetAbilityRowButton* RowButton = NewObject<UOnsetAbilityRowButton>(this);
 		RowButton->RowName = RowName;
+		RowButton->SetStyle(MakeRowStyle(RowName == SelectedRowName));
 
-		UTextBlock* Label = NewObject<UTextBlock>(this);
-		Label->SetText(Definition->DisplayName.IsEmpty() ? FText::FromName(RowName) : Definition->DisplayName);
-		Label->SetJustification(ETextJustify::Left);
-		RowButton->SetContent(Label);
+		// Row content: a fixed-height box holding the 4 fixed-width cells.
+		USizeBox* RowHeightBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), NextWidgetName(TEXT("RowSize")));
+		RowHeightBox->SetHeightOverride(OnsetAbilityEditorWidgetConstants::ListEntryHeight);
+
+		UHorizontalBox* Cells = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), NextWidgetName(TEXT("RowCells")));
+
+		const FText NameText = Definition->DisplayName.IsEmpty() ? FText::FromName(RowName) : Definition->DisplayName;
+		const FText TypeText = AbilityTypeEnum ? AbilityTypeEnum->GetDisplayValueAsText(Definition->AbilityType) : FText::FromString(TEXT("?"));
+		const FText InputText = (Definition->InputID == INDEX_NONE) ? FText::FromString(TEXT("—")) : FText::AsNumber(Definition->InputID);
+		const FText CooldownText = FText::FromString(FString::Printf(TEXT("%.1fs"), Definition->CooldownSeconds));
+
+		Cells->AddChild(MakeCell(WidgetTree, TEXT("Name"), Widths[0], NameText, false, ETextJustify::Left));
+		Cells->AddChild(MakeCell(WidgetTree, TEXT("Type"), Widths[1], TypeText, false, ETextJustify::Center));
+		Cells->AddChild(MakeCell(WidgetTree, TEXT("Input"), Widths[2], InputText, false, ETextJustify::Center));
+		Cells->AddChild(MakeCell(WidgetTree, TEXT("Cooldown"), Widths[3], CooldownText, false, ETextJustify::Center));
+
+		RowHeightBox->AddChild(Cells);
+		RowButton->SetContent(RowHeightBox);
 
 		RowButton->OnClicked.AddDynamic(RowButton, &UOnsetAbilityRowButton::HandleClicked);
 		RowButton->OnRowSelected.AddUObject(this, &UOnsetAbilityEditorWidget::SelectRow);
 
-		RowListBox->AddChildToVerticalBox(RowButton);
+		// Pin the row to the left edge and size it to its columns so the cells align
+		// with the column header above.
+		RowListBox->AddChildToVerticalBox(RowButton)->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Left);
+		RowButtons.Add(RowName, RowButton);
 	}
 }
 
@@ -173,6 +383,16 @@ void UOnsetAbilityEditorWidget::SelectRow(FName RowName)
 	if (PropertyView)
 	{
 		PropertyView->SetObject(EditWrapper);
+	}
+
+	// Update the selection highlight in place (avoids rebuilding the list while the
+	// clicked button is still dispatching its click event).
+	for (const TPair<FName, TObjectPtr<UOnsetAbilityRowButton>>& Pair : RowButtons)
+	{
+		if (Pair.Value)
+		{
+			Pair.Value->SetStyle(MakeRowStyle(Pair.Key == SelectedRowName));
+		}
 	}
 }
 
@@ -242,6 +462,27 @@ void UOnsetAbilityEditorWidget::SaveDefinition()
 
 	if (CachedTable)
 	{
+		// Keep the row name in sync with the ability's display name.
+		const FString NewNameString = EditWrapper->Definition.DisplayName.ToString().TrimStartAndEnd();
+		if (!NewNameString.IsEmpty())
+		{
+			FName FinalName = FName(*NewNameString);
+			int32 Suffix = 1;
+			while (FinalName != SelectedRowName && CachedTable->FindRow<FOnsetAbilityDefinition>(FinalName, nullptr))
+			{
+				FinalName = FName(*FString::Printf(TEXT("%s%d"), *NewNameString, Suffix++));
+			}
+
+			if (FinalName != SelectedRowName)
+			{
+				// UDataTable has no rename API in UE 5.8; remove + re-add with the new name.
+				const FOnsetAbilityDefinition DefinitionData = EditWrapper->Definition;
+				CachedTable->RemoveRow(SelectedRowName);
+				CachedTable->AddRow(FinalName, DefinitionData);
+				SelectedRowName = FinalName;
+			}
+		}
+
 		UPackage* Package = CachedTable->GetPackage();
 		Package->MarkPackageDirty();
 

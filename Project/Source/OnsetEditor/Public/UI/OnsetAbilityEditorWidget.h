@@ -12,6 +12,8 @@ class UDataTable;
 class UVerticalBox;
 class UDetailsView;
 class UTextBlock;
+class USizeBox;
+class UOnsetAbilityRowButton;
 
 /**
  * Transient UObject exposing a single row to the PropertyView so the details panel
@@ -97,6 +99,17 @@ private:
 	/** The row-list container (left side). */
 	UPROPERTY(Transient)
 	TObjectPtr<UVerticalBox> RowListBox;
+
+	/** Row buttons by row name, for in-place selection-highlight updates. */
+	UPROPERTY(Transient)
+	TMap<FName, TObjectPtr<UOnsetAbilityRowButton>> RowButtons;
+
+	/** The column-header cell boxes, so RebuildList can resize them with the columns. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<USizeBox>> HeaderCells;
+
+	/** Current column widths (Name, Type, Input, Cooldown), recomputed per refresh. */
+	TArray<float> ColumnWidths;
 
 	/** The auto-generated property form (right side). */
 	UPROPERTY(Transient)
