@@ -24,4 +24,10 @@ public:
 
 private:
 	static const FName AbilityEditorTabID;
+
+	/** Handle for the level actor-deleted subscription used to prune SpawnPoints. */
+	FDelegateHandle OnLevelActorDeletedHandle;
+
+	/** Handle for the actor-moved subscription used to flag manually-placed SpawnPoints. */
+	FDelegateHandle OnActorMovedHandle;
 };

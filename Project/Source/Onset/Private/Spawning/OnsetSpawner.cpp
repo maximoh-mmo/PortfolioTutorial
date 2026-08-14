@@ -185,7 +185,65 @@ void AOnsetSpawner::PostEditChangeProperty(struct FPropertyChangedEvent& Propert
 		AOnsetSpawner,
 		SpawnPoints))
 	{
+		// The array's native "+" button appends a null slot; turn it into a
+		// real spawn point actor so the two can't drift apart.
+		if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd)
+		{
+			const int32 LastIndex = SpawnPoints.Num() - 1;
+
+			if (LastIndex >= 0 && !IsValid(SpawnPoints[LastIndex]))
+			{
+				if (ASpawnPoint* NewSpawnPoint = CreateSpawnPoint())
+				{
+					SpawnPoints[LastIndex] = NewSpawnPoint;
+					MarkPackageDirty();
+				}
+			}
+		}
+
+		SyncSpawnPoints();
+	    RelocateSpawnPoints();
 	    UpdateAllSpawnPointPreviews();
+
+		// Keep GroupSize in sync with the spawn point count so every point is
+		// used; only ever grow it, never shrink, to respect the user's intent.
+		if (SpawnPoints.Num() > Config.GroupSize)
+		{
+			Config.GroupSize = SpawnPoints.Num();
+			MarkPackageDirty();
+		}
+	}
+}
+
+FVector AOnsetSpawner::GetIdealSpawnPointLocation(int32 Index, int32 Count) const
+{
+	const float Angle = (360.0f / Count) * Index;
+	const float Rad = FMath::DegreesToRadians(Angle);
+	const FVector Offset =
+		FVector(FMath::Cos(Rad), FMath::Sin(Rad), 0.0f) * Config.SpawnRadius;
+	return GetActorLocation() + Offset;
+}
+
+void AOnsetSpawner::RelocateSpawnPoints()
+{
+	const int32 Count = SpawnPoints.Num();
+	if (Count <= 0) return;
+
+	for (int32 i = 0; i < Count; i++)
+	{
+		ASpawnPoint* Point = SpawnPoints[i];
+		if (!IsValid(Point)) continue;
+
+		// Never move a point the user placed by hand.
+		if (Point->bUserPlaced) continue;
+
+		const FVector Ideal = GetIdealSpawnPointLocation(i, Count);
+		if (!Point->GetActorLocation().Equals(Ideal, 0.1f))
+		{
+			// Snapshot for undo/redo before moving.
+			Point->Modify();
+			Point->SetActorLocation(Ideal);
+		}
 	}
 }
 
@@ -218,6 +276,60 @@ void AOnsetSpawner::PostEditUndo()
 	UpdateAllSpawnPointPreviews();
 
 	EditorSpawnPointCache = SpawnPoints;
+}
+
+void AOnsetSpawner::PostLoad()
+{
+	Super::PostLoad();
+
+	// Seed the cache so the first SpawnPoints edit can tell removed entries
+	// apart from existing ones.
+	EditorSpawnPointCache = SpawnPoints;
+}
+
+ASpawnPoint* AOnsetSpawner::CreateSpawnPoint()
+{
+	UWorld* World = GetWorld();
+
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ASpawnPoint* NewSpawnPoint =
+		World->SpawnActor<ASpawnPoint>(
+			ASpawnPoint::StaticClass(),
+			GetActorLocation(),
+			GetActorRotation(),
+			SpawnParams
+		);
+
+	if (!NewSpawnPoint)
+	{
+		return nullptr;
+	}
+
+	// Nest the spawn point under the spawner so it moves with it and appears
+	// grouped underneath it in the outliner.
+	NewSpawnPoint->AttachToActor(
+		this,
+		FAttachmentTransformRules::KeepWorldTransform
+	);
+
+	if (Config.EnemyVisualProfile)
+	{
+		const UVisualProfile* Profile = Config.EnemyVisualProfile.Get();
+		NewSpawnPoint->SetPreview(
+			Profile->SkeletalMesh.LoadSynchronous(),
+			Profile->OverrideMaterial.Get()
+		);
+	}
+
+	return NewSpawnPoint;
 }
 
 #endif

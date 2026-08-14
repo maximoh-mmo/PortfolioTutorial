@@ -4,23 +4,35 @@
 #include "PropertyEditorModule.h"
 #include "UI/OnsetAbilityEditorWidget.h"
 #include "Blueprint/UserWidget.h"
-#include "DetailCustomization/SpawnerDetails.h"
+#include "Engine/Engine.h"
+#include "SpawnerEditorUtilities.h"
+#include "Spawning/SpawnPoint.h"
+
+/** Editor-time hook: dragging a spawn point marks it as manually placed so the
+ *  spawner stops auto-relocating it. Does not fire for programmatic moves. */
+static void OnSpawnPointMoved(AActor* Actor)
+{
+	if (ASpawnPoint* SpawnPoint = Cast<ASpawnPoint>(Actor))
+	{
+		SpawnPoint->bUserPlaced = true;
+	}
+}
 
 void FOnsetEditorModule::StartupModule()
 {	
 	UToolMenus::RegisterStartupCallback(
 				FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FOnsetEditorModule::RegisterMenus));
-	FPropertyEditorModule& PropertyModule =
-			FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
-				"PropertyEditor"
-			);
 
-	PropertyModule.RegisterCustomClassLayout(
-		"OnsetSpawner",
-		FOnGetDetailCustomizationInstance::CreateStatic(
-			&FSpawnerDetails::MakeInstance
-		)
-	);
+	if (GEngine)
+	{
+		OnLevelActorDeletedHandle = GEngine->OnLevelActorDeleted().AddStatic(
+			&FSpawnerEditorUtilities::OnActorDeleted
+		);
+
+		OnActorMovedHandle = GEngine->OnActorMoved().AddStatic(
+			&OnSpawnPointMoved
+		);
+	}
 }
 
 void FOnsetEditorModule::ShutdownModule()
@@ -28,16 +40,20 @@ void FOnsetEditorModule::ShutdownModule()
 	UToolMenus::UnRegisterStartupCallback(this);
 	UToolMenus::UnregisterOwner(this);
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(AbilityEditorTabID);
-	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
-	{
-		FPropertyEditorModule& PropertyModule =
-			FModuleManager::GetModuleChecked<FPropertyEditorModule>(
-				"PropertyEditor"
-			);
 
-		PropertyModule.UnregisterCustomClassLayout(
-			"OnsetSpawner"
-		);
+	if (GEngine)
+	{
+		if (OnLevelActorDeletedHandle.IsValid())
+		{
+			GEngine->OnLevelActorDeleted().Remove(OnLevelActorDeletedHandle);
+			OnLevelActorDeletedHandle.Reset();
+		}
+
+		if (OnActorMovedHandle.IsValid())
+		{
+			GEngine->OnActorMoved().Remove(OnActorMovedHandle);
+			OnActorMovedHandle.Reset();
+		}
 	}
 }
 

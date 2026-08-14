@@ -27,6 +27,16 @@ public:
 #endif
 	
 #if WITH_EDITORONLY_DATA
+	/**
+	 * True once this point has been repositioned by the user in the editor.
+	 * Such points are left alone by the spawner's auto-relocation logic and
+	 * still count as occupying their equidistant slot.
+	 */
+	UPROPERTY()
+	bool bUserPlaced = false;
+#endif
+	
+#if WITH_EDITORONLY_DATA
 	UPROPERTY(VisibleAnywhere, Transient)
 	TObjectPtr<USkeletalMeshComponent> PreviewMesh;
 #endif

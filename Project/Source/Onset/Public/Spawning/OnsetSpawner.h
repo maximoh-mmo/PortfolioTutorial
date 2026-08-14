@@ -53,7 +53,32 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Spawner")
 	void OnNPCDeath(AOnsetEnemy* Enemy);
 	void RespawnNPC(int32 SlotIndex);
+
+#if WITH_EDITOR
+	/** Spawns and attaches a new spawn point actor at this spawner's location. Editor-only. */
+	ASpawnPoint* CreateSpawnPoint();
+
+	/**
+	 * Re-arranges auto-placed spawn points into an equidistant ring around this
+	 * spawner at Config.SpawnRadius. Points the user has moved by hand are left
+	 * untouched but still count toward the ring's slot count.
+	 */
+	void RelocateSpawnPoints();
+		
+	virtual void PostEditChangeProperty(
+		struct FPropertyChangedEvent& PropertyChangedEvent
+		) override;
+	void SyncSpawnPoints();
+
+	virtual void PostEditUndo() override;
+
+	virtual void PostLoad() override;
+#endif
 	
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASpawnPoint>> EditorSpawnPointCache;
+#endif
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -75,19 +100,13 @@ private:
 	
 #if WITH_EDITOR
 	void UpdateAllSpawnPointPreviews();
-	void RemoveInvalidSpawnPoints();
-	void DestroySpawnPoint(ASpawnPoint* SpawnPoint);
-	
-	virtual void PostEditChangeProperty(
-		struct FPropertyChangedEvent& PropertyChangedEvent
-		) override;
-	void SyncSpawnPoints();
 
-	virtual void PostEditUndo() override;
-#endif
-#if WITH_EDITORONLY_DATA
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASpawnPoint>> EditorSpawnPointCache;
+	/** World-space location for the point at the given index on an equidistant ring. */
+	FVector GetIdealSpawnPointLocation(int32 Index, int32 Count) const;
+	
+	void RemoveInvalidSpawnPoints();
+	
+	void DestroySpawnPoint(ASpawnPoint* SpawnPoint);
 #endif
 	
 };
