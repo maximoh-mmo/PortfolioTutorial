@@ -4,11 +4,26 @@ param(
     [string]$EnginePath = "C:\Program Files\Epic Games\UE_5.8",
     [string]$ProjectPath = "E:\Unreal Projects\PortfolioTutorial\Project\Onset.uproject",
     [string]$DataStoreType = "HttpApi",
-    [string]$DataStoreURL = "qnghmsigrompw56v5wrlojl7z40dwtqm.lambda-url.us-east-1.on.aws/",
-    [string]$DataStoreAPIKey = "dev-api-key-change-me-in-production",
-    [string]$AuthTokenSecret = "change-me-in-production",
+    [string]$DataStoreURL = "",
+    [string]$DataStoreAPIKey = "",
+    [string]$AuthTokenSecret = "",
+    [switch]$Cloud,
     [int]$AutoPlaySlot = -1
 )
+
+$CloudEndpoint = "qnghmsigrompw56v5wrlojl7z40dwtqm.lambda-url.us-east-1.on.aws/"
+$LocalEndpoint = "http://localhost:3000"
+
+if ($Cloud) {
+    if ([string]::IsNullOrWhiteSpace($DataStoreURL)) { $DataStoreURL = $CloudEndpoint }
+    if ([string]::IsNullOrWhiteSpace($DataStoreAPIKey)) { $DataStoreAPIKey = "dev-api-key-change-me-in-production" }
+    if ([string]::IsNullOrWhiteSpace($AuthTokenSecret)) { $AuthTokenSecret = "change-me-in-production" }
+}
+else {
+    if ([string]::IsNullOrWhiteSpace($DataStoreURL)) { $DataStoreURL = $LocalEndpoint }
+    if ([string]::IsNullOrWhiteSpace($DataStoreAPIKey)) { $DataStoreAPIKey = "dev-api-key-change-me-in-production" }
+    if ([string]::IsNullOrWhiteSpace($AuthTokenSecret)) { $AuthTokenSecret = "local-dev-shared-secret" }
+}
 
 $EngineBin = Join-Path $EnginePath "Engine\Binaries\Win64\UnrealEditor.exe"
 $ProjectDir = Split-Path $ProjectPath -Parent
@@ -33,6 +48,9 @@ $ClientLog = "$LogDir\Client.log"
 
 $DataStoreArgs = " -OnsetDataStoreType=$DataStoreType -OnsetDataStoreURL=$DataStoreURL" +
                  " -OnsetDataStoreAPIKey=$DataStoreAPIKey -OnsetAuthTokenSecret=$AuthTokenSecret"
+
+$DataStoreMode = if ($Cloud) { "CLOUD" } else { "LOCAL" }
+Write-Host "DataStore mode: $DataStoreMode -> $DataStoreURL" -ForegroundColor Cyan
 
 $LoginCmd = "-project=`"$ProjectPath`" /Game/Maps/LoginServer -server -log -AuthMode=Direct -Port=$LoginPort -NOSTEAM" +
             " -AbsLog=`"$LoginLog`" -LogCmds=`"$LogFilter`"" + $DataStoreArgs
