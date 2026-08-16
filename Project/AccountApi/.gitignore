@@ -3,5 +3,6 @@ cdk.out/
 dist/
 .local/
 .env
+.env.cloud
 *.js.map
 *.d.ts
