@@ -7,9 +7,11 @@
 #include "Engine/DataTable.h"
 #include "GameplayTagsManager.h"
 #include "Misc/ConfigCacheIni.h"
+#include "UObject/StrongObjectPtr.h"
+
 namespace OnsetAbilityLibraryInternal
 {
-	TObjectPtr<UDataTable> CachedTable = nullptr;
+	TStrongObjectPtr<UDataTable> CachedTable = nullptr;
 	TMap<FName, FOnsetAbilityDefinition> CachedRows;
 }
 
@@ -28,7 +30,7 @@ UDataTable* UOnsetAbilityLibrary::GetAbilityTable()
 {
 	if (OnsetAbilityLibraryInternal::CachedTable)
 	{
-		return OnsetAbilityLibraryInternal::CachedTable;
+		return OnsetAbilityLibraryInternal::CachedTable.Get();
 	}
 	return LoadTable();
 }
@@ -135,7 +137,7 @@ bool UOnsetAbilityLibrary::ValidateDefinitions()
 
 void UOnsetAbilityLibrary::Refresh()
 {
-	OnsetAbilityLibraryInternal::CachedTable = nullptr;
+	OnsetAbilityLibraryInternal::CachedTable.Reset();
 	OnsetAbilityLibraryInternal::CachedRows.Reset();
 }
 
@@ -149,7 +151,7 @@ UDataTable* UOnsetAbilityLibrary::LoadTable()
 		return nullptr;
 	}
 
-	OnsetAbilityLibraryInternal::CachedTable = Table;
+	OnsetAbilityLibraryInternal::CachedTable = TStrongObjectPtr<UDataTable>(Table);
 	OnsetAbilityLibraryInternal::CachedRows.Reset();
 	OnsetAbilityLibraryInternal::CachedRows.Reserve(Table->GetRowMap().Num());
 	for (const TPair<FName, uint8*>& Entry : Table->GetRowMap())
