@@ -7,6 +7,14 @@
 
 DEFINE_LOG_CATEGORY(LogPlayerData)
 
+namespace
+{
+	FString MakeCharacterCacheKey(const FString& Platform, const FString& PlatformID, int32 SlotIndex)
+	{
+		return FString::Printf(TEXT("%s|%s|%d"), *Platform, *PlatformID, SlotIndex);
+	}
+}
+
 void UOnsetPlayerDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -51,7 +59,12 @@ void UOnsetPlayerDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	UE_LOG(LogPlayerData, Log, TEXT("UOnsetPlayerDataSubsystem: initialized with %s (success=%d)"), *DataStoreType, bInitialized);
 
-	StartAutoSaveTimer();
+	// HTTP-backed stores (account server) save on demand; the periodic timer is a no-op there,
+	// so only arm it for local stores.
+	if (DataStoreType != TEXT("HttpApi"))
+	{
+		StartAutoSaveTimer();
+	}
 }
 
 void UOnsetPlayerDataSubsystem::Deinitialize()
@@ -107,7 +120,12 @@ bool UOnsetPlayerDataSubsystem::CreateAccount(const FString& Platform, const FSt
 bool UOnsetPlayerDataSubsystem::LoadCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex, FOnsetFullCharacterData& OutData)
 {
 	if (!Store) return false;
-	return Store->LoadCharacter(Platform, PlatformID, SlotIndex, OutData);
+	const bool bLoaded = Store->LoadCharacter(Platform, PlatformID, SlotIndex, OutData);
+	if (bLoaded)
+	{
+		IdentityCache.Add(MakeCharacterCacheKey(Platform, PlatformID, SlotIndex), OutData);
+	}
+	return bLoaded;
 }
 
 bool UOnsetPlayerDataSubsystem::SaveCharacter(const FString& Platform, const FString& PlatformID, const FOnsetFullCharacterData& Data)
@@ -118,6 +136,20 @@ bool UOnsetPlayerDataSubsystem::SaveCharacter(const FString& Platform, const FSt
 
 bool UOnsetPlayerDataSubsystem::SaveCharacterPreservingIdentity(const FString& Platform, const FString& PlatformID, FOnsetFullCharacterData& Data)
 {
+	const FString CacheKey = MakeCharacterCacheKey(Platform, PlatformID, Data.SlotIndex);
+	const FOnsetFullCharacterData* Cached = IdentityCache.Find(CacheKey);
+	if (Cached)
+	{
+		Data.CharacterName = Cached->CharacterName;
+		Data.Level = Cached->Level;
+		Data.Experience = Cached->Experience;
+		Data.CharacterClass = Cached->CharacterClass;
+		Data.AppearanceJSON = Cached->AppearanceJSON;
+		return SaveCharacter(Platform, PlatformID, Data);
+	}
+
+	// Cold cache (e.g. first save after a server restart with no prior character load): read once
+	// to preserve identity; LoadCharacter seeds the cache so subsequent saves are write-only.
 	FOnsetFullCharacterData Existing;
 	if (LoadCharacter(Platform, PlatformID, Data.SlotIndex, Existing))
 	{
@@ -133,7 +165,12 @@ bool UOnsetPlayerDataSubsystem::SaveCharacterPreservingIdentity(const FString& P
 bool UOnsetPlayerDataSubsystem::DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex)
 {
 	if (!Store) return false;
-	return Store->DeleteCharacter(Platform, PlatformID, SlotIndex);
+	const bool bDeleted = Store->DeleteCharacter(Platform, PlatformID, SlotIndex);
+	if (bDeleted)
+	{
+		IdentityCache.Remove(MakeCharacterCacheKey(Platform, PlatformID, SlotIndex));
+	}
+	return bDeleted;
 }
 
 void UOnsetPlayerDataSubsystem::SaveAll()

@@ -261,6 +261,14 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 	UE_LOG(LogTemp, Warning, TEXT("OnPossess: local=%d slot=%d pawn=%s"),
 		IsLocalController(), PossessPS ? PossessPS->SelectedCharacterSlot : -1, *GetNameSafe(InPawn));
 
+	// Re-acquiring a pawn means auto-combat handed control back (or the player just
+	// spawned); nudge the HUD toggle so it always mirrors the real state, even when
+	// the owning client would otherwise only hear about it via replication.
+	if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
+	{
+		PS->OnPlayerSettingsChanged.Broadcast();
+	}
+
 	// Re-possessing a pawn this controller already owned this session (e.g. when
 	// the auto-combat AI hands control back) must NOT re-apply the saved state.
 	// Otherwise players could toggle auto-combat to warp back to their last save
@@ -370,6 +378,12 @@ void AOnsetPlayerController::OnRep_Pawn()
 void AOnsetPlayerController::OnUnPossess()
 {
 	TargetingComponent = nullptr;
+
+	// The auto-combat AI took the pawn; nudge the HUD toggle so it mirrors the state.
+	if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
+	{
+		PS->OnPlayerSettingsChanged.Broadcast();
+	}
 }
 
 // ReSharper disable once CppMemberFunctionMayBeConst modifies GamepadCursorWidget
@@ -495,10 +509,10 @@ void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AAc
 	{
 		HitActor = nullptr;
 	}
-	
-	// Process targeting first (may change bAutoCombatEnabled)
+
+	// Process targeting first.
 	InteractionComponent->ProcessPrimaryInteraction(HitActor, HitLocation);
-	
+
 	FVector MoveTarget = InteractionComponent->GetPendingMoveTarget();
 	if (MoveTarget != FVector::ZeroVector)
 	{
@@ -506,7 +520,7 @@ void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AAc
 		{
 			EnableAutoCombat();
 		}
-		
+
 		if (AutoCombatController && AutoCombatController->GetPawn())
 		{
 			AutoCombatController->StopStateTree();
@@ -620,6 +634,7 @@ void AOnsetPlayerController::Server_SetContinueOnDisconnect_Implementation(bool 
 	if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
 	{
 		PS->bContinueOnDisconnect = bEnabled;
+		PS->OnPlayerSettingsChanged.Broadcast();
 	}
 }
 
@@ -668,6 +683,10 @@ void AOnsetPlayerController::EnableAutoCombat()
 		if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
 		{
 			PS->bAutoplayEnabled = true;
+			// Server-side mutation doesn't trigger OnRep locally (standalone/listen
+			// server), so notify the owning client's HUD directly. Remote clients are
+			// still covered by the replicated OnRep.
+			PS->OnPlayerSettingsChanged.Broadcast();
 		}
 		UE_LOG(LogTemp, Warning, TEXT("EnableAutoCombat: AI now controls %s (bAutoplayEnabled=%d)"),
 			*GetNameSafe(MyPawn), bAutoCombatEnabled);
@@ -687,6 +706,8 @@ void AOnsetPlayerController::DisableAutoCombat()
 	if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
 	{
 		PS->bAutoplayEnabled = false;
+		// See EnableAutoCombat: keep the owning client's HUD in sync on standalone/listen server.
+		PS->OnPlayerSettingsChanged.Broadcast();
 	}
 	UE_LOG(LogTemp, Warning, TEXT("DisableAutoCombat: player regained control of %s (bAutoplayEnabled=%d)"),
 		*GetNameSafe(AIPawn), bAutoCombatEnabled);
@@ -946,6 +967,13 @@ void AOnsetPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 bool AOnsetPlayerController::SaveCurrentCharacter(APawn* InPawn)
 {
+	// Exactly-once: disconnect triggers Logout -> PawnLeavingGame -> EndPlay, all of which
+	// funnel here. Only the first call flushes, avoiding duplicate writes to the data store.
+	if (bCharacterDataSaved)
+	{
+		return false;
+	}
+
 	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
 	if (!PS || PS->SelectedCharacterSlot < 0) return false;
 
@@ -967,7 +995,12 @@ bool AOnsetPlayerController::SaveCurrentCharacter(APawn* InPawn)
 	CharData.InventoryJSON = TEXT("{}");
 	CharData.EquipmentJSON = TEXT("{}");
 	CharData.QuestsJSON = TEXT("{}");
-	return DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+	const bool bSaved = DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+	if (bSaved)
+	{
+		bCharacterDataSaved = true;
+	}
+	return bSaved;
 }
 
 void AOnsetPlayerController::PawnLeavingGame()

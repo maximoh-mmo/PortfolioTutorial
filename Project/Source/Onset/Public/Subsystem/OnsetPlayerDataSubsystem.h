@@ -50,4 +50,8 @@ public:
 private:
 	TUniquePtr<IPlayerDataStore> Store;
 	FTimerHandle AutoSaveTimerHandle;
+
+	/** Identity fields (name, level, exp, class, appearance) cached per loaded character so saves
+	 *  can skip the read-before-write. Key: "Platform|PlatformID|SlotIndex". */
+	TMap<FString, FOnsetFullCharacterData> IdentityCache;
 };

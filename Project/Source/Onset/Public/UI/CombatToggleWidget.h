@@ -83,4 +83,10 @@ private:
 
 	/** Re-arm handle for RetryBindToPlayer while the PlayerState hasn't replicated yet. */
 	FTimerHandle RetryBindTimerHandle;
+
+	/** True while an autoplay toggle request is in flight, awaiting replicated confirmation. */
+	bool bAutoplayRequestPending = false;
+
+	/** True while a continue-on-disconnect toggle request is in flight, awaiting replicated confirmation. */
+	bool bContinueOnDisconnectRequestPending = false;
 };

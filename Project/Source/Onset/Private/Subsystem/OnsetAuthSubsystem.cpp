@@ -236,23 +236,12 @@ void UOnsetAuthSubsystem::HandleLogout(AController* Exiting)
 	AOnsetPlayerState* PS = Exiting ? Exiting->GetPlayerState<AOnsetPlayerState>() : nullptr;
 	if (!PS || PS->SelectedCharacterSlot < 0) return;
 
-	AOnsetPlayerCharacter* PlayerChar = Exiting ? Cast<AOnsetPlayerCharacter>(Exiting->GetPawn()) : nullptr;
+	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(Exiting);
+	if (!PC) return;
 
-	if (!PlayerChar) return;
-
-	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
-	if (!DataSubsystem) return;
-
-	FOnsetFullCharacterData CharData;
-	CharData.SlotIndex = PS->SelectedCharacterSlot;
-	CharData.SavedPosition = PlayerChar->GetActorLocation();
-	CharData.SavedRotationYaw = PlayerChar->GetActorRotation().Yaw;
-	CharData.CurrentZone = GetWorld()->GetMapName();
-	CharData.InventoryJSON = TEXT("{}");
-	CharData.EquipmentJSON = TEXT("{}");
-	CharData.QuestsJSON = TEXT("{}");
-
-	DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
+	// Route through the controller's exactly-once save so the Logout / PawnLeavingGame /
+	// EndPlay disconnect paths flush a single write to the data store.
+	PC->SaveCurrentCharacter(Exiting->GetPawn());
 }
 
 void UOnsetAuthSubsystem::ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket)

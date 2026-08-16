@@ -120,8 +120,12 @@ void UCombatToggleWidget::RefreshToggleStates()
 		OnAutoplayStateChanged(bAutoplayEnabled);
 	}
 
+	// The replicated state has arrived, so any in-flight request is resolved.
+	bAutoplayRequestPending = false;
+
 	if (AutoplayToggleButton)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("CombatToggle: autoplay UI -> %d"), bAutoplayEnabled);
 		AutoplayToggleButton->SetIsSelected(bAutoplayEnabled, false);
 	}
 
@@ -131,6 +135,8 @@ void UCombatToggleWidget::RefreshToggleStates()
 		OnContinueOnDisconnectStateChanged(bContinueOnDisconnect);
 	}
 
+	bContinueOnDisconnectRequestPending = false;
+
 	if (ContinueOnDisconnectToggleButton)
 	{
 		ContinueOnDisconnectToggleButton->SetIsSelected(bContinueOnDisconnect, false);
@@ -139,18 +145,52 @@ void UCombatToggleWidget::RefreshToggleStates()
 
 void UCombatToggleWidget::OnAutoplayToggled()
 {
-	UE_LOG(LogTemp, Warning, TEXT("CombatToggle OnAutoplayToggled: current widget state=%d -> sending %d"),
-		bAutoplayEnabled ? 1 : 0, bAutoplayEnabled ? 0 : 1);
-	if (BoundController)
+	if (!BoundController || bAutoplayRequestPending)
 	{
-		BoundController->SetAutoCombatEnabled(!bAutoplayEnabled);
+		return;
+	}
+
+	// CommonButtonBase flips its own selected state locally on click. Revert it so
+	// the toggle only shows the new state once the server's replicated state confirms it.
+	bAutoplayRequestPending = true;
+	if (AutoplayToggleButton)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Setting AutoPlayToggle button to: %d"), bAutoplayEnabled);
+		AutoplayToggleButton->SetIsSelected(bAutoplayEnabled, false);
+	}
+
+	const bool bDesired = !bAutoplayEnabled;
+	UE_LOG(LogTemp, Warning, TEXT("CombatToggle OnAutoplayToggled: sending %d (pending confirmation)"),
+		bDesired ? 1 : 0);
+	BoundController->SetAutoCombatEnabled(bDesired);
+
+	if (BoundController->HasAuthority())
+	{
+		// On the server the change applies synchronously; re-read immediately so the
+		// pending gate clears and the UI reflects the confirmed state right away.
+		bAutoplayRequestPending = false;
+		RefreshToggleStates();
 	}
 }
 
 void UCombatToggleWidget::OnContinueOnDisconnectToggled()
 {
-	if (BoundController)
+	if (!BoundController || bContinueOnDisconnectRequestPending)
 	{
-		BoundController->SetContinueOnDisconnect(!bContinueOnDisconnect);
+		return;
+	}
+
+	bContinueOnDisconnectRequestPending = true;
+	if (ContinueOnDisconnectToggleButton)
+	{
+		ContinueOnDisconnectToggleButton->SetIsSelected(bContinueOnDisconnect, false);
+	}
+
+	BoundController->SetContinueOnDisconnect(!bContinueOnDisconnect);
+
+	if (BoundController->HasAuthority())
+	{
+		bContinueOnDisconnectRequestPending = false;
+		RefreshToggleStates();
 	}
 }

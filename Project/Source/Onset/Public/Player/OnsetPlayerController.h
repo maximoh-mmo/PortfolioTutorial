@@ -289,6 +289,10 @@ public:
 
 	void ClearAuthTimeout();
 
+	/** Saves the given pawn's character data (if a slot is available), at most once per session.
+	 *  Returns true if the save was performed and succeeded. Subsequent calls are no-ops. */
+	bool SaveCurrentCharacter(APawn* InPawn = nullptr);
+
 	// --- Character Appearance ---
 	UFUNCTION(BlueprintImplementableEvent, Category = "Character")
 	void BP_ApplyAppearancePreset(AOnsetPlayerCharacter* PlayerChar, int32 PresetIndex);
@@ -303,13 +307,13 @@ private:
 	void OnAuthTimeout();
 	FTimerHandle AuthTimeoutTimerHandle;
 
-	/** Saves the given pawn's character data (if a slot is available). Returns true on success. */
-	bool SaveCurrentCharacter(APawn* InPawn = nullptr);
-
 	UPROPERTY()
 	TObjectPtr<APawn> CachedPlayerPawn;
 
 	FString CachedSessionToken;
+
+	/** True once this controller has flushed its character data to the data store (disconnect / shutdown). */
+	bool bCharacterDataSaved = false;
 
 	// --- Test harness: -AutoPlaySlot=N auto-enters an occupied character slot. ---
 	FTimerHandle AutoPlayTimerHandle;

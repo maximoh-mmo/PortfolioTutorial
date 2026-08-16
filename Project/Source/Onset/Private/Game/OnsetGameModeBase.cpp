@@ -146,6 +146,28 @@ void AOnsetGameModeBase::Logout(AController* Exiting)
 
 
 
+void AOnsetGameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Graceful server shutdown: flush connected players' state. FHttpStore::SaveAll() is a
+	// no-op, so saves must happen here while pawns / player states are still valid. Each
+	// controller's own EndPlay also calls the same exactly-once save, so whichever runs
+	// first wins and the other is a no-op.
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (DataSubsystem)
+	{
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(It->Get());
+			if (PC && !PC->IsActorBeingDestroyed())
+			{
+				PC->SaveCurrentCharacter(PC->GetPawn());
+			}
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 AActor* AOnsetGameModeBase::ChoosePlayerStart_Implementation(AController* Player)
 {
 	AOnsetPlayerState* PlayerState = Player ? Player->GetPlayerState<AOnsetPlayerState>() : nullptr;
