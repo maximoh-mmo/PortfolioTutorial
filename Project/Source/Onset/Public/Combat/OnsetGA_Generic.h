@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/TimerHandle.h"
+#include "GameplayTagContainer.h"
 #include "Combat/OnsetGameplayAbility.h"
 #include "OnsetGA_Generic.generated.h"
 
@@ -17,9 +18,14 @@ struct FOnsetAbilityEffect;
  *
  * Resolves its DT_Abilities row from the spec's DynamicAbilityTags (AbilityID.<RowName>)
  * and dispatches on the row's AbilityType: SingleTarget (targeting-component target),
- * AoE (sphere overlap), PointBlankAoE (self-centered sphere), or Cone (directional
- * overlap). Each effect in the row is applied through the shared templates: Damage via
- * GE_GenericDamage (SetByCaller), Snare via GE_GenericSnare, Slow via GE_GenericSlow.
+ * AoE (sphere overlap), PointBlankAoE (self-centered sphere), Cone (directional
+ * overlap), or Self (no target; friendly effects apply to the caster). Each effect in
+ * the row is applied through the shared templates: Damage via GE_GenericDamage
+ * (SetByCaller), Heal via GE_GenericHeal, Snare via GE_GenericSnare, Slow via
+ * GE_GenericSlow, Stun/Invulnerable via their generic duration effects. Effects carry a
+ * friendliness gate (bFriendly): hostile effects land on enemies only, friendly effects
+ * on the caster + allies only. SingleTarget friendly effects use Target-of-Target
+ * healing (the enemy's current target) since ally players aren't selectable in PvE.
  * Cooldowns are applied from the row's CooldownSeconds via GE_GenericCooldown with the
  * Cooldown.<RowName> tag added dynamically.
  *
@@ -61,15 +67,40 @@ private:
 	/** True when a straight visibility trace from Self to TargetActor is unobstructed. */
 	bool HasLineOfSight(AOnsetBaseCharacter* Self, const AActor* TargetActor) const;
 
-	/** True unless PvP filtering should exclude HitChar from Self's attack. */
+	/**
+	 * Enemy determination for Self vs HitChar. Returns true only when HitChar is a
+	 * valid hostile target: opposite sides (player vs non-player) always, players vs
+	 * players only when both have PvP enabled, and never self or same-side characters
+	 * (so enemies don't friendly-fire each other).
+	 */
 	bool ShouldAffectActor(AOnsetBaseCharacter* Self, AOnsetBaseCharacter* HitChar) const;
 
-	/** Applies every effect in Definition->Effects to TargetASC. */
+	/** Inverse of ShouldAffectActor, with self always friendly. */
+	bool IsFriendlyActor(AOnsetBaseCharacter* Self, AOnsetBaseCharacter* HitChar) const;
+
+	/**
+	 * Resolves the character a friendly effect should land on for SingleTarget casts:
+	 * the target itself when it's an ally, otherwise the enemy's current target
+	 * (Target-of-Target healing). Returns nullptr when nothing friendly is available.
+	 */
+	AOnsetBaseCharacter* ResolveHealRecipient(AOnsetBaseCharacter* Self, AOnsetBaseCharacter* TargetChar) const;
+
+	/**
+	 * Applies every effect in Definition->Effects, splitting by friendliness: hostile
+	 * effects go to HostileASC, friendly effects to FriendlyASC. Either ASC may be null.
+	 */
 	void ApplyEffects(const FOnsetAbilityDefinition& Definition,
-					  UAbilitySystemComponent* TargetASC,
+					  UAbilitySystemComponent* HostileASC,
+					  UAbilitySystemComponent* FriendlyASC,
 					  float Level) const;
 
-	/** Applies a single effect to TargetASC (Damage/Snare/Slow). */
+	/** Applies the definition's effects to a single hit character per its alignment. */
+	void ApplyEffectsToCharacter(const FOnsetAbilityDefinition& Definition,
+								 AOnsetBaseCharacter* Self,
+								 AOnsetBaseCharacter* HitChar,
+								 float Level) const;
+
+	/** Applies a single effect to TargetASC (Damage/Heal/Snare/Slow/Stun/Invulnerable). */
 	void ApplyEffect(const FOnsetAbilityEffect& Effect,
 					 UAbilitySystemComponent* TargetASC,
 					 float Level) const;
@@ -83,6 +114,15 @@ private:
 								 UAbilitySystemComponent* TargetASC,
 								 const TMap<FName, float>& SetByCallerMagnitudes,
 								 float Level) const;
+
+	/** Applies a periodic GE (DOT/HOT) to TargetASC with name + tag SetByCaller magnitudes, a Duration, and a Period. */
+	void ApplyPeriodicEffectSpecToTarget(TSubclassOf<UGameplayEffect> EffectClass,
+										 UAbilitySystemComponent* TargetASC,
+										 const TMap<FName, float>& NameMagnitudes,
+										 const TMap<FGameplayTag, float>& TagMagnitudes,
+										 float Duration,
+										 float Period,
+										 float Level) const;
 
 	/** Type-specific resolve of the ability (after commit / after any leap lands). */
 	void ResolveAbility(const FOnsetAbilityDefinition& Definition,
@@ -141,8 +181,11 @@ private:
 	/** Timer handler for the delayed single-target montage hit. */
 	FTimerHandle MontageTimerHandle;
 
-	/** Target ASC captured at activation for the delayed damage tick. */
+	/** Hostile-recipient ASC captured at activation for the delayed montage tick. */
 	TWeakObjectPtr<UAbilitySystemComponent> CachedTargetASC;
+
+	/** Friendly-recipient ASC (TT heal) captured at activation for the delayed montage tick. */
+	TWeakObjectPtr<UAbilitySystemComponent> CachedFriendlyASC;
 
 	void ApplyCachedDamageAfterDelay(const FGameplayAbilitySpecHandle Handle,
 									 const FGameplayAbilityActorInfo* ActorInfo,

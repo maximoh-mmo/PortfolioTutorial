@@ -2,6 +2,8 @@
 
 #include "UI/OnsetAbilityEditorWidget.h"
 
+#include "Framework/Docking/TabManager.h"
+#include "GameplayTagsManager.h"
 #include "OnsetEditor.h"
 #include "PackageTools.h"
 #include "Blueprint/WidgetTree.h"
@@ -19,15 +21,18 @@
 #include "Engine/DataTable.h"
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Misc/Char.h"
 #include "Rendering/SlateRenderer.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "Styling/SlateTypes.h"
 #include "Styling/StyleDefaults.h"
+#include "UI/OnsetAbilityCreationDialog.h"
 #include "UI/OnsetAbilityRowButton.h"
 #include "UObject/Class.h"
 #include "UObject/SavePackage.h"
 #include "UObject/UObjectGlobals.h"
+#include "Widgets/SWindow.h"
 
 namespace OnsetAbilityEditorWidgetConstants
 {
@@ -58,6 +63,50 @@ static float MeasureTextWidth(const FString& Text, const FSlateFontInfo& Font)
 		}
 	}
 	return static_cast<float>(Text.Len()) * 7.0f;
+}
+
+/** Maximum row-name length; keeps generated names well under FName's truncation limit. */
+constexpr int32 MaxCleanNameLength = 60;
+
+/**
+ * Sanitizes a display name into a valid DataTable row name / gameplay tag segment.
+ * Keeps A-Z a-z 0-9, collapses runs of separators (spaces, punctuation, '_') into a
+ * single '_', and never produces a leading or trailing '_'. Falls back to "Ability".
+ */
+static FString CleanName(const FString& RawName)
+{
+	const FString Trimmed = RawName.TrimStartAndEnd();
+	FString Clean;
+	Clean.Reserve(FMath::Min(Trimmed.Len(), MaxCleanNameLength));
+
+	for (const TCHAR Char : Trimmed)
+	{
+		if (Clean.Len() >= MaxCleanNameLength)
+		{
+			break;
+		}
+
+		if (FChar::IsAlnum(Char))
+		{
+			Clean.AppendChar(Char);
+		}
+		else if (!Clean.IsEmpty() && Clean[Clean.Len() - 1] != TEXT('_'))
+		{
+			Clean.AppendChar(TEXT('_'));
+		}
+	}
+
+	while (Clean.Len() > 0 && Clean[Clean.Len() - 1] == TEXT('_'))
+	{
+		Clean.RemoveAt(Clean.Len() - 1);
+	}
+
+	if (Clean.IsEmpty())
+	{
+		Clean = TEXT("Ability");
+	}
+
+	return Clean;
 }
 
 /**
@@ -404,19 +453,140 @@ void UOnsetAbilityEditorWidget::AddDefinition()
 		return;
 	}
 
-	// Find the next available numeric row name.
-	FName NewRowName = TEXT("NewAbility");
-	int32 Index = 1;
+	// Gather the new ability's parameters in a modal form before creating the row.
+	PendingCreationData = NewObject<UAbilityCreationData>(this, NAME_None, RF_Transient);
+	PendingCreationData->DisplayName = FText::FromString(TEXT("NewAbility"));
+
+	TSharedRef<SAbilityCreationDialog> Dialog = SNew(SAbilityCreationDialog, PendingCreationData);
+
+	TSharedPtr<SWindow> ParentWindow = FSlateApplication::Get().GetActiveTopLevelWindow();
+	if (!ParentWindow.IsValid())
+	{
+		ParentWindow = FGlobalTabmanager::Get()->GetRootWindow();
+	}
+
+	TSharedRef<SWindow> Window = SNew(SWindow)
+		.Title(NSLOCTEXT("OnsetAbilityEditor", "CreateAbility", "Create Ability"))
+		.ClientSize(FVector2D(440.0f, 660.0f))
+		.SupportsMaximize(false)
+		.SupportsMinimize(false);
+
+	Dialog->SetOwnerWindow(Window);
+	Window->SetContent(Dialog);
+
+	FSlateApplication::Get().AddModalWindow(Window, ParentWindow);
+
+	if (!Dialog->ShouldCreate() || !PendingCreationData)
+	{
+		PendingCreationData = nullptr;
+		return;
+	}
+
+	UAbilityCreationData* Data = PendingCreationData;
+
+	// Row name mirrors the display name, sanitized for use as an AbilityID tag and
+	// deduped with a numeric suffix on collision (same rules as SaveDefinition).
+	const FString Clean = CleanName(Data->DisplayName.ToString());
+	FName NewRowName = FName(*Clean);
+	int32 Suffix = 1;
 	while (Table->FindRow<FOnsetAbilityDefinition>(NewRowName, nullptr))
 	{
-		NewRowName = FName(*FString::Printf(TEXT("NewAbility%d"), Index));
-		++Index;
+		NewRowName = FName(*FString::Printf(TEXT("%s%d"), *Clean, Suffix++));
 	}
 
 	FOnsetAbilityDefinition NewDefinition;
-	NewDefinition.DisplayName = FText::FromName(NewRowName);
+	NewDefinition.DisplayName = Data->DisplayName;
+	NewDefinition.AbilityIcon = Data->AbilityIcon;
+	NewDefinition.AbilityType = Data->AbilityType;
+	NewDefinition.AttackRange = Data->AttackRange;
+	NewDefinition.CastRange = Data->CastRange;
+	NewDefinition.Radius = Data->Radius;
+	NewDefinition.ConeHalfAngle = Data->ConeHalfAngle;
+	NewDefinition.Montage = Data->Montage;
+	NewDefinition.DamageTime = Data->DamageTime;
+	NewDefinition.CooldownSeconds = Data->CooldownSeconds;
 	NewDefinition.AbilityClass = UOnsetGameplayAbility::StaticClass();
+
+	// Derive the cooldown tag from the row name (Cooldown.<RowName>) and register it,
+	// matching the AbilityID.<RowName> registration in LoadTable.
+	const FName CooldownTagName = FName(*FString::Printf(TEXT("Cooldown.%s"), *NewRowName.ToString()));
+	UGameplayTagsManager::Get().AddNativeGameplayTag(CooldownTagName);
+	NewDefinition.CooldownTag = FGameplayTag::RequestGameplayTag(CooldownTagName);
+
+	// Effects from the dialog checkboxes.
+	if (Data->bDamage)
+	{
+		FOnsetAbilityEffect Effect;
+		Effect.Type = EOnsetAbilityEffectType::Damage;
+		Effect.Magnitude = Data->DamageAmount;
+		Effect.DamageTypeTag = FGameplayTag::RequestGameplayTag(TEXT("Damage.Physical"));
+		NewDefinition.Effects.Add(Effect);
+	}
+	if (Data->bHeal)
+	{
+		FOnsetAbilityEffect Effect;
+		Effect.Type = EOnsetAbilityEffectType::Heal;
+		Effect.Magnitude = Data->HealAmount;
+		Effect.bFriendly = true;
+		NewDefinition.Effects.Add(Effect);
+	}
+	if (Data->bDamageOverTime)
+	{
+		FOnsetAbilityEffect Effect;
+		Effect.Type = EOnsetAbilityEffectType::Damage;
+		Effect.Magnitude = Data->DoTDamageAmount;
+		Effect.Duration = Data->DoTDuration;
+		Effect.Period = Data->DoTPeriod;
+		Effect.DamageTypeTag = FGameplayTag::RequestGameplayTag(TEXT("Damage.Physical"));
+		NewDefinition.Effects.Add(Effect);
+	}
+	if (Data->bHealOverTime)
+	{
+		FOnsetAbilityEffect Effect;
+		Effect.Type = EOnsetAbilityEffectType::Heal;
+		Effect.Magnitude = Data->HoTHealAmount;
+		Effect.Duration = Data->HoTDuration;
+		Effect.Period = Data->HoTPeriod;
+		Effect.bFriendly = true;
+		NewDefinition.Effects.Add(Effect);
+	}
+	if (Data->bSnare)
+	{
+		FOnsetAbilityEffect Effect;
+		Effect.Type = EOnsetAbilityEffectType::Snare;
+		Effect.Magnitude = Data->SnareMoveSpeedMult;
+		Effect.Duration = Data->SnareDuration;
+		NewDefinition.Effects.Add(Effect);
+	}
+	if (Data->bSlow)
+	{
+		FOnsetAbilityEffect Effect;
+		Effect.Type = EOnsetAbilityEffectType::Slow;
+		Effect.Magnitude = Data->SlowCooldownMult;
+		Effect.Duration = Data->SlowDuration;
+		NewDefinition.Effects.Add(Effect);
+	}
+	if (Data->bStun)
+	{
+		FOnsetAbilityEffect Effect;
+		Effect.Type = EOnsetAbilityEffectType::Stun;
+		Effect.Duration = Data->StunDuration;
+		NewDefinition.Effects.Add(Effect);
+	}
+	if (Data->bInvulnerable)
+	{
+		FOnsetAbilityEffect Effect;
+		Effect.Type = EOnsetAbilityEffectType::Invulnerable;
+		Effect.Duration = Data->InvulnerableDuration;
+		Effect.bFriendly = true;
+		NewDefinition.Effects.Add(Effect);
+	}
+
 	Table->AddRow(NewRowName, NewDefinition);
+	PendingCreationData = nullptr;
+
+	// Refresh the runtime registry so PIE sees the new ability immediately.
+	UOnsetAbilityLibrary::Refresh();
 
 	RefreshFromTable();
 	SelectRow(NewRowName);
@@ -462,15 +632,15 @@ void UOnsetAbilityEditorWidget::SaveDefinition()
 
 	if (CachedTable)
 	{
-		// Keep the row name in sync with the ability's display name.
-		const FString NewNameString = EditWrapper->Definition.DisplayName.ToString().TrimStartAndEnd();
-		if (!NewNameString.IsEmpty())
+		// Keep the row name in sync with the ability's display name, sanitized into a valid tag segment.
+		const FString CleanNameString = CleanName(EditWrapper->Definition.DisplayName.ToString());
+		if (!CleanNameString.IsEmpty())
 		{
-			FName FinalName = FName(*NewNameString);
+			FName FinalName = FName(*CleanNameString);
 			int32 Suffix = 1;
 			while (FinalName != SelectedRowName && CachedTable->FindRow<FOnsetAbilityDefinition>(FinalName, nullptr))
 			{
-				FinalName = FName(*FString::Printf(TEXT("%s%d"), *NewNameString, Suffix++));
+				FinalName = FName(*FString::Printf(TEXT("%s%d"), *CleanNameString, Suffix++));
 			}
 
 			if (FinalName != SelectedRowName)

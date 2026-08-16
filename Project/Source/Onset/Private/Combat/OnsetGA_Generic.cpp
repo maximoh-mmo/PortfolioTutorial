@@ -12,7 +12,12 @@
 #include "GAS/OnsetCooldownSlowEffect.h"
 #include "GAS/OnsetGenericCooldownEffect.h"
 #include "GAS/OnsetGenericDamageEffect.h"
+#include "GAS/OnsetGenericDamageOverTimeEffect.h"
+#include "GAS/OnsetGenericHealEffect.h"
+#include "GAS/OnsetGenericHealOverTimeEffect.h"
+#include "GAS/OnsetGenericInvulnerableEffect.h"
 #include "GAS/OnsetGenericSnareEffect.h"
+#include "GAS/OnsetGenericStunEffect.h"
 #include "GAS/OnsetGameplayTags.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -111,6 +116,12 @@ bool UOnsetGA_Generic::ValidateActivation(AOnsetBaseCharacter* Self,
 		return false;
 	}
 
+	// Stun gate: a stunned caster cannot start abilities.
+	if (Self->AbilitySystemComponent && Self->AbilitySystemComponent->HasMatchingGameplayTag(TAG_State_Stunned))
+	{
+		return false;
+	}
+
 	// Leap movement gates purely on the leap range against the target.
 	if (Definition.Movement.Type == EOnsetAbilityMovementType::Leap)
 	{
@@ -144,7 +155,34 @@ bool UOnsetGA_Generic::ValidateActivation(AOnsetBaseCharacter* Self,
 				return false;
 			}
 
-			return HasLineOfSight(Self, TargetActor);
+			if (!HasLineOfSight(Self, TargetActor))
+			{
+				return false;
+			}
+
+			// Every effect must have a resolvable recipient: hostile effects need a
+			// hostile target, friendly effects a friendly recipient (direct ally or TT).
+			if (Definition.Effects.Num() > 0)
+			{
+				bool bHasHostile = false;
+				bool bHasFriendly = false;
+				for (const FOnsetAbilityEffect& Effect : Definition.Effects)
+				{
+					if (Effect.bFriendly) bHasFriendly = true;
+					else bHasHostile = true;
+				}
+
+				if (bHasHostile && !ShouldAffectActor(Self, TargetChar))
+				{
+					return false;
+				}
+				if (bHasFriendly && !ResolveHealRecipient(Self, TargetChar))
+				{
+					return false;
+				}
+			}
+
+			return true;
 		}
 
 		case EOnsetAbilityType::AoE:
@@ -166,7 +204,8 @@ bool UOnsetGA_Generic::ValidateActivation(AOnsetBaseCharacter* Self,
 
 		case EOnsetAbilityType::PointBlankAoE:
 		case EOnsetAbilityType::Cone:
-			// Self-centered: no target, range, or LoS gate.
+		case EOnsetAbilityType::Self:
+			// Self-centered or caster-targeted: no target, range, or LoS gate.
 			return true;
 
 		default:
@@ -201,26 +240,62 @@ bool UOnsetGA_Generic::HasLineOfSight(AOnsetBaseCharacter* Self, const AActor* T
 
 bool UOnsetGA_Generic::ShouldAffectActor(AOnsetBaseCharacter* Self, AOnsetBaseCharacter* HitChar) const
 {
-	if (!Self || !HitChar)
+	if (!Self || !HitChar || HitChar == Self)
 	{
 		return false;
 	}
 
-	// PvP filtering: skip players unless both sides have PvP enabled.
-	if (HitChar->IsA(AOnsetPlayerCharacter::StaticClass()))
+	const bool bSelfIsPlayer = Self->IsA(AOnsetPlayerCharacter::StaticClass());
+	const bool bHitIsPlayer = HitChar->IsA(AOnsetPlayerCharacter::StaticClass());
+
+	// Opposite sides (player vs non-player) are always enemies.
+	if (bSelfIsPlayer != bHitIsPlayer)
 	{
-		AOnsetPlayerState* SelfPS = Self->GetPlayerState<AOnsetPlayerState>();
-		AOnsetPlayerState* TargetPS = HitChar->GetPlayerState<AOnsetPlayerState>();
-		if (SelfPS && TargetPS)
+		return true;
+	}
+
+	// Same side, non-players: allies (enemies don't friendly-fire each other).
+	if (!bSelfIsPlayer)
+	{
+		return false;
+	}
+
+	// Both players: enemies only when both have PvP enabled.
+	AOnsetPlayerState* SelfPS = Self->GetPlayerState<AOnsetPlayerState>();
+	AOnsetPlayerState* TargetPS = HitChar->GetPlayerState<AOnsetPlayerState>();
+	return SelfPS && TargetPS && SelfPS->bIsPvPEnabled && TargetPS->bIsPvPEnabled;
+}
+
+bool UOnsetGA_Generic::IsFriendlyActor(AOnsetBaseCharacter* Self, AOnsetBaseCharacter* HitChar) const
+{
+	return Self && HitChar && (HitChar == Self || !ShouldAffectActor(Self, HitChar));
+}
+
+AOnsetBaseCharacter* UOnsetGA_Generic::ResolveHealRecipient(AOnsetBaseCharacter* Self, AOnsetBaseCharacter* TargetChar) const
+{
+	if (!Self || !TargetChar || !TargetChar->AbilitySystemComponent)
+	{
+		return nullptr;
+	}
+
+	// Direct ally: heal the target itself.
+	if (IsFriendlyActor(Self, TargetChar))
+	{
+		return TargetChar;
+	}
+
+	// Hostile target: Target-of-Target healing - heal whoever the enemy is attacking.
+	if (TargetChar->TargetingComponent)
+	{
+		AActor* TargetOfTarget = TargetChar->TargetingComponent->GetTarget();
+		AOnsetBaseCharacter* RecipientChar = Cast<AOnsetBaseCharacter>(TargetOfTarget);
+		if (RecipientChar && RecipientChar->AbilitySystemComponent && IsFriendlyActor(Self, RecipientChar))
 		{
-			if (!SelfPS->bIsPvPEnabled || !TargetPS->bIsPvPEnabled)
-			{
-				return false;
-			}
+			return RecipientChar;
 		}
 	}
 
-	return true;
+	return nullptr;
 }
 
 void UOnsetGA_Generic::ResolveAbility(const FOnsetAbilityDefinition& Definition,
@@ -241,6 +316,10 @@ void UOnsetGA_Generic::ResolveAbility(const FOnsetAbilityDefinition& Definition,
 				return;
 			}
 
+			// Hostile effects hit the aimed target; friendly effects (TT heal) hit the
+			// resolved ally (the target itself, or the enemy's current target).
+			AOnsetBaseCharacter* HealRecipient = ResolveHealRecipient(Self, TargetChar);
+
 			// Play montage if available, delaying the hit to DamageTime.
 			UAnimMontage* Montage = Definition.Montage.LoadSynchronous();
 			if (Montage && Self->GetMesh() && Self->GetMesh()->GetAnimInstance())
@@ -249,6 +328,7 @@ void UOnsetGA_Generic::ResolveAbility(const FOnsetAbilityDefinition& Definition,
 				if (MontageDuration > 0.0f)
 				{
 					CachedTargetASC = TargetChar->AbilitySystemComponent;
+					CachedFriendlyASC = HealRecipient ? HealRecipient->AbilitySystemComponent : nullptr;
 
 					FTimerDelegate TimerDelegate;
 					TimerDelegate.BindUObject(this, &UOnsetGA_Generic::ApplyCachedDamageAfterDelay, Handle, ActorInfo, ActivationInfo);
@@ -260,7 +340,8 @@ void UOnsetGA_Generic::ResolveAbility(const FOnsetAbilityDefinition& Definition,
 				}
 			}
 
-			ApplyEffects(Definition, TargetChar->AbilitySystemComponent, GetAbilityLevel());
+			ApplyEffects(Definition, TargetChar->AbilitySystemComponent,
+						 HealRecipient ? HealRecipient->AbilitySystemComponent : nullptr, GetAbilityLevel());
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 			break;
 		}
@@ -278,6 +359,21 @@ void UOnsetGA_Generic::ResolveAbility(const FOnsetAbilityDefinition& Definition,
 		{
 			// Self-centered; after a leap this is the landing spot.
 			ApplyAoEAtLocation(Definition, Self, Self->GetActorLocation());
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+			break;
+		}
+
+		case EOnsetAbilityType::Self:
+		{
+			// Caster-targeted: friendly effects (heal/buff) apply to self; hostile
+			// effects have no valid target and are skipped.
+			if (!Self->AbilitySystemComponent)
+			{
+				EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+				return;
+			}
+
+			ApplyEffects(Definition, nullptr, Self->AbilitySystemComponent, GetAbilityLevel());
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 			break;
 		}
@@ -303,7 +399,7 @@ void UOnsetGA_Generic::ResolveAbility(const FOnsetAbilityDefinition& Definition,
 			UKismetSystemLibrary::SphereOverlapActors(
 				World,
 				Start,
-				Definition.ConeRange,
+				Definition.Radius,
 				TArray<TEnumAsByte<EObjectTypeQuery>>{UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel1)},
 				nullptr,
 				ActorsToIgnore,
@@ -319,11 +415,6 @@ void UOnsetGA_Generic::ResolveAbility(const FOnsetAbilityDefinition& Definition,
 					continue;
 				}
 
-				if (!ShouldAffectActor(Self, HitChar))
-				{
-					continue;
-				}
-
 				FVector ToTarget = HitChar->GetActorLocation() - Start;
 				ToTarget.Z = 0.f;
 				ToTarget.Normalize();
@@ -332,10 +423,7 @@ void UOnsetGA_Generic::ResolveAbility(const FOnsetAbilityDefinition& Definition,
 					continue; // Outside the cone
 				}
 
-				if (HitChar->AbilitySystemComponent)
-				{
-					ApplyEffects(Definition, HitChar->AbilitySystemComponent, GetAbilityLevel());
-				}
+				ApplyEffectsToCharacter(Definition, Self, HitChar, GetAbilityLevel());
 			}
 
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
@@ -385,15 +473,12 @@ void UOnsetGA_Generic::ApplyAoEAtLocation(const FOnsetAbilityDefinition& Definit
 		}
 
 		AOnsetBaseCharacter* HitChar = Cast<AOnsetBaseCharacter>(HitActor);
-		if (!HitChar || !ShouldAffectActor(Self, HitChar))
+		if (!HitChar)
 		{
 			continue;
 		}
 
-		if (HitChar->AbilitySystemComponent)
-		{
-			ApplyEffects(Definition, HitChar->AbilitySystemComponent, GetAbilityLevel());
-		}
+		ApplyEffectsToCharacter(Definition, Self, HitChar, GetAbilityLevel());
 	}
 }
 
@@ -500,25 +585,49 @@ void UOnsetGA_Generic::ApplyCachedDamageAfterDelay(const FGameplayAbilitySpecHan
 												   const FGameplayAbilityActorInfo* ActorInfo,
 												   const FGameplayAbilityActivationInfo ActivationInfo)
 {
-	if (UAbilitySystemComponent* TargetASC = CachedTargetASC.Get())
+	if (const FOnsetAbilityDefinition* Definition = ResolveDefinition(Handle, ActorInfo))
 	{
-		if (const FOnsetAbilityDefinition* Definition = ResolveDefinition(Handle, ActorInfo))
+		UAbilitySystemComponent* HostileASC = CachedTargetASC.Get();
+		UAbilitySystemComponent* FriendlyASC = CachedFriendlyASC.Get();
+		if (HostileASC || FriendlyASC)
 		{
-			ApplyEffects(*Definition, TargetASC, GetAbilityLevel());
+			ApplyEffects(*Definition, HostileASC, FriendlyASC, GetAbilityLevel());
 		}
 	}
 	CachedTargetASC = nullptr;
+	CachedFriendlyASC = nullptr;
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
 
 void UOnsetGA_Generic::ApplyEffects(const FOnsetAbilityDefinition& Definition,
-									UAbilitySystemComponent* TargetASC,
+									UAbilitySystemComponent* HostileASC,
+									UAbilitySystemComponent* FriendlyASC,
 									float Level) const
 {
 	for (const FOnsetAbilityEffect& Effect : Definition.Effects)
 	{
-		ApplyEffect(Effect, TargetASC, Level);
+		UAbilitySystemComponent* RecipientASC = Effect.bFriendly ? FriendlyASC : HostileASC;
+		if (RecipientASC)
+		{
+			ApplyEffect(Effect, RecipientASC, Level);
+		}
 	}
+}
+
+void UOnsetGA_Generic::ApplyEffectsToCharacter(const FOnsetAbilityDefinition& Definition,
+											   AOnsetBaseCharacter* Self,
+											   AOnsetBaseCharacter* HitChar,
+											   float Level) const
+{
+	if (!Self || !HitChar || !HitChar->AbilitySystemComponent)
+	{
+		return;
+	}
+
+	// Hostile effects land on enemies, friendly effects on allies (no friendly fire).
+	const bool bFriendly = IsFriendlyActor(Self, HitChar);
+	ApplyEffects(Definition, bFriendly ? nullptr : HitChar->AbilitySystemComponent,
+				 bFriendly ? HitChar->AbilitySystemComponent : nullptr, Level);
 }
 
 void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
@@ -530,7 +639,38 @@ void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
 		case EOnsetAbilityEffectType::Damage:
 		{
 			const bool bMagical = (Effect.DamageTypeTag == TAG_Damage_Magical);
+
+			if (Effect.Period > 0.0f)
+			{
+				// Damage-over-time: ticks every Period seconds for the Duration window.
+				TMap<FGameplayTag, float> TagMagnitudes;
+				TagMagnitudes.Add(bMagical ? TAG_Damage_Magical : TAG_Damage_Physical, Effect.Magnitude);
+				TMap<FName, float> NameMagnitudes;
+				NameMagnitudes.Add(TEXT("Duration"), Effect.Duration);
+				ApplyPeriodicEffectSpecToTarget(UOnsetGenericDamageOverTimeEffect::StaticClass(),
+												TargetASC, NameMagnitudes, TagMagnitudes, Effect.Duration, Effect.Period, Level);
+				break;
+			}
+
 			ApplyDamageToTarget(TargetASC, bMagical ? 0.0f : Effect.Magnitude, bMagical ? Effect.Magnitude : 0.0f, Level);
+			break;
+		}
+
+		case EOnsetAbilityEffectType::Heal:
+		{
+			TMap<FName, float> Magnitudes;
+			Magnitudes.Add(TEXT("HealAmount"), Effect.Magnitude);
+
+			if (Effect.Period > 0.0f)
+			{
+				// Heal-over-time: ticks every Period seconds for the Duration window.
+				Magnitudes.Add(TEXT("Duration"), Effect.Duration);
+				ApplyPeriodicEffectSpecToTarget(UOnsetGenericHealOverTimeEffect::StaticClass(),
+												TargetASC, Magnitudes, {}, Effect.Duration, Effect.Period, Level);
+				break;
+			}
+
+			ApplyEffectSpecToTarget(UOnsetGenericHealEffect::StaticClass(), TargetASC, Magnitudes, Level);
 			break;
 		}
 
@@ -549,6 +689,22 @@ void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
 			Magnitudes.Add(TEXT("CooldownRateMod"), Effect.Magnitude);
 			Magnitudes.Add(TEXT("Duration"), Effect.Duration);
 			ApplyEffectSpecToTarget(UOnsetCooldownSlowEffect::StaticClass(), TargetASC, Magnitudes, Level);
+			break;
+		}
+
+		case EOnsetAbilityEffectType::Stun:
+		{
+			TMap<FName, float> Magnitudes;
+			Magnitudes.Add(TEXT("Duration"), Effect.Duration);
+			ApplyEffectSpecToTarget(UOnsetGenericStunEffect::StaticClass(), TargetASC, Magnitudes, Level);
+			break;
+		}
+
+		case EOnsetAbilityEffectType::Invulnerable:
+		{
+			TMap<FName, float> Magnitudes;
+			Magnitudes.Add(TEXT("Duration"), Effect.Duration);
+			ApplyEffectSpecToTarget(UOnsetGenericInvulnerableEffect::StaticClass(), TargetASC, Magnitudes, Level);
 			break;
 		}
 
@@ -589,6 +745,53 @@ void UOnsetGA_Generic::ApplyEffectSpecToTarget(TSubclassOf<UGameplayEffect> Effe
 	{
 		SpecHandle.Data->SetSetByCallerMagnitude(Pair.Key, Pair.Value);
 	}
+
+	TargetASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+}
+
+void UOnsetGA_Generic::ApplyPeriodicEffectSpecToTarget(TSubclassOf<UGameplayEffect> EffectClass,
+													   UAbilitySystemComponent* TargetASC,
+													   const TMap<FName, float>& NameMagnitudes,
+													   const TMap<FGameplayTag, float>& TagMagnitudes,
+													   float Duration,
+													   float Period,
+													   float Level) const
+{
+	if (!EffectClass || !TargetASC || Period <= 0.0f || Duration <= 0.0f)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
+	if (!SourceASC)
+	{
+		return;
+	}
+
+	FGameplayEffectContextHandle Context = SourceASC->MakeEffectContext();
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		Context.AddInstigator(Avatar, Avatar->GetInstigatorController());
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(EffectClass, Level, Context);
+	if (!SpecHandle.IsValid())
+	{
+		return;
+	}
+
+	for (const TPair<FName, float>& Pair : NameMagnitudes)
+	{
+		SpecHandle.Data->SetSetByCallerMagnitude(Pair.Key, Pair.Value);
+	}
+	for (const TPair<FGameplayTag, float>& Pair : TagMagnitudes)
+	{
+		SpecHandle.Data->SetSetByCallerMagnitude(Pair.Key, Pair.Value);
+	}
+
+	// The engine reads Duration and Period from the spec, so override both from the row.
+	SpecHandle.Data->SetDuration(Duration, true);
+	SpecHandle.Data->Period = Period;
 
 	TargetASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 }

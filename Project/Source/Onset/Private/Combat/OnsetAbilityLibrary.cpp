@@ -168,6 +168,12 @@ UDataTable* UOnsetAbilityLibrary::LoadTable()
 		// safe to call after startup; it also creates the AbilityID parent chain.
 		UGameplayTagsManager::Get().AddNativeGameplayTag(
 			FName(*FString::Printf(TEXT("AbilityID.%s"), *Entry.Key.ToString())));
+
+		// Register the matching Cooldown.<RowName> tag so rows that derive their
+		// CooldownTag from the row name (creation dialog) resolve and fire the
+		// ability-bar cooldown events.
+		UGameplayTagsManager::Get().AddNativeGameplayTag(
+			FName(*FString::Printf(TEXT("Cooldown.%s"), *Entry.Key.ToString())));
 	}
 	return Table;
 }
