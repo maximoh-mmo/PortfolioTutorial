@@ -2,7 +2,6 @@ import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
-import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import * as path from 'path';
 import { config } from 'dotenv';
 
@@ -12,22 +11,22 @@ export class AccountApiStack extends cdk.Stack {
   constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // Provisioned billing keeps the table inside the DynamoDB free tier (25 RCU / 25 WCU).
+    // Auto-scaling (min 1) keeps the provisioned-capacity-hour meter near its minimum while
+    // idle instead of burning the full 25/hr around the clock.
     const table = new dynamodb.Table(this, 'AccountTable', {
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
-      readCapacity: 25,
-      writeCapacity: 25,
+      readCapacity: 1,
+      writeCapacity: 1,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    table.addGlobalSecondaryIndex({
-      indexName: 'GSI1',
-      partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
-      readCapacity: 25,
-      writeCapacity: 25,
-    });
+    table.autoScaleReadCapacity({ minCapacity: 1, maxCapacity: 5 })
+      .scaleOnUtilization({ targetUtilizationPercent: 70 });
+    table.autoScaleWriteCapacity({ minCapacity: 1, maxCapacity: 5 })
+      .scaleOnUtilization({ targetUtilizationPercent: 70 });
 
     const fn = new lambdaNodejs.NodejsFunction(this, 'ApiFunction', {
       entry: path.join(__dirname, '..', 'src', 'handler.js'),
@@ -54,39 +53,6 @@ export class AccountApiStack extends cdk.Stack {
 
     const fnUrl = fn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
-    });
-
-    const webAcl = new wafv2.CfnWebACL(this, 'AccountApiWebAcl', {
-      defaultAction: { allow: {} },
-      scope: 'REGIONAL',
-      visibilityConfig: {
-        cloudWatchMetricsEnabled: true,
-        metricName: 'AccountApiWebAcl',
-        sampledRequestsEnabled: true,
-      },
-      rules: [
-        {
-          name: 'RateLimitPerIp',
-          priority: 1,
-          statement: {
-            rateBasedStatement: {
-              limit: 100,
-              aggregateKeyType: 'IP',
-            },
-          },
-          action: { block: {} },
-          visibilityConfig: {
-            cloudWatchMetricsEnabled: true,
-            metricName: 'RateLimitPerIp',
-            sampledRequestsEnabled: true,
-          },
-        },
-      ],
-    });
-
-    new wafv2.CfnWebACLAssociation(this, 'AccountApiWebAclAssociation', {
-      webAclArn: webAcl.attrArn,
-      resourceArn: fnUrl.functionArn,
     });
 
     new cdk.CfnOutput(this, 'ApiUrl', {
