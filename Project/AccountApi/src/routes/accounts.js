@@ -1,10 +1,11 @@
 const express = require('express');
 const accountsDb = require('../db/accounts');
 const charactersDb = require('../db/characters');
+const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/:platform/:id', async (req, res) => {
+router.get('/:platform/:id', authMiddleware, async (req, res) => {
   try {
     const account = await accountsDb.getAccount(req.params.platform, req.params.id);
     if (!account) {
@@ -35,7 +36,7 @@ router.get('/:platform/:id', async (req, res) => {
   }
 });
 
-router.post('/:platform/:id', async (req, res) => {
+router.post('/:platform/:id', authMiddleware, async (req, res) => {
   try {
     const account = await accountsDb.createAccount(req.params.platform, req.params.id);
     res.status(201).json({

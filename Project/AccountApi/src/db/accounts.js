@@ -1,5 +1,5 @@
 const { GetCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('node:crypto');
 const docClient = require('./client');
 const config = require('../config');
 
@@ -29,11 +29,6 @@ async function createAccount(platform, platformId) {
     updatedAt: now,
   };
 
-  if (platform === 'steam') {
-    item.GSI1PK = `STEAM#${platformId}`;
-    item.GSI1SK = pk;
-  }
-
   try {
     await docClient.send(new PutCommand({
       TableName: TABLE,
@@ -49,18 +44,4 @@ async function createAccount(platform, platformId) {
   }
 }
 
-async function getAccountBySteam(steamId) {
-  const { QueryCommand } = require('@aws-sdk/lib-dynamodb');
-  const result = await docClient.send(new QueryCommand({
-    TableName: TABLE,
-    IndexName: 'GSI1',
-    KeyConditionExpression: 'GSI1PK = :pk',
-    ExpressionAttributeValues: {
-      ':pk': `STEAM#${steamId}`,
-    },
-    Limit: 1,
-  }));
-  return result.Items?.[0] || null;
-}
-
-module.exports = { getAccount, createAccount, getAccountBySteam };
+module.exports = { getAccount, createAccount };

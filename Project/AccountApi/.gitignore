@@ -1,6 +1,7 @@
 node_modules/
 cdk.out/
 dist/
+.local/
 .env
 *.js.map
 *.d.ts

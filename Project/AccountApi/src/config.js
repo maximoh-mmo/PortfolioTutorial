@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 module.exports = {
   tableName: process.env.TABLE_NAME || 'onset-accounts-dev',
   jwtSecret: process.env.JWT_SECRET || 'dev-secret',

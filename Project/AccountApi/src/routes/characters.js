@@ -1,9 +1,10 @@
 const express = require('express');
 const charactersDb = require('../db/characters');
+const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/:platform/:id/character/:slot', async (req, res) => {
+router.get('/:platform/:id/character/:slot', authMiddleware, async (req, res) => {
   try {
     const slot = parseInt(req.params.slot, 10);
     const char = await charactersDb.getCharacter(req.params.platform, req.params.id, slot);
@@ -20,7 +21,7 @@ router.get('/:platform/:id/character/:slot', async (req, res) => {
   }
 });
 
-router.post('/:platform/:id/character/:slot', async (req, res) => {
+router.post('/:platform/:id/character/:slot', authMiddleware, async (req, res) => {
   try {
     const slot = parseInt(req.params.slot, 10);
     const existing = await charactersDb.getCharacter(req.params.platform, req.params.id, slot);
@@ -41,7 +42,7 @@ router.post('/:platform/:id/character/:slot', async (req, res) => {
   }
 });
 
-router.put('/:platform/:id/character/:slot', async (req, res) => {
+router.put('/:platform/:id/character/:slot', authMiddleware, async (req, res) => {
   try {
     const slot = parseInt(req.params.slot, 10);
     const char = await charactersDb.putCharacter(req.params.platform, req.params.id, slot, req.body);
@@ -55,7 +56,7 @@ router.put('/:platform/:id/character/:slot', async (req, res) => {
   }
 });
 
-router.delete('/:platform/:id/character/:slot', async (req, res) => {
+router.delete('/:platform/:id/character/:slot', authMiddleware, async (req, res) => {
   try {
     const slot = parseInt(req.params.slot, 10);
     await charactersDb.deleteCharacter(req.params.platform, req.params.id, slot);
