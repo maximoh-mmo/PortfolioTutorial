@@ -25,6 +25,78 @@ else {
     if ([string]::IsNullOrWhiteSpace($AuthTokenSecret)) { $AuthTokenSecret = "local-dev-shared-secret" }
 }
 
+function Ensure-LocalDynamoDB {
+    if (Get-NetTCPConnection -State Listen -LocalPort 8000 -ErrorAction SilentlyContinue) {
+        Write-Host "DynamoDB Local already listening on :8000" -ForegroundColor DarkGray
+        return
+    }
+    if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
+        Write-Host "WARNING: DynamoDB Local is not running and 'docker' is unavailable." -ForegroundColor Yellow
+        Write-Host "  Start it yourself (see Project/AccountApi/LOCAL.md) or local data store tests will fail." -ForegroundColor Yellow
+        return
+    }
+
+    $ComposeFile = Join-Path $PSScriptRoot "Project\AccountApi\.local\dynamodb-local\docker-compose.yml"
+    if (Test-Path -LiteralPath $ComposeFile) {
+        Write-Host "Starting DynamoDB Local via docker compose..." -ForegroundColor Cyan
+        docker compose -f $ComposeFile up -d dynamodb-local
+    }
+    else {
+        Write-Host "Compose file not found; starting DynamoDB Local container 'onset-ddb'..." -ForegroundColor Cyan
+        $existing = docker ps -a --filter "name=^onset-ddb$" --format "{{.Names}}" | Select-Object -First 1
+        if ($existing) {
+            docker start onset-ddb | Out-Null
+        }
+        else {
+            docker run -d --name onset-ddb -v onset-ddb-data:/home/dynamodblocal/data -p 8000:8000 amazon/dynamodb-local:latest | Out-Null
+        }
+    }
+
+    for ($i = 0; $i -lt 60; $i++) {
+        if (Get-NetTCPConnection -State Listen -LocalPort 8000 -ErrorAction SilentlyContinue) {
+            Write-Host "DynamoDB Local ready on :8000 (after ${i}s)" -ForegroundColor Green
+            return
+        }
+        Start-Sleep 1
+    }
+    Write-Host "WARNING: DynamoDB Local did not come up on :8000; local data store tests will fail." -ForegroundColor Yellow
+}
+
+function Ensure-LocalTable {
+    if (!(Get-Command aws -ErrorAction SilentlyContinue)) {
+        Write-Host "WARNING: 'aws' not found; cannot verify/create local table." -ForegroundColor Yellow
+        Write-Host "  Run 'npm run db:local:create' in Project/AccountApi first." -ForegroundColor Yellow
+        return
+    }
+    for ($i = 0; $i -lt 10; $i++) {
+        aws dynamodb describe-table --endpoint-url http://localhost:8000 --table-name onset-accounts-dev *> $null
+        if ($LASTEXITCODE -eq 0) { return }
+        Start-Sleep 2
+    }
+    Write-Host "Creating local table 'onset-accounts-dev' (provisioned 25/25)..." -ForegroundColor Cyan
+    for ($i = 0; $i -lt 15; $i++) {
+        aws dynamodb create-table --endpoint-url http://localhost:8000 --table-name onset-accounts-dev `
+            --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S `
+            --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE `
+            --billing-mode PROVISIONED `
+            --provisioned-throughput ReadCapacityUnits=25,WriteCapacityUnits=25 *> $null
+        if ($LASTEXITCODE -eq 0) { break }
+        Start-Sleep 2
+    }
+    aws dynamodb describe-table --endpoint-url http://localhost:8000 --table-name onset-accounts-dev *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Local table ready." -ForegroundColor Green
+    }
+    else {
+        Write-Host "WARNING: could not create local table; run 'npm run db:local:create' in AccountApi." -ForegroundColor Yellow
+    }
+}
+
+if (!$Cloud) {
+    Ensure-LocalDynamoDB
+    Ensure-LocalTable
+}
+
 $EngineBin = Join-Path $EnginePath "Engine\Binaries\Win64\UnrealEditor.exe"
 $ProjectDir = Split-Path $ProjectPath -Parent
 $LogDir = "$ProjectDir\Saved\Logs"
