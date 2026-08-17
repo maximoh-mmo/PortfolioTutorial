@@ -3,11 +3,20 @@
 #include "GAS/OnsetGameplayTags.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical, "Damage.Physical");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Magical, "Damage.Magical");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Fire, "Damage.Fire");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Ice, "Damage.Ice");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Lightning, "Damage.Lightning");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Poison, "Damage.Poison");
 UE_DEFINE_GAMEPLAY_TAG(TAG_State_Dead, "State.Dead");
 UE_DEFINE_GAMEPLAY_TAG(TAG_State_Staggered, "State.Staggered");
 UE_DEFINE_GAMEPLAY_TAG(TAG_State_Stunned, "State.Stunned");
+UE_DEFINE_GAMEPLAY_TAG(TAG_State_Frozen, "State.Frozen");
 UE_DEFINE_GAMEPLAY_TAG(TAG_State_Invulnerable,"State.Invulnerable");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Element_Neutral, "Element.Neutral");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Element_Fire, "Element.Fire");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Element_Ice, "Element.Ice");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Element_Lightning, "Element.Lightning");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Element_Poison, "Element.Poison");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Cooldown_BasicAttack, "Cooldown.BasicAttack");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Cooldown_AoE, "Cooldown.AoE");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Cooldown_Cone, "Cooldown.Cone");

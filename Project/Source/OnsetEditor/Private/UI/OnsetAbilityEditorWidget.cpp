@@ -519,7 +519,8 @@ void UOnsetAbilityEditorWidget::AddDefinition()
 		FOnsetAbilityEffect Effect;
 		Effect.Type = EOnsetAbilityEffectType::Damage;
 		Effect.Magnitude = Data->DamageAmount;
-		Effect.DamageTypeTag = FGameplayTag::RequestGameplayTag(TEXT("Damage.Physical"));
+		Effect.ScalingType = Data->DamageScaling;
+		Effect.DamageTypeTag = UOnsetAbilityLibrary::GetElementDamageTag(Data->DamageElement);
 		NewDefinition.Effects.Add(Effect);
 	}
 	if (Data->bHeal)
@@ -537,7 +538,7 @@ void UOnsetAbilityEditorWidget::AddDefinition()
 		Effect.Magnitude = Data->DoTDamageAmount;
 		Effect.Duration = Data->DoTDuration;
 		Effect.Period = Data->DoTPeriod;
-		Effect.DamageTypeTag = FGameplayTag::RequestGameplayTag(TEXT("Damage.Physical"));
+		Effect.DamageTypeTag = UOnsetAbilityLibrary::GetElementDamageTag(Data->DoTElement);
 		NewDefinition.Effects.Add(Effect);
 	}
 	if (Data->bHealOverTime)
@@ -571,6 +572,13 @@ void UOnsetAbilityEditorWidget::AddDefinition()
 		FOnsetAbilityEffect Effect;
 		Effect.Type = EOnsetAbilityEffectType::Stun;
 		Effect.Duration = Data->StunDuration;
+		NewDefinition.Effects.Add(Effect);
+	}
+	if (Data->bFreeze)
+	{
+		FOnsetAbilityEffect Effect;
+		Effect.Type = EOnsetAbilityEffectType::Freeze;
+		Effect.Duration = Data->FreezeDuration;
 		NewDefinition.Effects.Add(Effect);
 	}
 	if (Data->bInvulnerable)

@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "Data/OnsetAbilityTypes.h"
 #include "OnsetGameplayAbility.generated.h"
 
 class UTexture2D;
 class UAbilitySystemComponent;
+class UOnsetCombatAttributeSet;
 
 /**
  * Shared base for all combat abilities. Adds UI metadata (icon) and a helper
@@ -41,12 +43,47 @@ public:
 
 protected:
 	/**
-	 * Applies the shared GE_GenericDamage to TargetASC with the given SetByCaller
-	 * physical/magical magnitudes. Damage values are never baked into the GE; they
-	 * travel as SetByCaller on the spec and are resolved by UOnsetDamageExecution.
+	 * The source's total cooldown reduction fraction (0..MaxCDR). Phase 3 uses
+	 * Haste% = AGI/(AGI+K_haste) with K_haste = 200; dual-wield and mastery CDR
+	 * stack on top in later phases. Capped at 80% total.
+	 */
+	float GetTotalCooldownReduction() const;
+
+	/**
+	 * The base cooldown duration before CDR/multiplier scaling. Default returns the
+	 * cooldown GE's static duration; derived classes (e.g. the basic attack) can
+	 * override it with a weapon-archetype base so the attack rate follows the weapon.
+	 */
+	virtual float GetCooldownBaseDuration(const FGameplayAbilitySpecHandle Handle,
+										  const FGameplayAbilityActorInfo* ActorInfo) const;
+	/**
+	 * Applies the shared GE_GenericDamage to TargetASC with the given element tag
+	 * (Damage.Physical/Fire/Ice/Lightning/Poison) and SetByCaller magnitude. Damage
+	 * values are never baked into the GE; they travel as SetByCaller on the spec and
+	 * are resolved by UOnsetDamageExecution.
 	 */
 	void ApplyDamageToTarget(UAbilitySystemComponent* TargetASC,
-							 float Physical,
-							 float Magical,
+							 FGameplayTag DamageTypeTag,
+							 float Amount,
 							 float Level) const;
+
+	/** The avatar's combat attribute set (STR/INT/DEF/etc.), or null. */
+	const UOnsetCombatAttributeSet* GetSourceCombatAttributes() const;
+
+	/** The avatar's equipped WeaponBase (falls back to the class default weapon). */
+	float GetSourceWeaponBase() const;
+
+	/**
+	 * Buff/debuff magnitude multiplier for the avatar. Support-class casters get
+	 * SupportMasteryPotencyBonus (+20%): EffectiveBuffValue = Base x Potency.
+	 * All other classes (and enemies) return 1.0.
+	 */
+	float GetBuffPotency() const;
+
+	/**
+	 * Applies the divisor-shaped scaling formula (combat-formulas §3):
+	 * Raw = Base x (1 + Stat/100), where Stat = STR for Weapon scaling and INT for
+	 * Skill scaling. Falls back to 1.0 when the avatar has no combat attribute set.
+	 */
+	float ResolveScaledBase(float Base, EOnsetScalingType ScalingType) const;
 };

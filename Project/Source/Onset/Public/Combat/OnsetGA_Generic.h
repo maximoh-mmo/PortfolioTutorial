@@ -115,6 +115,12 @@ private:
 								 const TMap<FName, float>& SetByCallerMagnitudes,
 								 float Level) const;
 
+	/**
+	 * Hard-CC duration after the target's CC diminishing returns
+	 * (100% → 50% → 25% → immune). Returns 0 when the target is CC-immune.
+	 */
+	float GetDiminishedCCDuration(UAbilitySystemComponent* TargetASC, FGameplayTag CCType, float BaseDuration) const;
+
 	/** Applies a periodic GE (DOT/HOT) to TargetASC with name + tag SetByCaller magnitudes, a Duration, and a Period. */
 	void ApplyPeriodicEffectSpecToTarget(TSubclassOf<UGameplayEffect> EffectClass,
 										 UAbilitySystemComponent* TargetASC,

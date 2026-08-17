@@ -80,6 +80,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta = (EditCondition = "bDamage", EditConditionHides))
 	float DamageAmount = 25.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta = (EditCondition = "bDamage", EditConditionHides))
+	EOnsetDamageElement DamageElement = EOnsetDamageElement::Physical;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta = (EditCondition = "bDamage", EditConditionHides))
+	EOnsetScalingType DamageScaling = EOnsetScalingType::Weapon;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	bool bHeal = false;
 
@@ -93,6 +99,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta = (EditCondition = "bDamageOverTime", EditConditionHides))
 	float DoTDamageAmount = 10.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta = (EditCondition = "bDamageOverTime", EditConditionHides))
+	EOnsetDamageElement DoTElement = EOnsetDamageElement::Physical;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta = (EditCondition = "bDamageOverTime", EditConditionHides))
 	float DoTDuration = 3.0f;
@@ -137,6 +146,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta = (EditCondition = "bStun", EditConditionHides))
 	float StunDuration = 1.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	bool bFreeze = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta = (EditCondition = "bFreeze", EditConditionHides))
+	float FreezeDuration = 1.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	bool bInvulnerable = false;

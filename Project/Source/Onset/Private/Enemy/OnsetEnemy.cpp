@@ -1,6 +1,11 @@
 #include "Enemy/OnsetEnemy.h"
 
 #include "TimerManager.h"
+#include "Combat/OnsetEquipmentLibrary.h"
+#include "Data/OnsetEquipmentTypes.h"
+#include "GAS/OnsetAttributeSet.h"
+#include "GAS/OnsetCombatAttributeSet.h"
+#include "GAS/OnsetGameplayTags.h"
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimInstance.h"
 #include "Components/CapsuleComponent.h"
@@ -59,6 +64,64 @@ void AOnsetEnemy::ApplyProfile(UVisualProfile* InProfile)
 void AOnsetEnemy::OnRep_VisualProfile()
 {
 	ApplyProfile(VisualProfile);
+}
+
+void AOnsetEnemy::ApplyEnemyStats(FName RowName, int32 Tier)
+{
+	if (!AttributeSet || !CombatAttributes || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	// Clear any affinity tag from a previous life so a neutral row is truly neutral.
+	const FGameplayTag AffinityTags[] = { TAG_Element_Fire, TAG_Element_Ice, TAG_Element_Lightning, TAG_Element_Poison };
+	for (const FGameplayTag& Tag : AffinityTags)
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(Tag);
+	}
+
+	const FOnsetEnemyStats* Stats = UOnsetEquipmentLibrary::GetEnemyStats(RowName);
+	if (!Stats)
+	{
+		// No row (or no table): reset to the shared defaults + class default weapon.
+		// NOTE: stats only — do NOT call ResetAttributes() here, it clears bIsAlive
+		// (the pool-alive flag OnRespawn() just set) which would hide the enemy and
+		// disable its collision on clients via OnRep_bIsAlive.
+		AttributeSet->InitMaxHealth(100.0f);
+		AttributeSet->InitHealth(100.0f);
+		if (CombatAttributes)
+		{
+			CombatAttributes->ResetToDefaults();
+		}
+		SetEnemyWeaponStats(0.0f, EOnsetWeaponArchetype::Sword);
+		return;
+	}
+
+	// EnemyStats_loopN = base x (1 + d)^Tier (d = 15%, combat-formulas §10).
+	const float Difficulty = UOnsetEquipmentLibrary::GetEnemyDifficultyMultiplier(Tier);
+	const float ScaledMaxHealth = FMath::Max(1.0f, Stats->MaxHealth * Difficulty);
+
+	AttributeSet->InitMaxHealth(ScaledMaxHealth);
+	AttributeSet->InitHealth(ScaledMaxHealth);
+
+	CombatAttributes->InitDefense(Stats->Defense);
+	CombatAttributes->InitResistanceFire(Stats->ResistanceFire);
+	CombatAttributes->InitResistanceIce(Stats->ResistanceIce);
+	CombatAttributes->InitResistanceLightning(Stats->ResistanceLightning);
+	CombatAttributes->InitResistancePoison(Stats->ResistancePoison);
+	CombatAttributes->InitLuck(Stats->Luck);
+
+	SetEnemyWeaponStats(FMath::Max(0.0f, Stats->DamageBase * Difficulty), Stats->WeaponArchetype);
+
+	// Element affinity feeds the type chart (target side).
+	switch (Stats->ElementAffinity)
+	{
+		case EOnsetDamageElement::Fire:			AbilitySystemComponent->AddLooseGameplayTag(TAG_Element_Fire); break;
+		case EOnsetDamageElement::Ice:			AbilitySystemComponent->AddLooseGameplayTag(TAG_Element_Ice); break;
+		case EOnsetDamageElement::Lightning:	AbilitySystemComponent->AddLooseGameplayTag(TAG_Element_Lightning); break;
+		case EOnsetDamageElement::Poison:		AbilitySystemComponent->AddLooseGameplayTag(TAG_Element_Poison); break;
+		default: break; // Physical = neutral.
+	}
 }
 
 void AOnsetEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

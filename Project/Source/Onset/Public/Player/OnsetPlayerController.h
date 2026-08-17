@@ -178,9 +178,15 @@ private:
 	// --- Combat ---
 	UPROPERTY()
 	FTimerHandle AutoAttackTimerHandle;
-	
+
+	/**
+	 * Cooldown-echo poll interval for the auto attack. The basic attack's cooldown
+	 * (weapon archetype base x haste x slow multiplier) is the real attack-rate gate;
+	 * this timer just echoes TryActivateAbilityByClass quickly enough to fire the
+	 * instant the cooldown expires (0.1s << the fastest weapon cooldown).
+	 */
 	UPROPERTY(EditDefaultsOnly, Category="Combat")
-	float AutoAttackInterval = 1.5f;
+	float AutoAttackInterval = 0.1f;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Combat")
 	TSubclassOf<UGameplayAbility> BasicAttackAbility;

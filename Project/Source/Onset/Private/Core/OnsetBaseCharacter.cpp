@@ -4,6 +4,9 @@
 #include "Core/OnsetBaseCharacter.h"
 
 #include "AbilitySystemComponent.h"
+#include "Combat/OnsetEquipmentLibrary.h"
+#include "Core/OnsetCCDiminishingComponent.h"
+#include "Data/OnsetClassInfoTypes.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "Combat/OnsetGA_BasicAttack.h"
 #include "Combat/OnsetGA_HitReaction.h"
@@ -22,7 +25,11 @@
 #include "GAS/OnsetCombatAttributeSet.h"
 #include "Materials/MaterialInterface.h"
 #include "Core/TargetingComponent.h"
+#include "Dom/JsonObject.h"
 #include "Net/UnrealNetwork.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 #include "UObject/ConstructorHelpers.h"
 
 AOnsetBaseCharacter::AOnsetBaseCharacter()
@@ -34,6 +41,7 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 	AttributeSet = CreateDefaultSubobject<UOnsetAttributeSet>(TEXT("AttributeSet"));
 	MovementAttributes = CreateDefaultSubobject<UOnsetMovementAttributeSet>(TEXT("MovementAttributes"));
 	CombatAttributes = CreateDefaultSubobject<UOnsetCombatAttributeSet>(TEXT("CombatAttributes"));
+	CCDiminishing = CreateDefaultSubobject<UOnsetCCDiminishingComponent>(TEXT("CCDiminishing"));
 
 	// Ground reticule decal: hidden until this character becomes the player's target.
 	TargetReticuleDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetReticuleDecal"));
@@ -161,8 +169,201 @@ void AOnsetBaseCharacter::ResetAttributes()
 	AttributeSet->InitHealth(AttributeSet->GetMaxHealth());
 	AttributeSet->InitMaxHealth(100.0f);
 	MovementAttributes->InitMovementSpeed(600.0f);
-	CombatAttributes->InitCooldownMultiplier(1.0f);
+	if (CombatAttributes)
+	{
+		CombatAttributes->ResetToDefaults();
+	}
 	bIsAlive = false; // Pool return — OnRespawn() re-enables on retrieval
+}
+
+void AOnsetBaseCharacter::ApplyCharacterBuild(EOnsetCharacterClass Class, const FString& EquipmentJSON)
+{
+	CurrentClass = Class;
+	DeserializeEquipmentJSON(EquipmentJSON);
+	RecalculateDerivedStats();
+}
+
+void AOnsetBaseCharacter::RecalculateDerivedStats()
+{
+	if (!CombatAttributes || !AttributeSet)
+	{
+		return;
+	}
+
+	const FOnsetClassBaseStats Base = UOnsetEquipmentLibrary::GetClassBaseStats(CurrentClass);
+
+	// StartingMaxHealth comes from DT_ClassInfo (fallback 100).
+	float StartingMaxHealth = 100.0f;
+	if (const FOnsetCharacterClassInfo* Info = UOnsetEquipmentLibrary::GetClassInfo(CurrentClass))
+	{
+		StartingMaxHealth = Info->StartingMaxHealth;
+	}
+
+	// Sum flat gear bonuses across the loadout; block chance comes from the shield.
+	float StrengthBonus = 0.0f;
+	float IntellectBonus = 0.0f;
+	float VitalityBonus = 0.0f;
+	float DefenseBonus = 0.0f;
+	float AgilityBonus = 0.0f;
+	float LuckBonus = 0.0f;
+	float BlockChance = 0.0f;
+
+	for (const TPair<EOnsetEquipmentSlot, FName>& Pair : EquipmentLoadout)
+	{
+		const FOnsetEquipmentDefinition* Def = UOnsetEquipmentLibrary::GetDefinition(Pair.Value);
+		if (!Def)
+		{
+			continue;
+		}
+
+		StrengthBonus += Def->StrengthBonus;
+		IntellectBonus += Def->IntellectBonus;
+		VitalityBonus += Def->VitalityBonus;
+		AgilityBonus += Def->AgilityBonus;
+		LuckBonus += Def->LuckBonus;
+
+		if (Pair.Key == EOnsetEquipmentSlot::Shield)
+		{
+			// Shield block/DEF from the item, plus the Tank mastery bonus:
+			// BlockChance = item + TankMasteryBlock; ShieldDEF = item + TankMasteryDEF.
+			float Block = Def->BlockChance;
+			float ShieldDef = Def->DefenseBonus;
+			if (CurrentClass == EOnsetCharacterClass::Tank)
+			{
+				Block += UOnsetEquipmentLibrary::GetTankMasteryBlock();
+				ShieldDef += UOnsetEquipmentLibrary::GetTankMasteryDefense();
+			}
+			BlockChance = FMath::Max(BlockChance, Block);
+			DefenseBonus += ShieldDef;
+		}
+	}
+
+	CombatAttributes->InitStrength(Base.Strength + StrengthBonus);
+	CombatAttributes->InitIntellect(Base.Intellect + IntellectBonus);
+	CombatAttributes->InitVitality(Base.Vitality + VitalityBonus);
+	CombatAttributes->InitDefense(Base.Defense + DefenseBonus);
+	CombatAttributes->InitAgility(Base.Agility + AgilityBonus);
+	CombatAttributes->InitLuck(Base.Luck + LuckBonus);
+	CombatAttributes->InitBlockChance(BlockChance);
+
+	// MaxHealth = class base + VIT × HealthPerVitality (derived, not persisted).
+	constexpr float HealthPerVitality = 10.0f;
+	AttributeSet->InitMaxHealth(StartingMaxHealth + CombatAttributes->GetVitality() * HealthPerVitality);
+}
+
+FString AOnsetBaseCharacter::SerializeEquipmentJSON() const
+{
+	TSharedPtr<FJsonObject> Root = MakeShareable(new FJsonObject);
+	UEnum* SlotEnum = StaticEnum<EOnsetEquipmentSlot>();
+	if (SlotEnum)
+	{
+		for (int32 Index = 0; Index < SlotEnum->NumEnums(); ++Index)
+		{
+			const EOnsetEquipmentSlot Slot = static_cast<EOnsetEquipmentSlot>(SlotEnum->GetValueByIndex(Index));
+			const FName* RowName = EquipmentLoadout.Find(Slot);
+			Root->SetStringField(SlotEnum->GetDisplayValueAsText(Slot).ToString(),
+				RowName ? RowName->ToString() : TEXT(""));
+		}
+	}
+
+	FString Out;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Out);
+	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
+	return Out;
+}
+
+void AOnsetBaseCharacter::DeserializeEquipmentJSON(const FString& JSON)
+{
+	EquipmentLoadout.Reset();
+	if (JSON.IsEmpty() || JSON == TEXT("{}"))
+	{
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Root;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JSON);
+	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
+	{
+		return;
+	}
+
+	UEnum* SlotEnum = StaticEnum<EOnsetEquipmentSlot>();
+	if (!SlotEnum)
+	{
+		return;
+	}
+
+	for (int32 Index = 0; Index < SlotEnum->NumEnums(); ++Index)
+	{
+		const EOnsetEquipmentSlot Slot = static_cast<EOnsetEquipmentSlot>(SlotEnum->GetValueByIndex(Index));
+		const FString RowName = Root->GetStringField(SlotEnum->GetDisplayValueAsText(Slot).ToString());
+		if (!RowName.IsEmpty())
+		{
+			EquipmentLoadout.Add(Slot, FName(*RowName));
+		}
+	}
+}
+
+void AOnsetBaseCharacter::EquipItem(EOnsetEquipmentSlot Slot, FName RowName)
+{
+	if (RowName.IsNone())
+	{
+		EquipmentLoadout.Remove(Slot);
+	}
+	else
+	{
+		EquipmentLoadout.Add(Slot, RowName);
+	}
+	RecalculateDerivedStats();
+}
+
+float AOnsetBaseCharacter::GetEquippedWeaponDamage() const
+{
+	if (const FOnsetEquipmentDefinition* Weapon = GetEquippedItem(EOnsetEquipmentSlot::Weapon))
+	{
+		if (Weapon->WeaponDamage > 0.0f)
+		{
+			return Weapon->WeaponDamage;
+		}
+	}
+
+	// Enemy-authored DamageBase (DT_EnemyStats) wins over the class default.
+	if (EnemyWeaponBaseOverride > 0.0f)
+	{
+		return EnemyWeaponBaseOverride;
+	}
+
+	// No equipped weapon (or an unresolvable row): fall back to the class default weapon.
+	return UOnsetEquipmentLibrary::MakeDefaultWeaponForClass(CurrentClass).WeaponDamage;
+}
+
+void AOnsetBaseCharacter::SetEnemyWeaponStats(float InWeaponBase, EOnsetWeaponArchetype InArchetype)
+{
+	EnemyWeaponBaseOverride = FMath::Max(0.0f, InWeaponBase);
+	EnemyWeaponArchetype = InArchetype;
+}
+
+EOnsetWeaponArchetype AOnsetBaseCharacter::GetBaseWeaponArchetype() const
+{
+	if (const FOnsetEquipmentDefinition* Weapon = GetEquippedItem(EOnsetEquipmentSlot::Weapon))
+	{
+		return Weapon->Archetype;
+	}
+	if (EnemyWeaponBaseOverride > 0.0f)
+	{
+		return EnemyWeaponArchetype;
+	}
+	return UOnsetEquipmentLibrary::MakeDefaultWeaponForClass(CurrentClass).Archetype;
+}
+
+const FOnsetEquipmentDefinition* AOnsetBaseCharacter::GetEquippedItem(EOnsetEquipmentSlot Slot) const
+{
+	const FName* RowName = EquipmentLoadout.Find(Slot);
+	if (!RowName)
+	{
+		return nullptr;
+	}
+	return UOnsetEquipmentLibrary::GetDefinition(*RowName);
 }
 
 void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)

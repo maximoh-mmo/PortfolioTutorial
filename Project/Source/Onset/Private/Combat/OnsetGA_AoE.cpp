@@ -106,7 +106,7 @@ void UOnsetGA_AoE::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 		if (HitChar && HitChar->AbilitySystemComponent)
 		{
-			ApplyDamageToTarget(HitChar->AbilitySystemComponent, Damage, 0.0f, GetAbilityLevel());
+			ApplyDamageToTarget(HitChar->AbilitySystemComponent, TAG_Damage_Physical, Damage, GetAbilityLevel());
 		}
 	}
 

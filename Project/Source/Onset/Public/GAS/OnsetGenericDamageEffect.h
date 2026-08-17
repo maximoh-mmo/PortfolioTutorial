@@ -10,7 +10,7 @@
  * GE_GenericDamage template - the shared damage effect for the data-driven pipeline.
  *
  * Instant effect executed by UOnsetDamageExecution. The execution reads the SetByCaller
- * magnitudes "Damage.Physical" / "Damage.Magical" from the spec, runs the mitigation
+ * magnitudes "Damage.Physical/Fire/Ice/Lightning/Poison" from the spec, runs the mitigation
  * pipeline, and outputs the final negative Health modifier. No damage value is ever baked
  * into this asset/class - callers always supply the magnitude at apply time.
  */

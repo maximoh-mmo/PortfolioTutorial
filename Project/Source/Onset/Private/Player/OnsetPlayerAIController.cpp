@@ -142,7 +142,7 @@ void AOnsetPlayerAIController::OnAbandonedTimeout()
 					CharData.SavedMaxHealth = PlayerChar->AttributeSet->GetMaxHealth();
 				}
 				CharData.InventoryJSON = TEXT("{}");
-				CharData.EquipmentJSON = TEXT("{}");
+				CharData.EquipmentJSON = PlayerChar->SerializeEquipmentJSON();
 				CharData.QuestsJSON = TEXT("{}");
 				DataSubsystem->SaveCharacterPreservingIdentity(CachedPlatform, CachedPlatformID, CharData);
 				UE_LOG(LogActor, Log, TEXT("AOnsetPlayerAIController: timeout save for slot %d"), CachedSlotIndex);

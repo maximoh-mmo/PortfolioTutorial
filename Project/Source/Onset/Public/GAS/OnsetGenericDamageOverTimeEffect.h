@@ -12,7 +12,7 @@
  * HasDuration + Period. Each tick runs UOnsetDamageExecution, so DOT goes through
  * the same damage pipeline as instant damage (invulnerability gate, physical/magical
  * split, future mitigation stages). The SetByCaller "Duration" and per-tick damage
- * magnitudes (Damage.Physical / Damage.Magical) are set on the spec at apply time.
+ * magnitudes (Damage.<Element>) are set on the spec at apply time.
  */
 UCLASS()
 class ONSET_API UOnsetGenericDamageOverTimeEffect : public UGameplayEffect

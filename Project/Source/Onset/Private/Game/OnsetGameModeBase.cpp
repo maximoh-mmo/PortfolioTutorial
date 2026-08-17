@@ -221,7 +221,7 @@ void AOnsetGameModeBase::TravelToZone(const FString& MapName, const FString& Ent
 			if (PlayerChar->AttributeSet)
 				CharData.SavedMaxHealth = PlayerChar->AttributeSet->GetMaxHealth();
 			CharData.InventoryJSON = TEXT("{}");
-			CharData.EquipmentJSON = TEXT("{}");
+			CharData.EquipmentJSON = PlayerChar->SerializeEquipmentJSON();
 			CharData.QuestsJSON = TEXT("{}");
 
 			DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);

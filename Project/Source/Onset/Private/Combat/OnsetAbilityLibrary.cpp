@@ -5,6 +5,7 @@
 #include "Combat/OnsetGameplayAbility.h"
 #include "Data/OnsetAbilityTypes.h"
 #include "Engine/DataTable.h"
+#include "GAS/OnsetGameplayTags.h"
 #include "GameplayTagsManager.h"
 #include "Misc/ConfigCacheIni.h"
 #include "UObject/StrongObjectPtr.h"
@@ -45,6 +46,82 @@ const FOnsetAbilityDefinition* UOnsetAbilityLibrary::GetDefinition(FName RowName
 FGameplayTag UOnsetAbilityLibrary::MakeAbilityIDTag(FName RowName)
 {
 	return FGameplayTag::RequestGameplayTag(FName(*FString::Printf(TEXT("AbilityID.%s"), *RowName.ToString())));
+}
+
+FGameplayTag UOnsetAbilityLibrary::GetElementDamageTag(EOnsetDamageElement Element)
+{
+	switch (Element)
+	{
+		case EOnsetDamageElement::Fire:		return TAG_Damage_Fire;
+		case EOnsetDamageElement::Ice:		return TAG_Damage_Ice;
+		case EOnsetDamageElement::Lightning:	return TAG_Damage_Lightning;
+		case EOnsetDamageElement::Poison:	return TAG_Damage_Poison;
+		case EOnsetDamageElement::Physical:
+		default:							return TAG_Damage_Physical;
+	}
+}
+
+EOnsetDamageElement UOnsetAbilityLibrary::GetElementFromDamageTag(FGameplayTag DamageTag)
+{
+	if (DamageTag == TAG_Damage_Fire)		return EOnsetDamageElement::Fire;
+	if (DamageTag == TAG_Damage_Ice)		return EOnsetDamageElement::Ice;
+	if (DamageTag == TAG_Damage_Lightning)	return EOnsetDamageElement::Lightning;
+	if (DamageTag == TAG_Damage_Poison)		return EOnsetDamageElement::Poison;
+	return EOnsetDamageElement::Physical;
+}
+
+float UOnsetAbilityLibrary::GetElementAffinityMultiplier(EOnsetDamageElement Source, EOnsetDamageElement Target)
+{
+	// Structural default chart (DT_ElementAffinity is an optional DataTable override).
+	// Cycle: Fire > Ice > Poison > Lightning > Fire. Same-element resists (0.5).
+	// Physical has no affinity counterpart: a Physical source (or a target without an
+	// element tag, resolved to Physical) is always 1.0.
+	if (Source == EOnsetDamageElement::Physical || Target == EOnsetDamageElement::Physical)
+	{
+		return 1.0f;
+	}
+
+	constexpr float Strong = 1.5f;
+	constexpr float Weak = 0.5f;
+	constexpr float Same = 0.5f;
+
+	switch (Target)
+	{
+		case EOnsetDamageElement::Fire:
+			switch (Source)
+			{
+				case EOnsetDamageElement::Fire:			return Same;
+				case EOnsetDamageElement::Lightning:	return Strong; // Lightning > Fire
+				case EOnsetDamageElement::Ice:			return Weak;   // Fire > Ice
+				default:								return 1.0f;
+			}
+		case EOnsetDamageElement::Ice:
+			switch (Source)
+			{
+				case EOnsetDamageElement::Ice:			return Same;
+				case EOnsetDamageElement::Fire:			return Strong; // Fire > Ice
+				case EOnsetDamageElement::Poison:		return Weak;   // Ice > Poison
+				default:								return 1.0f;
+			}
+		case EOnsetDamageElement::Poison:
+			switch (Source)
+			{
+				case EOnsetDamageElement::Poison:		return Same;
+				case EOnsetDamageElement::Ice:			return Strong; // Ice > Poison
+				case EOnsetDamageElement::Lightning:	return Weak;   // Poison > Lightning
+				default:								return 1.0f;
+			}
+		case EOnsetDamageElement::Lightning:
+			switch (Source)
+			{
+				case EOnsetDamageElement::Lightning:	return Same;
+				case EOnsetDamageElement::Poison:		return Strong; // Poison > Lightning
+				case EOnsetDamageElement::Fire:			return Weak;   // Lightning > Fire
+				default:								return 1.0f;
+			}
+		default:
+			return 1.0f;
+	}
 }
 
 const FOnsetAbilityDefinition* UOnsetAbilityLibrary::GetDefinitionFromDynamicTags(const FGameplayTagContainer& DynamicTags)

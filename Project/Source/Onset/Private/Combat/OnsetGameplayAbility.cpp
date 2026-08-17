@@ -3,7 +3,9 @@
 #include "Combat/OnsetGameplayAbility.h"
 
 #include "AbilitySystemComponent.h"
+#include "Combat/OnsetEquipmentLibrary.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "Data/OnsetEquipmentTypes.h"
 #include "GAS/OnsetCombatAttributeSet.h"
 #include "GAS/OnsetGameplayTags.h"
 #include "GAS/OnsetGenericDamageEffect.h"
@@ -42,10 +44,11 @@ void UOnsetGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handl
 		return;
 	}
 
-	// Cooldowns are fully GE-driven in UE 5.8 (no CooldownTime on the ability),
-	// so the base duration is the cooldown GE's static duration magnitude.
-	float BaseDuration = 0.0f;
-	if (CooldownGE->DurationMagnitude.GetStaticMagnitudeIfPossible(Level, BaseDuration))
+	// Cooldowns are fully GE-driven in UE 5.8 (no CooldownTime on the ability).
+	// Base duration comes from the cooldown GE's static magnitude (or an override
+	// such as the basic attack's weapon-archetype cooldown).
+	const float BaseDuration = GetCooldownBaseDuration(Handle, ActorInfo);
+	if (BaseDuration > 0.0f)
 	{
 		// Scale by the source character's CooldownMultiplier: a Slow debuff raises
 		// it above 1, extending the cooldown so the target attacks less often.
@@ -61,10 +64,9 @@ void UOnsetGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handl
 			}
 		}
 
-		// Guard against a zero/negative multiplier from a misconfigured debuff:
-		// never allow the cooldown to collapse or go negative.
-		Multiplier = FMath::Max(0.1f, Multiplier);
-		const float FinalDuration = FMath::Max(0.1f, BaseDuration * Multiplier);
+		// Haste/CDR shortens the base: EffectiveCooldown = Base x (1 - TotalCDR%) x Multiplier.
+		const float FinalDuration = FMath::Max(0.1f,
+			BaseDuration * (1.0f - GetTotalCooldownReduction()) * FMath::Max(0.1f, Multiplier));
 		SpecHandle.Data->SetDuration(FinalDuration, true);
 	}
 	else
@@ -78,11 +80,11 @@ void UOnsetGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handl
 }
 
 void UOnsetGameplayAbility::ApplyDamageToTarget(UAbilitySystemComponent* TargetASC,
-												float Physical,
-												float Magical,
+												FGameplayTag DamageTypeTag,
+												float Amount,
 												float Level) const
 {
-	if (!TargetASC)
+	if (!TargetASC || !DamageTypeTag.IsValid())
 	{
 		return;
 	}
@@ -106,8 +108,119 @@ void UOnsetGameplayAbility::ApplyDamageToTarget(UAbilitySystemComponent* TargetA
 		return;
 	}
 
-	SpecHandle.Data->SetSetByCallerMagnitude(TAG_Damage_Physical, Physical);
-	SpecHandle.Data->SetSetByCallerMagnitude(TAG_Damage_Magical, Magical);
+	SpecHandle.Data->SetSetByCallerMagnitude(DamageTypeTag, Amount);
 
 	TargetASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+}
+
+const UOnsetCombatAttributeSet* UOnsetGameplayAbility::GetSourceCombatAttributes() const
+{
+	const AActor* Avatar = GetAvatarActorFromActorInfo();
+	const AOnsetBaseCharacter* Source = Cast<AOnsetBaseCharacter>(Avatar);
+	return Source ? Source->CombatAttributes : nullptr;
+}
+
+float UOnsetGameplayAbility::GetSourceWeaponBase() const
+{
+	const AActor* Avatar = GetAvatarActorFromActorInfo();
+	const AOnsetBaseCharacter* Source = Cast<AOnsetBaseCharacter>(Avatar);
+	if (!Source)
+	{
+		return 25.0f;
+	}
+
+	float Base = Source->GetEquippedWeaponDamage();
+
+	// Ranged mastery: bow damage +15% (combat-formulas §11).
+	const FOnsetEquipmentDefinition* Weapon = Source->GetEquippedItem(EOnsetEquipmentSlot::Weapon);
+	if (Source->GetCharacterClass() == EOnsetCharacterClass::Ranged &&
+		Weapon && Weapon->Archetype == EOnsetWeaponArchetype::Bow)
+	{
+		Base *= 1.0f + UOnsetEquipmentLibrary::GetBowMasteryDamageBonus();
+	}
+
+	return Base;
+}
+
+float UOnsetGameplayAbility::GetBuffPotency() const
+{
+	const AActor* Avatar = GetAvatarActorFromActorInfo();
+	const AOnsetBaseCharacter* Source = Cast<AOnsetBaseCharacter>(Avatar);
+	if (!Source || Source->GetCharacterClass() != EOnsetCharacterClass::Support)
+	{
+		return 1.0f;
+	}
+
+	// SupportMasteryPotencyBonus = 0.20 (combat-formulas §14).
+	constexpr float SupportMasteryPotencyBonus = 0.20f;
+	return 1.0f + SupportMasteryPotencyBonus;
+}
+
+float UOnsetGameplayAbility::GetTotalCooldownReduction() const
+{
+	const UOnsetCombatAttributeSet* Combat = GetSourceCombatAttributes();
+	if (!Combat)
+	{
+		return 0.0f;
+	}
+
+	float Total = 0.0f;
+
+	// Haste% = AGI/(AGI + K_haste), K_haste = 200 (combat-formulas §14).
+	constexpr float K_Haste = 200.0f;
+	const float Agility = FMath::Max(0.0f, Combat->GetAgility());
+	Total += Agility / (Agility + K_Haste);
+
+	// Dual-wield CDR: a melee weapon with an empty off-hand is treated as dual-wielding.
+	// DualWieldCDRBonus = 20% base + 15% for the MeleeDPS (DPS class) mastery.
+	const AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (const AOnsetBaseCharacter* Source = Cast<AOnsetBaseCharacter>(Avatar))
+	{
+		const FOnsetEquipmentDefinition* Weapon = Source->GetEquippedItem(EOnsetEquipmentSlot::Weapon);
+		const bool bNoShield = !Source->GetEquippedItem(EOnsetEquipmentSlot::Shield);
+		if (Weapon && UOnsetEquipmentLibrary::IsMeleeArchetype(Weapon->Archetype) && bNoShield)
+		{
+			Total += UOnsetEquipmentLibrary::GetDualWieldBaseCDR();
+			if (Source->GetCharacterClass() == EOnsetCharacterClass::DPS)
+			{
+				Total += UOnsetEquipmentLibrary::GetMeleeDPSBonusCDR();
+			}
+		}
+	}
+
+	return FMath::Clamp(Total, 0.0f, 0.8f);
+}
+
+float UOnsetGameplayAbility::GetCooldownBaseDuration(const FGameplayAbilitySpecHandle Handle,
+													 const FGameplayAbilityActorInfo* ActorInfo) const
+{
+	const UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
+	if (!CooldownGE)
+	{
+		return 0.0f;
+	}
+
+	const float Level = GetAbilityLevel(Handle, ActorInfo);
+	float BaseDuration = 0.0f;
+	if (CooldownGE->DurationMagnitude.GetStaticMagnitudeIfPossible(Level, BaseDuration))
+	{
+		return BaseDuration;
+	}
+	return 0.0f;
+}
+
+float UOnsetGameplayAbility::ResolveScaledBase(float Base, EOnsetScalingType ScalingType) const
+{
+	const UOnsetCombatAttributeSet* CombatAttributes = GetSourceCombatAttributes();
+	if (!CombatAttributes)
+	{
+		return Base;
+	}
+
+	const float Stat = (ScalingType == EOnsetScalingType::Skill)
+		? CombatAttributes->GetIntellect()
+		: CombatAttributes->GetStrength();
+
+	// STR_Divisor = INT_Divisor = 100 (combat-formulas §14); +100 stat doubles the base.
+	return Base * (1.0f + FMath::Max(0.0f, Stat) / 100.0f);
 }

@@ -22,6 +22,14 @@ public:
 	/** Applies or clears the profile — sets mesh, anim BP, material, and capsule size. */
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void ApplyProfile(UVisualProfile* InProfile);
+
+	/**
+	 * Applies the DT_EnemyStats row (Phase 7): MaxHealth/DamageBase scaled by
+	 * (1 + d)^Tier, DEF/RES/LUK, the basic-attack weapon base + archetype, and the
+	 * Element.* affinity tag for the type chart. A missing row resets to defaults.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	void ApplyEnemyStats(FName RowName, int32 Tier);
 	
 	/** Group membership component. Pawn-level bridge to UGroupManagerComponent. */
 	UPROPERTY()

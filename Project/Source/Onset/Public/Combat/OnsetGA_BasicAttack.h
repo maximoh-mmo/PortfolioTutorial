@@ -23,11 +23,11 @@ protected:
 		const FGameplayAbilityActivationInfo ActivationInfo,
 		const FGameplayEventData* TriggerEventData) override;
 
-private:
-	/** Base damage applied to the target (physical). Supplied via SetByCaller to GE_GenericDamage. */
-	UPROPERTY(EditDefaultsOnly, Category = "Damage")
-	float Damage = 25.0f;
+	/** Basic-attack cooldown follows the equipped weapon's archetype (Sword=1.0s base, etc.). */
+	virtual float GetCooldownBaseDuration(const FGameplayAbilitySpecHandle Handle,
+										  const FGameplayAbilityActorInfo* ActorInfo) const override;
 
+private:
 	/** Maximum range at which this ability can hit a target. */
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	float AttackRange = 300.0f;

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Templates/SubclassOf.h"
+#include "Engine/DataTable.h"
 #include "SpawnConfig.generated.h"
 
 class UAIProfile;
@@ -39,4 +40,16 @@ struct FSpawnConfig
 	/** Delay in seconds before respawning a destroyed group member (future use). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
 	float RespawnDelay = 10.0f;
+
+	/**
+	 * DT_EnemyStats row for spawned enemies (empty row = default stats).
+	 * RowType scopes the table picker to FOnsetEnemyStats tables; the row name
+	 * dropdown is populated from the assigned table's rows.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner", meta = (RowType = "/Script/Onset.OnsetEnemyStats"))
+	FDataTableRowHandle EnemyStats;
+
+	/** Difficulty tier; stats scale by (1 + d)^Tier (d = 15%). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
+	int32 Tier = 0;
 };

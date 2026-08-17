@@ -29,6 +29,27 @@ enum class EOnsetAbilityMovementType : uint8
 	Leap	UMETA(DisplayName = "Leap")
 };
 
+/** Which stat a damage effect's base scales with (see combat-formulas §3). */
+UENUM(BlueprintType)
+enum class EOnsetScalingType : uint8
+{
+	/** Raw = WeaponBase x (1 + STR/100). Base = equipped weapon (Magnitude until Phase 2). */
+	Weapon	UMETA(DisplayName = "Weapon"),
+	/** Raw = SkillBase x (1 + INT/100). Base = the effect's Magnitude. */
+	Skill	UMETA(DisplayName = "Skill")
+};
+
+/** Damage element of an effect; maps to a Damage.* tag (see combat-formulas §2). */
+UENUM(BlueprintType)
+enum class EOnsetDamageElement : uint8
+{
+	Physical	UMETA(DisplayName = "Physical"),
+	Fire		UMETA(DisplayName = "Fire"),
+	Ice			UMETA(DisplayName = "Ice"),
+	Lightning	UMETA(DisplayName = "Lightning"),
+	Poison		UMETA(DisplayName = "Poison")
+};
+
 /** What a single effect in an ability does. */
 UENUM(BlueprintType)
 enum class EOnsetAbilityEffectType : uint8
@@ -38,27 +59,35 @@ enum class EOnsetAbilityEffectType : uint8
 	Snare		UMETA(DisplayName = "Snare"),
 	Slow		UMETA(DisplayName = "Slow"),
 	Stun		UMETA(DisplayName = "Stun"),
+	Freeze		UMETA(DisplayName = "Freeze"),
 	Invulnerable	UMETA(DisplayName = "Invulnerable")
 };
 
 /**
  * One effect inside an ability row.
  *
- * - Damage: Magnitude is applied to the target's Health via GE_GenericDamage
- *   (SetByCaller Damage.Physical / Damage.Magical). Duration is ignored.
+ * - Damage: Magnitude is the base applied to the target's Health via GE_GenericDamage
+ *   (SetByCaller Damage.<Element>). ScalingType picks the stat (Weapon = STR, Skill = INT)
+ *   and the divisor formula in combat-formulas §3 computes Raw = Base x (1 + Stat/100).
+ *   Duration is ignored for instant hits.
  * - Heal: Magnitude is applied to the target's Health (positive, clamped to
  *   MaxHealth) via GE_GenericHeal. Duration is ignored.
  * - Damage/Heal with Period > 0: becomes a Damage-over-Time / Heal-over-Time effect
- *   (GE_GenericDamageOT / GE_GenericHealOT). Magnitude ticks every Period seconds
- *   for the whole Duration window.
+ *   (GE_GenericDamageOT / GE_GenericHealOT). A damage tick's raw = SourceStat x Magnitude
+ *   (STR for Physical, INT for elemental), then flows through the full pipeline. Magnitude
+ *   ticks every Period seconds for the whole Duration window.
  * - Snare: Magnitude is the MovementSpeed multiply-compound (MoveSpeedMod, < 1
  *   slows). Has Duration.
  * - Slow: Magnitude is the CooldownMultiplier multiply-compound (CooldownRateMod,
  *   > 1 slows attack rate). Has Duration.
  * - Stun: Duration is the stun window granted as State.Stunned (blocks ability
  *   activation for the caster). Magnitude is ignored.
+ * - Freeze: same as Stun but grants State.Frozen (Ice-element hard CC).
  * - Invulnerable: Duration is the window granted as State.Invulnerable (negates
  *   all damage). Magnitude is ignored.
+ *
+ * Stun and Freeze durations are subject to the target's CC diminishing-returns
+ * tracker (100% → 50% → 25% → immune within the DR window).
  *
  * Friendliness gates who can receive an effect:
  * - bFriendly = true: applies to the caster and allies only (Heal, self/ally
@@ -87,11 +116,15 @@ struct FOnsetAbilityEffect
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
 	float Duration = 0.0f;
 
-	/** 0 = instant (Damage/Heal); > 0 = periodic (DOT/HOT): Magnitude ticks every Period seconds for Duration seconds. */
+	/** 0 = instant (Damage); > 0 = periodic (DOT/HOT): Magnitude ticks every Period seconds for Duration seconds. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
 	float Period = 0.0f;
 
-	/** Damage.Physical | Damage.Magical (Damage effects only). */
+	/** Which stat scales this damage effect. Weapon = STR, Skill = INT. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	EOnsetScalingType ScalingType = EOnsetScalingType::Weapon;
+
+	/** Damage element tag (Damage.Physical/Fire/Ice/Lightning/Poison). Damage effects only. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
 	FGameplayTag DamageTypeTag;
 };

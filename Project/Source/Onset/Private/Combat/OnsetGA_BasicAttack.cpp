@@ -2,6 +2,8 @@
 
 #include "Combat/OnsetGA_BasicAttack.h"
 #include "TimerManager.h"
+#include "Combat/OnsetEquipmentLibrary.h"
+#include "Data/OnsetEquipmentTypes.h"
 #include "GAS/OnsetGameplayTags.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Core/TargetingComponent.h"
@@ -17,6 +19,23 @@ UOnsetGA_BasicAttack::UOnsetGA_BasicAttack()
 	FGameplayTagContainer AssetTags = GetAssetTags();
 	AssetTags.AddTag(TAG_Ability_Attack);
 	SetAssetTags(AssetTags);
+}
+
+float UOnsetGA_BasicAttack::GetCooldownBaseDuration(const FGameplayAbilitySpecHandle Handle,
+													const FGameplayAbilityActorInfo* ActorInfo) const
+{
+	// The basic attack's base cooldown is the weapon archetype's cooldown
+	// (Dagger 0.8s ... Greatsword 1.8s), so the attack rate follows the weapon.
+	// Players use their equipped weapon (class default when bare-handed); enemies
+	// use the archetype authored in DT_EnemyStats.
+	const AActor* Avatar = ActorInfo ? ActorInfo->AvatarActor.Get() : nullptr;
+	const AOnsetBaseCharacter* Source = Cast<AOnsetBaseCharacter>(Avatar);
+	if (!Source)
+	{
+		return UOnsetEquipmentLibrary::GetArchetypeBaseCooldown(EOnsetWeaponArchetype::Sword);
+	}
+
+	return UOnsetEquipmentLibrary::GetArchetypeBaseCooldown(Source->GetBaseWeaponArchetype());
 }
 
 void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -98,7 +117,11 @@ void UOnsetGA_BasicAttack::ApplyDamageAfterDelay(const FGameplayAbilitySpecHandl
 		return;
 	}
 
-	ApplyDamageToTarget(TargetChar->AbilitySystemComponent, Damage, 0.0f, GetAbilityLevel());
+	// Weapon-scaled physical damage: Raw = WeaponBase x (1 + STR/100). The weapon base
+	// comes from the equipped weapon (class-default fallback when bare-handed), scaled
+	// by class mastery (e.g. Ranged bow +15%).
+	const float Raw = ResolveScaledBase(GetSourceWeaponBase(), EOnsetScalingType::Weapon);
+	ApplyDamageToTarget(TargetChar->AbilitySystemComponent, TAG_Damage_Physical, Raw, GetAbilityLevel());
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }

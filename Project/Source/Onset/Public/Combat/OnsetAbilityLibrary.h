@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "UObject/Object.h"
+#include "Data/OnsetAbilityTypes.h"
 #include "OnsetAbilityLibrary.generated.h"
 
 class UDataTable;
@@ -37,6 +38,20 @@ public:
 
 	/** Returns the AbilityID.<RowName> tag carried in a spec's DynamicAbilityTags. */
 	static FGameplayTag MakeAbilityIDTag(FName RowName);
+
+	/** Returns the Damage.<Element> tag for the given element enum, or Physical if invalid. */
+	static FGameplayTag GetElementDamageTag(EOnsetDamageElement Element);
+
+	/** Inverse of GetElementDamageTag: element enum for a Damage.* tag (Physical fallback). */
+	static EOnsetDamageElement GetElementFromDamageTag(FGameplayTag DamageTag);
+
+	/**
+	 * Type-chart multiplier (1.5 / 1.0 / 0.5 / 0.0) for Source hitting a Target of the
+	 * given affinity. Fire beats Ice, Ice beats Poison, Poison beats Lightning, Lightning
+	 * beats Fire; same-element is 0.5; Physical is always 1.0. Structural default for the
+	 * DT_ElementAffinity table (1.0 = Neutral fallback).
+	 */
+	static float GetElementAffinityMultiplier(EOnsetDamageElement Source, EOnsetDamageElement Target);
 
 	/**
 	 * Scans DynamicTags for the AbilityID.* tag and returns the matching row definition.

@@ -22,6 +22,26 @@ struct FOnsetCharacterClassInfo : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
     float StartingMaxHealth = 100.0f;
 
+    // --- Base stats (combat-formulas §3/§11) ---
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
+    float BaseStrength = 10.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
+    float BaseIntellect = 10.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
+    float BaseVitality = 10.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
+    float BaseDefense = 10.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
+    float BaseAgility = 10.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
+    float BaseLuck = 10.0f;
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
     TArray<int32> AvailablePresetIndices;
 };

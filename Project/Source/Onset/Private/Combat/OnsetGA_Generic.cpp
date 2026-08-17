@@ -4,6 +4,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "Core/OnsetCCDiminishingComponent.h"
 #include "Core/TargetingComponent.h"
 #include "Data/OnsetAbilityTypes.h"
 #include "Engine/OverlapResult.h"
@@ -13,6 +14,7 @@
 #include "GAS/OnsetGenericCooldownEffect.h"
 #include "GAS/OnsetGenericDamageEffect.h"
 #include "GAS/OnsetGenericDamageOverTimeEffect.h"
+#include "GAS/OnsetGenericFreezeEffect.h"
 #include "GAS/OnsetGenericHealEffect.h"
 #include "GAS/OnsetGenericHealOverTimeEffect.h"
 #include "GAS/OnsetGenericInvulnerableEffect.h"
@@ -116,8 +118,10 @@ bool UOnsetGA_Generic::ValidateActivation(AOnsetBaseCharacter* Self,
 		return false;
 	}
 
-	// Stun gate: a stunned caster cannot start abilities.
-	if (Self->AbilitySystemComponent && Self->AbilitySystemComponent->HasMatchingGameplayTag(TAG_State_Stunned))
+	// Stun/Freeze gate: a hard-CC'd caster cannot start abilities.
+	if (Self->AbilitySystemComponent &&
+		(Self->AbilitySystemComponent->HasMatchingGameplayTag(TAG_State_Stunned) ||
+		 Self->AbilitySystemComponent->HasMatchingGameplayTag(TAG_State_Frozen)))
 	{
 		return false;
 	}
@@ -638,13 +642,20 @@ void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
 	{
 		case EOnsetAbilityEffectType::Damage:
 		{
-			const bool bMagical = (Effect.DamageTypeTag == TAG_Damage_Magical);
+			const FGameplayTag ElementTag = Effect.DamageTypeTag.IsValid() ? Effect.DamageTypeTag : TAG_Damage_Physical;
 
 			if (Effect.Period > 0.0f)
 			{
-				// Damage-over-time: ticks every Period seconds for the Duration window.
+				// Damage-over-time: raw = SourceStat × DoTCoefficient (Magnitude), where
+				// SourceStat = STR for Physical, INT for elemental (combat-formulas §8).
+				const UOnsetCombatAttributeSet* SourceCombat = GetSourceCombatAttributes();
+				const float SourceStat = SourceCombat
+					? ((ElementTag == TAG_Damage_Physical) ? SourceCombat->GetStrength() : SourceCombat->GetIntellect())
+					: 0.0f;
+				const float TickRaw = SourceStat * Effect.Magnitude;
+
 				TMap<FGameplayTag, float> TagMagnitudes;
-				TagMagnitudes.Add(bMagical ? TAG_Damage_Magical : TAG_Damage_Physical, Effect.Magnitude);
+				TagMagnitudes.Add(ElementTag, TickRaw);
 				TMap<FName, float> NameMagnitudes;
 				NameMagnitudes.Add(TEXT("Duration"), Effect.Duration);
 				ApplyPeriodicEffectSpecToTarget(UOnsetGenericDamageOverTimeEffect::StaticClass(),
@@ -652,14 +663,21 @@ void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
 				break;
 			}
 
-			ApplyDamageToTarget(TargetASC, bMagical ? 0.0f : Effect.Magnitude, bMagical ? Effect.Magnitude : 0.0f, Level);
+			// Weapon-scaled effects use the equipped weapon's WeaponBase; skill-scaled
+			// effects use the row's Magnitude as SkillBase.
+			const float Base = (Effect.ScalingType == EOnsetScalingType::Weapon)
+				? GetSourceWeaponBase()
+				: Effect.Magnitude;
+			const float Raw = ResolveScaledBase(Base, Effect.ScalingType);
+			ApplyDamageToTarget(TargetASC, ElementTag, Raw, Level);
 			break;
 		}
 
 		case EOnsetAbilityEffectType::Heal:
 		{
 			TMap<FName, float> Magnitudes;
-			Magnitudes.Add(TEXT("HealAmount"), Effect.Magnitude);
+			// Support mastery: EffectiveBuffValue = Base x (1 + Potency) for buff/debuff magnitudes.
+			Magnitudes.Add(TEXT("HealAmount"), Effect.Magnitude * GetBuffPotency());
 
 			if (Effect.Period > 0.0f)
 			{
@@ -677,7 +695,7 @@ void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
 		case EOnsetAbilityEffectType::Snare:
 		{
 			TMap<FName, float> Magnitudes;
-			Magnitudes.Add(TEXT("MoveSpeedMod"), Effect.Magnitude);
+			Magnitudes.Add(TEXT("MoveSpeedMod"), Effect.Magnitude * GetBuffPotency());
 			Magnitudes.Add(TEXT("Duration"), Effect.Duration);
 			ApplyEffectSpecToTarget(UOnsetGenericSnareEffect::StaticClass(), TargetASC, Magnitudes, Level);
 			break;
@@ -686,7 +704,7 @@ void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
 		case EOnsetAbilityEffectType::Slow:
 		{
 			TMap<FName, float> Magnitudes;
-			Magnitudes.Add(TEXT("CooldownRateMod"), Effect.Magnitude);
+			Magnitudes.Add(TEXT("CooldownRateMod"), Effect.Magnitude * GetBuffPotency());
 			Magnitudes.Add(TEXT("Duration"), Effect.Duration);
 			ApplyEffectSpecToTarget(UOnsetCooldownSlowEffect::StaticClass(), TargetASC, Magnitudes, Level);
 			break;
@@ -694,9 +712,26 @@ void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
 
 		case EOnsetAbilityEffectType::Stun:
 		{
-			TMap<FName, float> Magnitudes;
-			Magnitudes.Add(TEXT("Duration"), Effect.Duration);
-			ApplyEffectSpecToTarget(UOnsetGenericStunEffect::StaticClass(), TargetASC, Magnitudes, Level);
+			// CC diminishing returns: 100% → 50% → 25% → immune for consecutive applications.
+			const float EffectiveDuration = GetDiminishedCCDuration(TargetASC, TAG_State_Stunned, Effect.Duration);
+			if (EffectiveDuration > 0.0f)
+			{
+				TMap<FName, float> Magnitudes;
+				Magnitudes.Add(TEXT("Duration"), EffectiveDuration);
+				ApplyEffectSpecToTarget(UOnsetGenericStunEffect::StaticClass(), TargetASC, Magnitudes, Level);
+			}
+			break;
+		}
+
+		case EOnsetAbilityEffectType::Freeze:
+		{
+			const float EffectiveDuration = GetDiminishedCCDuration(TargetASC, TAG_State_Frozen, Effect.Duration);
+			if (EffectiveDuration > 0.0f)
+			{
+				TMap<FName, float> Magnitudes;
+				Magnitudes.Add(TEXT("Duration"), EffectiveDuration);
+				ApplyEffectSpecToTarget(UOnsetGenericFreezeEffect::StaticClass(), TargetASC, Magnitudes, Level);
+			}
 			break;
 		}
 
@@ -747,6 +782,18 @@ void UOnsetGA_Generic::ApplyEffectSpecToTarget(TSubclassOf<UGameplayEffect> Effe
 	}
 
 	TargetASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+}
+
+float UOnsetGA_Generic::GetDiminishedCCDuration(UAbilitySystemComponent* TargetASC,
+												FGameplayTag CCType,
+												float BaseDuration) const
+{
+	const AOnsetBaseCharacter* Target = TargetASC ? Cast<AOnsetBaseCharacter>(TargetASC->GetOwnerActor()) : nullptr;
+	if (!Target || !Target->CCDiminishing)
+	{
+		return BaseDuration;
+	}
+	return Target->CCDiminishing->GetDiminishedDuration(CCType, BaseDuration);
 }
 
 void UOnsetGA_Generic::ApplyPeriodicEffectSpecToTarget(TSubclassOf<UGameplayEffect> EffectClass,
@@ -838,7 +885,10 @@ void UOnsetGA_Generic::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
 		}
 	}
 	Multiplier = FMath::Max(0.1f, Multiplier);
-	const float FinalDuration = FMath::Max(0.1f, Definition->CooldownSeconds * Multiplier);
+
+	// Haste/CDR shortens the row base: EffectiveCooldown = CooldownSeconds x (1 - TotalCDR%) x Multiplier.
+	const float FinalDuration = FMath::Max(0.1f,
+		Definition->CooldownSeconds * (1.0f - GetTotalCooldownReduction()) * Multiplier);
 	SpecHandle.Data->SetDuration(FinalDuration, true);
 
 	ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);

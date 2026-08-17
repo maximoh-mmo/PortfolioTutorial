@@ -177,7 +177,8 @@ void AOnsetPlayerController::Server_SendAuthTicket_Implementation(const FString&
 
 void AOnsetPlayerController::StartAutoAttack()
 {
-	// Ensure we have a valid world context before setting the timer
+	// Ensure we have a valid world context before setting the timer. The interval is a
+	// short echo poll: the basic-attack cooldown GE is the actual attack-rate gate.
 	if (!GetWorld()) return;
 	GetWorldTimerManager().SetTimer(
 		AutoAttackTimerHandle,
@@ -308,10 +309,11 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 		PlayerChar->SetActorRotation(FRotator(0.0f, CharData.SavedRotationYaw, 0.0f));
 	}
 
+	// Apply the character's build (class base stats + equipped loadout) and heal to full.
+	PlayerChar->ApplyCharacterBuild(CharData.CharacterClass, CharData.EquipmentJSON);
 	if (PlayerChar->AttributeSet)
 	{
-		PlayerChar->AttributeSet->SetMaxHealth(CharData.SavedMaxHealth);
-		PlayerChar->AttributeSet->SetHealth(CharData.SavedMaxHealth);
+		PlayerChar->AttributeSet->SetHealth(PlayerChar->AttributeSet->GetMaxHealth());
 	}
 
 	PlayerChar->GrantDefaultAbilities();
@@ -803,10 +805,11 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 			PlayerCharacter->SetActorLocation(CharData.SavedPosition);
 			PlayerCharacter->SetActorRotation(FRotator(0.0f, CharData.SavedRotationYaw, 0.0f));
 
+			// Apply the character's build (class base stats + equipped loadout) and heal to full.
+			PlayerCharacter->ApplyCharacterBuild(CharData.CharacterClass, CharData.EquipmentJSON);
 			if (PlayerCharacter->AttributeSet)
 			{
-				PlayerCharacter->AttributeSet->SetMaxHealth(CharData.SavedMaxHealth);
-				PlayerCharacter->AttributeSet->SetHealth(CharData.SavedMaxHealth);
+				PlayerCharacter->AttributeSet->SetHealth(PlayerCharacter->AttributeSet->GetMaxHealth());
 			}
 
 			PlayerCharacter->GrantDefaultAbilities();
@@ -949,7 +952,7 @@ void AOnsetPlayerController::Server_SaveCharacter_Implementation()
 	CharData.SavedRotationYaw = PlayerCharacter->GetActorRotation().Yaw;
 	CharData.CurrentZone = GetWorld()->GetMapName();
 	CharData.InventoryJSON = TEXT("{}");
-	CharData.EquipmentJSON = TEXT("{}");
+	CharData.EquipmentJSON = PlayerCharacter->SerializeEquipmentJSON();
 	CharData.QuestsJSON = TEXT("{}");
 
 	bool bSuccess = DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
@@ -993,7 +996,7 @@ bool AOnsetPlayerController::SaveCurrentCharacter(APawn* InPawn)
 		CharData.SavedMaxHealth = PlayerCharacter->AttributeSet->GetMaxHealth();
 	}
 	CharData.InventoryJSON = TEXT("{}");
-	CharData.EquipmentJSON = TEXT("{}");
+	CharData.EquipmentJSON = PlayerCharacter->SerializeEquipmentJSON();
 	CharData.QuestsJSON = TEXT("{}");
 	const bool bSaved = DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
 	if (bSaved)

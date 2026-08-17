@@ -2,6 +2,7 @@
 
 #include "TimerManager.h"
 #include "AI/OnsetAIController.h"
+#include "Combat/OnsetEquipmentLibrary.h"
 #include "Enemy/OnsetEnemy.h"
 #include "Engine/NetDriver.h"
 #include "Engine/World.h"
@@ -15,6 +16,14 @@ DEFINE_LOG_CATEGORY(LogSpawner);
 AOnsetSpawner::AOnsetSpawner()
 {
 	GroupManager = CreateDefaultSubobject<UGroupManagerComponent>(TEXT("GroupManager"));
+
+	// Default the enemy-stats handle to the same table the library loads at
+	// runtime (respects the Onset.Gameplay EnemyStatsDataTable ini seam), so the
+	// row-name dropdown in the details panel is populated without extra setup.
+	if (Config.EnemyStats.DataTable == nullptr)
+	{
+		Config.EnemyStats.DataTable = UOnsetEquipmentLibrary::GetEnemyStatsTable();
+	}
 }
 
 void AOnsetSpawner::SpawnGroup()
@@ -110,6 +119,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	{
 		Spawned->SetActorTransform(Slot.SpawnTransform);
 		Spawned->ApplyProfile(Config.EnemyVisualProfile);
+		Spawned->ApplyEnemyStats(Config.EnemyStats.RowName, Config.Tier);
 		Spawned->OwningSpawner = this;
 		AOnsetAIController* AIController = PoolSubsystem->GetPooledController();
 		if (!AIController)
