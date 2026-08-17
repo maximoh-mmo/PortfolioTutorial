@@ -92,9 +92,48 @@ function Ensure-LocalTable {
     }
 }
 
+function Ensure-LocalAccountApi {
+    if (Get-NetTCPConnection -State Listen -LocalPort 3000 -ErrorAction SilentlyContinue) {
+        Write-Host "AccountApi already listening on :3000" -ForegroundColor DarkGray
+        return
+    }
+    if (!(Get-Command node -ErrorAction SilentlyContinue)) {
+        Write-Host "WARNING: 'node' not found; cannot start AccountApi." -ForegroundColor Yellow
+        Write-Host "  Start it yourself (see Project/AccountApi/LOCAL.md) or auth will fail against :3000." -ForegroundColor Yellow
+        return
+    }
+    $ApiDir = Join-Path $PSScriptRoot "Project\AccountApi"
+    if (!(Test-Path -LiteralPath (Join-Path $ApiDir "local.js"))) {
+        Write-Host "WARNING: AccountApi not found at $ApiDir; cannot start it." -ForegroundColor Yellow
+        return
+    }
+    $ApiLogDir = Join-Path (Split-Path $ProjectPath -Parent) "Saved\Logs"
+    New-Item -ItemType Directory -Force -Path $ApiLogDir | Out-Null
+    $ApiOutLog = Join-Path $ApiLogDir "AccountApi.out.log"
+    $ApiErrLog = Join-Path $ApiLogDir "AccountApi.err.log"
+    Write-Host "Starting AccountApi (node local.js)..." -ForegroundColor Cyan
+    $script:AccountApiProc = Start-Process -FilePath "node" -ArgumentList "local.js" `
+        -WorkingDirectory $ApiDir -WindowStyle Hidden -PassThru `
+        -RedirectStandardOutput $ApiOutLog -RedirectStandardError $ApiErrLog
+    $script:AccountApiStarted = $true
+    for ($i = 0; $i -lt 30; $i++) {
+        if (Get-NetTCPConnection -State Listen -LocalPort 3000 -ErrorAction SilentlyContinue) {
+            Write-Host "AccountApi ready on :3000 (after ${i}s)" -ForegroundColor Green
+            return
+        }
+        if ($script:AccountApiProc.HasExited) {
+            Write-Host "WARNING: AccountApi exited early (code $($script:AccountApiProc.ExitCode)); see $ApiErrLog" -ForegroundColor Yellow
+            return
+        }
+        Start-Sleep 1
+    }
+    Write-Host "WARNING: AccountApi did not come up on :3000; see $ApiErrLog" -ForegroundColor Yellow
+}
+
 if (!$Cloud) {
     Ensure-LocalDynamoDB
     Ensure-LocalTable
+    Ensure-LocalAccountApi
 }
 
 $EngineBin = Join-Path $EnginePath "Engine\Binaries\Win64\UnrealEditor.exe"
@@ -267,6 +306,12 @@ finally {
             $code = $p.ExitCode
             Write-ExitLog "KILLED pid=$($p.Id) code=$code desc=$(Describe-ExitCode -Code $code)"
         }
+    }
+    if ($script:AccountApiStarted -and $script:AccountApiProc -and !$script:AccountApiProc.HasExited) {
+        Write-Host "  Stopping AccountApi (PID $($script:AccountApiProc.Id))..." -ForegroundColor Gray
+        $script:AccountApiProc.Kill()
+        $script:AccountApiProc.WaitForExit(5000) | Out-Null
+        Write-ExitLog "KILLED label=AccountApi pid=$($script:AccountApiProc.Id) code=$($script:AccountApiProc.ExitCode)"
     }
     Update-TrackedProcs
     Write-ExitLog "=== Test_All session ended ==="
