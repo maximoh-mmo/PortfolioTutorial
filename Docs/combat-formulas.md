@@ -1,6 +1,6 @@
 # ARPG Combat Formula System
 
-**Design pillars:** Real-time ARPG · Power fantasy & satisfying growth · Fast, forgiving fights · Reincarnation/prestige loop · Elemental depth
+**Design pillars:** Real-time ARPG · Power fantasy & satisfying growth · Fast, forgiving fights · Reincarnation/prestige loop · Elemental depth · All skills (including basic attacks) are cooldown-gated
 
 ---
 
@@ -8,199 +8,229 @@
 
 | Stat | Abbrev. | Role |
 |---|---|---|
-| Strength | STR | Scales physical damage |
-| Intelligence | INT | Scales elemental/magic damage |
+| Strength | STR | Scales weapon-based (physical) damage |
+| Intelligence | INT | Scales skill-based (elemental) damage |
 | Vitality | VIT | Scales max HP |
 | Defense | DEF | Mitigates physical damage |
 | Resistance | RES (per element) | Mitigates elemental damage, one value per element |
-| Agility | AGI | Attack speed + dodge chance |
+| Agility | AGI | Universal Haste (cooldown reduction) + dodge |
 | Luck | LUK | Crit chance + crit multiplier |
 
 **Acquisition (hybrid model):**
 ```
 Stat_total = Stat_base + Stat_allocated (points spent on level-up) + Stat_gear (from equipment)
 ```
-Level-up points grow **linearly** (e.g. +3 points/level to distribute). Gear provides the explosive, non-linear part of power growth — this is where "50x stronger" mostly comes from, since gear stat budgets scale steeply with item level/tier and rarity.
+Level-up points grow **linearly**. Gear provides the explosive, non-linear part of power growth — this is where "50x stronger" mostly comes from.
 
 ---
 
-## 2. Damage Formula
+## 2. Elements
 
-### Physical
-```
-RawDamage = WeaponBase × (1 + STR / 100)
-```
+**Physical + Fire + Ice + Lightning + Poison** (5 total). Each has a natural status-effect identity that ties into §8:
 
-### Elemental
-```
-RawDamage = SkillBase × (1 + INT / 100)
-```
-
-### Variance (±10–20%, recommend ±15% to start)
-```
-VarianceRoll = Random(0.85, 1.15)
-```
-
-### Full damage pipeline (applied in this order)
-```
-Step 1: Raw = RawDamage × VarianceRoll
-Step 2: Mitigated = Raw × (1 - Mitigation%)
-Step 3: Elemental = Mitigated × TypeMultiplier   (weakness/resistance table, see §4)
-Step 4: Crit = Elemental × (IsCrit ? CritMultiplier : 1)
-Step 5: Final = Crit × (1 + BuffDebuffTotal)     (see §6)
-```
-
-Keeping these as **discrete multiplicative stages** (mitigation → type → crit → buffs) rather than one giant formula makes each stage independently tunable and easy to debug/log.
-
----
-
-## 3. Mitigation (Defense & Resistance)
-
-Percentage mitigation with a **built-in soft cap** using the classic "armor formula" (League of Legends / PoE-style):
-
-```
-Mitigation% = DEF / (DEF + K)
-```
-
-Where `K` is a tuning constant representing "the DEF value at which you hit 50% reduction." This curve is beautiful for your use case because:
-- It's naturally percentage-based ✅
-- It naturally soft-caps — each additional point of DEF gives less than the last ✅
-- It never mathematically reaches 100%, so nothing is ever unkillable
-
-**Same formula per element**, using each element's own RES stat:
-```
-ElementalMitigation%_fire = RES_fire / (RES_fire + K_elem)
-```
-
-**Starting constants to playtest:**
-- `K_DEF ≈ 100` at early game scale (tune alongside your DEF point budget per level)
-- `K_elem ≈ 80` (slightly lower — elemental should feel a bit more piercing than physical, reinforcing the "elemental system has weaknesses to exploit" fantasy)
-- Since stats will reach extreme values (50x+ growth), scale `K` alongside expected DEF ranges per zone tier, or you'll trivialize mitigation late-game. Recommend `K` increasing per zone/tier band (e.g. `K = K_base × ZoneTierMultiplier`).
-
----
-
-## 4. Elemental Weakness / Resistance (Type Chart)
-
-Separate from the RES **stat** (§3) — this is a **flat multiplier per enemy type**, layered on top:
-
-| Enemy relationship to element | TypeMultiplier |
+| Element | Status tie-in |
 |---|---|
-| Weak to it | 1.5× |
-| Neutral | 1.0× |
-| Resistant to it | 0.5× |
-| Immune | 0× (rare, use sparingly) |
+| Fire | Burn (DoT) |
+| Ice | Freeze / Slow (CC) |
+| Lightning | Stun / Shock (CC) |
+| Poison | Poison (DoT) |
+| Physical | Bleed (DoT) |
 
-Store this as a simple lookup table: `EnemyType × Element → Multiplier`. Doesn't need to be a full matrix for every enemy — assign 1-2 defined relationships per enemy, default the rest to Neutral (1.0×) to keep content creation manageable.
+This list drives the RES stat list, the ability tags, and the type chart (§5). Adding more elements later is a content expansion, not a formula change — nothing here assumes exactly five.
 
 ---
 
-## 5. Critical Hits (Scalable Chance + Multiplier)
+## 3. Weapon-Scaled vs. Skill-Scaled Abilities
 
-Both chance and multiplier scale with LUK, and **both soft-cap** using the same diminishing-returns shape as mitigation:
+Every ability carries a **ScalingType** flag: `Weapon` (uses `WeaponBase × STR`) or `Skill` (uses `SkillBase × INT`). This is what actually separates melee and caster identity — without it, every ability pulls from the same stat and the classes collapse into one.
+
+```
+WeaponScaledDamage = WeaponBaseDamage × (1 + STR_total / STR_Divisor)
+SkillScaledDamage  = SkillBaseDamage  × (1 + INT_total / INT_Divisor)
+```
+
+Both use the same divisor-based shape, so the *math* is symmetric between STR and INT — balance between melee and caster is a content/itemization/resource problem, not a formula problem (see §9 for how cooldown-gating specifically affects this).
+
+---
+
+## 4. Damage Pipeline
+
+```
+Step 1: Raw = BaseDamage(Weapon or Skill scaled, per §3) × VarianceRoll (±10–20%, default ±15%)
+Step 2: Mitigated = Raw × (1 - Mitigation%)               (§6)
+Step 3: Elemental = Mitigated × TypeMultiplier             (§5)
+Step 4: Crit = Elemental × (IsCrit ? CritMultiplier : 1)   (§7)
+Step 5: Final = Crit × (1 + BuffDebuffTotal)                (§10)
+```
+
+---
+
+## 5. Elemental Weakness / Resistance (Type Chart)
+
+Flat multiplier per enemy-type/element relationship, layered on top of the RES **stat** (§6):
+
+| Relationship | TypeMultiplier |
+|---|---|
+| Weak | 1.5× |
+| Neutral | 1.0× |
+| Resistant | 0.5× |
+| Immune | 0× (use sparingly) |
+
+Assign 1–2 defined relationships per enemy; default the rest to Neutral.
+
+---
+
+## 6. Mitigation (Defense & Resistance)
+
+Percentage mitigation with a built-in soft cap (armor-formula style):
+
+```
+Mitigation% = DEF / (DEF + K_DEF)
+ElementalMitigation%_x = RES_x / (RES_x + K_elem)
+```
+
+**Starting constants:** `K_DEF ≈ 100`, `K_elem ≈ 80` (elemental pierces mitigation slightly more, reinforcing that elemental damage rewards exploiting weaknesses). Scale `K` per zone tier alongside expected stat ranges.
+
+---
+
+## 7. Critical Hits
 
 ```
 CritChance% = BaseCritChance + (LUK / (LUK + K_crit)) × MaxCritChanceBonus
 CritMultiplier = BaseCritMult + (LUK / (LUK + K_critmult)) × MaxCritMultBonus
 ```
-
-**Recommended starting values:**
-- `BaseCritChance = 5%`, `MaxCritChanceBonus = 65%` → hard ceiling ~70% crit chance
-- `BaseCritMult = 1.5×`, `MaxCritMultBonus = 2.5×` → hard ceiling ~4.0× crit damage
-- Tune `K_crit` / `K_critmult` so mid-game LUK investment feels rewarding but doesn't hit the ceiling until deep into a reincarnation loop
-
-This gives crit-focused builds a real power fantasy (up to 4x burst damage, hitting most of the time) without becoming mathematically guaranteed/broken.
+Starting values: `BaseCritChance = 5%`, cap `~70%`; `BaseCritMult = 1.5×`, cap `~4.0×`.
 
 ---
 
-## 6. Buffs & Debuffs (Additive Stacking)
+## 8. Status Effects (DoTs + Hard CC)
 
-All active buffs and debuffs sum into **one combined modifier**, applied once at the end of the damage pipeline:
+**DoTs (Bleed/Poison/Burn):**
+```
+TickDamage = SourceStat × DoTCoefficient
+TotalDoTDamage = TickDamage × NumberOfTicks
+```
+**Hard CC (Stun/Freeze/Root)** — diminishing returns on repeat application to the same target:
+```
+DR_Multiplier: 1st = 100%, 2nd (within window) = 50%, 3rd = 25%, 4th+ = immune until reset
+```
+
+---
+
+## 9. Cooldown-Gated Actions: Weapon Speed & Haste
+
+Since **every** skill — including the basic attack — is cooldown-gated, attack rate is a first-class, tunable stat shared by melee and casters alike. Both use weapons (swords/daggers for melee, staves/wands/tomes for casters), and every weapon archetype has its own **base cooldown**:
+
+| Weapon Archetype | Base Cooldown (sec) |
+|---|---|
+| Dagger | 0.8 |
+| Wand | 0.9 |
+| Sword / Bow | 1.0 |
+| Axe / Mace | 1.1 |
+| Staff | 1.2 |
+| Tome | 1.3 |
+| Greatsword | 1.8 |
+
+**Universal Haste (AGI)** reduces cooldowns on *all* skills, not just basic attacks — this was a deliberate choice to keep AGI valuable across every build rather than melee-only:
+```
+Haste% = AGI / (AGI + K_haste)
+EffectiveCooldown = BaseCooldown × (1 - TotalCDR%)
+AttacksPerSecond = 1 / EffectiveCooldown
+```
+`TotalCDR%` also folds in dual-wield and mastery bonuses (§11) and should be capped (e.g. 80%) so cooldowns never approach zero.
+
+**Why this matters for melee vs. caster balance:** because both classes' basic attacks are governed by the *same* cooldown+Haste formula, and both damage types use the *same* divisor-shaped scaling formula (§3), the system itself doesn't favor either archetype. The actual balance now lives in: weapon archetype cooldown choices (fast weapons = lower per-hit damage, by design), itemization parity between STR and INT gear, and how mastery bonuses (§11) are tuned — not in a resource-cost asymmetry like mana-vs-free-swings would create.
+
+---
+
+## 10. Buffs & Debuffs (Additive Stacking)
 
 ```
 BuffDebuffTotal = Σ(all buff %) - Σ(all debuff %)
 Final = PreBuffDamage × (1 + BuffDebuffTotal)
 ```
-
-Example: +20% damage buff, +15% "Vulnerable" debuff on target, -10% self-debuff → `BuffDebuffTotal = 0.20 + 0.15 - 0.10 = 0.25` → **+25% total**, applied as one multiplication.
-
-This is simpler to reason about and easier to debug than layered multiplicative stacking, at the cost of buffs feeling slightly less individually impactful when many are active — a fair tradeoff given your "easy to tune" and "readable" priorities.
+All buffs/debuffs sum into one modifier, applied once — simpler to reason about than multiplicative layering, at a small cost of buffs feeling slightly less individually punchy when many stack.
 
 ---
 
-## 7. Status Effects (DoTs + Hard CC)
+## 11. Dual-Wielding, Shields & Class Mastery
 
-### Damage-over-time (bleed, poison, burn)
-```
-TickDamage = SourceStat × DoTCoefficient
-TotalDoTDamage = TickDamage × NumberOfTicks
-```
-Each DoT type gets its own coefficient (tunable independently of direct-hit damage) so bleed/poison/burn can have distinct identities (e.g. bleed = many small ticks, burn = fewer big ticks).
+**Access is universal, not gated.** Any class *can* equip a shield, dual-wield, or carry a bow. What makes a weapon choice "optimal" is a **Class Mastery** bonus that only applies when class and weapon match — this keeps itemization open while still making the intended playstyle statistically best.
 
-### Hard CC (stun, freeze, root)
-Binary state flags with a duration, not a formula — but **do** apply diminishing returns on repeated CC to the same target to avoid stun-locking:
+**Dual-wielding mechanic (chosen: cooldown reduction, not an extra action):**
 ```
-EffectiveDuration = BaseDuration × (DR_Multiplier)
-DR_Multiplier: 1st application = 100%, 2nd within window = 50%, 3rd = 25%, 4th+ = immune until window resets
+DualWieldCDRBonus = DualWieldBaseCDR + (Class == MeleeDPS ? MeleeMasteryCDR : 0)
 ```
-(Borrowed from WoW's diminishing returns system — strongly recommended for any real-time game with hard CC to keep it from feeling unfair.)
+This reuses the Haste formula's math — no new subsystem — and gives dual-wield a "fast and frantic" identity without competing against the cooldown-gated skill rotation the way an independent second attack timer would.
+
+**Shields** add Block Chance (a variance-reduction defensive layer, distinct from flat DEF) plus a defensive stat bonus, both boosted for Tanks:
+```
+BlockChance% = BaseBlockChance + (Class == Tank ? TankMasteryBlock : 0)
+ShieldDEFBonus = BaseShieldDEF + (Class == Tank ? TankMasteryDEF : 0)
+BlockedDamageMultiplier = 1 - (BlockChance% × BlockDamageReduction%)   [applied before DEF/RES mitigation]
+```
+Block flattens the damage-taken curve (fewer spikes) rather than just increasing average mitigation — a distinct tanking fantasy from "more DEF."
+
+**Bows** give Ranged DPS extra crit chance and/or damage, on top of the shared physical weapon-scaled formula:
+```
+RangedBonusCritChance% = (Class == RangedDPS AND Weapon == Bow) ? RangedMasteryCrit : 0
+RangedBonusDamage%     = (Class == RangedDPS AND Weapon == Bow) ? RangedMasteryDamage : 0
+```
+
+**Starting mastery values to playtest:**
+
+| Bonus | Value |
+|---|---|
+| DualWieldBaseCDR | 20% |
+| MeleeDPS mastery CDR bonus | +15% |
+| BaseBlockChance (shield equipped) | 10% |
+| Tank mastery block bonus | +20% |
+| BaseShieldDEF | +10 flat |
+| Tank mastery DEF bonus | +20 flat |
+| RangedDPS mastery crit bonus | +10% |
+| RangedDPS mastery damage bonus | +15% |
+| BlockDamageReduction | 50% of the hit |
 
 ---
 
-## 8. Reincarnation / Prestige Scaling
-
-**In-run growth:** linear, as defined in §1 (flat points per level).
-
-**Permanent reincarnation bonus:** compounding multiplier applied globally to all outgoing damage (and optionally HP):
+## 12. Reincarnation / Prestige Scaling
 
 ```
-PrestigeMultiplier = (1 + r) ^ N
+PrestigeMultiplier = (1 + r) ^ N        (r ≈ 10% per loop)
+EnemyStats_loopN = EnemyStats_base × (1 + d) ^ N   (d ≈ 15% per loop, d > r)
 ```
-Where `r` = bonus per reincarnation (e.g. 0.10 = +10%) and `N` = number of completed reincarnations.
-
-**Harder base difficulty per loop:**
-```
-EnemyStats_loopN = EnemyStats_base × (1 + d) ^ N
-```
-Where `d` = difficulty growth per loop (recommend `d` slightly higher than `r`, e.g. `d = 0.15`, so each loop is a genuine challenge increase, not just a formality before the player out-scales it again).
-
-**Tuning target:** by the time a player reaches max level within a single loop, total effective power (base × allocated stats × gear × prestige multiplier) should land around **50×** starting power, per your target. Reaching this is mostly a product of the linear+gear stacking in §1 — the prestige multiplier is a smaller compounding layer on top that makes each *loop* feel meaningfully stronger than the last, not the primary driver within a single loop.
+`d` slightly exceeding `r` ensures each loop is a genuine challenge increase rather than a formality the player instantly out-scales.
 
 ---
 
-## 9. Time-to-Kill Sanity Check
+## 13. Time-to-Kill Validation
 
-Target: **4–8 hits** to kill a normal enemy early game; **player survives 10+ hits** from a normal enemy.
-
-Quick validation once you have starting numbers, e.g.:
-- Player weapon base damage: 20, STR: 10 → RawDamage ≈ 22
-- Enemy DEF: 20 → Mitigation% = 20/(20+100) ≈ 16.7% → Mitigated ≈ 18.3
-- Enemy HP: ~130 → **≈ 7 hits to kill** ✅ within target range
-
-- Enemy attack: 15 base → Player DEF: 20 → Mitigation ≈ 16.7% → ≈ 12.5 dmg/hit
-- Player HP: ~150 → **12 hits to die** ✅ within "10+" forgiving target
-
-Run this kind of spreadsheet check at each major level bracket (start, mid, pre-reincarnation cap) to confirm the curve holds as stats scale.
+With cooldown-gating, **TTK is now measured in seconds (DPS-based), not hit counts** — hit count varies by weapon archetype and haste, so it's no longer a reliable cross-build target. Use:
+```
+DPS = FinalAverageDamagePerHit × AttacksPerSecond
+TimeToKill(sec) = EnemyHP / DPS
+```
+Hit-count is still useful as a secondary sanity check (original target: 4–8 hits early game, 10+ hits for the player to die), but treat seconds-to-kill as the primary tuning number now that attack rate itself varies by build.
 
 ---
 
-## 10. Tuning Constants — Starting Values Summary
+## 14. Tuning Constants — Full Summary
 
 | Constant | Starting Value | Purpose |
 |---|---|---|
-| `K_DEF` | 100 (scale per zone tier) | Physical mitigation soft cap |
-| `K_elem` | 80 (scale per zone tier) | Elemental mitigation soft cap |
+| `K_DEF` | 100 | Physical mitigation soft cap |
+| `K_elem` | 80 | Elemental mitigation soft cap |
 | Damage variance | ±15% | Per-hit randomness |
 | `BaseCritChance` / `MaxCritChanceBonus` | 5% / 65% | Crit chance curve (cap ~70%) |
 | `BaseCritMult` / `MaxCritMultBonus` | 1.5× / 2.5× | Crit damage curve (cap ~4.0×) |
-| TypeMultiplier (weak/neutral/resist) | 1.5× / 1.0× / 0.5× | Elemental type chart |
-| Prestige bonus `r` | +10% per reincarnation | Permanent power growth |
-| Difficulty growth `d` | +15% per reincarnation | Enemy scaling per loop |
-| CC diminishing returns | 100% → 50% → 25% → immune | Prevents stun-lock |
+| TypeMultiplier (weak/neutral/resist/immune) | 1.5× / 1.0× / 0.5× / 0× | Elemental type chart |
+| Prestige bonus `r` | +10%/loop | Permanent power growth |
+| Difficulty growth `d` | +15%/loop | Enemy scaling per loop |
+| CC diminishing returns | 100→50→25→immune | Prevents stun-lock |
+| `K_haste` | 200 | Universal cooldown-reduction soft cap |
+| Max total CDR | 80% | Prevents near-zero cooldowns |
+| Weapon base cooldowns | 0.8–1.8 sec | Per weapon archetype, see §9 |
+| Dual-wield / mastery bonuses | see §11 table | Class identity layer |
 
 ---
 
-## 11. Suggested Next Steps
-
-1. Build a spreadsheet implementing §2–§5 so you can plug in stat values and see resulting damage/TTK instantly — this is the fastest way to feel out whether `K` constants and crit curves feel right before writing any game code.
-2. Playtest the §9 sanity check at 3–4 points across a single reincarnation loop (start, quarter, mid, near-cap) to confirm TTK targets hold as stats scale non-linearly through gear.
-3. Once base loop feels good, playtest a full reincarnation cycle to confirm the `r` vs `d` balance actually makes loop 2 feel harder *and* the permanent multiplier feel earned.
