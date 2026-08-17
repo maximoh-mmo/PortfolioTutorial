@@ -15,6 +15,20 @@ enum class EOnsetEquipmentSlot : uint8
 	Shield	UMETA(DisplayName = "Shield")
 };
 
+/** One equipped slot entry. Replicated as an array (TMap replication is unsupported). */
+USTRUCT(BlueprintType)
+struct FOnsetEquippedEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	EOnsetEquipmentSlot Slot = EOnsetEquipmentSlot::Weapon;
+
+	/** DT_Equipment row ID. Empty = nothing equipped in this slot. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	FName RowName;
+};
+
 /**
  * Weapon archetype. Drives the base-cooldown table in Phase 3 (combat-formulas §9):
  * Dagger 0.8 / Wand 0.9 / Sword·Bow 1.0 / Axe·Mace 1.1 / Staff 1.2 / Tome 1.3 / Greatsword 1.8.

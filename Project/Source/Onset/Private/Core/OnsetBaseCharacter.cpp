@@ -17,6 +17,7 @@
 #include "Combat/OnsetGA_Generic.h"
 #include "Combat/OnsetAbilityLibrary.h"
 #include "Data/OnsetAbilityTypes.h"
+#include "Inventory/UOnsetInventoryComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/DecalComponent.h"
 #include "CollisionQueryParams.h"
@@ -42,6 +43,11 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 	MovementAttributes = CreateDefaultSubobject<UOnsetMovementAttributeSet>(TEXT("MovementAttributes"));
 	CombatAttributes = CreateDefaultSubobject<UOnsetCombatAttributeSet>(TEXT("CombatAttributes"));
 	CCDiminishing = CreateDefaultSubobject<UOnsetCCDiminishingComponent>(TEXT("CCDiminishing"));
+
+	// Player pawns replicate the bag + loadout to their owner only.
+	InventoryComponent = CreateDefaultSubobject<UOnsetInventoryComponent>(TEXT("InventoryComponent"));
+	InventoryComponent->SetReplicateToOwnerOnly(true);
+	InventoryComponent->OnInventoryChanged.AddUObject(this, &AOnsetBaseCharacter::HandleInventoryChanged);
 
 	// Ground reticule decal: hidden until this character becomes the player's target.
 	TargetReticuleDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetReticuleDecal"));
@@ -208,7 +214,7 @@ void AOnsetBaseCharacter::RecalculateDerivedStats()
 	float LuckBonus = 0.0f;
 	float BlockChance = 0.0f;
 
-	for (const TPair<EOnsetEquipmentSlot, FName>& Pair : EquipmentLoadout)
+	for (const TPair<EOnsetEquipmentSlot, FName>& Pair : InventoryComponent ? InventoryComponent->GetEquippedMap() : TMap<EOnsetEquipmentSlot, FName>())
 	{
 		const FOnsetEquipmentDefinition* Def = UOnsetEquipmentLibrary::GetDefinition(Pair.Value);
 		if (!Def)
@@ -253,68 +259,42 @@ void AOnsetBaseCharacter::RecalculateDerivedStats()
 
 FString AOnsetBaseCharacter::SerializeEquipmentJSON() const
 {
-	TSharedPtr<FJsonObject> Root = MakeShareable(new FJsonObject);
-	UEnum* SlotEnum = StaticEnum<EOnsetEquipmentSlot>();
-	if (SlotEnum)
-	{
-		for (int32 Index = 0; Index < SlotEnum->NumEnums(); ++Index)
-		{
-			const EOnsetEquipmentSlot Slot = static_cast<EOnsetEquipmentSlot>(SlotEnum->GetValueByIndex(Index));
-			const FName* RowName = EquipmentLoadout.Find(Slot);
-			Root->SetStringField(SlotEnum->GetDisplayValueAsText(Slot).ToString(),
-				RowName ? RowName->ToString() : TEXT(""));
-		}
-	}
-
-	FString Out;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Out);
-	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
-	return Out;
+	return InventoryComponent ? InventoryComponent->SerializeEquipmentJSON() : TEXT("{}");
 }
 
 void AOnsetBaseCharacter::DeserializeEquipmentJSON(const FString& JSON)
 {
-	EquipmentLoadout.Reset();
-	if (JSON.IsEmpty() || JSON == TEXT("{}"))
+	if (InventoryComponent)
 	{
-		return;
+		InventoryComponent->DeserializeEquipmentJSON(JSON);
 	}
+}
 
-	TSharedPtr<FJsonObject> Root;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JSON);
-	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
-	{
-		return;
-	}
+FString AOnsetBaseCharacter::SerializeInventoryJSON() const
+{
+	return InventoryComponent ? InventoryComponent->SerializeInventoryJSON() : TEXT("[]");
+}
 
-	UEnum* SlotEnum = StaticEnum<EOnsetEquipmentSlot>();
-	if (!SlotEnum)
+void AOnsetBaseCharacter::DeserializeInventoryJSON(const FString& JSON)
+{
+	if (InventoryComponent)
 	{
-		return;
-	}
-
-	for (int32 Index = 0; Index < SlotEnum->NumEnums(); ++Index)
-	{
-		const EOnsetEquipmentSlot Slot = static_cast<EOnsetEquipmentSlot>(SlotEnum->GetValueByIndex(Index));
-		const FString RowName = Root->GetStringField(SlotEnum->GetDisplayValueAsText(Slot).ToString());
-		if (!RowName.IsEmpty())
-		{
-			EquipmentLoadout.Add(Slot, FName(*RowName));
-		}
+		InventoryComponent->DeserializeInventoryJSON(JSON);
 	}
 }
 
 void AOnsetBaseCharacter::EquipItem(EOnsetEquipmentSlot Slot, FName RowName)
 {
-	if (RowName.IsNone())
+	if (!InventoryComponent)
 	{
-		EquipmentLoadout.Remove(Slot);
+		return;
 	}
-	else
-	{
-		EquipmentLoadout.Add(Slot, RowName);
-	}
-	RecalculateDerivedStats();
+	InventoryComponent->EquipItem(Slot, RowName);
+}
+
+bool AOnsetBaseCharacter::EquipFromInventory(FName RowName)
+{
+	return InventoryComponent ? InventoryComponent->EquipFromInventory(RowName) : false;
 }
 
 float AOnsetBaseCharacter::GetEquippedWeaponDamage() const
@@ -358,12 +338,16 @@ EOnsetWeaponArchetype AOnsetBaseCharacter::GetBaseWeaponArchetype() const
 
 const FOnsetEquipmentDefinition* AOnsetBaseCharacter::GetEquippedItem(EOnsetEquipmentSlot Slot) const
 {
-	const FName* RowName = EquipmentLoadout.Find(Slot);
-	if (!RowName)
+	return InventoryComponent ? InventoryComponent->GetEquippedItem(Slot) : nullptr;
+}
+
+void AOnsetBaseCharacter::HandleInventoryChanged()
+{
+	// Derived stats are server-authoritative; clients receive the replicated attributes.
+	if (HasAuthority())
 	{
-		return nullptr;
+		RecalculateDerivedStats();
 	}
-	return UOnsetEquipmentLibrary::GetDefinition(*RowName);
 }
 
 void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)

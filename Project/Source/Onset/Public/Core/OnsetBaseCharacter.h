@@ -11,6 +11,7 @@
 class UOnsetMovementAttributeSet;
 class UOnsetCombatAttributeSet;
 class UOnsetCCDiminishingComponent;
+class UOnsetInventoryComponent;
 class UTargetingComponent;
 class UOnsetAttributeSet;
 class UAbilitySystemComponent;
@@ -72,6 +73,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UOnsetCCDiminishingComponent> CCDiminishing;
 
+	/** Shared inventory: equipped loadout + bag. Owner-only replication on player pawns. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	TObjectPtr<UOnsetInventoryComponent> InventoryComponent;
+
 	// --- Equipment / derived stats ---
 
 	/** Applies the saved loadout (or falls back to the class default weapon) and recomputes stats. */
@@ -86,8 +91,17 @@ public:
 	/** Parses an EquipmentJSON string into the loadout. */
 	void DeserializeEquipmentJSON(const FString& JSON);
 
+	/** Serializes the bag contents as InventoryJSON. */
+	FString SerializeInventoryJSON() const;
+
+	/** Parses an InventoryJSON string into the bag contents. */
+	void DeserializeInventoryJSON(const FString& JSON);
+
 	/** Equips the DT_Equipment row RowName into Slot (server); empty removes it. */
 	void EquipItem(EOnsetEquipmentSlot Slot, FName RowName);
+
+	/** Moves RowName from the bag into its slot, replacing whatever is equipped there. */
+	bool EquipFromInventory(FName RowName);
 
 	/** The WeaponBase used by weapon-scaled abilities: equipped weapon or class-default fallback. */
 	float GetEquippedWeaponDamage() const;
@@ -154,10 +168,6 @@ protected:
 	UPROPERTY()
 	EOnsetCharacterClass CurrentClass = EOnsetCharacterClass::DPS;
 
-	/** Equipped loadout: slot -> DT_Equipment row name. Server-authoritative. */
-	UPROPERTY()
-	TMap<EOnsetEquipmentSlot, FName> EquipmentLoadout;
-
 	/** Enemy-authored basic-attack WeaponBase (DT_EnemyStats); 0 = not an enemy override. */
 	UPROPERTY()
 	float EnemyWeaponBaseOverride = 0.0f;
@@ -175,4 +185,8 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_bIsAlive)
 	bool bIsAlive = true;
+
+private:
+	/** Recomputes derived stats whenever the inventory component mutates. */
+	void HandleInventoryChanged();
 };

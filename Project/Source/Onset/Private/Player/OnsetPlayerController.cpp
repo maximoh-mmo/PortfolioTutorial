@@ -38,6 +38,7 @@
 #include "Misc/ConfigCacheIni.h"
 #include "Engine/DataTable.h"
 #include "Data/OnsetClassInfoTypes.h"
+#include "Inventory/UOnsetInventoryComponent.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
@@ -311,6 +312,7 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 
 	// Apply the character's build (class base stats + equipped loadout) and heal to full.
 	PlayerChar->ApplyCharacterBuild(CharData.CharacterClass, CharData.EquipmentJSON);
+	PlayerChar->DeserializeInventoryJSON(CharData.InventoryJSON);
 	if (PlayerChar->AttributeSet)
 	{
 		PlayerChar->AttributeSet->SetHealth(PlayerChar->AttributeSet->GetMaxHealth());
@@ -530,6 +532,31 @@ void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AAc
 		}
 	}
 }	
+
+void AOnsetPlayerController::OnsetGrantItem(const FString& RowName)
+{
+	if (RowName.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnsetGrantItem: empty row name"));
+		return;
+	}
+	Server_GrantItem(RowName);
+}
+
+void AOnsetPlayerController::Server_GrantItem_Implementation(const FString& RowName)
+{
+	if (RowName.IsEmpty())
+	{
+		return;
+	}
+	AOnsetPlayerCharacter* PlayerCharacter = Cast<AOnsetPlayerCharacter>(GetPawn());
+	if (!PlayerCharacter || !PlayerCharacter->InventoryComponent)
+	{
+		return;
+	}
+	PlayerCharacter->InventoryComponent->AddItem(FName(*RowName));
+	UE_LOG(LogTemp, Log, TEXT("OnsetGrantItem: granted '%s'"), *RowName);
+}
 
 void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
@@ -807,6 +834,7 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 
 			// Apply the character's build (class base stats + equipped loadout) and heal to full.
 			PlayerCharacter->ApplyCharacterBuild(CharData.CharacterClass, CharData.EquipmentJSON);
+			PlayerCharacter->DeserializeInventoryJSON(CharData.InventoryJSON);
 			if (PlayerCharacter->AttributeSet)
 			{
 				PlayerCharacter->AttributeSet->SetHealth(PlayerCharacter->AttributeSet->GetMaxHealth());
@@ -951,7 +979,7 @@ void AOnsetPlayerController::Server_SaveCharacter_Implementation()
 	CharData.SavedPosition = PlayerCharacter->GetActorLocation();
 	CharData.SavedRotationYaw = PlayerCharacter->GetActorRotation().Yaw;
 	CharData.CurrentZone = GetWorld()->GetMapName();
-	CharData.InventoryJSON = TEXT("{}");
+	CharData.InventoryJSON = PlayerCharacter->SerializeInventoryJSON();
 	CharData.EquipmentJSON = PlayerCharacter->SerializeEquipmentJSON();
 	CharData.QuestsJSON = TEXT("{}");
 
@@ -995,7 +1023,7 @@ bool AOnsetPlayerController::SaveCurrentCharacter(APawn* InPawn)
 	{
 		CharData.SavedMaxHealth = PlayerCharacter->AttributeSet->GetMaxHealth();
 	}
-	CharData.InventoryJSON = TEXT("{}");
+	CharData.InventoryJSON = PlayerCharacter->SerializeInventoryJSON();
 	CharData.EquipmentJSON = PlayerCharacter->SerializeEquipmentJSON();
 	CharData.QuestsJSON = TEXT("{}");
 	const bool bSaved = DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);

@@ -293,6 +293,13 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
 
+	/** Debug: grants a DT_Equipment item to the possessed pawn's inventory (console: OnsetGrantItem <RowName>). */
+	UFUNCTION(Exec)
+	void OnsetGrantItem(const FString& RowName);
+
+	UFUNCTION(Server, Reliable)
+	void Server_GrantItem(const FString& RowName);
+
 	void ClearAuthTimeout();
 
 	/** Saves the given pawn's character data (if a slot is available), at most once per session.

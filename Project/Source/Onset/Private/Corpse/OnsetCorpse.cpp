@@ -1,6 +1,7 @@
 ﻿#include "Corpse/OnsetCorpse.h"
 
 #include "Components/StaticMeshComponent.h"
+#include "Inventory/UOnsetInventoryComponent.h"
 
 AOnsetCorpse::AOnsetCorpse()
 {
@@ -15,4 +16,8 @@ AOnsetCorpse::AOnsetCorpse()
 	MeshComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	MeshComponent->SetWorldScale3D(FVector(0.5f));
 	MeshComponent->SetIsReplicated(true);
+
+	// Loot is replicated to all clients so any player can see what the server rolled.
+	InventoryComponent = CreateDefaultSubobject<UOnsetInventoryComponent>(TEXT("InventoryComponent"));
+	InventoryComponent->SetReplicateToOwnerOnly(false);
 }
