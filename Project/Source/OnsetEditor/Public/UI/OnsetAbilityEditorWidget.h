@@ -72,6 +72,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
 	float CooldownSeconds = 1.0f;
 
+	// --- Scroll ---
+
+	/** Also create a DT_Scrolls row that grants this ability. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
+	bool bCreateScroll = false;
+
 	// --- Effects ---
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")

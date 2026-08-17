@@ -18,6 +18,8 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Data/OnsetAbilityTypes.h"
+#include "Data/OnsetItemLibrary.h"
+#include "Data/OnsetItemTypes.h"
 #include "Engine/DataTable.h"
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
@@ -591,6 +593,40 @@ void UOnsetAbilityEditorWidget::AddDefinition()
 	}
 
 	Table->AddRow(NewRowName, NewDefinition);
+
+	// Optionally also create a DT_Scrolls row that grants the new ability.
+	if (Data->bCreateScroll)
+	{
+		UDataTable* ScrollTable = UOnsetItemLibrary::GetTable(EOnsetItemCategory::Scroll);
+		if (ScrollTable)
+		{
+			FName ScrollRowName = NewRowName;
+			int32 ScrollSuffix = 1;
+			const FString ScrollBaseName = NewRowName.ToString();
+			while (ScrollTable->FindRow<FOnsetScrollDefinition>(ScrollRowName, nullptr))
+			{
+				ScrollRowName = FName(*FString::Printf(TEXT("%s%d"), *ScrollBaseName, ScrollSuffix++));
+			}
+
+			FOnsetScrollDefinition ScrollRow;
+			ScrollRow.DisplayName = Data->DisplayName;
+			ScrollRow.Icon = Data->AbilityIcon;
+			ScrollRow.GrantedAbility.DataTable = Table;
+			ScrollRow.GrantedAbility.RowName = NewRowName;
+			ScrollTable->AddRow(ScrollRowName, ScrollRow);
+
+			// Persist both tables so the scroll's GrantedAbility is valid on disk
+			// immediately (Add alone normally defers persistence to the Save button).
+			Table->GetPackage()->MarkPackageDirty();
+			ScrollTable->GetPackage()->MarkPackageDirty();
+			UPackageTools::SavePackagesForObjects(TArray<UObject*>{ Table, ScrollTable });
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("UOnsetAbilityEditorWidget::AddDefinition: scroll creation requested but DT_Scrolls could not be loaded."));
+		}
+	}
+
 	PendingCreationData = nullptr;
 
 	// Refresh the runtime registry so PIE sees the new ability immediately.
@@ -602,16 +638,56 @@ void UOnsetAbilityEditorWidget::AddDefinition()
 
 void UOnsetAbilityEditorWidget::DeleteDefinition()
 {
-	if (!SelectedRowName.IsNone() && CachedTable)
+	if (SelectedRowName.IsNone() || !CachedTable)
 	{
-		CachedTable->RemoveRow(SelectedRowName);
-		SelectedRowName = NAME_None;
-		if (PropertyView)
-		{
-			PropertyView->SetObject(nullptr);
-		}
-		RefreshFromTable();
+		return;
 	}
+
+	// Remove any scroll rows that grant the deleted ability, so GrantedAbility
+	// never dangles. Match on the handle rather than the row name so renamed
+	// scroll rows are still cleaned up.
+	bool bRemovedScrolls = false;
+	UDataTable* ScrollTable = UOnsetItemLibrary::GetTable(EOnsetItemCategory::Scroll);
+	if (ScrollTable)
+	{
+		TArray<FName> RowsToRemove;
+		for (const TPair<FName, uint8*>& RowPair : ScrollTable->GetRowMap())
+		{
+			const FOnsetScrollDefinition* Scroll = reinterpret_cast<const FOnsetScrollDefinition*>(RowPair.Value);
+			if (Scroll && Scroll->GrantedAbility.DataTable == CachedTable && Scroll->GrantedAbility.RowName == SelectedRowName)
+			{
+				RowsToRemove.Add(RowPair.Key);
+			}
+		}
+		if (RowsToRemove.Num() > 0)
+		{
+			for (const FName& RowName : RowsToRemove)
+			{
+				ScrollTable->RemoveRow(RowName);
+			}
+			bRemovedScrolls = true;
+			UE_LOG(LogTemp, Log, TEXT("UOnsetAbilityEditorWidget::DeleteDefinition: removed %d linked scroll row(s) for ability '%s'"),
+				RowsToRemove.Num(), *SelectedRowName.ToString());
+		}
+	}
+
+	CachedTable->RemoveRow(SelectedRowName);
+	SelectedRowName = NAME_None;
+	if (PropertyView)
+	{
+		PropertyView->SetObject(nullptr);
+	}
+
+	// Keep on-disk state consistent with scroll creation: when a linked scroll was
+	// removed, persist both tables so no scroll references the deleted ability.
+	if (bRemovedScrolls && ScrollTable)
+	{
+		CachedTable->GetPackage()->MarkPackageDirty();
+		ScrollTable->GetPackage()->MarkPackageDirty();
+		UPackageTools::SavePackagesForObjects(TArray<UObject*>{ CachedTable, ScrollTable });
+	}
+
+	RefreshFromTable();
 }
 
 bool UOnsetAbilityEditorWidget::WriteBackRow()
