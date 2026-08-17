@@ -2,6 +2,7 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Inventory/UOnsetInventoryComponent.h"
+#include "Net/UnrealNetwork.h"
 
 AOnsetCorpse::AOnsetCorpse()
 {
@@ -20,4 +21,10 @@ AOnsetCorpse::AOnsetCorpse()
 	// Loot is replicated to all clients so any player can see what the server rolled.
 	InventoryComponent = CreateDefaultSubobject<UOnsetInventoryComponent>(TEXT("InventoryComponent"));
 	InventoryComponent->SetReplicateToOwnerOnly(false);
+}
+
+void AOnsetCorpse::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AOnsetCorpse, bLooted);
 }

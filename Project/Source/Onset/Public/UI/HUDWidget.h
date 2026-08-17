@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Data/OnsetItemTypes.h"
 #include "HUDWidget.generated.h"
 
 class AOnsetBaseCharacter;
@@ -13,6 +14,7 @@ class UAbilitySystemComponent;
 class UCanvasPanel;
 class UCombatToggleWidget;
 class UDamageNumberWidget;
+class ULootOverlayWidget;
 class UPlayerHealthBarWidget;
 class UTargetHUDWidget;
 class UTargetingComponent;
@@ -32,6 +34,9 @@ class ONSET_API UHUDWidget : public UUserWidget
 public:
 	/** Binds the HUD to a possessed pawn + its controller. Safe to call once. */
 	void BindToPlayer(AOnsetPlayerController* InController, AOnsetBaseCharacter* InPawn);
+
+	/** Shows the looted-items popup overlay (lazy-creates it on first use). */
+	void ShowLoot(const TArray<FOnsetInventoryEntry>& LootedItems);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -87,6 +92,14 @@ private:
 	/** Damage number widget class to instantiate into the pool (override with WBP_DamageNumber). */
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
 	TSubclassOf<UDamageNumberWidget> DamageNumberWidgetClass;
+
+	/** Loot overlay widget class to instantiate on first loot (override with a WBP). */
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TSubclassOf<ULootOverlayWidget> LootOverlayWidgetClass;
+
+	/** The live loot overlay instance (lazy-created). */
+	UPROPERTY()
+	TObjectPtr<ULootOverlayWidget> LootOverlay;
 
 	UPROPERTY()
 	TObjectPtr<AOnsetPlayerController> BoundController;

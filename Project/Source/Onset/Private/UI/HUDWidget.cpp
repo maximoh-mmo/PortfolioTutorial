@@ -13,6 +13,7 @@
 #include "UI/AbilityBarWidget.h"
 #include "UI/CombatToggleWidget.h"
 #include "UI/DamageNumberWidget.h"
+#include "UI/LootOverlayWidget.h"
 #include "UI/PlayerHealthBarWidget.h"
 #include "UI/TargetHUDWidget.h"
 
@@ -144,6 +145,30 @@ void UHUDWidget::HandlePlayerHealthChanged(const FOnAttributeChangeData& Data)
 
 	// Damage taken by the player (dealt by enemies).
 	SpawnDamageNumber(BoundPawn->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f), Damage, EnemyDamageColor);
+}
+
+void UHUDWidget::ShowLoot(const TArray<FOnsetInventoryEntry>& LootedItems)
+{
+	if (LootedItems.Num() == 0)
+	{
+		return;
+	}
+
+	if (!LootOverlay)
+	{
+		const TSubclassOf<ULootOverlayWidget> OverlayClass =
+			LootOverlayWidgetClass ? LootOverlayWidgetClass : TSubclassOf<ULootOverlayWidget>(ULootOverlayWidget::StaticClass());
+		LootOverlay = CreateWidget<ULootOverlayWidget>(GetOwningPlayer(), OverlayClass);
+		if (LootOverlay)
+		{
+			LootOverlay->AddToViewport(2);
+		}
+	}
+
+	if (LootOverlay)
+	{
+		LootOverlay->ShowLoot(LootedItems);
+	}
 }
 
 void UHUDWidget::BuildDamageNumberPool()

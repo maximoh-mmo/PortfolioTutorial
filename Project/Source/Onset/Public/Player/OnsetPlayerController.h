@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "OnsetPlayerDataTypes.h"
+#include "Data/OnsetItemTypes.h"
 #include "GameFramework/PlayerController.h"
 #include "OnsetPlayerController.generated.h"
 
@@ -292,6 +293,10 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
+
+	/** Shows the looted-items popup on the owning client after a successful loot. */
+	UFUNCTION(Client, Reliable)
+	void Client_ShowLootOverlay(const TArray<FOnsetInventoryEntry>& LootedItems);
 
 	/** Debug: grants a DT_Equipment item to the possessed pawn's inventory (console: OnsetGrantItem <RowName>). */
 	UFUNCTION(Exec)

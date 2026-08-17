@@ -156,6 +156,11 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 				const FOnsetEnemyStats* Stats = UOnsetEquipmentLibrary::GetEnemyStats(EnemyStatsRow);
 				const TArray<FOnsetInventoryEntry> Loot = Stats ? UOnsetLootLibrary::RollLoot(Stats->LootTable, Context) : TArray<FOnsetInventoryEntry>();
 				Corpse->InventoryComponent->SetItems(Loot);
+				if (Loot.Num() == 0)
+				{
+					// Nothing to loot: expire fast so the field isn't littered with empty corpses.
+					Corpse->SetLifeSpan(4.0f);
+				}
 				UE_LOG(LogTemp, Log, TEXT("OnDeath: %s dropped %d items"), *GetName(), Loot.Num());
 			}
 		}

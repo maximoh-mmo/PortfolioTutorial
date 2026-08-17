@@ -28,5 +28,9 @@ public:
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TObjectPtr<UOnsetInventoryComponent> InventoryComponent;
+
+	/** True once a player has looted this corpse. Server-authoritative loot guard. */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Loot")
+	bool bLooted = false;
 };
 	

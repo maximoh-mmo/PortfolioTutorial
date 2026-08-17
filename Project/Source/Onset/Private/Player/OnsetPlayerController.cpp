@@ -534,6 +534,14 @@ void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AAc
 	}
 }	
 
+void AOnsetPlayerController::Client_ShowLootOverlay_Implementation(const TArray<FOnsetInventoryEntry>& LootedItems)
+{
+	if (HUDWidget && LootedItems.Num() > 0)
+	{
+		HUDWidget->ShowLoot(LootedItems);
+	}
+}
+
 void AOnsetPlayerController::OnsetGrantItem(const FString& RowName)
 {
 	if (RowName.IsEmpty())
