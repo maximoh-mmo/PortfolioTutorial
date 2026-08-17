@@ -507,6 +507,7 @@ void UOnsetAbilityEditorWidget::AddDefinition()
 	NewDefinition.Montage = Data->Montage;
 	NewDefinition.DamageTime = Data->DamageTime;
 	NewDefinition.CooldownSeconds = Data->CooldownSeconds;
+	NewDefinition.ThreatMultiplier = Data->ThreatMultiplier;
 	NewDefinition.AbilityClass = UOnsetGameplayAbility::StaticClass();
 
 	// Derive the cooldown tag from the row name (Cooldown.<RowName>) and register it,

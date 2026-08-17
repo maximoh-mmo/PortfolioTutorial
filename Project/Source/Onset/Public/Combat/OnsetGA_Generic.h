@@ -54,6 +54,9 @@ protected:
 							   const FGameplayAbilityActorInfo* ActorInfo,
 							   const FGameplayAbilityActivationInfo ActivationInfo) const override;
 
+	/** Threat multiplier from the resolved DT_Abilities row (cached at activation). */
+	virtual float GetThreatMultiplier() const override { return CachedThreatMultiplier; }
+
 private:
 	/**
 	 * Pre-commit validation gate for the resolved row. Returns false (and the cast
@@ -192,6 +195,9 @@ private:
 
 	/** Friendly-recipient ASC (TT heal) captured at activation for the delayed montage tick. */
 	TWeakObjectPtr<UAbilitySystemComponent> CachedFriendlyASC;
+
+	/** Threat multiplier cached from the resolved DT_Abilities row at activation. */
+	float CachedThreatMultiplier = 1.0f;
 
 	void ApplyCachedDamageAfterDelay(const FGameplayAbilitySpecHandle Handle,
 									 const FGameplayAbilityActorInfo* ActorInfo,

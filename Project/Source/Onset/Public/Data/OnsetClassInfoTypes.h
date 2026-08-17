@@ -42,6 +42,10 @@ struct FOnsetCharacterClassInfo : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
     float BaseLuck = 10.0f;
 
+    /** Multiplier applied to all threat this class generates (Tank identity: more threat per damage). */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
+    float ThreatMultiplier = 1.0f;
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Class")
     TArray<int32> AvailablePresetIndices;
 };

@@ -77,6 +77,8 @@ void UOnsetGA_Generic::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		return;
 	}
 
+	CachedThreatMultiplier = FMath::Max(0.0f, Definition->ThreatMultiplier);
+
 	AActor* TargetActor = Self->TargetingComponent ? Self->TargetingComponent->GetTarget() : nullptr;
 
 	// Pre-commit validation: a failed cast (no target, out of range, blocked LoS)
@@ -580,6 +582,7 @@ void UOnsetGA_Generic::OnLeapFinished(const FGameplayAbilitySpecHandle Handle,
 		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
 		return;
 	}
+	CachedThreatMultiplier = FMath::Max(0.0f, Definition->ThreatMultiplier);
 
 	AActor* TargetActor = Self->TargetingComponent ? Self->TargetingComponent->GetTarget() : nullptr;
 	ResolveAbility(*Definition, Self, TargetActor, Handle, ActorInfo, ActivationInfo);
@@ -769,6 +772,9 @@ void UOnsetGA_Generic::ApplyEffectSpecToTarget(TSubclassOf<UGameplayEffect> Effe
 	{
 		Context.AddInstigator(Avatar, Avatar->GetInstigatorController());
 	}
+	// Carry the ability on the context so UOnsetAttributeSet can resolve its
+	// threat multiplier when this effect's damage generates threat.
+	Context.SetAbility(this);
 
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(EffectClass, Level, Context);
 	if (!SpecHandle.IsValid())
@@ -820,6 +826,9 @@ void UOnsetGA_Generic::ApplyPeriodicEffectSpecToTarget(TSubclassOf<UGameplayEffe
 	{
 		Context.AddInstigator(Avatar, Avatar->GetInstigatorController());
 	}
+	// Carry the ability on the context so UOnsetAttributeSet can resolve its
+	// threat multiplier for each DoT tick's generated threat.
+	Context.SetAbility(this);
 
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(EffectClass, Level, Context);
 	if (!SpecHandle.IsValid())

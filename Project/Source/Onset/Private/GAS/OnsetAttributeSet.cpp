@@ -4,6 +4,9 @@
 #include "GameplayEffectExtension.h"
 
 #include "GAS/OnsetGameplayTags.h"
+#include "Combat/OnsetEquipmentLibrary.h"
+#include "Combat/OnsetGameplayAbility.h"
+#include "Data/OnsetClassInfoTypes.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
 #include "Perception/AISense_Hearing.h"
@@ -77,8 +80,23 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 				AOnsetEnemy* TargetEnemy = Cast<AOnsetEnemy>(Data.Target.GetOwnerActor());
 				AOnsetBaseCharacter* Instigator = Cast<AOnsetBaseCharacter>(Data.EffectSpec.GetContext().GetInstigator());
 				if (TargetEnemy && Instigator)                                                                       
-					ThreatSub->AddThreat(Instigator,TargetEnemy,                                 
-						FMath::Abs(Data.EvaluatedData.Magnitude));                                                      
+				{                                                                                                    
+					// Threat = damage x ability multiplier x class multiplier. The ability
+					// multiplier travels on the effect context (set by UOnsetGA_Generic);
+					// the class multiplier comes from the instigator's DT_ClassInfo row
+					// (Tank generates extra threat without extra DPS).
+					float ThreatMultiplier = 1.0f;
+					if (const UOnsetGameplayAbility* GA = Cast<UOnsetGameplayAbility>(Data.EffectSpec.GetContext().GetAbility()))
+					{
+						ThreatMultiplier *= GA->GetThreatMultiplier();
+					}
+					if (const FOnsetCharacterClassInfo* ClassInfo = UOnsetEquipmentLibrary::GetClassInfo(Instigator->GetCharacterClass()))
+					{
+						ThreatMultiplier *= ClassInfo->ThreatMultiplier;
+					}
+					ThreatSub->AddThreat(Instigator, TargetEnemy,
+						FMath::Abs(Data.EvaluatedData.Magnitude) * FMath::Max(0.0f, ThreatMultiplier));
+				}                                                                                                   
 			}           
 		}        
 	}

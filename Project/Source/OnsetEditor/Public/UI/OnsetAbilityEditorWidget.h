@@ -78,6 +78,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
 	bool bCreateScroll = false;
 
+	/** Threat multiplier on this ability's damage (1.0 = normal; >1 = high-threat/taunt). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Threat")
+	float ThreatMultiplier = 1.0f;
+
 	// --- Effects ---
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")

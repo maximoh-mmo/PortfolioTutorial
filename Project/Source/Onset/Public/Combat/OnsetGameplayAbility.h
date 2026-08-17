@@ -31,6 +31,13 @@ public:
 	 * (via GetCooldownTags), or an invalid tag if the ability has none.
 	 */
 	FGameplayTag GetPrimaryCooldownTag() const;
+
+	/**
+	 * Multiplier on the threat this ability's damage generates (1.0 = normal).
+	 * Consumed by UOnsetAttributeSet when adding threat; derived abilities carry
+	 * their DT_Abilities row value.
+	 */
+	virtual float GetThreatMultiplier() const { return 1.0f; }
 	
 	/**
 	 * Applies the cooldown GE scaled by the source character's CooldownMultiplier
