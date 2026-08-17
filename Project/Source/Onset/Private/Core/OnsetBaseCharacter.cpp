@@ -242,6 +242,13 @@ void AOnsetBaseCharacter::RecalculateDerivedStats()
 			BlockChance = FMath::Max(BlockChance, Block);
 			DefenseBonus += ShieldDef;
 		}
+		else if (Pair.Key == EOnsetEquipmentSlot::Head || Pair.Key == EOnsetEquipmentSlot::Chest ||
+			Pair.Key == EOnsetEquipmentSlot::Hands || Pair.Key == EOnsetEquipmentSlot::Legs ||
+			Pair.Key == EOnsetEquipmentSlot::Feet)
+		{
+			// Armor pieces contribute flat DEF; accessories only carry stat bonuses.
+			DefenseBonus += Def->DefenseBonus;
+		}
 	}
 
 	CombatAttributes->InitStrength(Base.Strength + StrengthBonus);

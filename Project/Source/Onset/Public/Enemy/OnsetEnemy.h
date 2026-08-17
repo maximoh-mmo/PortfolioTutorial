@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "GameplayTagContainer.h"
 #include "OnsetEnemy.generated.h"
 
 class UGroupComponent;
@@ -42,6 +43,10 @@ public:
 	UPROPERTY()
 	TObjectPtr<AOnsetSpawner> OwningSpawner;
 
+	/** Area tag from the owning spawner; gates zone-scoped loot entries. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loot")
+	FGameplayTag ZoneTag;
+
 	virtual void OnDeath(AActor* KillingActor = nullptr) override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -52,4 +57,12 @@ public:
 protected:
 
 	void DeferredDeathCleanup();
+
+	/** Difficulty tier set by ApplyEnemyStats; doubles as the loot level. */
+	UPROPERTY()
+	int32 DifficultyTier = 0;
+
+	/** DT_EnemyStats row applied at spawn (for death-time loot lookup). */
+	UPROPERTY()
+	FName EnemyStatsRow;
 };

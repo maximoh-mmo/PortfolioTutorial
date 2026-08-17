@@ -2,9 +2,12 @@
 
 #include "TimerManager.h"
 #include "Combat/OnsetEquipmentLibrary.h"
+#include "Combat/OnsetLootLibrary.h"
+#include "Corpse/OnsetCorpse.h"
 #include "Data/OnsetEquipmentTypes.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "GAS/OnsetCombatAttributeSet.h"
+#include "Inventory/UOnsetInventoryComponent.h"
 #include "GAS/OnsetGameplayTags.h"
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimInstance.h"
@@ -73,6 +76,10 @@ void AOnsetEnemy::ApplyEnemyStats(FName RowName, int32 Tier)
 		return;
 	}
 
+	// Remember for death-time loot rolling.
+	EnemyStatsRow = RowName;
+	DifficultyTier = Tier;
+
 	// Clear any affinity tag from a previous life so a neutral row is truly neutral.
 	const FGameplayTag AffinityTags[] = { TAG_Element_Fire, TAG_Element_Ice, TAG_Element_Lightning, TAG_Element_Poison };
 	for (const FGameplayTag& Tag : AffinityTags)
@@ -138,7 +145,19 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 	{
 		if (VisualProfile && !VisualProfile->CorpseMesh.IsNull())
 		{
-			CorpseSub->SpawnCorpse(GetActorTransform(), VisualProfile->CorpseMesh.LoadSynchronous());
+			AOnsetCorpse* Corpse = CorpseSub->SpawnCorpse(GetActorTransform(), VisualProfile->CorpseMesh.LoadSynchronous());
+			if (Corpse)
+			{
+				// Roll the enemy's loot server-side and stamp it before the corpse's
+				// first replication so every client sees the same contents.
+				FOnsetLootContext Context;
+				Context.Level = DifficultyTier;
+				Context.ZoneTag = ZoneTag;
+				const FOnsetEnemyStats* Stats = UOnsetEquipmentLibrary::GetEnemyStats(EnemyStatsRow);
+				const TArray<FOnsetInventoryEntry> Loot = Stats ? UOnsetLootLibrary::RollLoot(Stats->LootTable, Context) : TArray<FOnsetInventoryEntry>();
+				Corpse->InventoryComponent->SetItems(Loot);
+				UE_LOG(LogTemp, Log, TEXT("OnDeath: %s dropped %d items"), *GetName(), Loot.Num());
+			}
 		}
 	}
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetEnemy::DeferredDeathCleanup);

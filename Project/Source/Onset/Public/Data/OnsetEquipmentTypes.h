@@ -5,14 +5,24 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "Data/OnsetAbilityTypes.h"
+#include "Data/OnsetItemTypes.h"
 #include "OnsetEquipmentTypes.generated.h"
 
 /** Which equipment slot an item occupies. */
 UENUM(BlueprintType)
 enum class EOnsetEquipmentSlot : uint8
 {
-	Weapon	UMETA(DisplayName = "Weapon"),
-	Shield	UMETA(DisplayName = "Shield")
+	Weapon		UMETA(DisplayName = "Weapon"),
+	Shield		UMETA(DisplayName = "Shield"),
+	Head		UMETA(DisplayName = "Head"),
+	Chest		UMETA(DisplayName = "Chest"),
+	Hands		UMETA(DisplayName = "Hands"),
+	Legs		UMETA(DisplayName = "Legs"),
+	Feet		UMETA(DisplayName = "Feet"),
+	Amulet		UMETA(DisplayName = "Amulet"),
+	Ring1		UMETA(DisplayName = "Ring 1"),
+	Ring2		UMETA(DisplayName = "Ring 2"),
+	Trinket		UMETA(DisplayName = "Trinket")
 };
 
 /** One equipped slot entry. Replicated as an array (TMap replication is unsupported). */
@@ -54,15 +64,14 @@ enum class EOnsetWeaponArchetype : uint8
  *   (Raw = WeaponDamage x (1 + STR/100)); DamageElement is the basic attack's element.
  * - Shield slot: BlockChance feeds the pre-mitigation block stage; DefenseBonus is a
  *   flat DEF bonus folded into RecalculateDerivedStats.
- * - Stat bonuses apply to either slot and are summed into the character's stats.
+ * - Armor slots (Head/Chest/Hands/Legs/Feet): DefenseBonus contributes flat DEF.
+ * - Accessory slots (Amulet/Ring1/Ring2/Trinket): stat bonuses.
+ * - Stat bonuses apply to any slot and are summed into the character's stats.
  */
 USTRUCT(BlueprintType)
-struct FOnsetEquipmentDefinition : public FTableRowBase
+struct FOnsetEquipmentDefinition : public FOnsetItemDefinition
 {
 	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
-	FText DisplayName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
 	EOnsetEquipmentSlot Slot = EOnsetEquipmentSlot::Weapon;
@@ -82,7 +91,7 @@ struct FOnsetEquipmentDefinition : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
 	float BlockChance = 0.0f;
 
-	/** Flat DEF bonus granted while equipped (Shield slot only). */
+	/** Flat DEF bonus granted while equipped (Shield + armor slots). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
 	float DefenseBonus = 0.0f;
 
@@ -182,4 +191,8 @@ struct FOnsetEnemyStats : public FTableRowBase
 	/** Target affinity for the type chart; Physical (= no Element.* tag) is neutral. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	EOnsetDamageElement ElementAffinity = EOnsetDamageElement::Physical;
+
+	/** DT_Loot row rolled on death; empty = no drops. Shared across enemy types. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy", meta = (RowType = "/Script/Onset.OnsetLootTableRow"))
+	FDataTableRowHandle LootTable;
 };

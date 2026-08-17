@@ -120,6 +120,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 		Spawned->SetActorTransform(Slot.SpawnTransform);
 		Spawned->ApplyProfile(Config.EnemyVisualProfile);
 		Spawned->ApplyEnemyStats(Config.EnemyStats.RowName, Config.Tier);
+		Spawned->ZoneTag = Config.ZoneTag;
 		Spawned->OwningSpawner = this;
 		AOnsetAIController* AIController = PoolSubsystem->GetPooledController();
 		if (!AIController)

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Templates/SubclassOf.h"
 #include "Engine/DataTable.h"
+#include "GameplayTagContainer.h"
 #include "SpawnConfig.generated.h"
 
 class UAIProfile;
@@ -52,4 +53,8 @@ struct FSpawnConfig
 	/** Difficulty tier; stats scale by (1 + d)^Tier (d = 15%). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
 	int32 Tier = 0;
+
+	/** Area tag stamped on spawned enemies; gates zone-scoped loot entries. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
+	FGameplayTag ZoneTag;
 };

@@ -38,6 +38,7 @@
 #include "Misc/ConfigCacheIni.h"
 #include "Engine/DataTable.h"
 #include "Data/OnsetClassInfoTypes.h"
+#include "Data/OnsetItemLibrary.h"
 #include "Inventory/UOnsetInventoryComponent.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
@@ -554,8 +555,21 @@ void AOnsetPlayerController::Server_GrantItem_Implementation(const FString& RowN
 	{
 		return;
 	}
-	PlayerCharacter->InventoryComponent->AddItem(FName(*RowName));
-	UE_LOG(LogTemp, Log, TEXT("OnsetGrantItem: granted '%s'"), *RowName);
+
+	const FName ItemRow = FName(*RowName);
+	for (uint8 Index = 0; Index <= static_cast<uint8>(EOnsetItemCategory::Scroll); ++Index)
+	{
+		const EOnsetItemCategory Category = static_cast<EOnsetItemCategory>(Index);
+		if (UOnsetItemLibrary::GetItemDefinition(Category, ItemRow))
+		{
+			PlayerCharacter->InventoryComponent->AddItem(Category, ItemRow, 1);
+			UE_LOG(LogTemp, Log, TEXT("OnsetGrantItem: granted '%s' (%s)"),
+				*RowName, *StaticEnum<EOnsetItemCategory>()->GetNameStringByValue(static_cast<int64>(Category)));
+			return;
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("OnsetGrantItem: no item row named '%s' in any category table"), *RowName);
 }
 
 void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)

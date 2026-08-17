@@ -3,6 +3,7 @@
 #include "Inventory/UOnsetInventoryComponent.h"
 
 #include "Combat/OnsetEquipmentLibrary.h"
+#include "Data/OnsetItemLibrary.h"
 #include "Dom/JsonObject.h"
 #include "Net/UnrealNetwork.h"
 #include "Serialization/JsonReader.h"
@@ -18,58 +19,76 @@ UOnsetInventoryComponent::UOnsetInventoryComponent()
 
 // --- Bag ---
 
-void UOnsetInventoryComponent::AddItem(FName RowName)
-{
-	if (!GetOwner() || !GetOwner()->HasAuthority() || RowName.IsNone())
-	{
-		return;
-	}
-	Items.Add(RowName);
-	OnInventoryChanged.Broadcast();
-}
-
-void UOnsetInventoryComponent::AddItems(const TArray<FName>& RowNames)
+void UOnsetInventoryComponent::AddItem(EOnsetItemCategory Category, FName RowName, int32 Count)
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
 		return;
 	}
-	for (const FName& RowName : RowNames)
-	{
-		if (!RowName.IsNone())
-		{
-			Items.Add(RowName);
-		}
-	}
-	if (RowNames.Num() > 0)
+	UOnsetItemLibrary::AddStacked(Items, Category, RowName, Count);
+	if (Count > 0)
 	{
 		OnInventoryChanged.Broadcast();
 	}
 }
 
-bool UOnsetInventoryComponent::RemoveItem(FName RowName)
-{
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return false;
-	}
-	const int32 Index = Items.Find(RowName);
-	if (Index == INDEX_NONE)
-	{
-		return false;
-	}
-	Items.RemoveAt(Index);
-	OnInventoryChanged.Broadcast();
-	return true;
-}
-
-void UOnsetInventoryComponent::RemoveAllOfItem(FName RowName)
+void UOnsetInventoryComponent::AddItems(const TArray<FOnsetInventoryEntry>& Entries)
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
 		return;
 	}
-	const int32 Removed = Items.Remove(RowName);
+	for (const FOnsetInventoryEntry& Entry : Entries)
+	{
+		UOnsetItemLibrary::AddStacked(Items, Entry.Category, Entry.RowName, Entry.Count);
+	}
+	if (Entries.Num() > 0)
+	{
+		OnInventoryChanged.Broadcast();
+	}
+}
+
+bool UOnsetInventoryComponent::RemoveItem(EOnsetItemCategory Category, FName RowName, int32 Count)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority() || Count <= 0)
+	{
+		return false;
+	}
+
+	for (int32 Index = 0; Index < Items.Num(); ++Index)
+	{
+		FOnsetInventoryEntry& Entry = Items[Index];
+		if (Entry.Category != Category || Entry.RowName != RowName)
+		{
+			continue;
+		}
+		const int32 Removed = FMath::Min(Entry.Count, Count);
+		Entry.Count -= Removed;
+		Count -= Removed;
+		if (Entry.Count <= 0)
+		{
+			Items.RemoveAt(Index);
+		}
+		if (Count <= 0)
+		{
+			OnInventoryChanged.Broadcast();
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void UOnsetInventoryComponent::RemoveAllOfItem(EOnsetItemCategory Category, FName RowName)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+	const int32 Removed = Items.RemoveAll([Category, RowName](const FOnsetInventoryEntry& Entry)
+	{
+		return Entry.Category == Category && Entry.RowName == RowName;
+	});
 	if (Removed > 0)
 	{
 		OnInventoryChanged.Broadcast();
@@ -90,24 +109,45 @@ void UOnsetInventoryComponent::ClearItems()
 	OnInventoryChanged.Broadcast();
 }
 
-void UOnsetInventoryComponent::SetItems(const TArray<FName>& RowNames)
+void UOnsetInventoryComponent::SetItems(const TArray<FOnsetInventoryEntry>& Entries)
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
 		return;
 	}
-	Items = RowNames;
+	Items = Entries;
 	OnInventoryChanged.Broadcast();
 }
 
-bool UOnsetInventoryComponent::HasItem(FName RowName) const
+bool UOnsetInventoryComponent::HasItem(EOnsetItemCategory Category, FName RowName) const
 {
-	return Items.Contains(RowName);
+	return Items.ContainsByPredicate([Category, RowName](const FOnsetInventoryEntry& Entry)
+	{
+		return Entry.Category == Category && Entry.RowName == RowName;
+	});
 }
 
-int32 UOnsetInventoryComponent::GetItemCount(FName RowName) const
+int32 UOnsetInventoryComponent::GetItemCount(EOnsetItemCategory Category, FName RowName) const
 {
-	return Items.FilterByPredicate([RowName](const FName& Entry) { return Entry == RowName; }).Num();
+	int32 Total = 0;
+	for (const FOnsetInventoryEntry& Entry : Items)
+	{
+		if (Entry.Category == Category && Entry.RowName == RowName)
+		{
+			Total += Entry.Count;
+		}
+	}
+	return Total;
+}
+
+int32 UOnsetInventoryComponent::GetTotalItemCount() const
+{
+	int32 Total = 0;
+	for (const FOnsetInventoryEntry& Entry : Items)
+	{
+		Total += Entry.Count;
+	}
+	return Total;
 }
 
 // --- Equipped ---
@@ -136,11 +176,21 @@ void UOnsetInventoryComponent::UnequipSlot(EOnsetEquipmentSlot Slot)
 	{
 		return;
 	}
-	const int32 Removed = EquippedEntries.RemoveAll([Slot](const FOnsetEquippedEntry& Entry) { return Entry.Slot == Slot; });
-	if (Removed > 0)
+
+	const FName RowName = GetEquippedRow(Slot);
+	if (RowName.IsNone())
 	{
-		OnInventoryChanged.Broadcast();
+		return;
 	}
+	const int32 Removed = EquippedEntries.RemoveAll([Slot](const FOnsetEquippedEntry& Entry) { return Entry.Slot == Slot; });
+	if (Removed <= 0)
+	{
+		return;
+	}
+
+	// Unequipping returns the item to the bag as a stackable Equipment entry.
+	UOnsetItemLibrary::AddStacked(Items, EOnsetItemCategory::Equipment, RowName, 1);
+	OnInventoryChanged.Broadcast();
 }
 
 bool UOnsetInventoryComponent::EquipFromInventory(FName RowName)
@@ -155,7 +205,7 @@ bool UOnsetInventoryComponent::EquipFromInventory(FName RowName)
 	{
 		return false;
 	}
-	if (!RemoveItem(RowName))
+	if (!RemoveItem(EOnsetItemCategory::Equipment, RowName, 1))
 	{
 		return false;
 	}
@@ -252,9 +302,17 @@ void UOnsetInventoryComponent::DeserializeEquipmentJSON(const FString& JSON)
 FString UOnsetInventoryComponent::SerializeInventoryJSON() const
 {
 	TArray<TSharedPtr<FJsonValue>> Values;
-	for (const FName& RowName : Items)
+	UEnum* CategoryEnum = StaticEnum<EOnsetItemCategory>();
+	for (const FOnsetInventoryEntry& Entry : Items)
 	{
-		Values.Add(MakeShareable(new FJsonValueString(RowName.ToString())));
+		TSharedPtr<FJsonObject> Obj = MakeShareable(new FJsonObject);
+		const FString CategoryName = CategoryEnum
+			? CategoryEnum->GetNameStringByValue(static_cast<int64>(Entry.Category))
+			: TEXT("Equipment");
+		Obj->SetStringField(TEXT("c"), CategoryName);
+		Obj->SetStringField(TEXT("r"), Entry.RowName.ToString());
+		Obj->SetNumberField(TEXT("n"), Entry.Count);
+		Values.Add(MakeShareable(new FJsonValueObject(Obj)));
 	}
 
 	FString Out;
@@ -278,16 +336,35 @@ void UOnsetInventoryComponent::DeserializeInventoryJSON(const FString& JSON)
 		return;
 	}
 
+	UEnum* CategoryEnum = StaticEnum<EOnsetItemCategory>();
 	for (const TSharedPtr<FJsonValue>& Value : Values)
 	{
 		if (!Value.IsValid())
 		{
 			continue;
 		}
-		const FString RowName = Value->AsString();
-		if (!RowName.IsEmpty())
+
+		const TSharedPtr<FJsonObject> Obj = Value->AsObject();
+		if (Obj.IsValid())
 		{
-			Items.Add(FName(*RowName));
+			EOnsetItemCategory Category = EOnsetItemCategory::Equipment;
+			if (CategoryEnum)
+			{
+				const int64 Found = CategoryEnum->GetValueByNameString(Obj->GetStringField(TEXT("c")));
+				Category = Found != INDEX_NONE ? static_cast<EOnsetItemCategory>(Found) : EOnsetItemCategory::Equipment;
+			}
+			const FName RowName = FName(*Obj->GetStringField(TEXT("r")));
+			const int32 Count = FMath::Max(1, static_cast<int32>(Obj->GetNumberField(TEXT("n"))));
+			UOnsetItemLibrary::AddStacked(Items, Category, RowName, Count);
+		}
+		else
+		{
+			// Legacy flat row-ID list: treat entries as Equipment.
+			const FString RowName = Value->AsString();
+			if (!RowName.IsEmpty())
+			{
+				UOnsetItemLibrary::AddStacked(Items, EOnsetItemCategory::Equipment, FName(*RowName), 1);
+			}
 		}
 	}
 }
