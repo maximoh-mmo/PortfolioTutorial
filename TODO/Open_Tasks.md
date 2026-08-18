@@ -48,8 +48,14 @@ Biggest code task, fully designed, unstarted. Data-driven `DT_Abilities` replace
 - [x] **Phase 1 — Cooldown plumbing**: `UOnsetCombatAttributeSet` (`CooldownMultiplier`, replicated), `GE_GenericSlow`, `ApplyCooldown` SetDuration override. Verify slow extends enemy cooldowns.
 - [x] **Phase 2 — Damage pipeline**: `UOnsetDamageExecution` + `GE_GenericDamage` + invulnerability gate (`TAG_State_Invulnerable` → 0). Verify damage numbers intact; invuln targets take 0.
 - [x] **Phase 3 — Data-driven runtime**: `FOnsetAbilityDefinition`, `UOnsetGA_Generic`, `GE_GenericSnare`/`GE_GenericCooldown`, `UOnsetAbilityLibrary`, tag-based row resolution, data-driven `GrantDefaultAbilities`, row-based ability bar slots. Verify parity with today.
-- [x] **Phase 4 — Editor tool (code)**: `OnsetEditor` module + `UOnsetAbilityEditorWidget` (list + `UDetailsView` form + Add/Delete/Save), Tools-menu entry hosting it in a nomad tab. **Remaining (in-editor)**: create `DT_Abilities` asset + populate demo loadout (AoE→1, Cone→2). Verify persists + shows in PIE.
+- [x] **Phase 4 — Editor tool (code)**: `OnsetEditor` module + `UOnsetAbilityEditorWidget` (list + `UDetailsView` form + Add/Delete/Save), Tools-menu entry hosting it in a nomad tab. **Extra (done)**: `bCreateScroll` — creating an ability also writes a `DT_Scrolls` row (with `GrantedAbility` pointing at the new row); `DeleteDefinition` removes now-dangling scroll rows. **Extra (done)**: per-ability `ThreatMultiplier` in the creation dialog (feeds `FOnsetAbilityDefinition::ThreatMultiplier`, see [Threat System](../Docs/AI/Threat_System.md)). **Remaining (in-editor)**: create `DT_Abilities` asset + populate demo loadout (AoE→1, Cone→2). Verify persists + shows in PIE.
 - [ ] **Phase 5 — Extras (optional)**: player `AutoAttackInterval` driven by `CooldownMultiplier`; more effect types; assignment/unlock menu; armor/resist ExecCalc.
+
+---
+
+## Priority 3b — Items, loot & threat multipliers ✅ (code done)
+
+Itemisation + loot pass (per-category item tables, stacked bag, loot tables, click-to-loot, scroll authoring, threat multipliers) is implemented and committed (`3bcf77d`, `6bae296`, `251a70e`). **Remaining (in-editor/content)**: populate `DT_Equipment`/`DT_QuestItems`/`DT_Junk`/`DT_Scrolls`/`DT_Loot` rows (partially done), set Tank `ThreatMultiplier = 1.5` in `DT_ClassInfo`, and author per-ability threat multipliers. Docs: [Inventory & Loot System](../Docs/Inventory/Inventory_System.md).
 
 ---
 

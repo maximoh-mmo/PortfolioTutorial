@@ -10,10 +10,8 @@ This is not a roadmap — it is a design journal. Ideas live here without scope-
 ## Corpse System
 
 ### Lootable Container Extension
-- **Why deferred:** The corpse actor system (A4.5b) provides the container architecture; loot gameplay (walk-over-detect, random drops, pickup feedback) is a self-contained extension on top of it.
-- **How it would work:** `AOnsetCorpse` gains an overlap collision box. When a player overlaps, a UI prompt appears. On interact input, the corpse spawns a drop (resource, ammo, etc.) and despawns immediately.
-- **Architecture impact:** Adds `UCorpseLootComponent` or a loot table DataAsset. Touch interaction requires the virtual interact button.
-- **Relevant to:** Extension to the tutorial series; personal reference for looter-game prototypes.
+- **Status:** ✅ **IMPLEMENTED** (items pass) — corpses host a replicated `UOnsetInventoryComponent`, NPC death rolls `DT_Loot` into it, and players loot by clicking (see [Inventory & Loot System](Inventory/Inventory_System.md) and [Corpse System](AI/Corpse_System.md)). This entry's original "walk-over-detect + UI prompt" design was superseded by the chosen **click-to-loot** interaction (range-based auto-path).
+- **Still open:** loot auto-pickup toggle (walk-over vs click), PvP-influenced corpse loot (below), and a full bag/equipment UI.
 
 ---
 

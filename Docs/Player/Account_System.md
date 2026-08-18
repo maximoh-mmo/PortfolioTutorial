@@ -106,6 +106,8 @@ Combat ephemera (current health, active cooldowns, temporary effects) are **neve
 | `FOnsetAccountData` | PlatformID, Platform, Slots | Full account sent to client |
 | `FOnsetFullCharacterData` | SlotIndex, CharacterName, Level, Experience, CurrentZone, SavedMaxHealth, SavedPosition, SavedRotationYaw, InventoryJSON, EquipmentJSON, QuestsJSON, CharacterClass, AppearanceJSON | Full character state for save/load |
 
+**Inventory/equipment JSON** is produced by `UOnsetInventoryComponent::SerializeInventoryJSON()` / `SerializeEquipmentJSON()` on the pawn. The bag serializes as a stacked-entries array `[{c, r, n}]` where `c` = `EOnsetItemCategory`, `r` = row name, `n` = count (equipment as `[{slot, row}]`). Both restore via `AOnsetBaseCharacter::DeserializeInventoryJSON` on save load. See [Inventory & Loot System](../Inventory/Inventory_System.md).
+
 ---
 
 ## **Data Flow**

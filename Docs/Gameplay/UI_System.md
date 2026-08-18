@@ -24,6 +24,7 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 
 - **Implemented:** CommonUI login/character-select screen stack, C++ character slots, world-transition loading screen (see **Current Implementation** below).
 - **Implemented (A6):** in-game HUD — player health bar, target frame with target-type skins, ability bar with cooldowns, pooled damage numbers, combat (PvP) toggle, ground-reticle decal targeting indicator. Content lives under `Content/UI/` with the new content pipeline (`Docs/UI_ASSET_CHECKLIST.md`).
+- **Implemented (items pass):** loot overlay popup listing just-looted items (`ULootOverlayWidget`), driven by `Client_ShowLootOverlay`. See [Inventory & Loot System](../Inventory/Inventory_System.md).
 
 ---
 
@@ -62,11 +63,12 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
   - Networking status  
 - Autoplay state feedback — carried by the `UCombatToggleWidget` toggle visual (dedicated debug overlay scrapped)
 - Provide login/character-select menus (CommonUI screen stack) and world-transition loading screens  
+- Show the loot overlay after clicking a corpse (list of just-looted items, rarity-tinted)  
 
 ---
 
 ## **Non‑Responsibilities**
-- Inventory  
+- Full inventory management UI (bag/equipment screens) — loot is handled by the [Inventory & Loot System](../Inventory/Inventory_System.md) + this overlay; a full bag UI is future work
 - Skill trees  
 - Quest UI  
 - Dialogue  
@@ -112,6 +114,12 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 
 ### **`UOnsetLoadingScreen`** (`WBP_LoadingScreen`)
 - Full-screen overlay shown by `UOnsetUISubsystem::ShowLoadingScreen()` before any world travel; hides on client pawn possession (`AOnsetPlayerController::OnRep_Pawn`, 10s timeout fallback)
+
+### **`ULootOverlayWidget`**
+- Popup overlay listing the items picked up from a looted corpse (items auto-inventory on loot, so the overlay is purely informational)
+- Fully built in C++ (bottom-center panel) so it works with no authored asset; `Blueprintable` with `BindWidgetOptional ItemList` for a designer WBP override
+- Rarity-tinted rows; `ShowLoot(TArray<FOnsetInventoryEntry>)` populates + shows; auto-hides after `Lifetime` (4s)
+- Triggered by `AOnsetPlayerController::Client_ShowLootOverlay` (Client RPC); created lazily by `UHUDWidget::ShowLoot`
 
 ---
 
@@ -182,6 +190,9 @@ Target Frame (UTargetHUDWidget) + Ground Reticle Decal
 ### **[Account System](../Player/Account_System.md)**
 - Drives character select/creation screens; `OnAccountDataChanged` refreshes slots in place  
 
+### **[Inventory & Loot System](../Inventory/Inventory_System.md)**
+- Loot overlay displays the items transferred by click-to-loot (`Client_ShowLootOverlay` RPC → `ShowLoot`)
+
 ---
 
 ## **Replication Rules**
@@ -214,6 +225,7 @@ Target Frame (UTargetHUDWidget) + Ground Reticle Decal
 - [x] Main menu → character select → creation flow works (CommonUI screen stack)
 - [x] Character slots refresh in place after create/delete
 - [x] Loading screen shows during create/select/reconnect travel and hides on possession
+- [ ] Loot overlay pops on corpse click, lists looted items with rarity tinting, auto-hides after 4s
 
 ---
 

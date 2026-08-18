@@ -12,6 +12,9 @@ The project is composed of several modular systems that interact through clean, 
 - **[Spawner System](../AI/Spawner_System.md)**  
 - **[Pooling System](../AI/Pooling_System.md)**  
 - **[Group System](../AI/Group_System.md)**  
+- **[Corpse System](../AI/Corpse_System.md)**  
+- **[Threat System](../AI/Threat_System.md)**  
+- **[Inventory & Loot System](../Inventory/Inventory_System.md)**  
 - **[PvP System](../Gameplay/PVP_System.md)**  
 - **[UI System](../Gameplay/UI_System.md)**  
 - **[Multiplayer System](../Multiplayer/Multiplayer_System.md)**  
@@ -87,6 +90,12 @@ flowchart TD
         DeathFork --> Spawner[Spawner System]
     end
 
+    subgraph Items
+        Inv[Inventory & Loot System<br/>bag + equipment + loot tables]
+        Corpse --> Inv
+        Inv --> PC
+    end
+
     Steam[Steam Integration] --> Multiplayer
     Multiplayer --> PC
     Multiplayer --> NPC
@@ -152,6 +161,7 @@ This document is the technical map for the entire project.
 - Input handling (mouse + touch + gamepad)  
 - Tap/click‑to‑move + screen‑relative WASD + gamepad L-Stick movement  
 - Tap/click‑to‑target via `UInteractionComponent`  
+- Tap/click‑to‑loot corpses (range auto-path) via `UInteractionComponent`  
 - Gamepad R-Stick software cursor  
 - Ability activation (keyboard + touch buttons + gamepad)  
 - PvP toggle UI → PlayerState  
@@ -184,11 +194,12 @@ This document is the technical map for the entire project.
 - World transitions are covered by a full-screen loading overlay (`UOnsetLoadingScreen`) shown before `ClientTravel` and hidden once the pawn replicates in (`OnRep_Pawn`)  
 
 ### **4. [Targeting System](../Gameplay/Targeting_System.md) (PvP‑aware)**
-- Data holder for `CurrentTarget` with `IsActorValidTarget()` validation  
+- Replicated `CurrentTarget` data holder with `IsActorTargetValid()` / `IsActorTargetPVPValid()` validation (see [Targeting System](../Gameplay/Targeting_System.md))
 - Set by PlayerController context resolution (IA_Primary → raycast → branch)  
 - AI targeting also feeds into TargetingComponent  
 - PvP filtering  
-- Provides target data to abilities  
+- Provides target data to abilities
+- Broadcasts `OnTargetChanged` to the HUD target widget  
 
 ### **5. [Ability Targeting System](../Gameplay/Ability_Targeting_System.md)**
 - Single‑target, AoE, and directional targeting modes  
@@ -227,7 +238,7 @@ This document is the technical map for the entire project.
 - CommonUI screen stack (`UOnsetUISubsystem`, RootLayout + 3 layers) for login/character-select menus
 - C++-driven character slots (`UCharacterSlot`)
 - World-transition loading screen (`UOnsetLoadingScreen`)
-- HUD, ability bar, health bars, target highlight, PvP toggle *(planned, A6)*
+- HUD, ability bar, health bars, target highlight, PvP toggle, loot overlay *(loot overlay implemented)*
 
 ### **12. [Multiplayer System](../Multiplayer/Multiplayer_System.md)**
 - Server‑authoritative simulation  
@@ -244,7 +255,19 @@ This document is the technical map for the entire project.
 - Lightweight corpse actor spawned on NPC death  
 - Timed despawn with hard cap  
 - NPC returns to pool immediately (two-tier pooling architecture)  
-- Loot-container extension point (future)
+- Loot container: corpses host a replicated `UOnsetInventoryComponent`; `OnDeath` rolls loot from `DT_Loot` into it; empty-loot corpses auto-expire after 4s
+- Click-to-loot via `UInteractionComponent` (range-based auto-path, replicated `bLooted` double-loot guard, loot-overlay popup)
+
+### **15. [Threat System](../AI/Threat_System.md)**
+- Server-side threat table (`UOnsetThreatSubsystem`) driving NPC target selection
+- Threat generated from damage, scaled by per-class and per-ability threat multipliers (Tank identity, taunt-style abilities)
+- Angular spread around the target to prevent bunching
+
+### **16. [Inventory & Loot System](../Inventory/Inventory_System.md)**
+- Per-category item tables (`DT_Equipment` / `DT_QuestItems` / `DT_Junk` / `DT_Scrolls`) under a common `FOnsetItemDefinition` base
+- Shared `UOnsetInventoryComponent` (stacked bag + equipped loadout + persistence), on player pawns and corpses
+- Reusable loot tables (`DT_Loot`) with level/zone gating and recursive sub-table composition, rolled by `UOnsetLootLibrary::RollLoot`
+- Scroll rows (ability-granting consumables) authored from the ability editor alongside abilities
 
 ---
 
@@ -357,10 +380,35 @@ This document is the technical map for the entire project.
 - Two-tier architecture: AI actor pool recycles instantly, corpse actors have independent lifecycle
 - Pool return does not block corpse spawn, and corpse despawn does not block pool retrieval  
 
+### **[GAS System](../GAS/GAS_System.md) ↔ [Threat System](../AI/Threat_System.md)**
+- Damage generates threat in `PostGameplayEffectExecute`, scaled by ability × class threat multipliers
+- Ability multiplier travels on the effect context (set by `UOnsetGA_Generic`); class multiplier comes from `DT_ClassInfo` (`FOnsetCharacterClassInfo::ThreatMultiplier`)
+
+### **[GAS System](../GAS/GAS_System.md) ↔ [Inventory & Loot System](../Inventory/Inventory_System.md)**
+- Weapon-scaled abilities use equipped weapon `WeaponDamage` as `WeaponBase`
+- Equipped defense (armor + shield) feeds damage mitigation via derived stats
+
+### **[Corpse System](../AI/Corpse_System.md) ↔ [Inventory & Loot System](../Inventory/Inventory_System.md)**
+- `AOnsetEnemy::OnDeath` rolls `Stats->LootTable` and stamps the corpse's inventory component
+- Click-to-loot transfers loot to the player's bag and fires the loot overlay
+
+### **[Player System](../Player/Player_System.md) ↔ [Inventory & Loot System](../Inventory/Inventory_System.md)**
+- `UInteractionComponent::ProcessPrimaryInteraction` branches to `TryLootCorpse` on corpse clicks (range auto-path)
+- `AOnsetPlayerController::Client_ShowLootOverlay` shows the just-looted items client-side
+
+### **[Inventory & Loot System](../Inventory/Inventory_System.md) ↔ [UI System](../Gameplay/UI_System.md)**
+- `ULootOverlayWidget` lists looted items (rarity-tinted) and auto-hides after 4s
+
+### **[Inventory & Loot System](../Inventory/Inventory_System.md) ↔ [Persistence Data Store](../Server/Persistence_Data_Store.md)**
+- Bag serializes as `{c, r, n}` array into `inventory_json`; equipment into `equipment_json`
+- Restored on login via `FOnsetFullCharacterData`
+
 ---
 
 # 🎯 **Final Notes**
 The PvP System is intentionally lightweight and modular.  
 It does not complicate AI, spawning, or pooling — it simply adds a **rules layer** on top of targeting and damage.
+
+The Inventory & Loot System is equally additive: it attaches to the existing corpse lifecycle (roll → click-to-loot) and the existing persistence blobs (`inventory_json` / `equipment_json`), without touching AI, spawning, or pooling.
 
 This keeps the architecture clean, predictable, and multiplayer‑safe.

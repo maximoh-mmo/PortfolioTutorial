@@ -124,7 +124,7 @@ Migration 2 adds `current_zone TEXT NOT NULL DEFAULT ''`; migration 3 adds `char
 
 Key design choices:
 - **Composite PK `(platform, platform_id)` for accounts; `(platform, platform_id, slot_index)` for characters** — no collisions between Steam `"7656119..."` and future Xbox `"XUID..."`; a character's slot is part of its identity  
-- **JSON blobs** (`inventory_json`, `equipment_json`, `quests_json`) — extensible without schema changes; version within the blob  
+- **JSON blobs** (`inventory_json`, `equipment_json`, `quests_json`) — extensible without schema changes; version within the blob. The bag serializes as a stacked-entries array (`[{c, r, n}]` — category, row name, count; see [Inventory & Loot System](../Inventory/Inventory_System.md))  
 - **All queries are parametrized** — identical across SQLite and PostgreSQL; only the connection code differs  
 - **`TEXT` for timestamps** — ISO 8601 strings, portable across DB engines  
 - **`character_name` defaults to `''`** (not a placeholder name) — identity is supplied by `Server_CreateCharacter` and preserved by `SaveCharacterPreservingIdentity` (see [Account System](../Player/Account_System.md))

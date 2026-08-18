@@ -40,6 +40,10 @@ Contains all systems:
 - **Lobby map & character select**  
 - **C++ character slot UI** — dynamic character-select slots with Blueprint styling (`UCharacterSlot`)  
 - **Loading screen transitions** — full-screen overlay while traveling between login and game servers (`UOnsetLoadingScreen`)
+- **Itemisation & loot** — per-category item tables (`DT_Equipment` / `DT_QuestItems` / `DT_Junk` / `DT_Scrolls`), a shared stacked-bag inventory component, and reusable loot tables (`DT_Loot`) rolled on NPC death
+- **Click-to-loot** — corpse loot via `UInteractionComponent` with range-based auto-path, replicated loot contents, and a C++ loot-overlay popup
+- **Threat multipliers** — per-class (Tank identity) and per-ability threat scaling on top of the threat subsystem
+- **Ability creation editor tool** — editor utility widget with a details-panel form, create/delete/save, scroll-row generation, and threat-multiplier field
 
 ---
 
@@ -164,7 +168,7 @@ Includes:
 General automation scripts.
 
 ### **Root-level scripts**
-- `Test_All.ps1` — launches Login Server (port 7777, Direct auth), Game Server (port 7778, Token auth), and interactive client launcher. Press `[Enter]` for more clients, `[Q]` to quit.
+- `Test_All.ps1` — launches Login Server (port 7777, Direct auth), Game Server (port 7778, Token auth), and interactive client launcher. Press `[Enter]` for more clients, `[Q]` to quit. When auth targets the local Account API, it starts the local `AccountApi` (`node local.js`) and DynamoDB Local automatically before the servers, and tears them down on exit.
 
 ---
 
@@ -179,7 +183,8 @@ General automation scripts.
 - [Targeting System](Docs/Gameplay/Targeting_System.md) — deterministic target selection, PvP-aware filtering
 - [Ability Targeting System](Docs/Gameplay/Ability_Targeting_System.md) — single-target, AoE, directional targeting
 - [PvP System](Docs/Gameplay/PVP_System.md) — player-controlled PvP/PvE toggle, damage filtering
-- [UI System](Docs/Gameplay/UI_System.md) — CommonUI menus/character select, loading screen; in-game HUD (health bar, target frame, ability bar, damage numbers), combat toggle
+- [UI System](Docs/Gameplay/UI_System.md) — CommonUI menus/character select, loading screen; in-game HUD (health bar, target frame, ability bar, damage numbers, loot overlay), combat toggle
+- [Inventory & Loot System](Docs/Inventory/Inventory_System.md) — item tables, stacked bag + equipment, loot tables, click-to-loot, scrolls
 
 ### **AI Systems**
 - [NPC AI System](Docs/AI/NPC_AI_System.md) — enemy StateTree behaviour
@@ -187,14 +192,17 @@ General automation scripts.
 - [Group System](Docs/AI/Group_System.md) — NPC group cohesion, assist behaviour
 - [Spawner System](Docs/AI/Spawner_System.md) — NPC group creation, respawn logic
 - [Pooling System](Docs/AI/Pooling_System.md) — NPC instance reuse for performance
+- [Threat System](Docs/AI/Threat_System.md) — threat table, target selection, angular spread
+- [Corpse System](Docs/AI/Corpse_System.md) — lightweight corpse actors, loot containers
 
 ### **Technical Systems**
-- [GAS System](Docs/GAS/GAS_System.md) — abilities, effects, attributes, PvP damage filtering
+- [GAS System](Docs/GAS/GAS_System.md) — abilities, effects, attributes, PvP damage filtering, threat feed
 - [Multiplayer System](Docs/Multiplayer/Multiplayer_System.md) — server authority, replication, dedicated server
 - [Steam Integration System](Docs/Steam/Steam_Integration_System.md) — auth tickets, server verification
 - [Persistence Data Store](Docs/Server/Persistence_Data_Store.md) — SQLite/PostgreSQL/HTTP REST API abstraction, migrations
 - [Account System](Docs/Player/Account_System.md) — character slots, login flow, save/load RPCs
 - [Account API](Project/AccountApi/) — serverless Lambda + DynamoDB backend (CDK deployment)
+- [Combat Formulas](Docs/combat-formulas.md) — damage pipeline, mitigation, cooldowns, threat multipliers
 
 ### **Planning & Tracking**
 - [Series Overview](Planning/Outlines/Series_Overview.md) — tutorial series vision, structure, audience

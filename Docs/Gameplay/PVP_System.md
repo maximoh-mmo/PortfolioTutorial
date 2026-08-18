@@ -48,7 +48,7 @@ Replicated to all clients.
 - Sends `Server_SetPvPEnabled(bool)` RPC  
 
 ### `UTargetingComponent`
-- `IsActorValidTarget()` filters player actors based on PvP flag (called by PlayerController during context resolution)  
+- `IsActorTargetPVPValid(Target, Source)` rejects player targets when the source player has PvP disabled (called by the player's `InteractionComponent` during click-to-target before `SetTarget`)  
 
 ### `UGameplayEffectExecution` / Damage Execution
 - Blocks damage if PvP disabled  
@@ -61,8 +61,8 @@ Replicated to all clients.
 - `Server_SetPvPEnabled(bool)`  
 - `OnRep_PvPEnabled()`  
 
-### TargetingComponent (via AOnsetPlayerController)
-- `IsActorValidTarget(AActor*)` called in PlayerController's context resolution  
+### TargetingComponent (via AOnsetPlayerController / InteractionComponent)
+- `IsActorTargetPVPValid(TargetActor, SourceActor)` called in `UOnsetInteractionComponent` during click-to-target (see [Player System](../Player/Player_System.md))
   - Rejects players if PvP disabled  
 
 ### [GAS System](../GAS/GAS_System.md) Damage Abilities

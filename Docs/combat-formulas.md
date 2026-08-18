@@ -220,6 +220,8 @@ Hit-count is still useful as a secondary sanity check (original target: 4–8 hi
 |---|---|---|
 | `K_DEF` | 100 | Physical mitigation soft cap |
 | `K_elem` | 80 | Elemental mitigation soft cap |
+| `STR_Divisor` / `INT_Divisor` | 100 | Stat scaling soft cap — +100 stat doubles the weapon/skill base (see §3) |
+| `SupportMasteryPotencyBonus` | +20% | Buff/debuff magnitude bonus for the Support class (`UOnsetGameplayAbility::GetBuffPotencyMultiplier`) |
 | Damage variance | ±15% | Per-hit randomness |
 | `BaseCritChance` / `MaxCritChanceBonus` | 5% / 65% | Crit chance curve (cap ~70%) |
 | `BaseCritMult` / `MaxCritMultBonus` | 1.5× / 2.5× | Crit damage curve (cap ~4.0×) |
@@ -231,6 +233,24 @@ Hit-count is still useful as a secondary sanity check (original target: 4–8 hi
 | Max total CDR | 80% | Prevents near-zero cooldowns |
 | Weapon base cooldowns | 0.8–1.8 sec | Per weapon archetype, see §9 |
 | Dual-wield / mastery bonuses | see §11 table | Class identity layer |
+| Class threat multiplier | 1.0 (Tank 1.5 in content) | Tank identity — see §15 |
+
+---
+
+## 15. Threat Generation
+
+Threat is generated at the single choke point where post-mitigation damage lands on an enemy (`UOnsetAttributeSet::PostGameplayEffectExecute`). It is the damage value scaled by two multiplicative levers — **not** a separate number authored on the ability:
+
+```
+Threat = FinalDamage × AbilityThreatMultiplier × ClassThreatMultiplier
+```
+
+| Multiplier | Source | Default | Purpose |
+|---|---|---|---|
+| `AbilityThreatMultiplier` | `DT_Abilities` (`FOnsetAbilityDefinition::ThreatMultiplier`) | 1.0 | Soft-taunt / high-threat abilities; set in the ability creation dialog |
+| `ClassThreatMultiplier` | `DT_ClassInfo` (`FOnsetCharacterClassInfo::ThreatMultiplier`) | 1.0 (Tank 1.5) | Class identity — tank holds aggro without out-DPSing DPS |
+
+Both clamp ≥ 0. The ability multiplier rides the GameplayEffect context (`Context.SetAbility(this)` in `UOnsetGA_Generic`), so DoT ticks inherit the ability's multiplier through the captured spec. Enemy-instigated damage falls through to a 1.0 multiplier — the threat table only tracks player → NPC threat. See [Threat System](AI/Threat_System.md) for the full subsystem (target selection, angular spread, taunts).
 
 ---
 

@@ -77,7 +77,18 @@ void ClearAll();
 
 ### Damage Pipeline
 
-`UOnsetAttributeSet::PostGameplayEffectExecute` calls `Subsystem->AddThreat(Instigator, Victim, Damage)` when damage > 0 and victim is `AOnsetEnemy`. Also emits `ReportNoiseEvent` for AI hearing sense (group assist).
+`UOnsetAttributeSet::PostGameplayEffectExecute` calls `Subsystem->AddThreat(Instigator, Victim, Threat)` when damage > 0 and victim is `AOnsetEnemy`. Also emits `ReportNoiseEvent` for AI hearing sense (group assist).
+
+**Threat = |damage| × ability multiplier × class multiplier**
+
+```
+Threat = |Data.EvaluatedData.Magnitude| × AbilityThreatMultiplier × ClassThreatMultiplier
+```
+
+- **Ability multiplier** — `FOnsetAbilityDefinition::ThreatMultiplier` (DT_Abilities). `UOnsetGA_Generic` caches the resolved row's multiplier at activation and stamps the outgoing effect context with `SetAbility(this)`; `UOnsetAttributeSet` reads it via `GetAbility()->GetThreatMultiplier()`. Default 1.0; values > 1 create taunt-style high-threat abilities. DoT ticks inherit the same multiplier through the captured spec/context.
+- **Class multiplier** — `FOnsetCharacterClassInfo::ThreatMultiplier` (DT_ClassInfo). The instigator's class row scales all threat it generates (Tank identity: more threat per damage without extra DPS). Default 1.0.
+- The two multipliers multiply, so a Tank using a high-threat ability compounds both. Both are clamped ≥ 0.
+- **Enemy-instigated damage** falls through to the DPS row (×1.0) — enemy threat toward players is not tracked this way (the table is player→NPC only).
 
 ### Perception
 
@@ -113,6 +124,13 @@ Result nav-projected via `UNavigationSystemV1::ProjectPointToNavigation`. Single
 ### Active Enemy Tracking for Taunt
 
 Since threat is stored as `Enemy → Player → Threat`, a taunt ability simply calls `AddThreat(Player, Enemy, TauntAmount)` on the subsystem — no special path needed. The highest-threat player automatically becomes the best target.
+
+### Taunt / High-Threat Abilities
+
+Two levers exist for tanking:
+
+1. **Per-ability `ThreatMultiplier`** (`DT_Abilities` / ability-creation dialog) — an ability dealing normal damage can still generate 2–3× threat, acting as a soft taunt. Set in the ability editor's creation dialog.
+2. **Per-class `ThreatMultiplier`** (`DT_ClassInfo`) — the Tank row is the identity lever (default 1.5 in content); every ability the Tank casts generates 1.5× threat without inflating its damage, so tanks hold aggro without out-DPSing damage dealers.
 
 ## Architecture Simplification
 

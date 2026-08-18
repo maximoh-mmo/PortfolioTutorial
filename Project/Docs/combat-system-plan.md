@@ -4,6 +4,15 @@ Companion to `Docs/combat-formulas.md`. This is the *implementation* plan: the
 systems GAS needs, the decisions behind them, and the phased build order. The
 formulas doc is the design authority; this doc is how we get there in code.
 
+> **Status (2026-08-17):** Phases 1–7 are largely landed in code:
+> full combat attributes, equipment loadouts + stat aggregation, cooldown/haste
+> gating, the element type chart + freeze + CC diminishing returns, crit curves,
+> buff/debuff aggregation + Support potency, mastery constants, and data-driven
+> enemy stats (`DT_EnemyStats`). Tracked in the authoritative live docs:
+> [GAS System](../Docs/GAS/GAS_System.md), [combat-formulas](../Docs/combat-formulas.md),
+> [Spawner System](../Docs/AI/Spawner_System.md). The roadmap below records the
+> decisions; treat the live docs as the current state.
+
 ---
 
 ## 1. Current State (baseline)

@@ -13,11 +13,13 @@ Provide deterministic targeting for all actors using a **single authoritative ta
 ---
 
 ## **Responsibilities**
-- Maintain `CurrentTarget` (data holder with validation)  
+- Maintain `CurrentTarget` (replicated data holder with validation)  
 - Manual targeting (player via IA_Primary context resolution in PlayerController)  
-- Stub `IsActorValidTarget()` for future PvP‑aware target filtering  
-- Provide target data for abilities (future)  
-- Drive target highlighting UI (future)  
+- `IsActorTargetValid()` — base validity (non-null, `AOnsetBaseCharacter`, not self)  
+- `IsActorTargetPVPValid()` — PvP gate: players are invalid targets unless the source has PvP enabled  
+- Broadcast `OnTargetChanged` on set/clear (HUD binds to it)  
+- Provide target data for abilities and AI (via `UTargetingComponent` on player and enemy)  
+- Drive target UI through the HUD target widget (`UHUDWidget::HandleTargetChanged`)  
 
 ---
 
@@ -43,7 +45,7 @@ Provide deterministic targeting for all actors using a **single authoritative ta
 ---
 
 ## **Key Classes**
-- **`UTargetingComponent`** — data holder attached to player, maintains `CurrentTarget`, provides `IsActorValidTarget()` stub (validation planned for PvP integration)  
+- **`UTargetingComponent`** (`Onset/Source/Onset/Public/Core/TargetingComponent.h`) — replicated actor component attached to player and enemy; maintains `CurrentTarget`, exposes `SetTarget` / `GetTarget` / `HasTarget` / `ClearTarget`, validation (`IsActorTargetValid`, `IsActorTargetPVPValid`), and `OnTargetChanged` (replayed on clients via `OnRep_CurrentTarget`)  
 
 ---
 
@@ -59,7 +61,7 @@ flowchart TD
 
 ## **Target Validation Rules**
 
-### Valid target if: *(implemented)*
+### Valid target if:
 - Target is alive  
 - Target is within range *(future)*  
 - Target is visible (optional LOS) *(future)*  
@@ -67,8 +69,9 @@ flowchart TD
 
 ### PvP Filtering *(implemented)*:
 ```
+// UOnsetInteractionComponent click-to-target (see Player System)
 if (Target is Player && !SourcePlayer->bIsPvPEnabled)
-    return false;
+    return false;   // IsActorTargetPVPValid
 ```
 
 ---
@@ -95,11 +98,11 @@ For `GetHitResultAtScreenPosition` with `ECC_Visibility` to successfully detect 
 ---
 
 ## **Testing Checklist**
-- [x] Click‑to‑target sets `CurrentTarget` (on tagged actors)  
+- [x] Click‑to‑target sets `CurrentTarget`  
 - [ ] Auto‑target fallback selects nearest valid enemy *(future)*  
 - [x] PvP filtering correctly excludes players when OFF  
 - [ ] AI targeting respects PvP rules *(future)*  
-- [ ] Target highlight appears/disappears correctly *(future)*  
+- [x] Target change broadcasts `OnTargetChanged` to the HUD widget  
 
 ---
 
