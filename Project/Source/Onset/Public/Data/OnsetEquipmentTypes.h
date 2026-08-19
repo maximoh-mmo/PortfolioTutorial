@@ -8,6 +8,10 @@
 #include "Data/OnsetItemTypes.h"
 #include "OnsetEquipmentTypes.generated.h"
 
+class UVisualProfile;
+class UAIProfile;
+class UPerceptionProfile;
+
 /** Which equipment slot an item occupies. */
 UENUM(BlueprintType)
 enum class EOnsetEquipmentSlot : uint8
@@ -205,4 +209,20 @@ struct FOnsetEnemyStats : public FTableRowBase
 	/** DT_Loot row rolled on death; empty = no drops. Shared across enemy types. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy", meta = (RowType = "/Script/Onset.OnsetLootTableRow"))
 	FDataTableRowHandle LootTable;
+
+	/**
+	 * Visual profile (mesh, corpse mesh, anim BP, material). When set, the row is
+	 * a complete enemy definition: spawners without an explicit FSpawnConfig
+	 * profile fall back to these. Empty = keep the spawner's config value.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	TObjectPtr<UVisualProfile> VisualProfile;
+
+	/** AI profile (state tree, aggression, ranges). Spawner config overrides this. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	TObjectPtr<UAIProfile> AIProfile;
+
+	/** Perception profile (sight range/angle, hearing). Spawner config overrides this. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	TObjectPtr<UPerceptionProfile> PerceptionProfile;
 };

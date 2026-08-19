@@ -74,7 +74,9 @@ Episode scripts 40–43 exist in `Planning/Scripts/`; 44–47 have outlines only
 
 ## Priority 5 — Housekeeping & optional
 
-- [ ] Author `Level` (1–200) + `XpReward` on `DT_EnemyStats` rows; verify XP grants / level-ups / autoplay persistence in PIE (code done — see [Leveling System](../Docs/Player/Leveling_System.md))
+- [x] Author `Level` (1–200) + `XpReward` on `DT_EnemyStats` rows; verify XP grants / level-ups / autoplay persistence in PIE (code done — see [Leveling System](../Docs/Player/Leveling_System.md)) — **done, see [Enemy Creation Tool](../Docs/Tools/Enemy_Editor.md)**
 - [ ] Delete stale backup artifact `Assets/Images/UI/7158.svg.2026_08_09_16_46_59.1.svg`
 - [ ] Decide tracking policy for `Assets/Images/` (commit icon source vs gitignore)
 - [ ] (Optional) AI-vs-AI autoplay harness — see `Docs/Future_Ideas.md`; supports demo recording / balance testing
+- [ ] Populate item category tables + `DT_Loot` via the [Item & Loot Editor](../Docs/Tools/Item_Loot_Editor.md) (partial data exists; add remaining demo loot) — code done (committed, see `Docs/Tools/`)
+- [ ] Give each authored enemy type a `LootTable` row via the [Enemy Creation Tool](../Docs/Tools/Enemy_Editor.md) so every kill drops loot

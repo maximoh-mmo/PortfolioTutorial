@@ -7,6 +7,8 @@
 #include "Widgets/Docking/SDockTab.h"
 
 class UOnsetAbilityEditorWidget;
+class UOnsetEnemyEditorWidget;
+class UOnsetItemEditorWidget;
 
 class FOnsetEditorModule : public IModuleInterface
 {
@@ -16,14 +18,20 @@ public:
 
 	void RegisterMenus();
 	void OpenAbilityEditor();
+	void OpenEnemyEditor();
+	void OpenItemEditor();
 	
 	void AddMenu(FMenuBarBuilder& MenuBarBuilder);
 	void FillMenu(FMenuBuilder& MenuBuilder);
 	
 	TSharedRef<SDockTab> SpawnAbilityEditorTab(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnEnemyEditorTab(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnItemEditorTab(const FSpawnTabArgs& Args);
 
 private:
 	static const FName AbilityEditorTabID;
+	static const FName EnemyEditorTabID;
+	static const FName ItemEditorTabID;
 
 	/** Handle for the level actor-deleted subscription used to prune SpawnPoints. */
 	FDelegateHandle OnLevelActorDeletedHandle;

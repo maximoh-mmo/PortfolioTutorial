@@ -28,7 +28,7 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 ## Key Functions
 - `InitSlots()` — pre‑computes slot transforms from `SpawnPoints` or fallback ring scatter on `BeginPlay`  
 - `SpawnGroup()` — fills all empty slots; calls `SpawnEnemyAtSlot()` for each  
-- `SpawnEnemyAtSlot(int32 SlotIndex)` — retrieves an NPC from `UOnsetPoolSubsystem.GetPooledEnemy()`, calls `ApplyProfile(Config.EnemyVisualProfile)` on the pawn, calls `ApplyAIProfile(Config.EnemyAIProfile)` + `ApplyPerceptionProfile(Config.EnemyPerceptionProfile)` on the controller, then possesses. Calls `Spawned->ApplyEnemyStats(Config.EnemyStats.RowName, Config.Tier)` on the enemy. Registers with Group System.  
+- `SpawnEnemyAtSlot(int32 SlotIndex)` — retrieves an NPC from `UOnsetPoolSubsystem.GetPooledEnemy()`, calls `ApplyProfile(ResolveVisualProfile())` on the pawn, calls `ApplyAIProfile(ResolveAIProfile())` + `ApplyPerceptionProfile(ResolvePerceptionProfile())` on the controller, then possesses. Calls `Spawned->ApplyEnemyStats(Config.EnemyStats.RowName, Config.Tier)` on the enemy. Registers with Group System. Resolved profiles fall back from `FSpawnConfig` to the stats row (see **Row-Owned Profiles** below).  
 - `DestroyGroup()` — iterates all slots, unregisters each member from the group, releases occupants back to the pool (`ReleasePooledEnemy`), clears slot references
 - `DebugKillLast()` — releases the most recently spawned occupant back to the pool (test helper)
 - `OnNPCDeath(AOnsetEnemy*)` — called when any single NPC dies (via `DeferredDeathCleanup`); clears the slot, starts its individual respawn timer, and releases the enemy back to the pool
@@ -44,6 +44,17 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 | `ZoneTag` | Area tag stamped on spawned enemies; gates zone-scoped loot entries (see [Inventory & Loot System](../Inventory/Inventory_System.md)) |
 
 `ApplyEnemyStats` also grants the enemy's `Element.*` affinity tag (drives the type chart), stores `DifficultyTier` as the loot-roll level, and records `Level`/`XpReward` so a player kill can grant XP scaled by the grey/yellow/green multiplier (see [Leveling System](../Player/Leveling_System.md)). See [GAS System](../GAS/GAS_System.md) and [combat-formulas](../combat-formulas.md) §2.9/§5.
+
+## Row-Owned Profiles (fallback resolution)
+
+Each `DT_EnemyStats` row (`FOnsetEnemyStats`) can now also own its `VisualProfile` / `AIProfile` / `PerceptionProfile` refs — one row = a complete enemy type, authored with the [Enemy Creation Tool](../Tools/Enemy_Editor.md). `AOnsetSpawner` resolves each profile at spawn time:
+
+```
+Resolve<Profile>() = Config.Enemy<Profile>   // explicit spawner override wins
+                     ?: StatsRow.<Profile>
+```
+
+`SpawnEnemyAtSlot`, `CreateSpawnPoint`, and `UpdateAllSpawnPointPreviews` all use the resolved profiles, so a spawner can simply assign `Config.EnemyStats` (and `Tier`/`ZoneTag`) and the row drives visuals/AI/perception. Existing spawners with explicit profiles keep working unchanged.
 
 ## Data Flow
 

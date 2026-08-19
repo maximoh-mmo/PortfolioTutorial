@@ -29,7 +29,7 @@ AOnsetSpawner::AOnsetSpawner()
 void AOnsetSpawner::SpawnGroup()
 {
 	if (!HasAuthority()) return;
-	if (Config.EnemyAIProfile == nullptr || Config.GroupSize <= 0) return;     
+	if (ResolveAIProfile() == nullptr || Config.GroupSize <= 0) return;     
 	if (Slots.Num() == 0) InitSlots();                                                                          
                                                                                                                      
 	for (int32 i = 0; i < Slots.Num(); i++)                                                                     
@@ -118,7 +118,7 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	if (Spawned)
 	{
 		Spawned->SetActorTransform(Slot.SpawnTransform);
-		Spawned->ApplyProfile(Config.EnemyVisualProfile);
+		Spawned->ApplyProfile(const_cast<UVisualProfile*>(ResolveVisualProfile()));
 		Spawned->ApplyEnemyStats(Config.EnemyStats.RowName, Config.Tier);
 		Spawned->ZoneTag = Config.ZoneTag;
 		Spawned->OwningSpawner = this;
@@ -129,8 +129,8 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 			return nullptr;
 		}
 		
-		AIController->ApplyAIProfile(Config.EnemyAIProfile);
-		AIController->ApplyPerceptionProfile(Config.EnemyPerceptionProfile);
+		AIController->ApplyAIProfile(const_cast<UAIProfile*>(ResolveAIProfile()));
+		AIController->ApplyPerceptionProfile(ResolvePerceptionProfile());
 		AIController->Possess(Spawned);
 		Slot.Occupant = Spawned;
 		if (GroupManager) GroupManager->RegisterMember(Spawned);
@@ -138,17 +138,72 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 	}
 	return Spawned;
 }
+
+const UVisualProfile* AOnsetSpawner::ResolveVisualProfile() const
+{
+	if (Config.EnemyVisualProfile)
+	{
+		return Config.EnemyVisualProfile;
+	}
+
+	if (Config.EnemyStats.DataTable && !Config.EnemyStats.RowName.IsNone())
+	{
+		if (const FOnsetEnemyStats* Stats = Config.EnemyStats.DataTable->FindRow<FOnsetEnemyStats>(Config.EnemyStats.RowName, nullptr))
+		{
+			return Stats->VisualProfile;
+		}
+	}
+
+	return nullptr;
+}
+
+const UAIProfile* AOnsetSpawner::ResolveAIProfile() const
+{
+	if (Config.EnemyAIProfile)
+	{
+		return Config.EnemyAIProfile;
+	}
+
+	if (Config.EnemyStats.DataTable && !Config.EnemyStats.RowName.IsNone())
+	{
+		if (const FOnsetEnemyStats* Stats = Config.EnemyStats.DataTable->FindRow<FOnsetEnemyStats>(Config.EnemyStats.RowName, nullptr))
+		{
+			return Stats->AIProfile;
+		}
+	}
+
+	return nullptr;
+}
+
+const UPerceptionProfile* AOnsetSpawner::ResolvePerceptionProfile() const
+{
+	if (Config.EnemyPerceptionProfile)
+	{
+		return Config.EnemyPerceptionProfile;
+	}
+
+	if (Config.EnemyStats.DataTable && !Config.EnemyStats.RowName.IsNone())
+	{
+		if (const FOnsetEnemyStats* Stats = Config.EnemyStats.DataTable->FindRow<FOnsetEnemyStats>(Config.EnemyStats.RowName, nullptr))
+		{
+			return Stats->PerceptionProfile;
+		}
+	}
+
+	return nullptr;
+}
 #if WITH_EDITOR
 
 void AOnsetSpawner::UpdateAllSpawnPointPreviews()
 {
-	if (!Config.EnemyVisualProfile)	return;
+	const UVisualProfile* Resolved = ResolveVisualProfile();
+	if (!Resolved)	return;
 	
 	USkeletalMesh* PreviewMesh = 
-		Config.EnemyVisualProfile->SkeletalMesh.LoadSynchronous();
+		Resolved->SkeletalMesh.LoadSynchronous();
 	
 	UMaterialInterface* PreviewMaterial =
-		Config.EnemyVisualProfile->OverrideMaterial.Get();
+		Resolved->OverrideMaterial.Get();
 	
 	for (ASpawnPoint* SpawnPoint : SpawnPoints)
 	{
@@ -331,9 +386,8 @@ ASpawnPoint* AOnsetSpawner::CreateSpawnPoint()
 		FAttachmentTransformRules::KeepWorldTransform
 	);
 
-	if (Config.EnemyVisualProfile)
+	if (const UVisualProfile* Profile = ResolveVisualProfile())
 	{
-		const UVisualProfile* Profile = Config.EnemyVisualProfile.Get();
 		NewSpawnPoint->SetPreview(
 			Profile->SkeletalMesh.LoadSynchronous(),
 			Profile->OverrideMaterial.Get()

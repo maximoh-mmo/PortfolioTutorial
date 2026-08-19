@@ -170,6 +170,13 @@ The ability creation editor (`UOnsetAbilityEditorWidget`, editor-only) now autho
 - **Delete cleanup** — deleting an ability scans `DT_Scrolls` for rows whose `GrantedAbility` references the deleted ability (matched by row handle, not name) and removes them, preventing dangling references.
 - **`ThreatMultiplier`** — the creation dialog exposes a per-ability threat multiplier (see [Threat System](../AI/Threat_System.md)).
 
+## **Editor Tools**
+
+Itemisation and enemy data are authored through two editor-only tools:
+
+- **[Item & Loot Editor](../Tools/Item_Loot_Editor.md)** — edits `DT_Equipment` / `DT_QuestItems` / `DT_Junk` / `DT_Scrolls` / `DT_Loot` with cross-table reference validation (granted abilities, item rows, sub-tables, cycle detection) and a 1000-roll drop preview for balance.
+- **[Enemy Creation Tool](../Tools/Enemy_Editor.md)** — one `DT_EnemyStats` row = one complete enemy type; the row owns its visual/AI/perception profiles and `LootTable` handle. Spawners fall back to the row's profiles when `FSpawnConfig` doesn't override them.
+
 ---
 
 ## **Interactions With Other Systems**

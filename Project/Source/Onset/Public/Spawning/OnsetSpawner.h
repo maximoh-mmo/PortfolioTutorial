@@ -89,6 +89,11 @@ protected:
 	/** Spawn one enemy into the given slot index. */
 	AOnsetEnemy* SpawnEnemyAtSlot(int32 SlotIndex);
 
+	/** Resolve an enemy profile: spawner override wins, else the DT_EnemyStats row's. */
+	const UVisualProfile* ResolveVisualProfile() const;
+	const UAIProfile* ResolveAIProfile() const;
+	const UPerceptionProfile* ResolvePerceptionProfile() const;
+
 private:
 	/** If true, SpawnGroup() is called automatically during BeginPlay. */
 	UPROPERTY(EditAnywhere, Category="Spawning")
