@@ -111,6 +111,13 @@ void AOnsetPlayerAIController::PossessAbandonedPawn()
 	// OnPossess starts the StateTree.
 	Possess(AdoptedPawn);
 
+	// The pawn now has no PlayerState (owned by the destroyed PlayerController + AAIController
+	// has none), so give it the stored identity for progression persistence (Leveling_System).
+	if (AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(AdoptedPawn))
+	{
+		PlayerChar->SetPersistIdentity(CachedPlatform, CachedPlatformID, CachedSlotIndex);
+	}
+
 	// Arm the despawn countdown now that possession succeeded. If the pawn dies in
 	// combat first, OnUnPossess clears it.
 	if (GetPawn() == AdoptedPawn)

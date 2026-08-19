@@ -62,6 +62,14 @@ protected:
 	UPROPERTY()
 	int32 DifficultyTier = 0;
 
+	/** Authored enemy Level (DT_EnemyStats, 1-200); drives the XP LevelDiff multiplier. */
+	UPROPERTY()
+	int32 EnemyLevel = 1;
+
+	/** Authored XP override (DT_EnemyStats); 0 = derive base XP from the curve. */
+	UPROPERTY()
+	int32 XpReward = 0;
+
 	/** DT_EnemyStats row applied at spawn (for death-time loot lookup). */
 	UPROPERTY()
 	FName EnemyStatsRow;

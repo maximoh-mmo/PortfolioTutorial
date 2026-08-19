@@ -17,6 +17,7 @@
 #include "Subsystem/OnsetCorpseSubsystem.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/Profile/VisualProfile.h"
+#include "Player/OnsetPlayerCharacter.h"
 #include "Spawning/OnsetSpawner.h"
 #include "Subsystem/OnsetThreatSubsystem.h"
 
@@ -94,6 +95,8 @@ void AOnsetEnemy::ApplyEnemyStats(FName RowName, int32 Tier)
 		// NOTE: stats only — do NOT call ResetAttributes() here, it clears bIsAlive
 		// (the pool-alive flag OnRespawn() just set) which would hide the enemy and
 		// disable its collision on clients via OnRep_bIsAlive.
+		EnemyLevel = 1;
+		XpReward = 0;
 		AttributeSet->InitMaxHealth(100.0f);
 		AttributeSet->InitHealth(100.0f);
 		if (CombatAttributes)
@@ -103,6 +106,10 @@ void AOnsetEnemy::ApplyEnemyStats(FName RowName, int32 Tier)
 		SetEnemyWeaponStats(0.0f, EOnsetWeaponArchetype::Sword);
 		return;
 	}
+
+	// XP progression inputs (combat-formulas §12).
+	EnemyLevel = FMath::Max(1, Stats->Level);
+	XpReward = FMath::Max(0, Stats->XpReward);
 
 	// EnemyStats_loopN = base x (1 + d)^Tier (d = 15%, combat-formulas §10).
 	const float Difficulty = UOnsetEquipmentLibrary::GetEnemyDifficultyMultiplier(Tier);
@@ -165,6 +172,14 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 			}
 		}
 	}
+
+	// XP grant (combat-formulas §12): idle/autoplay kills count because KillingActor
+	// is the player's pawn regardless of who possesses it.
+	if (AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(KillingActor))
+	{
+		PlayerChar->GrantXPFromEnemy(EnemyLevel, XpReward);
+	}
+
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetEnemy::DeferredDeathCleanup);
 }
 

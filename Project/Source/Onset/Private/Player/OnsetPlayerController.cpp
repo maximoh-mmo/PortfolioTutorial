@@ -319,6 +319,10 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 		PlayerChar->AttributeSet->SetHealth(PlayerChar->AttributeSet->GetMaxHealth());
 	}
 
+	// Apply persisted level/XP (combat-formulas §12) onto the freshly spawned pawn.
+	PlayerChar->ApplyCharacterProgression(CharData.Level, CharData.Experience, CharData.UnspentStatPoints);
+	PlayerChar->SetPersistIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, PS->SelectedCharacterSlot);
+
 	PlayerChar->GrantDefaultAbilities();
 
 	// Apply appearance preset if JSON is available
@@ -861,6 +865,10 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 			{
 				PlayerCharacter->AttributeSet->SetHealth(PlayerCharacter->AttributeSet->GetMaxHealth());
 			}
+
+			// Apply persisted level/XP (combat-formulas §12) so the pawn matches the saved character.
+			PlayerCharacter->ApplyCharacterProgression(CharData.Level, CharData.Experience, CharData.UnspentStatPoints);
+			PlayerCharacter->SetPersistIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, SlotIndex);
 
 			PlayerCharacter->GrantDefaultAbilities();
 		}

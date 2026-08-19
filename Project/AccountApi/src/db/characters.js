@@ -29,6 +29,7 @@ async function putCharacter(platform, platformId, slotIndex, data) {
     characterName: data.characterName || '',
     level: data.level || 1,
     experience: data.experience || 0,
+    unspentStatPoints: data.unspentStatPoints || 0,
     currentZone: data.currentZone || '',
     savedMaxHealth: data.savedMaxHealth ?? 100.0,
     savedPosition: data.savedPosition || { x: 0, y: 0, z: 0 },

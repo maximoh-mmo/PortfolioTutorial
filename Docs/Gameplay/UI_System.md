@@ -25,6 +25,7 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 - **Implemented:** CommonUI login/character-select screen stack, C++ character slots, world-transition loading screen (see **Current Implementation** below).
 - **Implemented (A6):** in-game HUD — player health bar, target frame with target-type skins, ability bar with cooldowns, pooled damage numbers, combat (PvP) toggle, ground-reticle decal targeting indicator. Content lives under `Content/UI/` with the new content pipeline (`Docs/UI_ASSET_CHECKLIST.md`).
 - **Implemented (items pass):** loot overlay popup listing just-looted items (`ULootOverlayWidget`), driven by `Client_ShowLootOverlay`. See [Inventory & Loot System](../Inventory/Inventory_System.md).
+- **Implemented (leveling):** player XP/level bar (`UPlayerXPBarWidget`), bound to `OnProgressionChanged` on the player pawn. See [Leveling System](../Player/Leveling_System.md).
 
 ---
 
@@ -81,7 +82,7 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 
 ### **`UHUDWidget`** (`WBP_HUD`)
 - Main in-game HUD, created and bound in `AOnsetPlayerController::OnRep_Pawn`
-- Owns the player health bar, ability bar, combat toggle, and target frame
+- Owns the player health bar, XP bar, ability bar, combat toggle, and target frame
 - `BindToPlayer(Controller, Pawn)` wires each sub-widget to the player's `AbilitySystemComponent` and `TargetingComponent`
 - Listens for `OnTargetChanged` → updates `UTargetHUDWidget::SetTarget` and subscribes the target ASC
 - Spawns pooled damage numbers (`SpawnDamageNumber`) on player/target health drops
@@ -89,6 +90,10 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 
 ### **`UPlayerHealthBarWidget`** (`WBP_PlayerHealthBar`)
 - Player health bar bound to the player's ASC; `BindToASC` subscribes to health attribute changes
+
+### **`UPlayerXPBarWidget`** (`WBP_PlayerXPBar`)
+- Player XP/level bar; `BindToPlayerCharacter` subscribes to `AOnsetPlayerCharacter::OnProgressionChanged`
+- Exposes `LevelText`/`XPText` + `OnXPPercentChanged` BP event; reflects `UnspentStatPoints` (see [Leveling System](../Player/Leveling_System.md))
 
 ### **`UTargetHUDWidget`** (`WBP_TargetHUD`)
 - Static target frame (does not float above the target); shows target name + health via `SetTarget(AActor*)`

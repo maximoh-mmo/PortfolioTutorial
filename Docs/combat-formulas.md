@@ -177,6 +177,20 @@ RangedBonusCritChance% = (Class == RangedDPS AND Weapon == Bow) ? RangedMasteryC
 RangedBonusDamage%     = (Class == RangedDPS AND Weapon == Bow) ? RangedMasteryDamage : 0
 ```
 
+**Caster DPS (Staff)** gets all three offensive axes at once — damage%, crit%, and a distinct mechanic none of the other classes touch: **Elemental Penetration**, which reduces the *enemy's* effective RES rather than boosting the caster's own output:
+```
+CasterBonusDamage% / CasterBonusCrit%  → added the same way Ranged DPS's bow bonuses are
+EffectiveEnemyRES = EnemyRES × (1 - CasterBonusPenetration%)
+```
+Penetration gives Caster DPS a build-around fantasy of "shredding resistances" rather than just bigger numbers — distinct from Ranged DPS's flat damage/crit stacking.
+
+**Support (Tome)** doesn't deal damage, so it doesn't get a damage/crit/penetration axis at all — it gets **Buff Potency**, which strengthens the buffs/heals *this character casts* by folding a bonus into the additive stacking formula from §10:
+```
+SupportBuffPotency% = (Class == Support AND Weapon == Tome) ? SupportMasteryPotency : 0
+EffectiveBuffContribution% = BaseBuffPercent% × (1 + SupportBuffPotency%)
+```
+This reuses §10's existing math rather than inventing a new subsystem — the same "Vulnerable +20%" debuff cast by a Support with a Tome contributes more to `BuffDebuffTotal` than the identical debuff cast by anyone else. Note this only affects buff/heal-type skills, not raw damage, so it won't show up in the damage/TTK calculator — it needs its own healing/buff-throughput sheet if you want to tune it numerically.
+
 **Starting mastery values to playtest:**
 
 | Bonus | Value |
@@ -189,11 +203,76 @@ RangedBonusDamage%     = (Class == RangedDPS AND Weapon == Bow) ? RangedMasteryD
 | Tank mastery DEF bonus | +20 flat |
 | RangedDPS mastery crit bonus | +10% |
 | RangedDPS mastery damage bonus | +15% |
+| CasterDPS mastery damage bonus | +15% |
+| CasterDPS mastery crit bonus | +10% |
+| CasterDPS mastery penetration bonus | +20% |
+| Support mastery buff potency bonus | +25% |
 | BlockDamageReduction | 50% of the hit |
+
+**Five classes total:** Melee DPS (dual-wield → CDR), Tank (shield → block+DEF), Ranged DPS (bow → crit+damage), Caster DPS (staff → damage+crit+penetration), Support (tome → buff potency). Each has exactly one weapon that unlocks its mastery — everyone can still equip anything, they just won't get the bonus outside their archetype's match.
 
 ---
 
-## 12. Reincarnation / Prestige Scaling
+## 12. Experience & Leveling
+
+> **Status: implemented** (2026-08-18) — formulas below are wired into `UOnsetLevelingLibrary` + `AOnsetPlayerCharacter::GrantXPFromEnemy`/`AddExperience`, config-driven via `[Onset.Gameplay]` (`XPBase`, `XPGrowth`, `LevelCap`, `KillsPerLevel`, `GreyThreshold`, `YellowThreshold`, `BonusXPPerOverLevel`, `MaxBonusXP`, `StatPointsPerLevel`). Kills grant XP via the grey/yellow/green multiplier; crossing a threshold levels the player up (full heal + `StatPointsPerLevel`, persisted to the identity cache write-through). Content still needed: author `Level`/`XpReward` on `DT_EnemyStats` rows. See [Leveling System](../Docs/Player/Leveling_System.md).
+
+**Per-level XP requirement (exponential curve):**
+```
+XPRequired(Level, Loop N) = XPBase × (1 + XPGrowth)^(Level-1) × (1 + d)^N
+```
+`XPGrowth` is the per-level compounding rate — this is what drives the "big numbers" feel late-game (by level 300 at the starting constants, a single level requires well over a billion XP). Reusing `d` (the same enemy-difficulty constant from §13 below) means required XP scales with each rebirth loop exactly as enemy toughness does, without a second constant to keep in sync.
+
+**Enemy XP reward — built from the same curve, not a separate one:**
+```
+EnemyXP(EnemyLevel, Loop N) = XPRequired(EnemyLevel, N) / KillsPerLevel
+```
+`KillsPerLevel` is the single pacing knob — "how many on-level kills should it take to gain a level." Because both the requirement and the reward scale off the same curve, kills-per-level stays roughly constant across the whole level range regardless of how steep `XPGrowth` is. **This is what decouples "how big the numbers look" from "how long leveling actually takes"** — tune `XPGrowth` for display magnitude, tune `KillsPerLevel` for pacing, independently.
+
+**Level-difference scaling (grey/yellow/green mob mechanic):**
+```
+LevelDiff = EnemyLevel - PlayerLevel
+XPMultiplier =
+  0%                                                  if LevelDiff ≤ -GreyThreshold
+  ramp 0%→100%                                        if -GreyThreshold < LevelDiff ≤ -YellowThreshold
+  100%                                                if -YellowThreshold < LevelDiff ≤ 0
+  100% + min(LevelDiff × BonusXPPerOverLevel%, MaxBonusXP%)   if LevelDiff > 0
+```
+Prevents trivial-content grinding (killing far-under-level enemies for free XP) while rewarding players who fight above their level, capped so it can't be exploited into an infinite-scaling strategy.
+
+**Why rebirth loops naturally get slower — no extra lever needed:**
+
+Because `d > r` (§13 below — enemies scale 15%/loop, the player's permanent multiplier only 10%/loop), real kill-rate slows every loop even though the *formula* pacing (kills-per-level) stays constant. First-order estimate:
+```
+RelativeSlowdown(N) = ((1+d)/(1+r))^N
+DaysToCompleteLoop(N) ≈ DaysToCompleteLoop(0) × RelativeSlowdown(N)
+```
+This compounds geometrically loop-over-loop — exactly the "slower and slower" feel you want, and it emerges from constants you already have rather than a hand-authored decay curve. Treat it as a planning-stage estimate; validate against real combat-calculator TTK once zone-specific enemy stats exist.
+
+**Pacing calibration (factoring in active + idle/autoplay time):**
+```
+DailyKillCapacity = (ActiveHours/day × ActiveKillRate) + (IdleHours/day × IdleKillRate)
+TotalKillsToCap ≈ LevelCap × KillsPerLevel
+ImpliedDaysToCap(Loop 0) = TotalKillsToCap / DailyKillCapacity
+```
+At the starting constants (2 active hrs/day, 8 idle hrs/day, 200/100 kills/hr respectively, LevelCap 200), `KillsPerLevel = 180` lands loop 0 at exactly 30 days — the companion spreadsheet's Leveling tab lets you re-tune any of these live.
+
+**Starting constants to playtest:**
+
+| Constant | Starting Value | Purpose |
+|---|---|---|
+| `XPBase` | 50 | XP for Level 1→2 at Loop 0 — sets absolute magnitude |
+| `XPGrowth` | 6%/level | Compounding growth — controls "big number" feel |
+| `LevelCap` | 200 | Levels per loop |
+| `KillsPerLevel` | 180 | Primary pacing knob |
+| `GreyThreshold` / `YellowThreshold` | 10 / 5 levels | Grey/yellow mob XP ramp |
+| `BonusXPPerOverLevel` / `MaxBonusXP` | 5% / 50% | Over-level risk/reward, capped |
+| Active/Idle hours & kill rates | 2hr@200/hr, 8hr@100/hr | Pacing calibration inputs |
+| `TargetDaysToRebirth` | 30 | Design goal for Loop 0 |
+
+---
+
+## 13. Reincarnation / Prestige Scaling
 
 ```
 PrestigeMultiplier = (1 + r) ^ N        (r ≈ 10% per loop)
@@ -203,7 +282,7 @@ EnemyStats_loopN = EnemyStats_base × (1 + d) ^ N   (d ≈ 15% per loop, d > r)
 
 ---
 
-## 13. Time-to-Kill Validation
+## 14. Time-to-Kill Validation
 
 With cooldown-gating, **TTK is now measured in seconds (DPS-based), not hit counts** — hit count varies by weapon archetype and haste, so it's no longer a reliable cross-build target. Use:
 ```
@@ -214,14 +293,24 @@ Hit-count is still useful as a secondary sanity check (original target: 4–8 hi
 
 ---
 
-## 14. Tuning Constants — Full Summary
+## 15. Threat Generation
+    Threat is generated at the single choke point where post-mitigation damage lands on an enemy (UOnsetAttributeSet::PostGameplayEffectExecute). It is the damage value scaled by two multiplicative levers — not a separate number authored on the ability:
+
+Threat = FinalDamage × AbilityThreatMultiplier × ClassThreatMultiplier
+Multiplier	Source	Default	Purpose
+AbilityThreatMultiplier	DT_Abilities (FOnsetAbilityDefinition::ThreatMultiplier)	1.0	Soft-taunt / high-threat abilities; set in the ability creation dialog
+ClassThreatMultiplier	DT_ClassInfo (FOnsetCharacterClassInfo::ThreatMultiplier)	1.0 (Tank 1.5)	Class identity — tank holds aggro without out-DPSing DPS
+
+Both clamp ≥ 0. The ability multiplier rides the GameplayEffect context (Context.SetAbility(this) in UOnsetGA_Generic), so DoT ticks inherit the ability's multiplier through the captured spec. Enemy-instigated damage falls through to a 1.0 multiplier — the threat table only tracks player → NPC threat. See Threat System for the full subsystem (target selection, angular spread, taunts).
+
+---
+
+## 16. Tuning Constants — Full Summary
 
 | Constant | Starting Value | Purpose |
 |---|---|---|
 | `K_DEF` | 100 | Physical mitigation soft cap |
 | `K_elem` | 80 | Elemental mitigation soft cap |
-| `STR_Divisor` / `INT_Divisor` | 100 | Stat scaling soft cap — +100 stat doubles the weapon/skill base (see §3) |
-| `SupportMasteryPotencyBonus` | +20% | Buff/debuff magnitude bonus for the Support class (`UOnsetGameplayAbility::GetBuffPotencyMultiplier`) |
 | Damage variance | ±15% | Per-hit randomness |
 | `BaseCritChance` / `MaxCritChanceBonus` | 5% / 65% | Crit chance curve (cap ~70%) |
 | `BaseCritMult` / `MaxCritMultBonus` | 1.5× / 2.5× | Crit damage curve (cap ~4.0×) |
@@ -233,24 +322,14 @@ Hit-count is still useful as a secondary sanity check (original target: 4–8 hi
 | Max total CDR | 80% | Prevents near-zero cooldowns |
 | Weapon base cooldowns | 0.8–1.8 sec | Per weapon archetype, see §9 |
 | Dual-wield / mastery bonuses | see §11 table | Class identity layer |
-| Class threat multiplier | 1.0 (Tank 1.5 in content) | Tank identity — see §15 |
+| XP curve / pacing constants | see §12 table | Leveling — XPBase, XPGrowth, KillsPerLevel, etc. |
 
 ---
 
-## 15. Threat Generation
+## 17. Suggested Next Steps
 
-Threat is generated at the single choke point where post-mitigation damage lands on an enemy (`UOnsetAttributeSet::PostGameplayEffectExecute`). It is the damage value scaled by two multiplicative levers — **not** a separate number authored on the ability:
-
-```
-Threat = FinalDamage × AbilityThreatMultiplier × ClassThreatMultiplier
-```
-
-| Multiplier | Source | Default | Purpose |
-|---|---|---|---|
-| `AbilityThreatMultiplier` | `DT_Abilities` (`FOnsetAbilityDefinition::ThreatMultiplier`) | 1.0 | Soft-taunt / high-threat abilities; set in the ability creation dialog |
-| `ClassThreatMultiplier` | `DT_ClassInfo` (`FOnsetCharacterClassInfo::ThreatMultiplier`) | 1.0 (Tank 1.5) | Class identity — tank holds aggro without out-DPSing DPS |
-
-Both clamp ≥ 0. The ability multiplier rides the GameplayEffect context (`Context.SetAbility(this)` in `UOnsetGA_Generic`), so DoT ticks inherit the ability's multiplier through the captured spec. Enemy-instigated damage falls through to a 1.0 multiplier — the threat table only tracks player → NPC threat. See [Threat System](AI/Threat_System.md) for the full subsystem (target selection, angular spread, taunts).
-
----
-
+1. Use the companion tuning spreadsheet to plug in a build (class, weapon, stats) and check DPS/TTK against targets before writing game code.
+2. Playtest all four class archetypes (Melee DPS, Tank, Ranged DPS, Caster) at the same gear/stat budget to confirm mastery bonuses actually differentiate them without making off-archetype weapon choices unviable.
+3. Confirm dual-wield's CDR-based identity feels distinct enough from two-handed weapons' higher per-hit damage — if not, consider nudging `DualWieldBaseCDR` or the base cooldowns in §9.
+4. Playtest a full reincarnation cycle to confirm `r` vs `d` balance.
+5. Use the Leveling tab's pacing calculator to validate `KillsPerLevel` against real playtest kill-rates (active and idle/autoplay) — the 30-day Loop 0 target is a planning estimate until measured against actual player behavior.

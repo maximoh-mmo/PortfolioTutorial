@@ -262,6 +262,7 @@ bool FHttpStore::LoadCharacter(const FString& Platform, const FString& PlatformI
 	OutData.QuestsJSON = Json->GetStringField(TEXT("questsJson"));
 	OutData.CharacterClass = static_cast<EOnsetCharacterClass>(Json->GetIntegerField(TEXT("characterClass")));
 	OutData.AppearanceJSON = Json->GetStringField(TEXT("appearanceJson"));
+	OutData.UnspentStatPoints = Json->GetIntegerField(TEXT("unspentStatPoints"));
 
 	return true;
 }
@@ -290,6 +291,7 @@ bool FHttpStore::SaveCharacter(const FString& Platform, const FString& PlatformI
 	Json->SetStringField(TEXT("questsJson"), Data.QuestsJSON);
 	Json->SetNumberField(TEXT("characterClass"), static_cast<int32>(Data.CharacterClass));
 	Json->SetStringField(TEXT("appearanceJson"), Data.AppearanceJSON);
+	Json->SetNumberField(TEXT("unspentStatPoints"), Data.UnspentStatPoints);
 
 	FString Body;
 	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);

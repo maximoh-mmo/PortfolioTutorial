@@ -120,7 +120,7 @@ CREATE TABLE characters (
 );
 ```
 
-Migration 2 adds `current_zone TEXT NOT NULL DEFAULT ''`; migration 3 adds `character_class INTEGER NOT NULL DEFAULT 0` and `appearance_json TEXT NOT NULL DEFAULT '{}'`.
+Migration 2 adds `current_zone TEXT NOT NULL DEFAULT ''`; migration 3 adds `character_class INTEGER NOT NULL DEFAULT 0` and `appearance_json TEXT NOT NULL DEFAULT '{}'`; migration 4 adds `unspent_stat_points INTEGER NOT NULL DEFAULT 0` (banked level-up stat points from the leveling system, see [Leveling System](../Player/Leveling_System.md)).
 
 Key design choices:
 - **Composite PK `(platform, platform_id)` for accounts; `(platform, platform_id, slot_index)` for characters** — no collisions between Steam `"7656119..."` and future Xbox `"XUID..."`; a character's slot is part of its identity  
@@ -131,10 +131,10 @@ Key design choices:
 
 ### **Migration System**
 
-On startup, `EnsureSchema()` creates the `_schema_version` table if missing, reads the current version, and runs each missing migration sequentially via `RunMigration(int32 FromVersion)` until `LatestVersion` (currently **3**) is reached:
+On startup, `EnsureSchema()` creates the `_schema_version` table if missing, reads the current version, and runs each missing migration sequentially via `RunMigration(int32 FromVersion)` until `LatestVersion` (currently **4**) is reached:
 
 ```cpp
-const int32 LatestVersion = 3;
+const int32 LatestVersion = 4;
 
 void FSQLiteStore::EnsureSchema()
 {
@@ -149,6 +149,7 @@ void FSQLiteStore::RunMigration(int32 FromVersion)
     if (FromVersion == 0) { /* CREATE TABLE accounts, characters */ }
     if (FromVersion <= 1) { /* ALTER TABLE characters ADD COLUMN current_zone */ }
     if (FromVersion <= 2) { /* ALTER TABLE characters ADD COLUMN character_class + appearance_json */ }
+    if (FromVersion <= 3) { /* ALTER TABLE characters ADD COLUMN unspent_stat_points */ }
 }
 ```
 
@@ -201,7 +202,7 @@ Notes:
 - Serializes requests/responses as JSON (FJsonObject/FJsonObjectConverter)
 - `SaveAll()` is a no-op (API is transactional per-call)
 - API key sent via `X-API-Key` header for all requests
-- `SaveCharacter` sends `characterClass` + `appearanceJson` in the request body
+- `SaveCharacter` sends `characterClass` + `appearanceJson` + `unspentStatPoints` in the request body
 
 ### **`UOnsetPlayerDataSubsystem`**
 - World subsystem, DS only

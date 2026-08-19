@@ -15,7 +15,9 @@
 #include "UI/DamageNumberWidget.h"
 #include "UI/LootOverlayWidget.h"
 #include "UI/PlayerHealthBarWidget.h"
+#include "UI/PlayerXPBarWidget.h"
 #include "UI/TargetHUDWidget.h"
+#include "Player/OnsetPlayerCharacter.h"
 
 void UHUDWidget::BindToPlayer(AOnsetPlayerController* InController, AOnsetBaseCharacter* InPawn)
 {
@@ -32,6 +34,11 @@ void UHUDWidget::BindToPlayer(AOnsetPlayerController* InController, AOnsetBaseCh
 	if (PlayerHealthBar)
 	{
 		PlayerHealthBar->BindToASC(PlayerASC);
+	}
+
+	if (PlayerXPBar)
+	{
+		PlayerXPBar->BindToPlayerCharacter(Cast<AOnsetPlayerCharacter>(InPawn));
 	}
 
 	if (AbilityBar)

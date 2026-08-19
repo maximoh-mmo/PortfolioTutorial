@@ -74,6 +74,11 @@ struct FOnsetFullCharacterData
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
 	int32 Experience = 0;
 
+	/** Unspent stat points earned on level-up (+3/level). Not spendable yet —
+	 *  reserved for the future stat-allocation UI (combat-formulas §1). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+	int32 UnspentStatPoints = 0;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
 	FString CurrentZone;
 

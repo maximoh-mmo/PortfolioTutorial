@@ -4,8 +4,12 @@
 
 #include "TimerManager.h"
 #include "Camera/CameraComponent.h"
+#include "Combat/OnsetLevelingLibrary.h"
 #include "GAS/OnsetAttributeSet.h"
+#include "GAS/OnsetGameplayTags.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "Subsystem/OnsetPlayerDataSubsystem.h"
 
 AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 {
@@ -54,6 +58,122 @@ void AOnsetPlayerCharacter::RespawnPlayer()
 void AOnsetPlayerCharacter::EnableCameraLag(bool bEnable)
 {
 	CameraBoom->bEnableCameraLag = bEnable;
+}
+
+void AOnsetPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, Level, COND_None);
+	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, Experience, COND_None);
+	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, UnspentStatPoints, COND_None);
+}
+
+void AOnsetPlayerCharacter::ApplyCharacterProgression(int32 InLevel, int32 InExperience, int32 InUnspentStatPoints)
+{
+	if (!HasAuthority()) return;
+	Level = FMath::Max(1, InLevel);
+	Experience = FMath::Max(0, InExperience);
+	UnspentStatPoints = FMath::Max(0, InUnspentStatPoints);
+	OnProgressionChanged.Broadcast(Level, Experience);
+}
+
+void AOnsetPlayerCharacter::SetPersistIdentity(const FString& Platform, const FString& PlatformID, int32 SlotIndex)
+{
+	PersistPlatform = Platform;
+	PersistPlatformID = PlatformID;
+	PersistSlotIndex = SlotIndex;
+}
+
+void AOnsetPlayerCharacter::GrantXPFromEnemy(int32 EnemyLevel, int32 XpReward)
+{
+	if (!HasAuthority()) return;
+
+	const int32 PlayerLevelBefore = Level;
+	const int32 BaseXP = UOnsetLevelingLibrary::GetEnemyBaseXP(EnemyLevel, XpReward);
+	const float Multiplier = UOnsetLevelingLibrary::GetXPMultiplier(PlayerLevelBefore, EnemyLevel);
+	const int32 Granted = UOnsetLevelingLibrary::GetGrantedXP(PlayerLevelBefore, EnemyLevel, XpReward);
+
+	if (Granted > 0)
+	{
+		AddExperience(Granted);
+		UE_LOG(LogTemp, Log, TEXT("XP: player Lv%d killed enemy Lv%d (XpReward=%d, base=%d x %.2f mult) -> +%d XP (now %d/%d)"),
+			PlayerLevelBefore, EnemyLevel, XpReward, BaseXP, Multiplier, Granted, Experience, UOnsetLevelingLibrary::GetXPRequired(Level));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("XP: player Lv%d killed enemy Lv%d (XpReward=%d, base=%d x %.2f mult) -> 0 XP (grey mob)"),
+			PlayerLevelBefore, EnemyLevel, XpReward, BaseXP, Multiplier);
+	}
+}
+
+void AOnsetPlayerCharacter::AddExperience(int32 Amount)
+{
+	if (Amount <= 0) return;
+
+	const int32 LevelCap = UOnsetLevelingLibrary::GetLevelCap();
+	if (Level >= LevelCap)
+	{
+		return;
+	}
+
+	const int32 OldLevel = Level;
+	Experience += Amount;
+
+	while (Level < LevelCap && Experience >= UOnsetLevelingLibrary::GetXPRequired(Level))
+	{
+		Experience -= UOnsetLevelingLibrary::GetXPRequired(Level);
+		Level += 1;
+		UnspentStatPoints += UOnsetLevelingLibrary::GetStatPointsPerLevel();
+	}
+
+	if (Level > OldLevel)
+	{
+		UE_LOG(LogTemp, Log, TEXT("XP: LEVEL UP! Lv %d -> %d (+%d stat points, full heal)"),
+			OldLevel, Level, UOnsetLevelingLibrary::GetStatPointsPerLevel());
+	}
+
+	// Level-up: full heal + event tag (TAG_Event_LevelUp, GAS event pattern).
+	if (Level > OldLevel && AttributeSet)
+	{
+		AttributeSet->SetHealth(AttributeSet->GetMaxHealth());
+	}
+	if (Level > OldLevel && AbilitySystemComponent)
+	{
+		AbilitySystemComponent->AddLooseGameplayTag(TAG_Event_LevelUp);
+		AbilitySystemComponent->RemoveLooseGameplayTag(TAG_Event_LevelUp);
+	}
+
+	OnProgressionChanged.Broadcast(Level, Experience);
+	PersistProgression();
+}
+
+void AOnsetPlayerCharacter::PersistProgression()
+{
+	// Use the identity stored on the pawn (SetPersistIdentity), not GetPlayerState():
+	// under autoplay / continue-on-disconnect the AI controller possesses the pawn and
+	// its PlayerState is null (AAIController owns no PlayerState), so GetPlayerState
+	// would silently drop XP earned while the player is away.
+	if (PersistSlotIndex < 0 || PersistPlatform.IsEmpty())
+	{
+		return;
+	}
+
+	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+	if (!DataSubsystem) return;
+
+	DataSubsystem->UpdateRuntimeProgression(PersistPlatform, PersistPlatformID, PersistSlotIndex, Level, Experience, UnspentStatPoints);
+}
+
+int32 AOnsetPlayerCharacter::GetXPRequiredForNextLevel() const
+{
+	return UOnsetLevelingLibrary::GetXPRequired(Level);
+}
+
+float AOnsetPlayerCharacter::GetXPProgressPercent() const
+{
+	const int32 Required = UOnsetLevelingLibrary::GetXPRequired(Level);
+	if (Required <= 0) return 0.0f;
+	return FMath::Clamp(static_cast<float>(Experience) / static_cast<float>(Required), 0.0f, 1.0f);
 }
 
 void AOnsetPlayerCharacter::OnDeath(AActor* KillingActor)

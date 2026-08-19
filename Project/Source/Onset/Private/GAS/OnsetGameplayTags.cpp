@@ -23,6 +23,7 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Cooldown_Cone, "Cooldown.Cone");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Cooldown_Shadowstep, "Cooldown.Shadowstep");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Event_HitReaction, "Event.HitReaction");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Event_Death, "Event.Death");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Event_LevelUp, "Event.LevelUp");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Attack, "Ability.Type.Attack");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_AoE, "Ability.Type.AoE");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Cone, "Ability.Type.Cone");

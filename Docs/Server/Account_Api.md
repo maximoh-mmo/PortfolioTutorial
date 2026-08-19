@@ -33,7 +33,7 @@ Serverless REST backend for player accounts and characters. `FHttpStore` (`[Onse
 | POST | `/account/:platform/:id` | Create account (returns empty `slots: []`) | `X-API-Key` + `X-Store-Token` |
 | GET | `/account/:platform/:id/character/:slot` | Load one character | `X-API-Key` + `X-Store-Token` |
 | POST | `/account/:platform/:id/character/:slot` | Create character (409 if slot occupied) | `X-API-Key` + `X-Store-Token` |
-| PUT | `/account/:platform/:id/character/:slot` | Save/update character | `X-API-Key` + `X-Store-Token` |
+| PUT | `/account/:platform/:id/character/:slot` | Save/update character (full JSON incl. `unspentStatPoints`) | `X-API-Key` + `X-Store-Token` |
 | DELETE | `/account/:platform/:id/character/:slot` | Delete character | `X-API-Key` + `X-Store-Token` |
 
 ---

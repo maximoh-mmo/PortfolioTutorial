@@ -156,10 +156,34 @@ bool UOnsetPlayerDataSubsystem::SaveCharacterPreservingIdentity(const FString& P
 		Data.CharacterName = Existing.CharacterName;
 		Data.Level = Existing.Level;
 		Data.Experience = Existing.Experience;
+		Data.UnspentStatPoints = Existing.UnspentStatPoints;
 		Data.CharacterClass = Existing.CharacterClass;
 		Data.AppearanceJSON = Existing.AppearanceJSON;
 	}
 	return SaveCharacter(Platform, PlatformID, Data);
+}
+
+void UOnsetPlayerDataSubsystem::UpdateRuntimeProgression(const FString& Platform, const FString& PlatformID, int32 SlotIndex, int32 Level, int32 Experience, int32 UnspentStatPoints)
+{
+	const FString CacheKey = MakeCharacterCacheKey(Platform, PlatformID, SlotIndex);
+	FOnsetFullCharacterData* Cached = IdentityCache.Find(CacheKey);
+	if (Cached)
+	{
+		Cached->Level = Level;
+		Cached->Experience = Experience;
+		Cached->UnspentStatPoints = UnspentStatPoints;
+	}
+	else
+	{
+		// Cold cache (server restart with an already-loaded session): seed it so a later
+		// SaveCharacterPreservingIdentity doesn't clobber the fresh progression values.
+		FOnsetFullCharacterData Seed;
+		Seed.SlotIndex = SlotIndex;
+		Seed.Level = Level;
+		Seed.Experience = Experience;
+		Seed.UnspentStatPoints = UnspentStatPoints;
+		IdentityCache.Add(CacheKey, Seed);
+	}
 }
 
 bool UOnsetPlayerDataSubsystem::DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex)

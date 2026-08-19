@@ -45,6 +45,8 @@ flowchart TD
     DeathFork --> RespawnTimer[Spawner Respawn Timer]
 ```
 
+Transient gameplay events are pulsed via loose gameplay tags (add → remove on the ASC), e.g. `TAG_Event_HitReaction` (hit reaction) and `TAG_Event_LevelUp` (broadcast on a level-up, `Event.LevelUp`), so abilities can react to them without polling. See [Leveling System](../Player/Leveling_System.md).
+
 ---
 
 ## **PvP Damage Filtering**

@@ -16,6 +16,7 @@ class UCombatToggleWidget;
 class UDamageNumberWidget;
 class ULootOverlayWidget;
 class UPlayerHealthBarWidget;
+class UPlayerXPBarWidget;
 class UTargetHUDWidget;
 class UTargetingComponent;
 struct FOnAttributeChangeData;
@@ -66,6 +67,10 @@ private:
 	/** Designer-nested sub-widgets (styled in WBP_HUD). */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UPlayerHealthBarWidget> PlayerHealthBar;
+
+	/** Player level + XP bar (combat-formulas §12). */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UPlayerXPBarWidget> PlayerXPBar;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UAbilityBarWidget> AbilityBar;

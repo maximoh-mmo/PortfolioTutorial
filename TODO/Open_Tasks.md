@@ -74,6 +74,7 @@ Episode scripts 40–43 exist in `Planning/Scripts/`; 44–47 have outlines only
 
 ## Priority 5 — Housekeeping & optional
 
+- [ ] Author `Level` (1–200) + `XpReward` on `DT_EnemyStats` rows; verify XP grants / level-ups / autoplay persistence in PIE (code done — see [Leveling System](../Docs/Player/Leveling_System.md))
 - [ ] Delete stale backup artifact `Assets/Images/UI/7158.svg.2026_08_09_16_46_59.1.svg`
 - [ ] Decide tracking policy for `Assets/Images/` (commit icon source vs gitignore)
 - [ ] (Optional) AI-vs-AI autoplay harness — see `Docs/Future_Ideas.md`; supports demo recording / balance testing

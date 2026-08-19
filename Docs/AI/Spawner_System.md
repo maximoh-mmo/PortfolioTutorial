@@ -39,11 +39,11 @@ Manage the creation and ongoing respawn of NPC groups in the world, assigning th
 
 | Field | Purpose |
 |---|---|
-| `EnemyStats` | `DT_EnemyStats` row (`FOnsetEnemyStats`); sets MaxHealth/DamageBase/DEF/RES per element/LUK/WeaponArchetype/ElementAffinity |
+| `EnemyStats` | `DT_EnemyStats` row (`FOnsetEnemyStats`); sets MaxHealth/DamageBase/DEF/RES per element/LUK/WeaponArchetype/ElementAffinity + `Level` (XP curve) / `XpReward` (0 = derived, >0 = exact base) |
 | `Tier` | Difficulty tier; stats scale by `(1 + d)^Tier` (d = 15%) via `AOnsetEnemy::ApplyEnemyStats` |
 | `ZoneTag` | Area tag stamped on spawned enemies; gates zone-scoped loot entries (see [Inventory & Loot System](../Inventory/Inventory_System.md)) |
 
-`ApplyEnemyStats` also grants the enemy's `Element.*` affinity tag (drives the type chart) and stores `DifficultyTier` as the loot-roll level. See [GAS System](../GAS/GAS_System.md) and [combat-formulas](../combat-formulas.md) §2.9/§5.
+`ApplyEnemyStats` also grants the enemy's `Element.*` affinity tag (drives the type chart), stores `DifficultyTier` as the loot-roll level, and records `Level`/`XpReward` so a player kill can grant XP scaled by the grey/yellow/green multiplier (see [Leveling System](../Player/Leveling_System.md)). See [GAS System](../GAS/GAS_System.md) and [combat-formulas](../combat-formulas.md) §2.9/§5.
 
 ## Data Flow
 

@@ -52,6 +52,11 @@ public:
 	 * Possession is deferred a tick to avoid reentrancy during controller destruction.
 	 */
 	void AdoptAbandonedPawn(APawn* InPawn, const FString& Platform, const FString& PlatformID, int32 SlotIndex);
+
+	/** Cached account identity of the adopted pawn (for the timeout save + pawn persistence). */
+	FString GetCachedPlatform() const { return CachedPlatform; }
+	FString GetCachedPlatformID() const { return CachedPlatformID; }
+	int32 GetCachedSlotIndex() const { return CachedSlotIndex; }
 	
 	void StartStateTree();
 	void StopStateTree();

@@ -156,6 +156,16 @@ struct FOnsetEnemyStats : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	FText DisplayName;
 
+	/** Authored enemy level (1-200). Drives the XP LevelDiff multiplier and the
+	 *  level-derived XP fallback (combat-formulas §12). Not scaled by tier. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	int32 Level = 1;
+
+	/** Explicit XP reward on kill. 0 = derive from Level via XPRequired(Level)/KillsPerLevel.
+	 *  Set > 0 to override (e.g. bosses give more, summoned minions give 0). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	int32 XpReward = 0;
+
 	/** Max health at tier 0; scaled by (1 + d)^Tier. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	float MaxHealth = 100.0f;

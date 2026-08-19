@@ -4,11 +4,13 @@ Companion to `Docs/combat-formulas.md`. This is the *implementation* plan: the
 systems GAS needs, the decisions behind them, and the phased build order. The
 formulas doc is the design authority; this doc is how we get there in code.
 
-> **Status (2026-08-17):** Phases 1–7 are largely landed in code:
+> **Status (2026-08-18):** Phases 1–8 are landed in code:
 > full combat attributes, equipment loadouts + stat aggregation, cooldown/haste
 > gating, the element type chart + freeze + CC diminishing returns, crit curves,
-> buff/debuff aggregation + Support potency, mastery constants, and data-driven
-> enemy stats (`DT_EnemyStats`). Tracked in the authoritative live docs:
+> buff/debuff aggregation + Support potency, mastery constants, data-driven
+> enemy stats (`DT_EnemyStats`), and the experience/leveling system
+> (`Docs/Player/Leveling_System.md`, combat-formulas §12). Tracked in the
+> authoritative live docs:
 > [GAS System](../Docs/GAS/GAS_System.md), [combat-formulas](../Docs/combat-formulas.md),
 > [Spawner System](../Docs/AI/Spawner_System.md). The roadmap below records the
 > decisions; treat the live docs as the current state.
@@ -173,6 +175,13 @@ Universal equip access; mastery applies only when class matches weapon:
 - `DT_EnemyStats` + `(1+d)^N` spawn scaling; `(1+r)^N` outgoing multiplier.
 - Zone-tier K scaling for `K_DEF`/`K_elem`.
 - Seconds-based TTK validation vs `Docs/combat-tuning-calculator.xlsx` (`TTK = EnemyHP / DPS`).
+
+### Phase 8 — Experience & leveling (implemented 2026-08-18)
+- Replicated `Level`/`Experience`/`UnspentStatPoints` on the player pawn (survives autoplay).
+- `DT_EnemyStats.Level` + `XpReward`; XP granted in `AOnsetEnemy::OnDeath`.
+- Grey/yellow/green LevelDiff multiplier; level-up = full heal + stat points + `TAG_Event_LevelUp`.
+- Write-through persistence via `UpdateRuntimeProgression` (all save paths covered).
+- Live doc: [Leveling System](../Docs/Player/Leveling_System.md).
 
 ---
 

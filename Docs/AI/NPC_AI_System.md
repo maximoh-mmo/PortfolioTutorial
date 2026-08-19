@@ -56,7 +56,7 @@ It provides responsive, deterministic, multiplayer‑safe enemy behaviour.
 - Holds `UGroupComponent`
 - `HomeTransform` inherited from `AOnsetBaseCharacter` — anchor for territory-based Roam AI (set from spawn slot transform in `SpawnEnemyAtSlot`); also usable for player respawn
 - Stores three profile references: `UAIProfile* Profile`, `UVisualProfile* VisualProfile`, `UPerceptionProfile* PerceptionProfile`
-- `ApplyEnemyStats(FName RowName, int32 Tier)` — data-driven stats from `DT_EnemyStats` (`FOnsetEnemyStats`): MaxHealth/DamageBase/DEF/RES per element/LUK/WeaponArchetype/ElementAffinity, scaled by `(1 + d)^Tier` (d = 15%). Grants the `Element.*` affinity tag (type chart) and records `DifficultyTier` as the loot-roll level. See [Spawner System](Spawner_System.md) and [GAS System](../GAS/GAS_System.md)
+- `ApplyEnemyStats(FName RowName, int32 Tier)` — data-driven stats from `DT_EnemyStats` (`FOnsetEnemyStats`): MaxHealth/DamageBase/DEF/RES per element/LUK/WeaponArchetype/ElementAffinity, scaled by `(1 + d)^Tier` (d = 15%). Grants the `Element.*` affinity tag (type chart), records `DifficultyTier` as the loot-roll level, and stores `Level`/`XpReward` so player kills grant XP (grey/yellow/green multiplier). See [Spawner System](Spawner_System.md), [GAS System](../GAS/GAS_System.md), and [Leveling System](../Player/Leveling_System.md)
 - `ApplyProfile(UVisualProfile*)` applies visual profile to the pawn:
   - **Skeletal mesh path** — loads `SkeletalMesh` synchronously, sets mesh + anim BP + material; auto-sizes the capsule to `GetImportedBounds()`
   - **Cube fallback path** — when no `SkeletalMesh`, creates a `UStaticMeshComponent` (CubeVis) with `/Engine/BasicShapes/Cube.Cube`

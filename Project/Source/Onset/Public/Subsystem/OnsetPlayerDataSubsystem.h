@@ -44,6 +44,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Data")
 	bool SaveCharacterPreservingIdentity(const FString& Platform, const FString& PlatformID, FOnsetFullCharacterData& Data);
 
+	/** Updates the runtime progression fields (level, experience, unspent stat points) in the
+	    identity cache so subsequent saves persist them. Server-only. */
+	void UpdateRuntimeProgression(const FString& Platform, const FString& PlatformID, int32 SlotIndex, int32 Level, int32 Experience, int32 UnspentStatPoints);
+
 	UFUNCTION(BlueprintCallable, Category = "Player Data")
 	bool DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex);
 

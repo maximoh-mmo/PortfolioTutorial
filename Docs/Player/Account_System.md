@@ -63,7 +63,7 @@ Slot UI is driven in C++ by `UCharacterSlot` (occupied/empty display state, clic
 |---------|------|------|
 | Character creation | First save | Full write |
 | Character select | On world entry | Read |
-| Level up (future) | XP threshold crossed | Write |
+| Level up | XP threshold crossed | Write (identity-cache write-through via `UpdateRuntimeProgression`) |
 | Inventory change (future) | Pickup/drop/equip | Write |
 | Quest stage (future) | Objective complete | Write |
 | Death | OnDeath fires | Respawn (no write — position/health are runtime) |
@@ -104,7 +104,7 @@ Combat ephemera (current health, active cooldowns, temporary effects) are **neve
 |--------|--------|---------|
 | `FOnsetCharacterSlotData` | SlotIndex, CharacterName, Level, CharacterClass, bOccupied | Account overview (lightweight, no full state) |
 | `FOnsetAccountData` | PlatformID, Platform, Slots | Full account sent to client |
-| `FOnsetFullCharacterData` | SlotIndex, CharacterName, Level, Experience, CurrentZone, SavedMaxHealth, SavedPosition, SavedRotationYaw, InventoryJSON, EquipmentJSON, QuestsJSON, CharacterClass, AppearanceJSON | Full character state for save/load |
+| `FOnsetFullCharacterData` | SlotIndex, CharacterName, Level, Experience, UnspentStatPoints, CurrentZone, SavedMaxHealth, SavedPosition, SavedRotationYaw, InventoryJSON, EquipmentJSON, QuestsJSON, CharacterClass, AppearanceJSON | Full character state for save/load |
 
 **Inventory/equipment JSON** is produced by `UOnsetInventoryComponent::SerializeInventoryJSON()` / `SerializeEquipmentJSON()` on the pawn. The bag serializes as a stacked-entries array `[{c, r, n}]` where `c` = `EOnsetItemCategory`, `r` = row name, `n` = count (equipment as `[{slot, row}]`). Both restore via `AOnsetBaseCharacter::DeserializeInventoryJSON` on save load. See [Inventory & Loot System](../Inventory/Inventory_System.md).
 
@@ -219,7 +219,7 @@ PlayerController           UOnsetPlayerDataSubsystem       IPlayerDataStore
 - [ ] MaxHealth attribute restored on login
 - [ ] Empty slots cannot be selected
 - [ ] Occupied slots show correct name + level
-- [ ] Save after level-up (future) updates XP/level
+- [ ] Save after level-up persists XP/level + unspent stat points
 - [ ] RPCs validated server-side (no client spoofing)
 - [ ] DB survives DS restart (read-after-reboot)
 
