@@ -106,6 +106,16 @@ void AOnsetPlayerCharacter::GrantXPFromEnemy(int32 EnemyLevel, int32 XpReward)
 	}
 }
 
+void AOnsetPlayerCharacter::GrantQuestXP(int32 Amount)
+{
+	if (!HasAuthority() || Amount <= 0)
+	{
+		return;
+	}
+	AddExperience(Amount);
+	UE_LOG(LogTemp, Log, TEXT("XP: quest reward +%d XP (now %d/%d)"), Amount, Experience, UOnsetLevelingLibrary::GetXPRequired(Level));
+}
+
 void AOnsetPlayerCharacter::AddExperience(int32 Amount)
 {
 	if (Amount <= 0) return;

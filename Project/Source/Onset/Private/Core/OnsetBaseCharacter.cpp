@@ -18,6 +18,7 @@
 #include "Combat/OnsetAbilityLibrary.h"
 #include "Data/OnsetAbilityTypes.h"
 #include "Inventory/UOnsetInventoryComponent.h"
+#include "Quest/UOnsetQuestComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/DecalComponent.h"
 #include "CollisionQueryParams.h"
@@ -48,6 +49,9 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 	InventoryComponent = CreateDefaultSubobject<UOnsetInventoryComponent>(TEXT("InventoryComponent"));
 	InventoryComponent->SetReplicateToOwnerOnly(true);
 	InventoryComponent->OnInventoryChanged.AddUObject(this, &AOnsetBaseCharacter::HandleInventoryChanged);
+
+	// Quest tracker (player pawns; inert on enemies/corpses).
+	QuestComponent = CreateDefaultSubobject<UOnsetQuestComponent>(TEXT("QuestComponent"));
 
 	// Ground reticule decal: hidden until this character becomes the player's target.
 	TargetReticuleDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("TargetReticuleDecal"));

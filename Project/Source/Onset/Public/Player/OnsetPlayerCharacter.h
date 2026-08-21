@@ -69,6 +69,13 @@ public:
 	void ApplyCharacterProgression(int32 InLevel, int32 InExperience, int32 InUnspentStatPoints);
 
 	/**
+	 * Grants flat XP (quest rewards). Runs the normal level-up pipeline and persists.
+	 * Server-only.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Progression")
+	void GrantQuestXP(int32 Amount);
+
+	/**
 	 * Stores the account identity this pawn persists under. Set on select/possess and on
 	 * abandoned-pawn adoption, because once the AI controller owns the pawn (autoplay /
 	 * continue-on-disconnect) GetPlayerState() returns null and PersistProgression must not

@@ -11,6 +11,9 @@
 /** Broadcast on any inventory or equipment change (authority only). */
 DECLARE_MULTICAST_DELEGATE(FOnsetInventoryChanged);
 
+/** Broadcast per-item on every successful AddItem/AddItems (authority only). */
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnsetItemAdded, EOnsetItemCategory, FName, int32);
+
 struct FOnsetEquipmentDefinition;
 
 /**
@@ -110,7 +113,14 @@ public:
 	/** Fired on any authority-side mutation (items or equipment). */
 	FOnsetInventoryChanged OnInventoryChanged;
 
-	/** Set by the owning actor at construction: true for player pawns, false for corpses. */
+	/** Fired per-item on successful AddItem/AddItems grants (authority only). */
+	FOnsetItemAdded OnItemAdded;
+
+	/** Maximum number of distinct item rows the inventory can hold (e.g. 80). */
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	int32 MaxInventorySlots = 80;
+
+	/** Sets replication scope; must be set before the owning actor registers replication. */
 	void SetReplicateToOwnerOnly(bool bInOwnerOnly) { bReplicateToOwnerOnly = bInOwnerOnly; }
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

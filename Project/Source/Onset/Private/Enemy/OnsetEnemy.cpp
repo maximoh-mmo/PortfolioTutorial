@@ -18,6 +18,7 @@
 #include "Enemy/GroupComponent.h"
 #include "Enemy/Profile/VisualProfile.h"
 #include "Player/OnsetPlayerCharacter.h"
+#include "Quest/UOnsetQuestComponent.h"
 #include "Spawning/OnsetSpawner.h"
 #include "Subsystem/OnsetThreatSubsystem.h"
 
@@ -178,6 +179,12 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 	if (AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(KillingActor))
 	{
 		PlayerChar->GrantXPFromEnemy(EnemyLevel, XpReward);
+
+		// Quest signal: kill objectives are keyed by the DT_EnemyStats row.
+		if (PlayerChar->QuestComponent && !EnemyStatsRow.IsNone())
+		{
+			PlayerChar->QuestComponent->ReportObjectiveProgress(EOnsetQuestObjectiveType::Kill, EnemyStatsRow, 1);
+		}
 	}
 
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetEnemy::DeferredDeathCleanup);

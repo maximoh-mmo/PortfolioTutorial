@@ -12,6 +12,7 @@ class UOnsetMovementAttributeSet;
 class UOnsetCombatAttributeSet;
 class UOnsetCCDiminishingComponent;
 class UOnsetInventoryComponent;
+class UOnsetQuestComponent;
 class UTargetingComponent;
 class UOnsetAttributeSet;
 class UAbilitySystemComponent;
@@ -76,6 +77,10 @@ public:
 	/** Shared inventory: equipped loadout + bag. Owner-only replication on player pawns. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TObjectPtr<UOnsetInventoryComponent> InventoryComponent;
+
+	/** Server-authoritative quest tracker (player pawns). Inert on enemies/corpses. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Quest")
+	TObjectPtr<UOnsetQuestComponent> QuestComponent;
 
 	// --- Equipment / derived stats ---
 

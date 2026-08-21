@@ -25,9 +25,23 @@ void UOnsetInventoryComponent::AddItem(EOnsetItemCategory Category, FName RowNam
 	{
 		return;
 	}
+	// Check if this item already exists in the inventory.
+	bool bExists = Items.ContainsByPredicate([Category, RowName](const FOnsetInventoryEntry& Entry)
+	{
+		return Entry.Category == Category && Entry.RowName == RowName;
+	});
+	
+	// If it's a new item, verify we haven't hit the max distinct slots limit.
+	if (!bExists && Items.Num() >= MaxInventorySlots)
+	{
+		// Optionally broadcast or log that the inventory is full.
+		return;
+	}
+	
 	UOnsetItemLibrary::AddStacked(Items, Category, RowName, Count);
 	if (Count > 0)
 	{
+		OnItemAdded.Broadcast(Category, RowName, Count);
 		OnInventoryChanged.Broadcast();
 	}
 }
@@ -40,7 +54,12 @@ void UOnsetInventoryComponent::AddItems(const TArray<FOnsetInventoryEntry>& Entr
 	}
 	for (const FOnsetInventoryEntry& Entry : Entries)
 	{
+		if (Entry.Count <= 0)
+		{
+			continue;
+		}
 		UOnsetItemLibrary::AddStacked(Items, Entry.Category, Entry.RowName, Entry.Count);
+		OnItemAdded.Broadcast(Entry.Category, Entry.RowName, Entry.Count);
 	}
 	if (Entries.Num() > 0)
 	{
