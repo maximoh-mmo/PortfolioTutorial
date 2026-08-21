@@ -53,6 +53,16 @@ public:
 	 */
 	float GetComparisonDamage(const FOnsetAbilityDefinition& Definition) const;
 
+	/**
+	 * True when Target has an active effect granting RefreshTag whose instigator is
+	 * SourceAvatar. Periodic effects stack per source (AggregateBySource), so refresh
+	 * gating must be scoped per caster: player A's live poison must not block player B
+	 * from applying their own instance of the same DoT.
+	 */
+	static bool HasActivePeriodicInstanceFrom(const UAbilitySystemComponent* TargetASC,
+											  FGameplayTag RefreshTag,
+											  const AActor* SourceAvatar);
+
 protected:
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle,

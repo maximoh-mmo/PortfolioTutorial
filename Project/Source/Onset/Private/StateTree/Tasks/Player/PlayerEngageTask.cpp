@@ -182,11 +182,14 @@ EStateTreeRunStatus FPlayerEngageTask::Tick(FStateTreeExecutionContext& Context,
 
 			// Refresh gate: an enemy-facing refreshable DoT already active on the primary
 			// target would be re-cast to no effect (DoTs refresh, not stack) - drop it.
+			// Scoped to THIS caster: another player's live stack of the same DoT must
+			// not block our own application (periodic GEs stack per source).
 			if (Candidate.Definition
 				&& Candidate.Definition->RefreshTag.IsValid()
 				&& HasHostilePeriodicDamage(*Candidate.Definition)
-				&& TargetChar->AbilitySystemComponent
-				&& TargetChar->AbilitySystemComponent->HasMatchingGameplayTag(Candidate.Definition->RefreshTag))
+				&& UOnsetGA_Generic::HasActivePeriodicInstanceFrom(TargetChar->AbilitySystemComponent,
+																  Candidate.Definition->RefreshTag,
+																  Self))
 			{
 				continue;
 			}

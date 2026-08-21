@@ -37,7 +37,7 @@ When 2+ abilities are ready, `PlayerEngageTask` scores each candidate and casts 
   - `PointBlankAoE` → enemies within `Radius` of self
   - `Cone` → same set filtered to the row's `Radius` + `ConeHalfAngle` toward the target
   - `SingleTarget` / `Self` → 1
-- **Refresh gate:** a hostile periodic-damage ability whose authored `FOnsetAbilityDefinition::RefreshTag` is already active on the target is dropped from candidacy (DoTs refresh rather than stack — re-casting wastes the cooldown). The tag is granted dynamically on every periodic spec in `ApplyPeriodicEffectSpecToTarget`.
+- **Refresh gate (per-caster):** a hostile periodic-damage ability whose authored `FOnsetAbilityDefinition::RefreshTag` is already active on the target — **from this caster** (`UOnsetGA_Generic::HasActivePeriodicInstanceFrom` matches tag + effect instigator) — is dropped from candidacy (a caster's own DoT refreshes rather than stacks; re-casting wastes the cooldown). Another player's live stack of the same DoT does **not** block application, since periodic GEs stack per source (`AggregateBySource`). The tag is granted dynamically on every periodic spec in `ApplyPeriodicEffectSpecToTarget`.
 - **Tie-break:** equal score → **longest `CooldownSeconds`** wins, so expensive casts go on cooldown before fast fillers.
 - **Fallback:** non-data-driven attacks (`GA_BasicAttack`) enter as zero-score fillers; with a single ready candidate no overlap query runs at all.
 - Instantaneous comparison only — no DPS/time averaging, no defense/element mitigation modeling.

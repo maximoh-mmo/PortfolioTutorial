@@ -922,6 +922,33 @@ float UOnsetGA_Generic::ComputeComparisonDamageInternal(const FOnsetAbilityDefin
 	return Total;
 }
 
+bool UOnsetGA_Generic::HasActivePeriodicInstanceFrom(const UAbilitySystemComponent* TargetASC,
+													 FGameplayTag RefreshTag,
+													 const AActor* SourceAvatar)
+{
+	if (!TargetASC || !RefreshTag.IsValid() || !SourceAvatar)
+	{
+		return false;
+	}
+
+	// Scan active effects for one carrying our dynamic RefreshTag AND instigated by
+	// this specific caster. Tag-only matching would gate every player behind the first
+	// applier's stack, which is wrong under per-source DoT stacking.
+	for (const FActiveGameplayEffectHandle& Handle : TargetASC->GetActiveEffects(FGameplayEffectQuery()))
+	{
+		const FActiveGameplayEffect* Active = TargetASC->GetActiveGameplayEffect(Handle);
+		if (!Active || !Active->Spec.DynamicGrantedTags.HasTag(RefreshTag))
+		{
+			continue;
+		}
+		if (Active->Spec.GetContext().GetInstigator() == SourceAvatar)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 void UOnsetGA_Generic::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
 									 const FGameplayAbilityActorInfo* ActorInfo,
 									 const FGameplayAbilityActivationInfo ActivationInfo) const
