@@ -21,7 +21,6 @@ void UOnsetPoolSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	InitializePool();	
 }
 
-// Sets default values	
 AOnsetEnemy* UOnsetPoolSubsystem::GetPooledEnemy()
 {
 	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return nullptr;
@@ -35,8 +34,9 @@ AOnsetEnemy* UOnsetPoolSubsystem::GetPooledEnemy()
 			return Enemy;
 		}
 	}
-	// Pool exhausted — fallback SpawnActor (hardcoded to base AOnsetEnemy)                                          
-	UE_LOG(LogPooling, Warning, TEXT("OnsetPoolManager: Pool exhausted — spawning new NPC as fallback."));
+	// Pool exhausted — fallback SpawnActor (hardcoded to base AOnsetEnemy), which is
+	// immediately pooled so future retrievals see it.
+	UE_LOG(LogPooling, Warning, TEXT("UOnsetPoolSubsystem: Enemy pool exhausted — spawning new NPC as fallback."));
 	FActorSpawnParameters Params;                                                                           
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (AOnsetEnemy* Enemy = GetWorld()->SpawnActor<AOnsetEnemy>(AOnsetEnemy::StaticClass(), FTransform::Identity, Params))
@@ -63,8 +63,8 @@ AOnsetAIController* UOnsetPoolSubsystem::GetPooledController()
 			return Controller;
 		}
 	}
-	// Pool exhausted — fallback SpawnActor (hardcoded to base AOnsetEnemy)                                          
-	UE_LOG(LogPooling, Warning, TEXT("OnsetPoolManager: Controller Pool exhausted — spawning new Controllers as fallback."));
+	// Pool exhausted — fallback SpawnActor (hardcoded to base AOnsetAIController).
+	UE_LOG(LogPooling, Warning, TEXT("UOnsetPoolSubsystem: Controller pool exhausted — spawning new controller as fallback."));
 	FActorSpawnParameters Params;                                                                           
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (AOnsetAIController* Controller = GetWorld()->SpawnActor<AOnsetAIController>(AOnsetAIController::StaticClass(), FTransform::Identity, Params))

@@ -9,6 +9,11 @@
 
 class AOnsetEnemy;
 
+/**
+ * Server-side threat tables driving NPC target selection (see [Threat_System.md]).
+ * Per-enemy threat map + per-player engagement lists; both keyed by weak pointers so
+ * destroyed actors decay naturally. All mutations are authority-only (client calls no-op).
+ */
 UCLASS()
 class ONSET_API UOnsetThreatSubsystem : public UWorldSubsystem
 {
@@ -16,8 +21,8 @@ class ONSET_API UOnsetThreatSubsystem : public UWorldSubsystem
 
 public:
 	// --- Threat ---
-	
-	// Add/Subtract threat.
+
+	/** Adds (or subtracts, via negative) threat for PlayerCharacter on Enemy; clamped at 0. */
 	void AddThreat(AOnsetBaseCharacter* PlayerCharacter, AOnsetEnemy* Enemy, float ThreatAmount);
 	// Clean up on player disconnect (after autoplay timeout/death if enabled).
 	void RemovePlayer(const AOnsetBaseCharacter* PlayerCharacter);
@@ -25,7 +30,8 @@ public:
 	void RemoveEnemy(AOnsetEnemy* Enemy);
 	// Return the highest threat player (by raw value).
 	APawn* GetPrimaryTarget(AOnsetEnemy* Enemy);
-	// Return the best target considering threat × distance weighting.
+	/** Highest threat × distance weight: 1.0 inside AttackRange, 0.5 inside ChaseRange,
+	 *  0.1 beyond. Ties break toward the first-encountered entry. */
 	AOnsetBaseCharacter* GetBestTarget(AOnsetEnemy* Enemy, float AttackRange, float ChaseRange);
 	// Return the given ranked threat player.
 	APawn* GetNthTarget(int32 Rank, AOnsetEnemy* Enemy);
@@ -48,10 +54,12 @@ public:
 	int32 GetEngagedIndex(AOnsetEnemy* Enemy, AOnsetBaseCharacter* PlayerCharacter);
 	// Switch this Enemy's engagement from its current player(s) to NewPlayer.
 	void SwitchTarget(AOnsetEnemy* Enemy, AOnsetBaseCharacter* NewPlayer);
+	/** True when Enemy is currently registered in PlayerCharacter's engagement list. */
 	bool IsEnemyEngagedWithPlayer(AOnsetEnemy* Enemy, AOnsetBaseCharacter* PlayerCharacter) const;
 
 private:
-	
-    TMap<TWeakObjectPtr<AOnsetEnemy>, TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>> ThreatTable;
+	/** Enemy → (player → accumulated threat). Drives GetPrimaryTarget/GetBestTarget/GetNthTarget. */
+	TMap<TWeakObjectPtr<AOnsetEnemy>, TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>> ThreatTable;
+	/** Player → enemies currently engaged with them; index doubles as the angular-spread rank. */
 	TMap<TWeakObjectPtr<AOnsetBaseCharacter>, TArray<TWeakObjectPtr<AOnsetEnemy>>> EngagementTable;
 };

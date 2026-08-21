@@ -40,6 +40,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Profile", ReplicatedUsing = OnRep_VisualProfile)
 	TObjectPtr<UVisualProfile> VisualProfile;
 	
+	/** Spawner that owns this slot; set at spawn, cleared on pool return (respawn routing). */
 	UPROPERTY()
 	TObjectPtr<AOnsetSpawner> OwningSpawner;
 
@@ -51,11 +52,13 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	/** Client-side: re-applies the replicated VisualProfile's mesh/anim/material locally. */
 	UFUNCTION()
 	void OnRep_VisualProfile();
 
 protected:
 
+	/** Delayed death work (corpse spawn, pool return) so the death frame stays cheap. */
 	void DeferredDeathCleanup();
 
 	/** Difficulty tier set by ApplyEnemyStats; doubles as the loot level. */

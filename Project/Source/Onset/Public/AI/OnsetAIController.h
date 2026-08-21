@@ -44,10 +44,18 @@ public:
 	UPROPERTY()
 	TObjectPtr<UTargetingComponent> TargetingComponent;
 	
-	FVector HeardNoiseLocation = FVector::ZeroVector;                                                               
-	TWeakObjectPtr<AActor> HeardNoiseInstigator;                                                                    
-	bool bHasPendingNoise = false;                                                                                  
-	float LastNoiseHeardTime = 0.0f;        
+	// --- Assist hearing state ---
+	// Filled by OnPerceptionUpdated when a FAINoiseEvent (damage) is heard; consumed by
+	// the Investigate/Search StateTree states. Reset in OnUnPossess / pool return.
+
+	/** Location of the most recent noise heard (world space). */
+	FVector HeardNoiseLocation = FVector::ZeroVector;
+	/** Actor that emitted the most recent noise. */
+	TWeakObjectPtr<AActor> HeardNoiseInstigator;
+	/** True while a heard noise has not yet been investigated or expired. */
+	bool bHasPendingNoise = false;
+	/** World seconds when the last noise was heard (drives remembrance timeout). */
+	float LastNoiseHeardTime = 0.0f;
 
 	// --- AI LOD ---
 
@@ -77,9 +85,16 @@ protected:
 	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
 	
 private:
+	/**
+	 * Distance-based tick gating, re-evaluated every 30 ticks (UpdateLodTier):
+	 * within sight range → full rate; sight→hearing range → 0.2s throttle;
+	 * beyond hearing range → 0.5s controller tick with StateTree component paused.
+	 */
 	void UpdateLodTier();
+	/** Frames elapsed since the last UpdateLodTier evaluation. */
 	int32 LodTickCounter = 0;
 
+	/** True while this pooled controller possesses a pawn (pool bookkeeping). */
 	bool bInUse = false;
 	UPROPERTY()
 	UAIProfile* AIProfile;

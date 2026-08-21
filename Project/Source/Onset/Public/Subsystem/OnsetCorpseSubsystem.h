@@ -27,7 +27,9 @@ public:
 	float CorpseLifespan = 15.0f;
 
 private:
+	/** Evicts the oldest corpses while the active count exceeds MaxActiveCorpses. */
 	void SweepDeadCorpses();
 
+	/** Live corpse actors in spawn order (oldest first, for cap eviction). */
 	TArray<TWeakObjectPtr<AOnsetCorpse>> ActiveCorpses;
 };

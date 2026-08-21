@@ -353,7 +353,7 @@ Estimated: ~12 weeks full-time (see [Production Timeline](../Planning/Production
 - [x] Test DS + 1 client connection — WASD, auto-combat, click-to-move verified
 - [x] Test DS + 2+ client connection — 3 clients connected, full combat loop functional
 - [x] Verify AI behaves identically on DS vs PIE — StateTree, auto-combat, pathfinding all match
-- [x] Security audit: 2 Server_ RPCs, 0 Client_ RPCs, both validated
+- [x] Security audit: 2 Server_ RPCs, 0 Client_ RPCs, both validated *(point-in-time at A5.3; the RPC surface grew in A5b/A5c with persistence + token RPCs — re-run the audit during A7 hardening)*
 
 ## A5.4 Steam Auth Integration
 - [x] Initialize Online Subsystem Steam
@@ -577,5 +577,5 @@ Status: ✅ Complete (compressed ~1 day)
 | A5 Multiplayer & Steam | 35 | 35 | 100% | All waves complete (Steam auth + DS verified) |
 | A5b Persistence & Account | 51 | 51 | 100% | All waves complete. Includes FHttpStore + Account API (Lambda + DynamoDB). Wave 5 revised: canvas HUDs → CommonUI screen stack. Post-sprint (08-03-26): create auto-enters world, C++-driven slots, loading screen transitions. |
 | A5c Auth Extraction & Login Server | 42 | 42 | 100% | |
-| A6 UI & Final Demo | 19 | 30 | 63% | A6.1 complete (target frame, ground reticle, clickable ability slots, combat toggle). Debug overlay scrapped — CombatToggle toggle visual covers autoplay feedback. A6.2/A6.3 not started. |
-| A7 Integration & Harden | 0 | 23 | 0% | Not started |
+| A6 UI & Final Demo | 30 | 19 | 63% | A6.1 complete (target frame, ground reticle, clickable ability slots, combat toggle). Debug overlay scrapped — CombatToggle toggle visual covers autoplay feedback. A6.2/A6.3 not started. |
+| A7 Integration & Harden | 23 | 0 | 0% | Not started |

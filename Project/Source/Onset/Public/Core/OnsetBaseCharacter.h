@@ -35,6 +35,7 @@ class ONSET_API AOnsetBaseCharacter : public ACharacter
 
 public:
 	AOnsetBaseCharacter();
+	/** Binds the ASC's actor info to this pawn (owner + avatar); safe to re-run on re-possess. */
 	void InitAbilityActorInfo();
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -47,6 +48,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
+	/** Grants the class loadout once per pawn life (data-driven rows via UOnsetAbilityLibrary). */
 	void GrantDefaultAbilities();
 	
 	UFUNCTION(BlueprintCallable, Category = "Combat")
@@ -167,6 +169,7 @@ public:
 	void OnRep_bIsAlive();
 	
 protected:
+	/** Guard so GrantDefaultAbilities only runs once per pawn (re-possess must not re-grant). */
 	bool bAbilitiesGranted = false;
 
 	/** Character class used to resolve base stats + the default weapon fallback (players). */
