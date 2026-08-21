@@ -24,6 +24,7 @@
 #include "Engine/GameInstance.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerState.h"
+#include "Quest/UOnsetQuestComponent.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "Player/OnsetCheatManager.h"
@@ -33,6 +34,8 @@
 #include "Subsystem/OnsetUISubsystem.h"
 #include "UI/OnsetRootLayout.h"
 #include "UI/OnsetScreenBase.h"
+#include "UI/OnsetActivatableWidgetStack.h"
+#include "UI/InventoryScreen.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
@@ -252,6 +255,7 @@ void AOnsetPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(IA_Ability3, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility3);
 		EnhancedInputComponent->BindAction(IA_Ability4, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility4);
 		EnhancedInputComponent->BindAction(IA_PvPToggle, ETriggerEvent::Started, this, &AOnsetPlayerController::OnPvPToggleTriggered);
+		EnhancedInputComponent->BindAction(IA_Inventory, ETriggerEvent::Started, this, &AOnsetPlayerController::OnInventoryToggleTriggered);
 		
 	}
 }
@@ -314,6 +318,10 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 	// Apply the character's build (class base stats + equipped loadout) and heal to full.
 	PlayerChar->ApplyCharacterBuild(CharData.CharacterClass, CharData.EquipmentJSON);
 	PlayerChar->DeserializeInventoryJSON(CharData.InventoryJSON);
+	if (PlayerChar->QuestComponent)
+	{
+		PlayerChar->QuestComponent->DeserializeQuestsJSON(CharData.QuestsJSON);
+	}
 	if (PlayerChar->AttributeSet)
 	{
 		PlayerChar->AttributeSet->SetHealth(PlayerChar->AttributeSet->GetMaxHealth());
@@ -378,6 +386,14 @@ void AOnsetPlayerController::OnRep_Pawn()
 	if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>())
 	{
 		UI->HideLoadingScreen();
+
+		// The loading screen tears the RootLayout down before travel (CleanupUI);
+		// re-create it here so in-game screens (inventory) have a Game layer stack.
+		// The HUD is added at ZOrder 1, so rebuild the layout above it (ZOrder 2).
+		if (!UI->GetRootLayout() && GameRootLayoutClass)
+		{
+			UI->InitializeRootLayout(GameRootLayoutClass, 2);
+		}
 	}
 
 	CreateHUD(NewPawn);
@@ -584,6 +600,29 @@ void AOnsetPlayerController::Server_GrantItem_Implementation(const FString& RowN
 	UE_LOG(LogTemp, Warning, TEXT("OnsetGrantItem: no item row named '%s' in any category table"), *RowName);
 }
 
+void AOnsetPlayerController::OnsetAcceptQuest(const FString& QuestRowName)
+{
+	if (QuestRowName.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnsetAcceptQuest: empty quest row name"));
+		return;
+	}
+	Server_AcceptQuest(QuestRowName);
+}
+
+void AOnsetPlayerController::Server_AcceptQuest_Implementation(const FString& QuestRowName)
+{
+	AOnsetPlayerCharacter* PlayerCharacter = Cast<AOnsetPlayerCharacter>(GetPawn());
+	if (!PlayerCharacter || !PlayerCharacter->QuestComponent)
+	{
+		return;
+	}
+
+	const FName QuestRow = FName(*QuestRowName);
+	PlayerCharacter->QuestComponent->AcceptQuest(QuestRow);
+	UE_LOG(LogTemp, Log, TEXT("OnsetAcceptQuest: accepted '%s'"), *QuestRowName);
+}
+
 void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
@@ -658,6 +697,29 @@ void AOnsetPlayerController::OnPvPToggleTriggered(const FInputActionValue& Value
 	Server_SetPvPEnabled(!OnsetPlayerState->bIsPvPEnabled);                                                                   
 }
 
+void AOnsetPlayerController::OnInventoryToggleTriggered(const FInputActionValue& Value)
+{
+	UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>();
+	if (!UI || !InventoryScreenClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnInventoryToggle: UI=%d ScreenClass=%d"), !!UI, !!InventoryScreenClass);
+		return;
+	}
+
+	// If the inventory screen is already the active widget on the Game layer, pop it;
+	// otherwise push it. Local-only toggle - no server RPC (UI is purely client-side).
+	UOnsetActivatableWidgetStack* GameStack = UI->GetRootLayout()
+		? UI->GetRootLayout()->GetStackForLayer(EOnsetUILayer::Game)
+		: nullptr;
+	if (GameStack && GameStack->GetActiveWidget() && GameStack->GetActiveWidget()->IsA<UInventoryScreen>())
+	{
+		UI->PopScreen(EOnsetUILayer::Game);
+	}
+	else
+	{
+		UI->PushScreen(EOnsetUILayer::Game, InventoryScreenClass);
+	}
+}
 
 void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(const bool bEnabled)                                 
 {
@@ -1011,7 +1073,7 @@ void AOnsetPlayerController::Server_SaveCharacter_Implementation()
 	CharData.CurrentZone = GetWorld()->GetMapName();
 	CharData.InventoryJSON = PlayerCharacter->SerializeInventoryJSON();
 	CharData.EquipmentJSON = PlayerCharacter->SerializeEquipmentJSON();
-	CharData.QuestsJSON = TEXT("{}");
+	CharData.QuestsJSON = PlayerCharacter->QuestComponent ? PlayerCharacter->QuestComponent->SerializeQuestsJSON() : TEXT("{}");
 
 	bool bSuccess = DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
 	Client_SaveComplete(bSuccess);
@@ -1055,7 +1117,7 @@ bool AOnsetPlayerController::SaveCurrentCharacter(APawn* InPawn)
 	}
 	CharData.InventoryJSON = PlayerCharacter->SerializeInventoryJSON();
 	CharData.EquipmentJSON = PlayerCharacter->SerializeEquipmentJSON();
-	CharData.QuestsJSON = TEXT("{}");
+	CharData.QuestsJSON = PlayerCharacter->QuestComponent ? PlayerCharacter->QuestComponent->SerializeQuestsJSON() : TEXT("{}");
 	const bool bSaved = DataSubsystem->SaveCharacterPreservingIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, CharData);
 	if (bSaved)
 	{

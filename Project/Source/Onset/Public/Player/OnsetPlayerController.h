@@ -137,6 +137,16 @@ private:
 	UInputAction* IA_Ability4; 
 	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")                                                         
 	UInputAction* IA_PvPToggle;                                                                                     
+	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")
+	UInputAction* IA_Inventory;
+
+	/** Screen class pushed when the inventory toggle is pressed (override with WBP_InventoryScreen). */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UOnsetScreenBase> InventoryScreenClass;
+
+	/** Root layout class to re-create when entering the game world (override with WBP_RootLayout). */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UOnsetRootLayout> GameRootLayoutClass;                                                                                     
 	
 	// --- Cursor ---                                                                                         
 	
@@ -218,6 +228,9 @@ private:
 	
 	// --- PVP toggling ---
 	void OnPvPToggleTriggered(const FInputActionValue& Value);                                                      
+
+	// --- Inventory screen toggling ---
+	void OnInventoryToggleTriggered(const FInputActionValue& Value);                                                      
 
 	UFUNCTION(Server, Reliable)
 	void Server_SendAuthTicket(const FString& AuthTicket);
@@ -304,6 +317,13 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_GrantItem(const FString& RowName);
+
+	/** Debug: accepts a DT_Quests quest on the possessed pawn (console: OnsetAcceptQuest <RowName>). */
+	UFUNCTION(Exec)
+	void OnsetAcceptQuest(const FString& QuestRowName);
+
+	UFUNCTION(Server, Reliable)
+	void Server_AcceptQuest(const FString& QuestRowName);
 
 	void ClearAuthTimeout();
 
