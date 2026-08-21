@@ -616,7 +616,7 @@ void UOnsetGA_Generic::ApplyEffects(const FOnsetAbilityDefinition& Definition,
 		UAbilitySystemComponent* RecipientASC = Effect.bFriendly ? FriendlyASC : HostileASC;
 		if (RecipientASC)
 		{
-			ApplyEffect(Effect, RecipientASC, Level);
+			ApplyEffect(Definition, Effect, RecipientASC, Level);
 		}
 	}
 }
@@ -637,7 +637,8 @@ void UOnsetGA_Generic::ApplyEffectsToCharacter(const FOnsetAbilityDefinition& De
 				 bFriendly ? HitChar->AbilitySystemComponent : nullptr, Level);
 }
 
-void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
+void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityDefinition& Definition,
+								   const FOnsetAbilityEffect& Effect,
 								   UAbilitySystemComponent* TargetASC,
 								   float Level) const
 {
@@ -662,7 +663,8 @@ void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
 				TMap<FName, float> NameMagnitudes;
 				NameMagnitudes.Add(TEXT("Duration"), Effect.Duration);
 				ApplyPeriodicEffectSpecToTarget(UOnsetGenericDamageOverTimeEffect::StaticClass(),
-												TargetASC, NameMagnitudes, TagMagnitudes, Effect.Duration, Effect.Period, Level);
+												TargetASC, NameMagnitudes, TagMagnitudes, Effect.Duration, Effect.Period,
+												Definition.RefreshTag, Level);
 				break;
 			}
 
@@ -687,7 +689,8 @@ void UOnsetGA_Generic::ApplyEffect(const FOnsetAbilityEffect& Effect,
 				// Heal-over-time: ticks every Period seconds for the Duration window.
 				Magnitudes.Add(TEXT("Duration"), Effect.Duration);
 				ApplyPeriodicEffectSpecToTarget(UOnsetGenericHealOverTimeEffect::StaticClass(),
-												TargetASC, Magnitudes, {}, Effect.Duration, Effect.Period, Level);
+												TargetASC, Magnitudes, {}, Effect.Duration, Effect.Period,
+												Definition.RefreshTag, Level);
 				break;
 			}
 
@@ -808,6 +811,7 @@ void UOnsetGA_Generic::ApplyPeriodicEffectSpecToTarget(TSubclassOf<UGameplayEffe
 													   const TMap<FGameplayTag, float>& TagMagnitudes,
 													   float Duration,
 													   float Period,
+													   FGameplayTag InRefreshTag,
 													   float Level) const
 {
 	if (!EffectClass || !TargetASC || Period <= 0.0f || Duration <= 0.0f)
@@ -849,7 +853,73 @@ void UOnsetGA_Generic::ApplyPeriodicEffectSpecToTarget(TSubclassOf<UGameplayEffe
 	SpecHandle.Data->SetDuration(Duration, true);
 	SpecHandle.Data->Period = Period;
 
+	// Grant the row's RefreshTag on the active effect so consumers can query the target
+	// for an existing instance (AI selection refresh gate: re-DoT scores 0 while active).
+	if (InRefreshTag.IsValid())
+	{
+		SpecHandle.Data->DynamicGrantedTags.AddTag(InRefreshTag);
+	}
+
 	TargetASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+}
+
+float UOnsetGA_Generic::GetComparisonDamage(const FOnsetAbilityDefinition& Definition) const
+{
+	const UOnsetCombatAttributeSet* Combat = GetSourceCombatAttributes();
+	const float Strength = Combat ? Combat->GetStrength() : 0.0f;
+	const float Intellect = Combat ? Combat->GetIntellect() : 0.0f;
+	const float WeaponBase = GetSourceWeaponBase();
+
+	// Snapshot invalidation: any drift in the inputs the damage math depends on
+	// (stat buffs/debuffs, equipment swaps) triggers a recompute. Two/three float
+	// compares per selection query; recomputes are rare.
+	if (!bComparisonDamageValid
+		|| !FMath::IsNearlyEqual(Strength, ComparisonStrengthSnapshot)
+		|| !FMath::IsNearlyEqual(Intellect, ComparisonIntellectSnapshot)
+		|| !FMath::IsNearlyEqual(WeaponBase, ComparisonWeaponBaseSnapshot))
+	{
+		CachedComparisonDamage = ComputeComparisonDamageInternal(Definition, Strength, Intellect, WeaponBase);
+		ComparisonStrengthSnapshot = Strength;
+		ComparisonIntellectSnapshot = Intellect;
+		ComparisonWeaponBaseSnapshot = WeaponBase;
+		bComparisonDamageValid = true;
+	}
+	return CachedComparisonDamage;
+}
+
+float UOnsetGA_Generic::ComputeComparisonDamageInternal(const FOnsetAbilityDefinition& Definition,
+														float Strength, float Intellect, float WeaponBase) const
+{
+	// Per-target expected damage, mirroring ApplyEffect exactly:
+	// - Direct: Base x (1 + Stat/100), Base = WeaponBase (Weapon scaling) | Magnitude (Skill).
+	// - DoT:    (STR for Physical | INT for elemental) x Magnitude per tick,
+	//           Duration / Period ticks over the window.
+	// Non-damage effects contribute 0 (utility scoring is a future pass).
+	float Total = 0.0f;
+	for (const FOnsetAbilityEffect& Effect : Definition.Effects)
+	{
+		if (Effect.Type != EOnsetAbilityEffectType::Damage)
+		{
+			continue;
+		}
+
+		const bool bPhysical = !Effect.DamageTypeTag.IsValid()
+			|| Effect.DamageTypeTag == TAG_Damage_Physical;
+
+		if (Effect.Period > 0.0f)
+		{
+			const float SourceStat = bPhysical ? Strength : Intellect;
+			const int32 TickCount = FMath::Max(1, FMath::FloorToInt32(Effect.Duration / FMath::Max(Effect.Period, KINDA_SMALL_NUMBER)));
+			Total += SourceStat * Effect.Magnitude * TickCount;
+		}
+		else
+		{
+			const float Base = (Effect.ScalingType == EOnsetScalingType::Weapon) ? WeaponBase : Effect.Magnitude;
+			const float StatValue = (Effect.ScalingType == EOnsetScalingType::Weapon) ? Strength : Intellect;
+			Total += Base * (1.0f + StatValue / 100.0f);
+		}
+	}
+	return Total;
 }
 
 void UOnsetGA_Generic::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,

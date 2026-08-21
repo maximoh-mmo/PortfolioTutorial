@@ -187,6 +187,14 @@ struct FOnsetAbilityDefinition : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
 	FGameplayTag CooldownTag;
 
+	/**
+	 * Granted on this ability's periodic applications (DoT/HoT specs) so consumers can
+	 * detect an active instance on a target. AI ability selection uses it as a refresh
+	 * gate: a refresh-style DoT scores 0 while its RefreshTag is present on the target.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
+	FGameplayTag RefreshTag;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability", meta = (EditCondition = "AbilityType == EOnsetAbilityType::SingleTarget"))
 	float AttackRange = 300.0f;
 

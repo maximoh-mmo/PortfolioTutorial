@@ -43,6 +43,16 @@ class ONSET_API UOnsetGA_Generic : public UOnsetGameplayAbility
 public:
 	UOnsetGA_Generic();
 
+	/**
+	 * Per-target expected damage used by AI ability selection. Mirrors the runtime
+	 * ApplyEffect math: direct damage = Base x (1 + Stat/100) (Base = WeaponBase for
+	 * Weapon scaling, Magnitude for Skill), DoT = (STR|INT) x Magnitude x tick count.
+	 * Cached on the instance; recomputed only when STR, INT, or the equipped weapon's
+	 * WeaponBase drifts from the snapshot taken at the last computation. Const with a
+	 * mutable cache so callers holding const ability references can use it.
+	 */
+	float GetComparisonDamage(const FOnsetAbilityDefinition& Definition) const;
+
 protected:
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle,
@@ -104,7 +114,8 @@ private:
 								 float Level) const;
 
 	/** Applies a single effect to TargetASC (Damage/Heal/Snare/Slow/Stun/Invulnerable). */
-	void ApplyEffect(const FOnsetAbilityEffect& Effect,
+	void ApplyEffect(const FOnsetAbilityDefinition& Definition,
+					 const FOnsetAbilityEffect& Effect,
 					 UAbilitySystemComponent* TargetASC,
 					 float Level) const;
 
@@ -124,13 +135,15 @@ private:
 	 */
 	float GetDiminishedCCDuration(UAbilitySystemComponent* TargetASC, FGameplayTag CCType, float BaseDuration) const;
 
-	/** Applies a periodic GE (DOT/HOT) to TargetASC with name + tag SetByCaller magnitudes, a Duration, and a Period. */
+	/** Applies a periodic GE (DOT/HOT) to TargetASC with name + tag SetByCaller magnitudes, a Duration, a Period,
+	 *  and the row's RefreshTag (granted so targets can be queried for an active instance). */
 	void ApplyPeriodicEffectSpecToTarget(TSubclassOf<UGameplayEffect> EffectClass,
 										 UAbilitySystemComponent* TargetASC,
 										 const TMap<FName, float>& NameMagnitudes,
 										 const TMap<FGameplayTag, float>& TagMagnitudes,
 										 float Duration,
 										 float Period,
+										 FGameplayTag InRefreshTag,
 										 float Level) const;
 
 	/** Type-specific resolve of the ability (after commit / after any leap lands). */
@@ -198,6 +211,23 @@ private:
 
 	/** Threat multiplier cached from the resolved DT_Abilities row at activation. */
 	float CachedThreatMultiplier = 1.0f;
+
+	// --- AI selection cache (see GetComparisonDamage); mutable = lazy const cache ---
+
+	/** Cached per-target expected damage; recomputed when the stat snapshots drift. */
+	mutable float CachedComparisonDamage = 0.0f;
+	/** False until the first GetComparisonDamage call (or after any future explicit invalidation). */
+	mutable bool bComparisonDamageValid = false;
+	/** Source STR at last computation (drift = invalidate). */
+	mutable float ComparisonStrengthSnapshot = -1.0f;
+	/** Source INT at last computation (drift = invalidate). */
+	mutable float ComparisonIntellectSnapshot = -1.0f;
+	/** Equipped WeaponBase at last computation (weapon swap = invalidate). */
+	mutable float ComparisonWeaponBaseSnapshot = -1.0f;
+
+	/** Pure summation over Definition->Effects using the given stat/weapon values. */
+	float ComputeComparisonDamageInternal(const FOnsetAbilityDefinition& Definition,
+										  float Strength, float Intellect, float WeaponBase) const;
 
 	void ApplyCachedDamageAfterDelay(const FGameplayAbilitySpecHandle Handle,
 									 const FGameplayAbilityActorInfo* ActorInfo,

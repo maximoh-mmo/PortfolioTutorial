@@ -74,6 +74,8 @@ Episode scripts 40–43 exist in `Planning/Scripts/`; 44–47 have outlines only
 
 ## Priority 5 — Housekeeping & optional
 
+- [ ] **Content:** author `RefreshTag` values on any DoT rows in `DT_Abilities` (enables the autoplay DoT refresh gate; abilities without a tag are never gated — see [Player AI System](../Docs/AI/Player_AI_System.md#ability-selection-expected-damage-heuristic))
+
 - [x] Author `Level` (1–200) + `XpReward` on `DT_EnemyStats` rows; verify XP grants / level-ups / autoplay persistence in PIE (code done — see [Leveling System](../Docs/Player/Leveling_System.md)) — **done, see [Enemy Creation Tool](../Docs/Tools/Enemy_Editor.md)**
 - [ ] Delete stale backup artifact `Assets/Images/UI/7158.svg.2026_08_09_16_46_59.1.svg`
 - [ ] Decide tracking policy for `Assets/Images/` (commit icon source vs gitignore)
