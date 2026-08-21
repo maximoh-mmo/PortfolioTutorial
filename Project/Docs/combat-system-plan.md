@@ -4,13 +4,19 @@ Companion to `Docs/combat-formulas.md`. This is the *implementation* plan: the
 systems GAS needs, the decisions behind them, and the phased build order. The
 formulas doc is the design authority; this doc is how we get there in code.
 
-> **Status (2026-08-18):** Phases 1–8 are landed in code:
-> full combat attributes, equipment loadouts + stat aggregation, cooldown/haste
-> gating, the element type chart + freeze + CC diminishing returns, crit curves,
-> buff/debuff aggregation + Support potency, mastery constants, data-driven
-> enemy stats (`DT_EnemyStats`), and the experience/leveling system
-> (`Docs/Player/Leveling_System.md`, combat-formulas §12). Tracked in the
-> authoritative live docs:
+> **Status (2026-08-21):** All core Phases 1–8 complete + two follow-up tasks:
+> - Phases 1–8: full combat attributes, equipment loadouts + stat aggregation, cooldown/haste
+>   gating, element type chart + Freeze/Slow + CC diminishing returns, crit curves,
+>   buff/debuff aggregation + Support potency, mastery constants, data-driven
+>   enemy stats (`DT_EnemyStats`), experience/leveling system.
+> - **Constants Refactor (2026-08-21):** All hardcoded tuning values moved from
+>   `UOnsetDamageExecution.cpp` / `OnsetBaseCharacter.cpp` into
+>   `UOnsetEquipmentLibrary` / `UOnsetLevelingLibrary` with `DefaultEngine.ini` seams.
+> - **Prestige System (2026-08-21):** Quest-gated prestige progression — XP caps at
+>   LevelCap; `PrestigeUp()` called on prestige quest completion; resets Level/XP,
+>   increments `PrestigeLevel`, applies `(1+r)^N` outgoing damage multiplier;
+>   persisted across all stores (SQLite, PostgreSQL, HTTP) with schema migrations.
+> Tracked in authoritative live docs:
 > [GAS System](../Docs/GAS/GAS_System.md), [combat-formulas](../Docs/combat-formulas.md),
 > [Spawner System](../Docs/AI/Spawner_System.md). The roadmap below records the
 > decisions; treat the live docs as the current state.
@@ -182,6 +188,16 @@ Universal equip access; mastery applies only when class matches weapon:
 - Grey/yellow/green LevelDiff multiplier; level-up = full heal + stat points + `TAG_Event_LevelUp`.
 - Write-through persistence via `UpdateRuntimeProgression` (all save paths covered).
 - Live doc: [Leveling System](../Docs/Player/Leveling_System.md).
+
+### Post-Phase 8 Follow-ups (implemented 2026-08-21)
+- **Constants Refactor:** 11 hardcoded tuning values moved to libraries with ini seams
+  (`HealthPerVitality`, `K_DEF`, `K_Elem`, `BlockDamageReduction`, `DamageVariance`,
+  crit curves: `Base/MaxCritChance`, `Base/MaxCritMultiplier`, `K_Crit`, `K_CritMultiplier`).
+- **Prestige System:** Quest-gated progression — XP caps at LevelCap; `PrestigeUp()` method
+  called on prestige quest completion; resets Level=1, XP=0, increments `PrestigeLevel`,
+  applies `PrestigeMultiplier = (1+r)^N` (r=10%) to `CombatAttributes`; persisted in
+  all stores with schema migration v5. Zone prestige = max player prestige in zone
+  (to be wired in zone system later).
 
 ---
 

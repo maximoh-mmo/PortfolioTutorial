@@ -15,6 +15,16 @@ namespace OnsetEquipmentLibraryInternal
 
 	// Zone-tier K scale, read once from config and cached.
 	float CachedZoneTierKScale = -1.0f;
+
+	// Health per Vitality
+	float CachedHealthPerVitality = -1.0f;
+
+	// K values for mitigation
+	float CachedKDefense = -1.0f;
+	float CachedKElemental = -1.0f;
+
+	// Block damage reduction
+	float CachedBlockDamageReduction = -1.0f;
 }
 
 FString UOnsetEquipmentLibrary::GetEquipmentTablePath()
@@ -228,4 +238,48 @@ const FOnsetEnemyStats* UOnsetEquipmentLibrary::GetEnemyStats(FName RowName)
 		return nullptr;
 	}
 	return Table->FindRow<FOnsetEnemyStats>(RowName, nullptr);
+}
+
+float UOnsetEquipmentLibrary::GetHealthPerVitality()
+{
+	if (OnsetEquipmentLibraryInternal::CachedHealthPerVitality < 0.0f)
+	{
+		float Value = 10.0f;
+		GConfig->GetFloat(TEXT("Onset.Gameplay"), TEXT("HealthPerVitality"), Value, GEngineIni);
+		OnsetEquipmentLibraryInternal::CachedHealthPerVitality = FMath::Max(0.1f, Value);
+	}
+	return OnsetEquipmentLibraryInternal::CachedHealthPerVitality;
+}
+
+float UOnsetEquipmentLibrary::GetKDefense()
+{
+	if (OnsetEquipmentLibraryInternal::CachedKDefense < 0.0f)
+	{
+		float Value = 100.0f;
+		GConfig->GetFloat(TEXT("Onset.Gameplay"), TEXT("KDefense"), Value, GEngineIni);
+		OnsetEquipmentLibraryInternal::CachedKDefense = FMath::Max(0.1f, Value);
+	}
+	return OnsetEquipmentLibraryInternal::CachedKDefense;
+}
+
+float UOnsetEquipmentLibrary::GetKElemental()
+{
+	if (OnsetEquipmentLibraryInternal::CachedKElemental < 0.0f)
+	{
+		float Value = 80.0f;
+		GConfig->GetFloat(TEXT("Onset.Gameplay"), TEXT("KElemental"), Value, GEngineIni);
+		OnsetEquipmentLibraryInternal::CachedKElemental = FMath::Max(0.1f, Value);
+	}
+	return OnsetEquipmentLibraryInternal::CachedKElemental;
+}
+
+float UOnsetEquipmentLibrary::GetBlockDamageReduction()
+{
+	if (OnsetEquipmentLibraryInternal::CachedBlockDamageReduction < 0.0f)
+	{
+		float Value = 0.50f;
+		GConfig->GetFloat(TEXT("Onset.Gameplay"), TEXT("BlockDamageReduction"), Value, GEngineIni);
+		OnsetEquipmentLibraryInternal::CachedBlockDamageReduction = FMath::Clamp(Value, 0.0f, 1.0f);
+	}
+	return OnsetEquipmentLibraryInternal::CachedBlockDamageReduction;
 }

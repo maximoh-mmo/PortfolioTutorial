@@ -106,6 +106,18 @@ public:
 	 */
 	static float GetZoneTierKScale();
 
+	/** Health gained per point of Vitality. Reads Onset.Gameplay HealthPerVitality. */
+	static float GetHealthPerVitality();
+
+	/** K value for Physical mitigation (DEF). Reads Onset.Gameplay KDefense. */
+	static float GetKDefense();
+
+	/** K value for Elemental mitigation (RES). Reads Onset.Gameplay KElemental. */
+	static float GetKElemental();
+
+	/** Damage reduction when blocking (fraction of raw damage). Reads Onset.Gameplay BlockDamageReduction. */
+	static float GetBlockDamageReduction();
+
 	/** Path to DT_EnemyStats. Overridable via Onset.Gameplay EnemyStatsDataTable in DefaultEngine.ini. */
 	static FString GetEnemyStatsTablePath();
 

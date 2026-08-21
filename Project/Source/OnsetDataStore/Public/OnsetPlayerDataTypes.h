@@ -79,6 +79,10 @@ struct FOnsetFullCharacterData
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
 	int32 UnspentStatPoints = 0;
 
+	/** Prestige level (increments when reaching LevelCap). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+	int32 PrestigeLevel = 0;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
 	FString CurrentZone;
 

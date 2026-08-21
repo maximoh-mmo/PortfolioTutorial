@@ -264,7 +264,7 @@ void AOnsetBaseCharacter::RecalculateDerivedStats()
 	CombatAttributes->InitBlockChance(BlockChance);
 
 	// MaxHealth = class base + VIT × HealthPerVitality (derived, not persisted).
-	constexpr float HealthPerVitality = 10.0f;
+	const float HealthPerVitality = UOnsetEquipmentLibrary::GetHealthPerVitality();
 	AttributeSet->InitMaxHealth(StartingMaxHealth + CombatAttributes->GetVitality() * HealthPerVitality);
 }
 

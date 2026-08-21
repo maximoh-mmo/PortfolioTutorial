@@ -328,7 +328,7 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 	}
 
 	// Apply persisted level/XP (combat-formulas §12) onto the freshly spawned pawn.
-	PlayerChar->ApplyCharacterProgression(CharData.Level, CharData.Experience, CharData.UnspentStatPoints);
+	PlayerChar->ApplyCharacterProgression(CharData.Level, CharData.Experience, CharData.UnspentStatPoints, CharData.PrestigeLevel);
 	PlayerChar->SetPersistIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, PS->SelectedCharacterSlot);
 
 	PlayerChar->GrantDefaultAbilities();
@@ -929,7 +929,7 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 			}
 
 			// Apply persisted level/XP (combat-formulas §12) so the pawn matches the saved character.
-			PlayerCharacter->ApplyCharacterProgression(CharData.Level, CharData.Experience, CharData.UnspentStatPoints);
+			PlayerCharacter->ApplyCharacterProgression(CharData.Level, CharData.Experience, CharData.UnspentStatPoints, CharData.PrestigeLevel);
 			PlayerCharacter->SetPersistIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, SlotIndex);
 
 			PlayerCharacter->GrantDefaultAbilities();

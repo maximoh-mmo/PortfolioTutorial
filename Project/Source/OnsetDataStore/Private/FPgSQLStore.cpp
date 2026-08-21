@@ -73,7 +73,7 @@ bool FPgSQLStore::EnsureSchema()
 	if (Version < 0)
 		return false;
 
-	const int32 LatestVersion = 4;
+	const int32 LatestVersion = 5;
 	while (Version < LatestVersion)
 	{
 		RunMigration(Version);
@@ -190,6 +190,18 @@ void FPgSQLStore::RunMigration(int32 FromVersion)
 		Exec("INSERT INTO _schema_version (version) VALUES (4);");
 		UE_LOG(LogOnsetDataStore, Log, TEXT("FPgSQLStore: migration 4 applied (unspent_stat_points column)"));
 	}
+
+	if (FromVersion <= 4)
+	{
+		if (!Exec("ALTER TABLE characters ADD COLUMN prestige_level INTEGER NOT NULL DEFAULT 0;"))
+		{
+			UE_LOG(LogOnsetDataStore, Error, TEXT("FPgSQLStore: migration 5 failed (prestige_level column)"));
+			return;
+		}
+
+		Exec("INSERT INTO _schema_version (version) VALUES (5);");
+		UE_LOG(LogOnsetDataStore, Log, TEXT("FPgSQLStore: migration 5 applied (prestige_level column)"));
+	}
 }
 
 bool FPgSQLStore::LoadAccount(const FString& Platform, const FString& PlatformID, FOnsetAccountData& OutAccount)
@@ -284,7 +296,7 @@ bool FPgSQLStore::LoadCharacter(const FString& Platform, const FString& Platform
 
 	const char* SQL = "SELECT slot_index, character_name, level, experience,"
 		" saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		" inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, unspent_stat_points"
+		" inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, unspent_stat_points, prestige_level"
 		" FROM characters WHERE platform = $1 AND platform_id = $2 AND slot_index = $3;";
 
 	const char* Params[3] = { TCHAR_TO_UTF8(*Platform), TCHAR_TO_UTF8(*PlatformID), TCHAR_TO_UTF8(*FString::Printf(TEXT("%d"), SlotIndex)) };
@@ -319,6 +331,7 @@ bool FPgSQLStore::LoadCharacter(const FString& Platform, const FString& Platform
 	OutData.CharacterClass = static_cast<EOnsetCharacterClass>(atoi(PQgetvalue(Res, 0, 13)));
 	OutData.AppearanceJSON = UTF8_TO_TCHAR(PQgetvalue(Res, 0, 14));
 	OutData.UnspentStatPoints = atoi(PQgetvalue(Res, 0, 15));
+	OutData.PrestigeLevel = atoi(PQgetvalue(Res, 0, 16));
 
 	PQclear(Res);
 	return true;
@@ -339,13 +352,14 @@ bool FPgSQLStore::SaveCharacter(const FString& Platform, const FString& Platform
 
 	FString ClassStr = FString::Printf(TEXT("%d"), static_cast<int32>(Data.CharacterClass));
 	FString StatPointsStr = FString::Printf(TEXT("%d"), Data.UnspentStatPoints);
+	FString PrestigeStr = FString::Printf(TEXT("%d"), Data.PrestigeLevel);
 
 	const char* SQL =
 		"INSERT INTO characters"
 		" (platform, platform_id, slot_index, character_name, level, experience,"
 		"  saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		"  inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, unspent_stat_points, updated_at)"
-		" VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW())"
+		"  inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, unspent_stat_points, prestige_level, updated_at)"
+		" VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW())"
 		" ON CONFLICT (platform, platform_id, slot_index) DO UPDATE SET"
 		"  character_name = EXCLUDED.character_name,"
 		"  level = EXCLUDED.level,"
@@ -362,9 +376,10 @@ bool FPgSQLStore::SaveCharacter(const FString& Platform, const FString& Platform
 		"  character_class = EXCLUDED.character_class,"
 		"  appearance_json = EXCLUDED.appearance_json,"
 		"  unspent_stat_points = EXCLUDED.unspent_stat_points,"
+		"  prestige_level = EXCLUDED.prestige_level,"
 		"  updated_at = NOW();";
 
-	const char* Params[18] = {
+	const char* Params[19] = {
 		TCHAR_TO_UTF8(*Platform),
 		TCHAR_TO_UTF8(*PlatformID),
 		TCHAR_TO_UTF8(*SlotIdxStr),
@@ -382,10 +397,11 @@ bool FPgSQLStore::SaveCharacter(const FString& Platform, const FString& Platform
 		TCHAR_TO_UTF8(*Data.CurrentZone),
 		TCHAR_TO_UTF8(*ClassStr),
 		TCHAR_TO_UTF8(*Data.AppearanceJSON),
-		TCHAR_TO_UTF8(*StatPointsStr)
+		TCHAR_TO_UTF8(*StatPointsStr),
+		TCHAR_TO_UTF8(*PrestigeStr)
 	};
 
-	PGresult* Res = PQexecParams(Conn, SQL, 18, NULL, Params, NULL, NULL, 0);
+	PGresult* Res = PQexecParams(Conn, SQL, 19, NULL, Params, NULL, NULL, 0);
 	bool bSuccess = (PQresultStatus(Res) == PGRES_COMMAND_OK);
 	if (!bSuccess)
 		LogPGError(Conn, "SaveCharacter");

@@ -15,6 +15,17 @@ namespace OnsetLevelingLibraryInternal
 	int32 CachedGreyThreshold = -1;
 	int32 CachedYellowThreshold = -1;
 	int32 CachedStatPointsPerLevel = -1;
+
+	// Crit curves
+	float CachedBaseCritChance = -1.0f;
+	float CachedMaxCritChance = -1.0f;
+	float CachedBaseCritMultiplier = -1.0f;
+	float CachedMaxCritMultiplier = -1.0f;
+	float CachedKCrit = -1.0f;
+	float CachedKCritMultiplier = -1.0f;
+
+	// Damage variance
+	float CachedDamageVariance = -1.0f;
 }
 
 static float ReadConfigFloat(const TCHAR* Key, float Default)
@@ -163,4 +174,67 @@ float UOnsetLevelingLibrary::GetMaxBonusXp()
 		OnsetLevelingLibraryInternal::CachedMaxBonusXp = FMath::Max(0.0f, ReadConfigFloat(TEXT("MaxBonusXp"), 0.50f));
 	}
 	return OnsetLevelingLibraryInternal::CachedMaxBonusXp;
+}
+
+float UOnsetLevelingLibrary::GetBaseCritChance()
+{
+	if (OnsetLevelingLibraryInternal::CachedBaseCritChance < 0.0f)
+	{
+		OnsetLevelingLibraryInternal::CachedBaseCritChance = FMath::Clamp(ReadConfigFloat(TEXT("BaseCritChance"), 0.05f), 0.0f, 1.0f);
+	}
+	return OnsetLevelingLibraryInternal::CachedBaseCritChance;
+}
+
+float UOnsetLevelingLibrary::GetMaxCritChance()
+{
+	if (OnsetLevelingLibraryInternal::CachedMaxCritChance < 0.0f)
+	{
+		OnsetLevelingLibraryInternal::CachedMaxCritChance = FMath::Clamp(ReadConfigFloat(TEXT("MaxCritChance"), 0.70f), 0.0f, 1.0f);
+	}
+	return OnsetLevelingLibraryInternal::CachedMaxCritChance;
+}
+
+float UOnsetLevelingLibrary::GetBaseCritMultiplier()
+{
+	if (OnsetLevelingLibraryInternal::CachedBaseCritMultiplier < 0.0f)
+	{
+		OnsetLevelingLibraryInternal::CachedBaseCritMultiplier = FMath::Max(1.0f, ReadConfigFloat(TEXT("BaseCritMultiplier"), 1.50f));
+	}
+	return OnsetLevelingLibraryInternal::CachedBaseCritMultiplier;
+}
+
+float UOnsetLevelingLibrary::GetMaxCritMultiplier()
+{
+	if (OnsetLevelingLibraryInternal::CachedMaxCritMultiplier < 0.0f)
+	{
+		OnsetLevelingLibraryInternal::CachedMaxCritMultiplier = FMath::Max(1.0f, ReadConfigFloat(TEXT("MaxCritMultiplier"), 4.00f));
+	}
+	return OnsetLevelingLibraryInternal::CachedMaxCritMultiplier;
+}
+
+float UOnsetLevelingLibrary::GetKCrit()
+{
+	if (OnsetLevelingLibraryInternal::CachedKCrit < 0.0f)
+	{
+		OnsetLevelingLibraryInternal::CachedKCrit = FMath::Max(1.0f, ReadConfigFloat(TEXT("KCrit"), 200.0f));
+	}
+	return OnsetLevelingLibraryInternal::CachedKCrit;
+}
+
+float UOnsetLevelingLibrary::GetKCritMultiplier()
+{
+	if (OnsetLevelingLibraryInternal::CachedKCritMultiplier < 0.0f)
+	{
+		OnsetLevelingLibraryInternal::CachedKCritMultiplier = FMath::Max(1.0f, ReadConfigFloat(TEXT("KCritMultiplier"), 400.0f));
+	}
+	return OnsetLevelingLibraryInternal::CachedKCritMultiplier;
+}
+
+float UOnsetLevelingLibrary::GetDamageVariance()
+{
+	if (OnsetLevelingLibraryInternal::CachedDamageVariance < 0.0f)
+	{
+		OnsetLevelingLibraryInternal::CachedDamageVariance = FMath::Clamp(ReadConfigFloat(TEXT("DamageVariance"), 0.15f), 0.0f, 1.0f);
+	}
+	return OnsetLevelingLibraryInternal::CachedDamageVariance;
 }

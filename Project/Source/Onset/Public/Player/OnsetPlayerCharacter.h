@@ -52,9 +52,17 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Progression")
 	int32 UnspentStatPoints = 0;
 
+	/** Prestige level (increments when reaching LevelCap). Replicated server->client. */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Progression")
+	int32 PrestigeLevel = 0;
+
 	/** Broadcasts whenever Level or Experience changes (server -> UI binds here). */
 	UPROPERTY(BlueprintAssignable, Category = "Progression")
 	FOnProgressionChanged OnProgressionChanged;
+
+	/** Broadcasts when PrestigeLevel increments. */
+	UPROPERTY(BlueprintAssignable, Category = "Progression")
+	FOnProgressionChanged OnPrestigeChanged;
 
 	/**
 	 * Grants XP for killing an enemy of EnemyLevel whose row authorizes XpReward
@@ -66,7 +74,7 @@ public:
 	void GrantXPFromEnemy(int32 EnemyLevel, int32 XpReward);
 
 	/** Applies the persisted progression values to this pawn (server, on select/possess). */
-	void ApplyCharacterProgression(int32 InLevel, int32 InExperience, int32 InUnspentStatPoints);
+	void ApplyCharacterProgression(int32 InLevel, int32 InExperience, int32 InUnspentStatPoints, int32 InPrestigeLevel);
 
 	/**
 	 * Grants flat XP (quest rewards). Runs the normal level-up pipeline and persists.
@@ -90,6 +98,10 @@ public:
 	/** 0..1 fraction of the current level's XP bar. */
 	UFUNCTION(BlueprintCallable, Category = "Progression")
 	float GetXPProgressPercent() const;
+
+	/** Called when the prestige quest is completed. Resets level/XP, increments PrestigeLevel, applies multiplier. Server-only. */
+	UFUNCTION(BlueprintCallable, Category = "Progression")
+	void PrestigeUp();
 
 protected:
 	// --- Camera ---

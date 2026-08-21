@@ -163,7 +163,7 @@ bool UOnsetPlayerDataSubsystem::SaveCharacterPreservingIdentity(const FString& P
 	return SaveCharacter(Platform, PlatformID, Data);
 }
 
-void UOnsetPlayerDataSubsystem::UpdateRuntimeProgression(const FString& Platform, const FString& PlatformID, int32 SlotIndex, int32 Level, int32 Experience, int32 UnspentStatPoints)
+void UOnsetPlayerDataSubsystem::UpdateRuntimeProgression(const FString& Platform, const FString& PlatformID, int32 SlotIndex, int32 Level, int32 Experience, int32 UnspentStatPoints, int32 PrestigeLevel)
 {
 	const FString CacheKey = MakeCharacterCacheKey(Platform, PlatformID, SlotIndex);
 	FOnsetFullCharacterData* Cached = IdentityCache.Find(CacheKey);
@@ -172,6 +172,7 @@ void UOnsetPlayerDataSubsystem::UpdateRuntimeProgression(const FString& Platform
 		Cached->Level = Level;
 		Cached->Experience = Experience;
 		Cached->UnspentStatPoints = UnspentStatPoints;
+		Cached->PrestigeLevel = PrestigeLevel;
 	}
 	else
 	{
@@ -182,6 +183,7 @@ void UOnsetPlayerDataSubsystem::UpdateRuntimeProgression(const FString& Platform
 		Seed.Level = Level;
 		Seed.Experience = Experience;
 		Seed.UnspentStatPoints = UnspentStatPoints;
+		Seed.PrestigeLevel = PrestigeLevel;
 		IdentityCache.Add(CacheKey, Seed);
 	}
 }

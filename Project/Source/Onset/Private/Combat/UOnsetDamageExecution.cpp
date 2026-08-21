@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "Combat/OnsetAbilityLibrary.h"
 #include "Combat/OnsetEquipmentLibrary.h"
+#include "Combat/OnsetLevelingLibrary.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Data/OnsetAbilityTypes.h"
 #include "Data/OnsetEquipmentTypes.h"
@@ -49,23 +50,23 @@ void UOnsetDamageExecution::Execute_Implementation(
 	const UAbilitySystemComponent* SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
 	const UOnsetCombatAttributeSet* SourceCombat = SourceASC ? SourceASC->GetSet<UOnsetCombatAttributeSet>() : nullptr;
 
-	constexpr float BlockDamageReduction = 0.50f;
-
-	// Zone-tier K scaling: K_DEF / K_elem x KZoneTierScale (tuning seam, default 1.0).
-	const float K_Defense = 100.0f * UOnsetEquipmentLibrary::GetZoneTierKScale();
-	const float K_Elemental = 80.0f * UOnsetEquipmentLibrary::GetZoneTierKScale();
+	// Tuning constants from libraries (with ini seams).
+	const float BlockDamageReduction = UOnsetEquipmentLibrary::GetBlockDamageReduction();
+	const float K_Defense = UOnsetEquipmentLibrary::GetKDefense() * UOnsetEquipmentLibrary::GetZoneTierKScale();
+	const float K_Elemental = UOnsetEquipmentLibrary::GetKElemental() * UOnsetEquipmentLibrary::GetZoneTierKScale();
+	const float DamageVariance = UOnsetLevelingLibrary::GetDamageVariance();
 
 	// LUK crit curves (combat-formulas §14):
-	//   CritChance   = 5% + LUK/(LUK+K_Crit),    cap 70%
-	//   CritMult     = 1.5 + LUK/(LUK+K_CritMult) x 2.5, cap 4.0x
-	constexpr float BaseCritChance = 0.05f;
-	constexpr float MaxCritChance = 0.70f;
-	constexpr float BaseCritMultiplier = 1.50f;
-	constexpr float MaxCritMultiplier = 4.00f;
-	constexpr float K_Crit = 200.0f;
-	constexpr float K_CritMultiplier = 400.0f;
+	//   CritChance   = BaseCritChance + LUK/(LUK+K_Crit),    cap MaxCritChance
+	//   CritMult     = BaseCritMultiplier + LUK/(LUK+K_CritMult) x (MaxCritMultiplier - BaseCritMultiplier), cap MaxCritMultiplier
+	const float BaseCritChance = UOnsetLevelingLibrary::GetBaseCritChance();
+	const float MaxCritChance = UOnsetLevelingLibrary::GetMaxCritChance();
+	const float BaseCritMultiplier = UOnsetLevelingLibrary::GetBaseCritMultiplier();
+	const float MaxCritMultiplier = UOnsetLevelingLibrary::GetMaxCritMultiplier();
+	const float K_Crit = UOnsetLevelingLibrary::GetKCrit();
+	const float K_CritMultiplier = UOnsetLevelingLibrary::GetKCritMultiplier();
 
-	// Step 1: Raw = sum of all element magnitudes, then ±15% variance.
+	// Step 1: Raw = sum of all element magnitudes, then variance.
 	float Raw = 0.0f;
 	const FGameplayTag ElementTags[] = {
 		TAG_Damage_Physical,
@@ -78,7 +79,7 @@ void UOnsetDamageExecution::Execute_Implementation(
 	{
 		Raw += Spec.GetSetByCallerMagnitude(Element, false, 0.0f);
 	}
-	Raw *= FMath::FRandRange(0.85f, 1.15f);
+	Raw *= FMath::FRandRange(1.0f - DamageVariance, 1.0f + DamageVariance);
 
 	if (Raw <= 0.0f || !TargetCombat)
 	{

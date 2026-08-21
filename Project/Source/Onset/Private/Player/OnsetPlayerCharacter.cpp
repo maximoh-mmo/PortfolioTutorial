@@ -4,8 +4,10 @@
 
 #include "TimerManager.h"
 #include "Camera/CameraComponent.h"
+#include "Combat/OnsetEquipmentLibrary.h"
 #include "Combat/OnsetLevelingLibrary.h"
 #include "GAS/OnsetAttributeSet.h"
+#include "GAS/OnsetCombatAttributeSet.h"
 #include "GAS/OnsetGameplayTags.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -66,14 +68,24 @@ void AOnsetPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, Level, COND_None);
 	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, Experience, COND_None);
 	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, UnspentStatPoints, COND_None);
+	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, PrestigeLevel, COND_None);
 }
 
-void AOnsetPlayerCharacter::ApplyCharacterProgression(int32 InLevel, int32 InExperience, int32 InUnspentStatPoints)
+void AOnsetPlayerCharacter::ApplyCharacterProgression(int32 InLevel, int32 InExperience, int32 InUnspentStatPoints, int32 InPrestigeLevel)
 {
 	if (!HasAuthority()) return;
 	Level = FMath::Max(1, InLevel);
 	Experience = FMath::Max(0, InExperience);
 	UnspentStatPoints = FMath::Max(0, InUnspentStatPoints);
+	PrestigeLevel = FMath::Max(0, InPrestigeLevel);
+
+	// Apply prestige multiplier to CombatAttributes
+	if (CombatAttributes && PrestigeLevel > 0)
+	{
+		const float PrestigeMultiplier = UOnsetEquipmentLibrary::GetPrestigeMultiplier(PrestigeLevel);
+		CombatAttributes->SetPrestigeMultiplier(PrestigeMultiplier);
+	}
+
 	OnProgressionChanged.Broadcast(Level, Experience);
 }
 
@@ -123,7 +135,7 @@ void AOnsetPlayerCharacter::AddExperience(int32 Amount)
 	const int32 LevelCap = UOnsetLevelingLibrary::GetLevelCap();
 	if (Level >= LevelCap)
 	{
-		return;
+		return; // XP capped at level cap; prestige requires quest completion
 	}
 
 	const int32 OldLevel = Level;
@@ -134,6 +146,13 @@ void AOnsetPlayerCharacter::AddExperience(int32 Amount)
 		Experience -= UOnsetLevelingLibrary::GetXPRequired(Level);
 		Level += 1;
 		UnspentStatPoints += UOnsetLevelingLibrary::GetStatPointsPerLevel();
+	}
+
+	// Clamp at LevelCap: any excess XP is discarded until prestige.
+	if (Level >= LevelCap)
+	{
+		Level = LevelCap;
+		Experience = 0;
 	}
 
 	if (Level > OldLevel)
@@ -157,6 +176,38 @@ void AOnsetPlayerCharacter::AddExperience(int32 Amount)
 	PersistProgression();
 }
 
+/** Called when the prestige quest is completed. Resets level/XP, increments PrestigeLevel, applies multiplier. */
+void AOnsetPlayerCharacter::PrestigeUp()
+{
+	if (!HasAuthority()) return;
+
+	const int32 LevelCap = UOnsetLevelingLibrary::GetLevelCap();
+	if (Level < LevelCap)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PrestigeUp: player not at level cap (%d/%d)"), Level, LevelCap);
+		return;
+	}
+
+	PrestigeLevel += 1;
+	Level = 1;
+	Experience = 0;
+	UnspentStatPoints += UOnsetLevelingLibrary::GetStatPointsPerLevel();
+
+	// Apply prestige multiplier to CombatAttributes
+	if (CombatAttributes)
+	{
+		const float PrestigeMultiplier = UOnsetEquipmentLibrary::GetPrestigeMultiplier(PrestigeLevel);
+		CombatAttributes->SetPrestigeMultiplier(PrestigeMultiplier);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("PRESTIGE: Player reached Prestige %d (multiplier %.2fx)"),
+		PrestigeLevel, UOnsetEquipmentLibrary::GetPrestigeMultiplier(PrestigeLevel));
+
+	OnPrestigeChanged.Broadcast(PrestigeLevel, 0);
+	OnProgressionChanged.Broadcast(Level, Experience);
+	PersistProgression();
+}
+
 void AOnsetPlayerCharacter::PersistProgression()
 {
 	// Use the identity stored on the pawn (SetPersistIdentity), not GetPlayerState():
@@ -171,7 +222,7 @@ void AOnsetPlayerCharacter::PersistProgression()
 	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
 	if (!DataSubsystem) return;
 
-	DataSubsystem->UpdateRuntimeProgression(PersistPlatform, PersistPlatformID, PersistSlotIndex, Level, Experience, UnspentStatPoints);
+	DataSubsystem->UpdateRuntimeProgression(PersistPlatform, PersistPlatformID, PersistSlotIndex, Level, Experience, UnspentStatPoints, PrestigeLevel);
 }
 
 int32 AOnsetPlayerCharacter::GetXPRequiredForNextLevel() const

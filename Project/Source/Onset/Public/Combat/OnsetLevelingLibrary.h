@@ -68,4 +68,22 @@ public:
 
 	/** Cap on the over-level bonus (default 50%). */
 	static float GetMaxBonusXp();
+
+	// --- Crit curves (combat-formulas §14) ---
+	/** Base crit chance (default 5%). */
+	static float GetBaseCritChance();
+	/** Maximum crit chance cap (default 70%). */
+	static float GetMaxCritChance();
+	/** Base crit multiplier (default 1.5x). */
+	static float GetBaseCritMultiplier();
+	/** Maximum crit multiplier cap (default 4.0x). */
+	static float GetMaxCritMultiplier();
+	/** K for crit chance curve (default 200). */
+	static float GetKCrit();
+	/** K for crit multiplier curve (default 400). */
+	static float GetKCritMultiplier();
+
+	// --- Damage variance ---
+	/** Damage variance fraction (default 0.15 = ±15%). */
+	static float GetDamageVariance();
 };

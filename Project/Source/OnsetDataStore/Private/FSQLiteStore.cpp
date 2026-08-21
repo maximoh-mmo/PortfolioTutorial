@@ -113,7 +113,7 @@ bool FSQLiteStore::EnsureSchema()
 	if (Version < 0)
 		return false;
 
-	const int32 LatestVersion = 4;
+	const int32 LatestVersion = 5;
 	while (Version < LatestVersion)
 	{
 		RunMigration(Version);
@@ -226,6 +226,18 @@ void FSQLiteStore::RunMigration(int32 FromVersion)
 		Exec("INSERT INTO _schema_version (version) VALUES (4);");
 		UE_LOG(LogTemp, Log, TEXT("FSQLiteStore: migration 4 applied (unspent_stat_points column)"));
 	}
+
+	if (FromVersion <= 4)
+	{
+		if (!Exec("ALTER TABLE characters ADD COLUMN prestige_level INTEGER NOT NULL DEFAULT 0;"))
+		{
+			UE_LOG(LogTemp, Error, TEXT("FSQLiteStore: migration 5 failed (prestige_level column)"));
+			return;
+		}
+
+		Exec("INSERT INTO _schema_version (version) VALUES (5);");
+		UE_LOG(LogTemp, Log, TEXT("FSQLiteStore: migration 5 applied (prestige_level column)"));
+	}
 }
 
 bool FSQLiteStore::LoadAccount(const FString& Platform, const FString& PlatformID, FOnsetAccountData& OutAccount)
@@ -321,7 +333,7 @@ bool FSQLiteStore::LoadCharacter(const FString& Platform, const FString& Platfor
 
 	const char* SQL = "SELECT slot_index, character_name, level, experience,"
 		" saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		" inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, unspent_stat_points"
+		" inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, unspent_stat_points, prestige_level"
 		" FROM characters WHERE platform = ?1 AND platform_id = ?2 AND slot_index = ?3;";
 
 	if (!PrepareAndBind(SQL))
@@ -354,6 +366,7 @@ bool FSQLiteStore::LoadCharacter(const FString& Platform, const FString& Platfor
 	OutData.CharacterClass = static_cast<EOnsetCharacterClass>(sqlite3_column_int(ActiveStmt, 13));
 	OutData.AppearanceJSON = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 14));
 	OutData.UnspentStatPoints = sqlite3_column_int(ActiveStmt, 15);
+	OutData.PrestigeLevel = sqlite3_column_int(ActiveStmt, 16);
 
 	sqlite3_finalize(ActiveStmt);
 	ActiveStmt = nullptr;
@@ -367,8 +380,8 @@ bool FSQLiteStore::SaveCharacter(const FString& Platform, const FString& Platfor
 	const char* SQL = "INSERT OR REPLACE INTO characters"
 		" (platform, platform_id, slot_index, character_name, level, experience,"
 		"  saved_max_health, saved_position_x, saved_position_y, saved_position_z, saved_rotation_yaw,"
-		"  inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, unspent_stat_points, updated_at)"
-		" VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, datetime('now'));";
+		"  inventory_json, equipment_json, quests_json, current_zone, character_class, appearance_json, unspent_stat_points, prestige_level, updated_at)"
+		" VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, datetime('now'));";
 
 	if (!PrepareAndBind(SQL))
 		return false;
@@ -391,6 +404,7 @@ bool FSQLiteStore::SaveCharacter(const FString& Platform, const FString& Platfor
 	sqlite3_bind_int(ActiveStmt, 16, static_cast<int32>(Data.CharacterClass));
 	sqlite3_bind_text(ActiveStmt, 17, TCHAR_TO_UTF8(*Data.AppearanceJSON), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_int(ActiveStmt, 18, Data.UnspentStatPoints);
+	sqlite3_bind_int(ActiveStmt, 19, Data.PrestigeLevel);
 
 	int32 RC = sqlite3_step(ActiveStmt);
 	sqlite3_finalize(ActiveStmt);

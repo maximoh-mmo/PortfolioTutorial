@@ -263,6 +263,7 @@ bool FHttpStore::LoadCharacter(const FString& Platform, const FString& PlatformI
 	OutData.CharacterClass = static_cast<EOnsetCharacterClass>(Json->GetIntegerField(TEXT("characterClass")));
 	OutData.AppearanceJSON = Json->GetStringField(TEXT("appearanceJson"));
 	OutData.UnspentStatPoints = Json->GetIntegerField(TEXT("unspentStatPoints"));
+	OutData.PrestigeLevel = Json->GetIntegerField(TEXT("prestigeLevel"));
 
 	return true;
 }
@@ -292,6 +293,7 @@ bool FHttpStore::SaveCharacter(const FString& Platform, const FString& PlatformI
 	Json->SetNumberField(TEXT("characterClass"), static_cast<int32>(Data.CharacterClass));
 	Json->SetStringField(TEXT("appearanceJson"), Data.AppearanceJSON);
 	Json->SetNumberField(TEXT("unspentStatPoints"), Data.UnspentStatPoints);
+	Json->SetNumberField(TEXT("prestigeLevel"), Data.PrestigeLevel);
 
 	FString Body;
 	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);
