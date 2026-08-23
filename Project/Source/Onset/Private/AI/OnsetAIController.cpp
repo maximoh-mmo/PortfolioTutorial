@@ -2,6 +2,7 @@
 
 #include "DrawDebugHelpers.h"
 #include "Enemy/Profile/AIProfile.h"
+#include "StateTree.h"
 
 #include "Components/StateTreeAIComponent.h"
 #include "Enemy/OnsetEnemy.h"
@@ -46,12 +47,43 @@ void AOnsetAIController::ApplyAIProfile(UAIProfile* Profile)
 {
 	if (Profile == nullptr)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[DIAG] ApplyAIProfile NULL on %s"), *GetName());
 		if (StateTreeComponent->IsRunning())
 			StateTreeComponent->StopLogic(TEXT("Pooled"));
 		StateTreeComponent->SetStateTree(nullptr);
 		AIProfile = nullptr;
 		return;
 	}
+	// [DIAG] temporary root-cause instrumentation - remove after investigation
+	{
+		const UStateTree* DiagTree = Profile->StateTreeAsset;
+		UE_LOG(LogTemp, Warning, TEXT("[DIAG] ApplyAIProfile %s: profile=%s tree=%s readyToRun=%d schema=%s"),
+			*GetName(),
+			*Profile->GetName(),
+			DiagTree ? *DiagTree->GetName() : TEXT("<null>"),
+			DiagTree ? static_cast<int32>(DiagTree->IsReadyToRun()) : -1,
+			(DiagTree && DiagTree->GetSchema())
+				? *DiagTree->GetSchema()->GetClass()->GetName()
+				: TEXT("<none>"));
+	}
+
+	UStateTree* Tree = Profile->StateTreeAsset;
+
+	// Runtime rescue: freshly loaded StateTrees can be unlinked (no schema, not ready)
+	// in game/server processes. The player-AI controller already self-heals this way;
+	// mirror it here so NPC trees link instead of silently refusing to start.
+	if (Tree && !Tree->IsReadyToRun())
+	{
+#if WITH_EDITOR
+		UE_LOG(LogTemp, Warning, TEXT("[DIAG] ApplyAIProfile %s: tree '%s' not ready - recompiling"),
+			*GetName(), *Tree->GetName());
+		Tree->MarkAsModified(false);
+		Tree->CompileIfChanged();
+		UE_LOG(LogTemp, Warning, TEXT("[DIAG] ApplyAIProfile %s: post-rescue readyToRun=%d"),
+			*GetName(), static_cast<int32>(Tree->IsReadyToRun()));
+#endif
+	}
+
 	StateTreeComponent->StopLogic(TEXT("Applying new profile"));
 	StateTreeComponent->SetStateTree(Profile->StateTreeAsset);
 	AIProfile = Profile;
@@ -87,7 +119,24 @@ void AOnsetAIController::OnPossess(APawn* InPawn)
 	bInUse = true;
 	Super::OnPossess(InPawn);
 	if (!HasAuthority()) return;
+
 	StateTreeComponent->StartLogic();
+	UE_LOG(LogTemp, Warning, TEXT("[DIAG] OnPossess %s pawn=%s running=%d status=%d"),
+		*GetName(),
+		*GetNameSafe(InPawn),
+		static_cast<int32>(StateTreeComponent->IsRunning()),
+		static_cast<int32>(StateTreeComponent->GetStateTreeRunStatus()));
+
+	// One-second follow-up: did the tree stay running after spawn?
+	FTimerHandle DiagFollowUpHandle;
+	GetWorldTimerManager().SetTimer(DiagFollowUpHandle, FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		if (IsValid(this) && StateTreeComponent)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DIAG] +1s %s running=%d"), *GetName(), static_cast<int32>(StateTreeComponent->IsRunning()));
+		}
+	}), 1.0f, false);
+
 	TargetingComponent = GetPawn()->FindComponentByClass<UTargetingComponent>();
 }
 
