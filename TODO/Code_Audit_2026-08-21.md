@@ -62,8 +62,16 @@ Senior-programmer deep dive across `Project/Source/Onset` against the repo docum
    pick) — **resolved 2026-08-21**: replaced by expected-damage selection
    (`GetComparisonDamage × hits`, refresh-gated DoTs, longest-cooldown tie-break;
    see [Player_AI_System.md](../Docs/AI/Player_AI_System.md)).
-5. **Fallback pool enemies** are spawned as base `AOnsetEnemy` then immediately pooled;
-   correct but roundabout — could add directly to `ObjectPool`.
+5. **Fallback pool enemies/controllers** spawned fresh then run through the full
+   teardown pass (`ReleasePooled*`) just to land in the pool array — roundabout, and
+   **investigation escalated this to a real bug**: the teardown left fallback actors
+   hidden/tick-disabled/collision-off and nothing downstream re-enabled them
+   (`SpawnEnemyAtSlot` never un-hides), so exhaustion-grown NPCs would spawn invisible
+   and inert. **Resolved 2026-08-21**: both fallback branches now register directly in
+   the pool array and normalize state explicitly (enemy: `ResetAttributes` +
+   `OnRespawn`; controller: un-hide + re-enable StateTree/perception ticks) — matching
+   exactly what pooled retrievals return. Verify with a small `PoolSize` + oversized
+   spawner group in PIE (A7.1 stress test will exercise this path at scale).
 
 ## 4. Overall Assessment
 

@@ -28,22 +28,28 @@ AOnsetEnemy* UOnsetPoolSubsystem::GetPooledEnemy()
 	for (AOnsetEnemy* Enemy : ObjectPool)
 	{
 		if (Enemy && Enemy->IsHidden())
-		{                          
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DIAG] GetPooledEnemy: pooled hit %s"), *Enemy->GetName());
 			ActiveEnemies.Add(Enemy);
 			Enemy->OnRespawn();
 			return Enemy;
 		}
 	}
-	// Pool exhausted — fallback SpawnActor (hardcoded to base AOnsetEnemy), which is
-	// immediately pooled so future retrievals see it.
+	// Pool exhausted — grow the pool: spawn a fresh enemy, register it directly in
+	// ObjectPool (no teardown pass needed on a brand-new actor), and normalize its
+	// state to match what pooled retrievals return via OnRespawn.
 	UE_LOG(LogPooling, Warning, TEXT("UOnsetPoolSubsystem: Enemy pool exhausted — spawning new NPC as fallback."));
-	FActorSpawnParameters Params;                                                                           
+	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (AOnsetEnemy* Enemy = GetWorld()->SpawnActor<AOnsetEnemy>(AOnsetEnemy::StaticClass(), FTransform::Identity, Params))
 	{
-		ReleasePooledEnemy(Enemy);
+		if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);
 		ActiveEnemies.Add(Enemy);
-		return Enemy;                                                                                         
+		// Parity with pre-allocated members + the pooled-retrieval path: attributes
+		// initialized, un-hidden, ticking, colliding before SpawnEnemyAtSlot takes over.
+		Enemy->ResetAttributes();
+		Enemy->OnRespawn();
+		return Enemy;
 	}
 	return nullptr;
 }
@@ -63,14 +69,20 @@ AOnsetAIController* UOnsetPoolSubsystem::GetPooledController()
 			return Controller;
 		}
 	}
-	// Pool exhausted — fallback SpawnActor (hardcoded to base AOnsetAIController).
+	// Pool exhausted — grow the pool: spawn a fresh controller, register it directly in
+	// ControllerPool, and restore the active state that pooled retrievals set explicitly
+	// (UnPossess inside ReleasePooledController would leave it hidden with ticks off).
 	UE_LOG(LogPooling, Warning, TEXT("UOnsetPoolSubsystem: Controller pool exhausted — spawning new controller as fallback."));
-	FActorSpawnParameters Params;                                                                           
+	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (AOnsetAIController* Controller = GetWorld()->SpawnActor<AOnsetAIController>(AOnsetAIController::StaticClass(), FTransform::Identity, Params))
 	{
-		ReleasePooledController(Controller);
-		return Controller;                                                                                         
+		if (!ControllerPool.Contains(Controller)) ControllerPool.Add(Controller);
+		Controller->SetActorHiddenInGame(false);
+		Controller->SetActorTickEnabled(true);
+		Controller->StateTreeComponent->SetComponentTickEnabled(true);
+		Controller->PerceptionComponent->SetComponentTickEnabled(true);
+		return Controller;
 	}
 	return nullptr;
 }
