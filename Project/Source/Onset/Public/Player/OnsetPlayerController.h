@@ -107,7 +107,7 @@ private:
 	bool bIdleTimerInitialized = false;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Auto Combat")
-	float IdleAutoCombatDelay = 5.0f;
+	float IdleAutoCombatDelay = 0.0f;
 	
 	FTimerHandle IdleAutoCombatTimerHandle;
 
@@ -116,12 +116,15 @@ private:
 	/** Effective delay: PlayerState value when available, else the fallback above. */
 	float GetEffectiveIdleDelay() const;
 
-	/** Aborts any active server-side click-walk (navmesh path follow). */
-	void CancelClickWalk();
+	UFUNCTION(Server, Reliable)
+	void Server_ClearTarget();
 
+	/** Sets the idle auto-engage delay (seconds; 0 = never auto-engage). Clamped >= 0 server-side.
+	 *  Called by the upcoming autoplay settings menu. */
 	UFUNCTION(Server, Reliable)
 	void Server_SetIdleAutoCombatDelay(float Seconds);
-	
+
+private:
 	// --- Input Mapping Contexts ---
 	
 	/** Virtual joystick + tap + virtual ability buttons for touch input. */                                      

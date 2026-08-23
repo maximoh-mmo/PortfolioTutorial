@@ -3,6 +3,7 @@
 #include "Player/OnsetPlayerCharacter.h"
 
 #include "TimerManager.h"
+#include "Player/OnsetMovementValidationComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Combat/OnsetEquipmentLibrary.h"
 #include "Combat/OnsetLevelingLibrary.h"
@@ -16,6 +17,9 @@
 AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Server-side movement validation for client-authoritative movement input.
+	MovementValidator = CreateDefaultSubobject<UOnsetMovementValidationComponent>(TEXT("MovementValidator"));
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -51,6 +55,16 @@ void AOnsetPlayerCharacter::RespawnPlayer()
 		AttributeSet->SetHealth(AttributeSet->GetMaxHealth());
 	}
 	SetActorTransform(HomeTransform);
+
+	// The respawn teleport must be trusted by movement validation, otherwise the
+	// next sample reads it as a cheat-teleport and yanks the pawn back here.
+	if (MovementValidator)
+	{
+		MovementValidator->SnapToCurrentPosition();
+		UE_LOG(LogTemp, Log, TEXT("[ClickMove] %s respawned - validator snapped to HomeTransform"),
+			*GetName());
+	}
+
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		EnableInput(PC);

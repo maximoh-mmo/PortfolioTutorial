@@ -21,9 +21,12 @@
 #include "GameFramework/MovementComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "NavigationSystem.h"
+#include "Corpse/OnsetCorpse.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "Player/InteractionComponent.h"
+#include "Player/OnsetMovementValidationComponent.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Engine/GameInstance.h"
 #include "Player/OnsetPlayerCharacter.h"
@@ -337,6 +340,12 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 
 	PlayerChar->GrantDefaultAbilities();
 
+	// Saved position was just restored - trust it (validator snap).
+	if (PlayerChar->MovementValidator)
+	{
+		PlayerChar->MovementValidator->SnapToCurrentPosition();
+	}
+
 	// Apply appearance preset if JSON is available
 	if (!CharData.AppearanceJSON.IsEmpty())
 	{
@@ -440,7 +449,6 @@ void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
-	CancelClickWalk();
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (MovementVector.IsZero()) return;	
 	StopMovement();
@@ -490,7 +498,6 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 	// Any gameplay-intent input interrupts autoplay and executes under player authority.
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
-	CancelClickWalk();
 
 	FVector2D ScreenPos;
 	if (!CursorManager->GetCursorPosition(ScreenPos)) return;
@@ -529,7 +536,19 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 	}
 
 	UE_LOG(LogGamepad, Log, TEXT("Click: HitActor=%s"), HitActor ? *HitActor->GetName() : TEXT("null"));
-	Server_ProcessPrimaryInteraction(HitActor, HitLocation);
+
+	const bool bCorpse = HitActor && HitActor->IsA(AOnsetCorpse::StaticClass());
+	const bool bEnemy  = HitActor && HitActor->ActorHasTag("Enemy");
+
+	if (bCorpse || bEnemy || HitLocation != FVector::ZeroVector)
+	{
+		// Always route through the server: it classifies, targets/loots,
+		// and issues the AI-controller walk (navmesh-pathed).
+		Server_ProcessPrimaryInteraction(HitActor, HitLocation);
+	}
+
+	// Traversal is fully server-driven by the auto-combat controller via
+	// Server_ProcessPrimaryInteraction -> IssueClickMove(ToActor).
 }
 
 void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AActor* HitActor, FVector HitLocation)
@@ -544,32 +563,40 @@ void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AAc
 		HitActor = nullptr;
 	}
 
+	// Classify server-side.
+	const bool bCorpse = HitActor && HitActor->IsA(AOnsetCorpse::StaticClass());
+	const bool bEnemy  = HitActor && HitActor->ActorHasTag("Enemy");
+
 	// Process targeting first.
 	InteractionComponent->ProcessPrimaryInteraction(HitActor, HitLocation);
 
-	const FVector MoveTarget = InteractionComponent->GetPendingMoveTarget();
-	if (MoveTarget != FVector::ZeroVector)
+	if (!bAutoCombatEnabled)
 	{
-		// Navmesh traversal requires an AI-controller-owned PathFollowingComponent,
-		// so the auto-combat controller drives the walk (combat brain stopped).
-		// NOTE: deliberately no EnsurePlayerControl() here - flipping possession
-		// off/on per click caused stutter; the controller hands control back on
-		// arrival instead (see IssueClickMove/OnMoveCompleted).
-		if (!bAutoCombatEnabled)
-		{
-			EnableAutoCombat();
-		}
-
-		if (AutoCombatController && AutoCombatController->GetPawn())
-		{
-			AutoCombatController->IssueClickMove(MoveTarget, this);
-		}
-		return;
+		EnableAutoCombat();
 	}
 
-	// Enemy-target / corpse-loot clicks execute under player authority: yield
-	// autoplay combat so the action isn't fought over by the AI controller.
-	EnsurePlayerControl();
+	if (AutoCombatController && GetPawn())
+	{
+		if (bCorpse)
+		{
+			// Stop just inside LootRange so the existing arrival poll executes looting.
+			AutoCombatController->IssueClickMoveToActor(HitActor, 200.0f, this);
+		}
+		else if (bEnemy)
+		{
+			// Pursue the moving target; stop inside basic-attack range.
+			AutoCombatController->IssueClickMoveToActor(HitActor, FMath::Max(50.0f, Cast<AOnsetPlayerCharacter>(GetPawn()) ? Cast<AOnsetPlayerCharacter>(GetPawn())->AttackRange * 0.8f : 200.0f), this);
+		}
+		else
+		{
+			UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+			FNavLocation NavLoc;
+			const FVector Dest = (NavSys && NavSys->ProjectPointToNavigation(HitLocation, NavLoc))
+				? NavLoc.Location
+				: HitLocation;
+			AutoCombatController->IssueClickMove(Dest, this);
+		}
+	}
 }
 
 void AOnsetPlayerController::Client_ShowLootOverlay_Implementation(const TArray<FOnsetInventoryEntry>& LootedItems)
@@ -645,7 +672,6 @@ void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
-	CancelClickWalk();
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
@@ -658,7 +684,6 @@ void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
-	CancelClickWalk();
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
@@ -671,7 +696,6 @@ void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
-	CancelClickWalk();
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
@@ -684,7 +708,6 @@ void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
-	CancelClickWalk();
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
@@ -815,7 +838,6 @@ void AOnsetPlayerController::Server_OnClientPossessed_Implementation()
 void AOnsetPlayerController::EnableAutoCombat()
 {
 	// Any active player click-walk is superseded by autoplay.
-	CancelClickWalk();
 	if (!AutoCombatController || bAutoCombatEnabled) return;
 	if (APawn* MyPawn = GetPawn())
 	{
@@ -853,7 +875,6 @@ void AOnsetPlayerController::DisableAutoCombat()
 	}
 	UE_LOG(LogTemp, Warning, TEXT("DisableAutoCombat: player regained control of %s (bAutoplayEnabled=%d)"),
 		*GetNameSafe(AIPawn), bAutoCombatEnabled);
-	CancelClickWalk();
 	ResetIdleTimer();
 }
 
@@ -884,20 +905,20 @@ void AOnsetPlayerController::EnsurePlayerControl()
 	}
 }
 
-void AOnsetPlayerController::CancelClickWalk()
+
+
+void AOnsetPlayerController::Server_ClearTarget_Implementation()
 {
-	if (APawn* ControlledPawn = GetPawn())
+	if (APawn* TargetingPawn = GetPawn())
 	{
-		if (UPathFollowingComponent* PathComp = ControlledPawn->FindComponentByClass<UPathFollowingComponent>())
+		if (UTargetingComponent* TargetingComp = TargetingPawn->FindComponentByClass<UTargetingComponent>())
 		{
-			PathComp->AbortMove(*this, FPathFollowingResultFlags::UserAbort);
-		}
-		if (UMovementComponent* MoveComp = ControlledPawn->GetMovementComponent())
-		{
-			MoveComp->StopMovementImmediately();
+			TargetingComp->ClearTarget();
 		}
 	}
 }
+
+
 
 float AOnsetPlayerController::GetEffectiveIdleDelay() const
 {
@@ -1002,6 +1023,12 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 			PlayerCharacter->SetPersistIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, SlotIndex);
 
 			PlayerCharacter->GrantDefaultAbilities();
+
+			// Saved position was just restored - trust it (validator snap).
+			if (PlayerCharacter->MovementValidator)
+			{
+				PlayerCharacter->MovementValidator->SnapToCurrentPosition();
+			}
 		}
 	}
 

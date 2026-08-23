@@ -10,6 +10,7 @@
 #include "GAS/OnsetAttributeSet.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
+
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
 
 
@@ -110,10 +111,65 @@ void AOnsetPlayerAIController::IssueClickMove(const FVector& Destination, AOnset
 
 	bPendingClickMove = true;
 
+#if !UE_BUILD_SHIPPING
+	UE_LOG(LogTemp, Warning, TEXT("[DiagWalk] IssueClickMove %s dest=%s"),
+		*GetName(), *Destination.ToCompactString());
+#endif
+
 	// Combat brain off for the walk; StartStateTree() re-engages it on the next
 	// autoplay cycle.
 	StopStateTree();
 	MoveToLocation(Destination);
+
+#if !UE_BUILD_SHIPPING
+	if (UPathFollowingComponent* PFC = GetPathFollowingComponent())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DiagWalk] post-MoveTo status=%d path-valid=%d"),
+			static_cast<int32>(PFC->GetStatus()),
+			PFC->GetPath() ? 1 : 0);
+	}
+#endif
+}
+
+void AOnsetPlayerAIController::IssueClickMoveToActor(AActor* Goal, float AcceptanceRadius,
+	AOnsetPlayerController* OwningPC)
+{
+	ClickMoveOwner = OwningPC;
+
+	const float Now = GetWorld()->GetTimeSeconds();
+	const bool bThrottled = bPendingClickMove
+		&& ClickMoveGoalActor.IsValid() && ClickMoveGoalActor.Get() == Goal
+		&& (Now - LastClickMoveTime) < ClickMoveMinInterval;
+
+	LastClickMoveTime = Now;
+	if (bThrottled)
+	{
+		return;
+	}
+
+	bPendingClickMove = true;
+	ClickMoveGoalActor = Goal;
+
+	// Combat brain off for the walk; StartStateTree() re-engages it on the next
+	// autoplay cycle.
+	StopStateTree();
+	MoveToActor(Goal, AcceptanceRadius);
+}
+
+void AOnsetPlayerAIController::OnUnPossess()
+{
+	// Stop the tree explicitly and leave the component clean so the next
+	// EnableAutoCombat starts from a known-stopped state (StartLogic is owned by
+	// StartStateTree; automatic start-on-possess is disabled in the constructor).
+	if (StateTreeComponent)
+	{
+		StateTreeComponent->StopLogic(TEXT("PlayerOverride"));
+		StateTreeComponent->SetComponentTickEnabled(false);
+	}
+	ClearAbandonedTimeout();
+
+	Super::OnUnPossess();
+	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Returned control to player"));
 }
 
 void AOnsetPlayerAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
@@ -134,22 +190,6 @@ void AOnsetPlayerAIController::OnMoveCompleted(FAIRequestID RequestID, const FPa
 		ClickMoveOwner = nullptr;
 		PC->DisableAutoCombat();
 	}
-}
-
-void AOnsetPlayerAIController::OnUnPossess()
-{
-	// Stop the tree explicitly and leave the component clean so the next
-	// EnableAutoCombat starts from a known-stopped state (StartLogic is owned by
-	// StartStateTree; automatic start-on-possess is disabled in the constructor).
-	if (StateTreeComponent)
-	{
-		StateTreeComponent->StopLogic(TEXT("PlayerOverride"));
-		StateTreeComponent->SetComponentTickEnabled(false);
-	}
-	ClearAbandonedTimeout();
-
-	Super::OnUnPossess();
-	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Returned control to player"));
 }
 
 void AOnsetPlayerAIController::AdoptAbandonedPawn(APawn* InPawn, const FString& Platform, const FString& PlatformID, int32 SlotIndex)

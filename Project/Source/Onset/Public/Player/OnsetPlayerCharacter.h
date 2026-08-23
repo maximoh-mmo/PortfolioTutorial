@@ -8,6 +8,7 @@
 
 class USpringArmComponent;
 class UCameraComponent;
+class UOnsetMovementValidationComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProgressionChanged, int32, NewLevel, int32, NewExperience);
 
@@ -103,9 +104,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Progression")
 	void PrestigeUp();
 
+	/** Server-side movement validation (delta budget, wall probes, cheat flagging). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement Validation")
+	TObjectPtr<UOnsetMovementValidationComponent> MovementValidator;
+
 protected:
 	// --- Camera ---
-	
+
 	/** Spring arm that provides the top-down view angle and collision push-back. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<USpringArmComponent> CameraBoom;

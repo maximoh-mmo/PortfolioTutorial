@@ -74,7 +74,7 @@ Episode scripts 40–43 exist in `Planning/Scripts/`; 44–47 have outlines only
 
 ## Priority 5 — Housekeeping & optional
 
-- [ ] **Investigate (input responsiveness):** move click-to-move path following into the PlayerController itself (own a UPathFollowingComponent / mirror the AIController navpath flow) so ground-click traversal never shares possession with the auto-combat controller - rapid inputs currently fight for control despite coalescing (see Server_ProcessPrimaryInteraction / IssueClickMove)
+- [x] **Input responsiveness** - RESOLVED 2026-08-23: click-to-move is now fully client-local (bAllowClientSideNavigation=true; SimpleMoveTo* on owning client; auto-combat controller reverted to combat-only duty). Any gameplay-intent input interrupts autoplay via Server_DisableAutoCombat. Server-side cheat detection added via UOnsetMovementValidationComponent (delta budget @1.5x speed, wall probes, log-only flagging). Follow-up candidates: precomputed navmesh export for clients; CMC-subclass migration if server-authoritative movement validation ever becomes a hard requirement.
 
 
 - [ ] **Content:** author `RefreshTag` values on any DoT rows in `DT_Abilities` (enables the autoplay DoT refresh gate; abilities without a tag are never gated — see [Player AI System](../Docs/AI/Player_AI_System.md#ability-selection-expected-damage-heuristic))

@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -65,16 +65,41 @@ public:
 	/**
 	 * Player click-to-move: drives the pawn to Destination via navmesh pathing with the
 	 * combat brain (StateTree) stopped. On arrival, control is handed back to OwningPC
-	 * (DisableAutoCombat), which also deselects the HUD autoplay toggle.
+	 * (DisableAutoCombat), which also deselects the HUD autoplay toggle. Rapid re-issues
+	 * coalesce to avoid abort/repath stutter.
 	 */
 	void IssueClickMove(const FVector& Destination, AOnsetPlayerController* OwningPC);
+
+	/** Actor-goal variant: PathFollowing tracks the (possibly moving) goal natively.
+	 *  Used for enemy/corpse clicks so pursuit follows instead of a frozen snapshot. */
+	void IssueClickMoveToActor(AActor* Goal, float AcceptanceRadius, AOnsetPlayerController* OwningPC);
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
-	
+
 private:
+	/** Player controller awaiting pawn hand-back after a click-move completes. */
+	TWeakObjectPtr<AOnsetPlayerController> ClickMoveOwner;
+
+	/** True while a click-move issued via IssueClickMove is in flight. */
+	bool bPendingClickMove = false;
+
+	/** Min seconds between path re-issues for near-identical goals (anti-stutter). */
+	UPROPERTY(EditDefaultsOnly, Category = "Auto Combat")
+	float ClickMoveMinInterval = 0.2f;
+
+	/** Distance considered "same goal" during the re-issue throttle window. */
+	UPROPERTY(EditDefaultsOnly, Category = "Auto Combat")
+	float SameGoalThreshold = 60.0f;
+
+	FVector LastClickMoveDestination = FVector::ZeroVector;
+	float LastClickMoveTime = -1000.0f;
+
+	/** Actor goal of the in-flight click-move (enemy/corpse pursuit). */
+	TWeakObjectPtr<AActor> ClickMoveGoalActor;
+
 	/** Deferred possession + state tree start for an adopted pawn. */
 	void PossessAbandonedPawn();
 
@@ -99,22 +124,6 @@ private:
 	FString CachedPlatformID;
 	int32 CachedSlotIndex = -1;
 
-	/** Player controller awaiting pawn hand-back after a click-move completes. */
-	TWeakObjectPtr<AOnsetPlayerController> ClickMoveOwner;
-
-	/** True while a click-move issued via IssueClickMove is in flight. */
-	bool bPendingClickMove = false;
-
-	/** Min seconds between path re-issues for near-identical goals (anti-stutter). */
-	UPROPERTY(EditDefaultsOnly, Category = "Auto Combat")
-	float ClickMoveMinInterval = 0.2f;
-
-	/** Distance considered "same goal" during the re-issue throttle window. */
-	UPROPERTY(EditDefaultsOnly, Category = "Auto Combat")
-	float SameGoalThreshold = 60.0f;
-
-	FVector LastClickMoveDestination = FVector::ZeroVector;
-	float LastClickMoveTime = -1000.0f;
 
 	FTimerHandle AbandonedTimeoutHandle;
 };

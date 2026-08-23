@@ -30,7 +30,7 @@ public:
 	/** Seconds of input silence before autoplay re-engages; 0 = never auto-engage.
 	 *  Owner-replicated; authored via Server_SetIdleAutoCombatDelay (autoplay settings menu). */
 	UPROPERTY(ReplicatedUsing=OnRep_IdleAutoCombatDelay)
-	float IdleAutoCombatDelaySeconds = 5.0f;
+	float IdleAutoCombatDelaySeconds = 0.0f;
 
 	/** Server-side clamp-and-apply for IdleAutoCombatDelaySeconds (negative values clamped to 0). */
 	void SetIdleAutoCombatDelaySeconds(float Seconds);

@@ -171,3 +171,19 @@ ASC checks PvP rules before applying damage.
 - Player targeting a player when PvP is turned OFF
 - Player clicks a corpse out of range while in combat — auto-paths; movement interrupts combat
 - Corpse already looted (`bLooted`) — interaction aborts  
+
+## Movement Authority & Validation (2026-08-23)
+
+- **WASD/stick and click-to-move are client-authoritative.** Clients require client-side navmesh
+  (AllowClientSideNavigation=true in DefaultEngine.ini); floor clicks project onto the local navmesh
+  and issue SimpleMoveToLocation locally - zero server round-trips for traversal.
+- **Any gameplay-intent input interrupts autoplay** (WASD, abilities, any click) via
+  Server_DisableAutoCombat; the auto-combat controller is combat-only.
+- Enemy clicks set the target server-side then pursue via local SimpleMoveToActor (moving goals tracked);
+  pursuit stops at AttackRange x0.8 or on target clear/death. Corpse clicks pursue to LootRange and the
+  loot request re-sends on arrival (server executes looting). Floor/corpse clicks clear the target
+  (Server_ClearTarget / Process RPC).
+- **Server validation**: UOnsetMovementValidationComponent (player characters, server-only tick) enforces a
+  horizontal delta budget of MaxWalkSpeed x 1.5 per sample window, probes fast/teleport-sized moves with
+  wall line-traces, corrects violations to the last trusted position, and logs + FLAGs repeat offenders in
+  the game-server log (LogOnsetValidation). Client-side navmesh export/precompute is tracked as follow-up.

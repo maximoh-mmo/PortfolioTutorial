@@ -7,11 +7,15 @@
 #include "InteractionComponent.generated.h"
 
 
-struct FHitResult;
 class AOnsetCorpse;
 class AOnsetPlayerController;
 class UTargetingComponent;
 
+/**
+ * Server-side primary-interaction resolution: enemy targeting and corpse looting.
+ * Traversal is owned by the client (see AOnsetPlayerController local move layer);
+ * this component only applies gameplay-authoritative results of a click.
+ */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ONSET_API UInteractionComponent : public UActorComponent
 {
@@ -19,42 +23,23 @@ class ONSET_API UInteractionComponent : public UActorComponent
 
 public:
 	UInteractionComponent();
-	
-	/** Primary interaction: raycasts at screen position, branches on hit type. */
-	void ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
-	
-	/** Returns the last processed move target from ProcessPrimaryInteraction. */
-	FVector GetPendingMoveTarget() const { return PendingMoveTarget; }
 
-	/** Distance within which a corpse can be looted on click. */
+	/** Server-side click resolution: enemy -> SetTarget(+auto-attack); corpse ->
+	 *  ClearTarget + loot-if-in-range (client drives proximity); floor -> ClearTarget. */
+	void ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
+
+	/** Distance within which a corpse can be looted on click. Must stay in sync with
+	 *  the owning client's pursuit stop logic (client polls this value locally). */
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
 	float LootRange = 250.0f;
 
-	/** Echo-poll rate while auto-path is waiting to arrive at a corpse. */
-	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
-	float LootArrivalPollInterval = 0.2f;
-
 private:
-	/** Loots Corpse now if the pawn is in range; otherwise starts auto-path + arrival poll. */
+	/** Loots Corpse if the pawn is within LootRange; otherwise no-op (client re-sends on arrival). */
 	void TryLootCorpse(AOnsetCorpse* Corpse);
-
-	/** Echo poll while pathing: loots the pending corpse once the pawn arrives. */
-	void OnLootArrivalTick();
 
 	/** Transfers loot to the pawn's inventory, marks/destroys the corpse, and fires the UI trigger. */
 	void LootCorpse(AOnsetCorpse* Corpse, APawn* Pawn);
 
-	/** Clears the pending-loot state and stops the arrival timer. */
-	void ClearPendingLoot();
-
 	UPROPERTY()
 	TObjectPtr<UTargetingComponent> TargetingComponent;
-	
-	FVector PendingMoveTarget = FVector::ZeroVector;
-
-	/** The corpse we are auto-pathing to (server-side only). */
-	TWeakObjectPtr<AOnsetCorpse> PendingLootCorpse;
-
-	FTimerHandle LootArrivalTimerHandle;
-	
 };
