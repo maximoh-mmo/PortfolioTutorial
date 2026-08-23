@@ -6,8 +6,10 @@
 #include "Components/StateTreeAIComponent.h"
 #include "Core/TargetingComponent.h"
 #include "GameFramework/Pawn.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "Player/OnsetPlayerCharacter.h"
+#include "Player/OnsetPlayerController.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
 
 
@@ -17,6 +19,11 @@ AOnsetPlayerAIController::AOnsetPlayerAIController()
 	bStartAILogicOnPossess = true;
 	StateTreeComponent = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeComponent"));
 	StateTreeComponent->SetComponentTickEnabled(false);
+	// Possession must never implicitly start logic using stale instance data from a
+	// previous enable/disable cycle - that zombie-start blocked SetStateTree on the
+	// next takeover ("running instance") and left autoplay fighting ghosts.
+	// StartStateTree() is the sole owner of the start sequence.
+	StateTreeComponent->SetStartLogicAutomatically(false);
 	StateTree = LoadObject<UStateTree>(nullptr, TEXT("/Game/AI/PlayerAutoCombat.PlayerAutoCombat"));
 }
 
@@ -40,6 +47,13 @@ void AOnsetPlayerAIController::StartStateTree()
 	
 		if (StateTree->IsReadyToRun())
 		{
+			// Repeated enable/disable cycles may reach here while a previous
+			// instance is still winding down; SetStateTree refuses changes on a
+			// running component, so stop explicitly first.
+			if (StateTreeComponent->IsRunning())
+			{
+				StateTreeComponent->StopLogic(TEXT("Restarting player StateTree"));
+			}
 			StateTreeComponent->SetStateTree(StateTree);
 			StateTreeComponent->SetComponentTickEnabled(true);
 			StateTreeComponent->StartLogic();
@@ -64,19 +78,78 @@ void AOnsetPlayerAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	if (!HasAuthority()) return;
+
+	// Heal any state a previous cycle may have left behind.
+	SetActorHiddenInGame(false);
+	SetActorTickEnabled(true);
+
 	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
 	StartStateTree();
 	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Possessed player"));
 }
 
+void AOnsetPlayerAIController::IssueClickMove(const FVector& Destination, AOnsetPlayerController* OwningPC)
+{
+	ClickMoveOwner = OwningPC;
+
+	// Coalesce rapid re-clicks: each MoveToLocation aborts the active path (velocity
+	// reset) and issues a fresh async A* query, which reads as stutter when spammed.
+	// Skip re-issues that are near-identical to the active goal within the throttle
+	// window; genuine retargets always pass through immediately.
+	const float Now = GetWorld()->GetTimeSeconds();
+	const bool bThrottled = bPendingClickMove
+		&& (Now - LastClickMoveTime) < ClickMoveMinInterval
+		&& FVector::DistSquaredXY(Destination, LastClickMoveDestination) < FMath::Square(SameGoalThreshold);
+
+	LastClickMoveDestination = Destination;
+	if (bThrottled)
+	{
+		return;
+	}
+	LastClickMoveTime = Now;
+
+	bPendingClickMove = true;
+
+	// Combat brain off for the walk; StartStateTree() re-engages it on the next
+	// autoplay cycle.
+	StopStateTree();
+	MoveToLocation(Destination);
+}
+
+void AOnsetPlayerAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+{
+	Super::OnMoveCompleted(RequestID, Result);
+
+	if (!bPendingClickMove || Result.IsInterrupted())
+	{
+		return; // superseded by a newer request, or not a click-move
+	}
+	bPendingClickMove = false;
+	ClearFocus(EAIFocusPriority::Gameplay);
+
+	// Arrival hands the pawn back to the player: DisableAutoCombat re-possesses the
+	// PlayerController and broadcasts the settings change that deselects the HUD toggle.
+	if (AOnsetPlayerController* PC = ClickMoveOwner.Get())
+	{
+		ClickMoveOwner = nullptr;
+		PC->DisableAutoCombat();
+	}
+}
+
 void AOnsetPlayerAIController::OnUnPossess()
 {
-	StateTreeComponent->StopLogic(TEXT("PlayerOverride"));
-	StateTreeComponent->SetComponentTickEnabled(false);
+	// Stop the tree explicitly and leave the component clean so the next
+	// EnableAutoCombat starts from a known-stopped state (StartLogic is owned by
+	// StartStateTree; automatic start-on-possess is disabled in the constructor).
+	if (StateTreeComponent)
+	{
+		StateTreeComponent->StopLogic(TEXT("PlayerOverride"));
+		StateTreeComponent->SetComponentTickEnabled(false);
+	}
 	ClearAbandonedTimeout();
-	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Returned control to player"));
 
 	Super::OnUnPossess();
+	UE_LOG(LogActor, Warning, TEXT("AOnsetPlayerAIController: Returned control to player"));
 }
 
 void AOnsetPlayerAIController::AdoptAbandonedPawn(APawn* InPawn, const FString& Platform, const FString& PlatformID, int32 SlotIndex)

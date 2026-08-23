@@ -18,6 +18,10 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/MovementComponent.h"
+#include "GameFramework/PawnMovementComponent.h"
+#include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "Player/InteractionComponent.h"
 #include "Core/OnsetBaseCharacter.h"
@@ -436,6 +440,7 @@ void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	CancelClickWalk();
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (MovementVector.IsZero()) return;	
 	StopMovement();
@@ -482,7 +487,11 @@ void AOnsetPlayerController::OnCursorMoveEnded(const FInputActionValue& Value)
 
 void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value)
 {
+	// Any gameplay-intent input interrupts autoplay and executes under player authority.
+	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	CancelClickWalk();
+
 	FVector2D ScreenPos;
 	if (!CursorManager->GetCursorPosition(ScreenPos)) return;
 
@@ -529,7 +538,7 @@ void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AAc
 	{
 		return;
 	}
-	
+
 	if (HitActor && !IsValid(HitActor))
 	{
 		HitActor = nullptr;
@@ -538,9 +547,14 @@ void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AAc
 	// Process targeting first.
 	InteractionComponent->ProcessPrimaryInteraction(HitActor, HitLocation);
 
-	FVector MoveTarget = InteractionComponent->GetPendingMoveTarget();
+	const FVector MoveTarget = InteractionComponent->GetPendingMoveTarget();
 	if (MoveTarget != FVector::ZeroVector)
 	{
+		// Navmesh traversal requires an AI-controller-owned PathFollowingComponent,
+		// so the auto-combat controller drives the walk (combat brain stopped).
+		// NOTE: deliberately no EnsurePlayerControl() here - flipping possession
+		// off/on per click caused stutter; the controller hands control back on
+		// arrival instead (see IssueClickMove/OnMoveCompleted).
 		if (!bAutoCombatEnabled)
 		{
 			EnableAutoCombat();
@@ -548,11 +562,15 @@ void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AAc
 
 		if (AutoCombatController && AutoCombatController->GetPawn())
 		{
-			AutoCombatController->StopStateTree();
-			AutoCombatController->MoveToLocation(MoveTarget);
+			AutoCombatController->IssueClickMove(MoveTarget, this);
 		}
+		return;
 	}
-}	
+
+	// Enemy-target / corpse-loot clicks execute under player authority: yield
+	// autoplay combat so the action isn't fought over by the AI controller.
+	EnsurePlayerControl();
+}
 
 void AOnsetPlayerController::Client_ShowLootOverlay_Implementation(const TArray<FOnsetInventoryEntry>& LootedItems)
 {
@@ -627,6 +645,7 @@ void AOnsetPlayerController::OnAbility1(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	CancelClickWalk();
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
@@ -639,6 +658,7 @@ void AOnsetPlayerController::OnAbility2(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	CancelClickWalk();
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
@@ -651,6 +671,7 @@ void AOnsetPlayerController::OnAbility3(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	CancelClickWalk();
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
@@ -663,6 +684,7 @@ void AOnsetPlayerController::OnAbility4(const FInputActionValue& Value)
 {
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
+	CancelClickWalk();
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
 	if (Self && Self->AbilitySystemComponent)
 	{
@@ -731,6 +753,7 @@ void AOnsetPlayerController::Server_SetPvPEnabled_Implementation(const bool bEna
 
 void AOnsetPlayerController::Server_DisableAutoCombat_Implementation()
 {
+	// All wire-level disables originate from user input (movement/abilities/clicks).
 	DisableAutoCombat();
 }
 
@@ -791,6 +814,8 @@ void AOnsetPlayerController::Server_OnClientPossessed_Implementation()
 
 void AOnsetPlayerController::EnableAutoCombat()
 {
+	// Any active player click-walk is superseded by autoplay.
+	CancelClickWalk();
 	if (!AutoCombatController || bAutoCombatEnabled) return;
 	if (APawn* MyPawn = GetPawn())
 	{
@@ -828,6 +853,7 @@ void AOnsetPlayerController::DisableAutoCombat()
 	}
 	UE_LOG(LogTemp, Warning, TEXT("DisableAutoCombat: player regained control of %s (bAutoplayEnabled=%d)"),
 		*GetNameSafe(AIPawn), bAutoCombatEnabled);
+	CancelClickWalk();
 	ResetIdleTimer();
 }
 
@@ -841,12 +867,55 @@ void AOnsetPlayerController::ResetIdleTimer()
 {
 	bIdleTimerInitialized = true;
 	GetWorldTimerManager().ClearTimer(IdleAutoCombatTimerHandle);
-	if (IdleAutoCombatDelay > 0.0f)
-	{	
+
+	const float Delay = GetEffectiveIdleDelay();
+	if (Delay > 0.0f)
+	{
 		GetWorldTimerManager().SetTimer(IdleAutoCombatTimerHandle, this,
-			&AOnsetPlayerController::EnableAutoCombat, IdleAutoCombatDelay, false);
+			&AOnsetPlayerController::EnableAutoCombat, Delay, false);
 	}
 }
+
+void AOnsetPlayerController::EnsurePlayerControl()
+{
+	if (bAutoCombatEnabled)
+	{
+		DisableAutoCombat();
+	}
+}
+
+void AOnsetPlayerController::CancelClickWalk()
+{
+	if (APawn* ControlledPawn = GetPawn())
+	{
+		if (UPathFollowingComponent* PathComp = ControlledPawn->FindComponentByClass<UPathFollowingComponent>())
+		{
+			PathComp->AbortMove(*this, FPathFollowingResultFlags::UserAbort);
+		}
+		if (UMovementComponent* MoveComp = ControlledPawn->GetMovementComponent())
+		{
+			MoveComp->StopMovementImmediately();
+		}
+	}
+}
+
+float AOnsetPlayerController::GetEffectiveIdleDelay() const
+{
+	if (const AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
+	{
+		return PS->IdleAutoCombatDelaySeconds;
+	}
+	return IdleAutoCombatDelay;
+}
+
+void AOnsetPlayerController::Server_SetIdleAutoCombatDelay_Implementation(float Seconds)
+{
+	if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
+	{
+		PS->SetIdleAutoCombatDelaySeconds(Seconds);
+	}
+}
+
 
 void AOnsetPlayerController::Client_CharacterData_Implementation(const FOnsetFullCharacterData& CharacterData)
 {

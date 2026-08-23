@@ -74,6 +74,9 @@ Episode scripts 40–43 exist in `Planning/Scripts/`; 44–47 have outlines only
 
 ## Priority 5 — Housekeeping & optional
 
+- [ ] **Investigate (input responsiveness):** move click-to-move path following into the PlayerController itself (own a UPathFollowingComponent / mirror the AIController navpath flow) so ground-click traversal never shares possession with the auto-combat controller - rapid inputs currently fight for control despite coalescing (see Server_ProcessPrimaryInteraction / IssueClickMove)
+
+
 - [ ] **Content:** author `RefreshTag` values on any DoT rows in `DT_Abilities` (enables the autoplay DoT refresh gate; abilities without a tag are never gated — see [Player AI System](../Docs/AI/Player_AI_System.md#ability-selection-expected-damage-heuristic))
 
 - [x] Author `Level` (1–200) + `XpReward` on `DT_EnemyStats` rows; verify XP grants / level-ups / autoplay persistence in PIE (code done — see [Leveling System](../Docs/Player/Leveling_System.md)) — **done, see [Enemy Creation Tool](../Docs/Tools/Enemy_Editor.md)**

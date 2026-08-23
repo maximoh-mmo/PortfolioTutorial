@@ -46,13 +46,29 @@ void AOnsetPlayerState::OnRep_ContinueOnDisconnect()
 	OnPlayerSettingsChanged.Broadcast();
 }
 
+void AOnsetPlayerState::OnRep_IdleAutoCombatDelay()
+{
+	OnPlayerSettingsChanged.Broadcast();
+}
+
+void AOnsetPlayerState::SetIdleAutoCombatDelaySeconds(float Seconds)
+{
+	const float Clamped = FMath::Max(0.0f, Seconds);
+	if (!FMath::IsNearlyEqual(Clamped, IdleAutoCombatDelaySeconds))
+	{
+		IdleAutoCombatDelaySeconds = Clamped;
+		OnPlayerSettingsChanged.Broadcast();
+	}
+}
+
 void AOnsetPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AOnsetPlayerState, bIsPvPEnabled);
-	DOREPLIFETIME(AOnsetPlayerState, bAutoplayEnabled);
-	DOREPLIFETIME(AOnsetPlayerState, bContinueOnDisconnect);
-	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatform);
+  	DOREPLIFETIME(AOnsetPlayerState, bAutoplayEnabled);
+  	DOREPLIFETIME(AOnsetPlayerState, bContinueOnDisconnect);
+	DOREPLIFETIME_CONDITION(AOnsetPlayerState, IdleAutoCombatDelaySeconds, COND_OwnerOnly);
+  	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatform);
 	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatformID);
 }
 

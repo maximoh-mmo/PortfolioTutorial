@@ -45,6 +45,18 @@ public:
 	void StopAutoAttack();
 	
 	void EnableAutoCombat();
+	/**
+	 * Server-side: hands the pawn back to this controller if autoplay currently owns it.
+	 * Every gameplay-intent input path (movement, abilities, primary click) calls this
+	 * before processing so user input always executes under player authority.
+	 */
+	void EnsurePlayerControl();
+
+	/** Sets the idle auto-engage delay (seconds; 0 = never auto-engage). Clamped >= 0 on the server. */
+	void SetIdleAutoCombatDelay(float Seconds);
+
+	/** Ends autoplay and returns the pawn to player control. User-input-driven disables
+	 *  cancel the idle auto-re-enable timer; system-initiated ones keep it armed. */
 	void DisableAutoCombat();
 	const AController* GetActiveController() const;
 
@@ -99,7 +111,16 @@ private:
 	
 	FTimerHandle IdleAutoCombatTimerHandle;
 
-	void ResetIdleTimer();	
+	void ResetIdleTimer();
+
+	/** Effective delay: PlayerState value when available, else the fallback above. */
+	float GetEffectiveIdleDelay() const;
+
+	/** Aborts any active server-side click-walk (navmesh path follow). */
+	void CancelClickWalk();
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetIdleAutoCombatDelay(float Seconds);
 	
 	// --- Input Mapping Contexts ---
 	
