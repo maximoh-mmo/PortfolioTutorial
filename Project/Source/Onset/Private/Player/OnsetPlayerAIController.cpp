@@ -3,6 +3,7 @@
 
 #include "Player/OnsetPlayerAIController.h"
 #include "StateTree.h"
+#include "TimerManager.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Core/TargetingComponent.h"
 #include "GameFramework/Pawn.h"
@@ -18,6 +19,12 @@ AOnsetPlayerAIController::AOnsetPlayerAIController()
 	StateTreeComponent = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeComponent"));
 	StateTreeComponent->SetComponentTickEnabled(false);
 	StateTree = LoadObject<UStateTree>(nullptr, TEXT("/Game/AI/PlayerAutoCombat.PlayerAutoCombat"));
+	
+	// Possession must never implicitly start logic using stale instance data from a
+	// previous enable/disable cycle - that zombie-start blocked SetStateTree on the
+	// next takeover ("running instance") and left autoplay fighting ghosts.
+	// StartStateTree() is the sole owner of the start sequence.
+	StateTreeComponent->SetStartLogicAutomatically(false);
 }
 
 void AOnsetPlayerAIController::StartStateTree()
@@ -40,6 +47,13 @@ void AOnsetPlayerAIController::StartStateTree()
 	
 		if (StateTree->IsReadyToRun())
 		{
+			// Repeated enable/disable cycles may reach here while a previous
+			// instance is still winding down; SetStateTree refuses changes on a
+			// running component, so stop explicitly first.
+			if (StateTreeComponent->IsRunning())
+			{
+				StateTreeComponent->StopLogic(TEXT("Restarting player StateTree"));
+			}
 			StateTreeComponent->SetStateTree(StateTree);
 			StateTreeComponent->SetComponentTickEnabled(true);
 			StateTreeComponent->StartLogic();
@@ -53,10 +67,13 @@ void AOnsetPlayerAIController::StartStateTree()
 
 void AOnsetPlayerAIController::StopStateTree()
 {
-	if (StateTreeComponent)
+	if (IsValid(StateTreeComponent))
 	{
-		StateTreeComponent->StopLogic(TEXT("PlayerOverride"));
-		StateTreeComponent->SetComponentTickEnabled(false);
+		if (StateTreeComponent->IsRunning())
+		{
+			StateTreeComponent->StopLogic(TEXT("PlayerOverride"));
+			StateTreeComponent->SetComponentTickEnabled(false);
+		}
 	}
 }
 
