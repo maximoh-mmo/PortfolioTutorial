@@ -29,11 +29,11 @@ public:
 	
 	/** Returns the current target actor, or nullptr if no target is set. */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
-	AActor* GetTarget() const { return CurrentTarget; }
+	AActor* GetTarget() const;
 	
 	/** Returns true if a valid target is currently set. */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
-	bool HasTarget() const { return CurrentTarget != nullptr; }
+	bool HasTarget() const { return GetTarget() != nullptr; }
 	
 	/** Clears the current target. Identical to SetTarget(nullptr). */
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
@@ -49,6 +49,12 @@ public:
 	/** Broadcasts whenever the target is set or cleared. */
 	UPROPERTY(BlueprintAssignable, Category = "Targeting")
 	FOnTargetChanged OnTargetChanged;
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetTarget(AActor* NewTarget);
+
+	UFUNCTION(Server, Reliable)
+	void Server_ClearTarget();
 
 private:
 	/** Replays OnTargetChanged on clients when the replicated target updates. */

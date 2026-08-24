@@ -25,6 +25,15 @@ void UTargetingComponent::OnRep_CurrentTarget()
 	OnTargetChanged.Broadcast(CurrentTarget);
 }
 
+AActor* UTargetingComponent::GetTarget() const
+{
+	if (CurrentTarget && !IsActorTargetValid(CurrentTarget))
+	{
+		return nullptr;
+	}
+	return CurrentTarget;
+}
+
 void UTargetingComponent::SetTarget(AActor* NewTarget)
 {
 	if (!NewTarget)
@@ -33,11 +42,43 @@ void UTargetingComponent::SetTarget(AActor* NewTarget)
 		return;
 	}
 	if (!IsActorTargetValid(NewTarget)) return;
+
+	CurrentTarget = NewTarget;
+	OnTargetChanged.Broadcast(CurrentTarget);
+
+	if (GetOwner() && !GetOwner()->HasAuthority())
+	{
+		Server_SetTarget(NewTarget);
+	}
+}
+
+void UTargetingComponent::Server_SetTarget_Implementation(AActor* NewTarget)
+{
+	if (!NewTarget)
+	{
+		ClearTarget();
+		return;
+	}
+	if (!IsActorTargetValid(NewTarget)) return;
+
 	CurrentTarget = NewTarget;
 	OnTargetChanged.Broadcast(CurrentTarget);
 }
 
 void UTargetingComponent::ClearTarget()
+{
+	if (!CurrentTarget) return;
+
+	CurrentTarget = nullptr;
+	OnTargetChanged.Broadcast(CurrentTarget);
+
+	if (GetOwner() && !GetOwner()->HasAuthority())
+	{
+		Server_ClearTarget();
+	}
+}
+
+void UTargetingComponent::Server_ClearTarget_Implementation()
 {
 	CurrentTarget = nullptr;
 	OnTargetChanged.Broadcast(CurrentTarget);
@@ -45,8 +86,10 @@ void UTargetingComponent::ClearTarget()
 
 bool UTargetingComponent::IsActorTargetValid(AActor* Actor) const
 {
-	if (!Actor) return false;
-	if (const AOnsetBaseCharacter* Character = Cast<AOnsetBaseCharacter>(Actor); !Character) return false;
+	if (!Actor || !IsValid(Actor)) return false;
+	const AOnsetBaseCharacter* Character = Cast<AOnsetBaseCharacter>(Actor);
+	if (!Character) return false;
+	if (!Character->IsAlive()) return false;
 	return Actor != GetOwner();
 }
 
