@@ -1,5 +1,6 @@
 #include "Player/InteractionComponent.h"
 #include "Corpse/OnsetCorpse.h"
+#include "Enemy/OnsetEnemy.h"
 #include "Inventory/UOnsetInventoryComponent.h"
 #include "NavigationSystem.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
@@ -15,46 +16,47 @@ UInteractionComponent::UInteractionComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation)
+FMoveTarget UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation)
 {
 	AOnsetPlayerController* PlayerController = Cast<AOnsetPlayerController>(GetOwner());
 	if (!PlayerController)
 	{
 		UE_LOG(LogGamepad, Log, TEXT("ProcessPrimaryInteraction: Owner is null or not OnsetPlayerController"));
-		return;
+		return {};
 	}
 
-	// Corpse click → loot now if in range, otherwise auto-path and loot on arrival.
+	APawn* Pawn = PlayerController->GetPawn();
+	TargetingComponent = Pawn ? Pawn->FindComponentByClass<UTargetingComponent>() : nullptr;
+
+	PendingMovementTarget = {};
+
+	// Corpse click → clear target, stop autoattack, loot now if in range, otherwise auto-path and loot on arrival.
 	if (AOnsetCorpse* Corpse = Cast<AOnsetCorpse>(HitActor))
 	{
+		if (TargetingComponent)
+		{
+			TargetingComponent->ClearTarget();
+		}
+		PlayerController->StopAutoAttack();
 		TryLootCorpse(Corpse);
-		return;
+		return PendingMovementTarget;
 	}
 
-	if (!TargetingComponent)
-	{
-		if (APawn* Pawn = PlayerController->GetPawn())
-		{
-			TargetingComponent = Pawn->FindComponentByClass<UTargetingComponent>();
-			if (!TargetingComponent) return;
-		}
-		else
-		{
-			return;
-		}
-	}
-	
-	PendingMoveTarget = FVector::ZeroVector;
-	
+	// Any non-corpse click cancels pending corpse loot
+	ClearPendingLoot();
+
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	FNavLocation NavLoc;
 	bool bIsHostile = false;
 	
-	if (HitActor)
+	if (HitActor && TargetingComponent)
 	{
-		bool bEnemyTag = HitActor->ActorHasTag("Enemy");
-		bool bPVPValid = TargetingComponent->IsActorTargetPVPValid(HitActor, PlayerController->GetPawn());
-		if (bEnemyTag || bPVPValid)
+		const bool bEnemyTag = HitActor->ActorHasTag("Enemy");
+		const bool bIsEnemy = HitActor->IsA<AOnsetEnemy>();
+		const bool bPVPValid = TargetingComponent->IsActorTargetPVPValid(HitActor, Pawn);
+		const bool bValidTarget = TargetingComponent->IsActorTargetValid(HitActor);
+
+		if ((bEnemyTag || bIsEnemy || bPVPValid) && bValidTarget)
 		{
 			TargetingComponent->SetTarget(HitActor);
 			PlayerController->StartAutoAttack();
@@ -62,21 +64,31 @@ void UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, FVector 
 		}
 	}
 	
-	bool bProjected = NavSys && NavSys->ProjectPointToNavigation(HitLocation, NavLoc);
+	const bool bProjected = NavSys && NavSys->ProjectPointToNavigation(HitLocation, NavLoc);
 	if (bProjected)
 	{
-		PendingMoveTarget = NavLoc.Location;
+		PendingMovementTarget.Position = NavLoc.Location;
 	}
-	else if (HitActor)
+	else
 	{
-		PendingMoveTarget = HitActor->GetActorLocation();
+		PendingMovementTarget.Position = HitLocation;
 	}
-	
+
+	if (HitActor && bIsHostile)
+	{
+		PendingMovementTarget.Actor = HitActor;
+	}
+
 	if (!bIsHostile)
 	{
-		TargetingComponent->ClearTarget();
+		if (TargetingComponent)
+		{
+			TargetingComponent->ClearTarget();
+		}
 		PlayerController->StopAutoAttack();
 	}
+
+	return PendingMovementTarget;
 }
 
 void UInteractionComponent::TryLootCorpse(AOnsetCorpse* Corpse)
@@ -103,7 +115,8 @@ void UInteractionComponent::TryLootCorpse(AOnsetCorpse* Corpse)
 
 	// Out of range: path to the corpse and keep polling until we arrive.
 	PendingLootCorpse = Corpse;
-	PendingMoveTarget = Corpse->GetActorLocation();
+	PendingMovementTarget.Actor = Corpse;
+	PendingMovementTarget.Position = Corpse->GetActorLocation();
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
@@ -158,7 +171,8 @@ void UInteractionComponent::LootCorpse(AOnsetCorpse* Corpse, APawn* Pawn)
 void UInteractionComponent::ClearPendingLoot()
 {
 	PendingLootCorpse.Reset();
-	PendingMoveTarget = FVector::ZeroVector;
+	PendingMovementTarget.Position = FVector::ZeroVector;
+	PendingMovementTarget.Actor = nullptr;
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(LootArrivalTimerHandle);

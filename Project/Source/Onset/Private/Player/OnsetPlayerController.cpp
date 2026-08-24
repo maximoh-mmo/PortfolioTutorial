@@ -2,7 +2,6 @@
 
 
 #include "Player/OnsetPlayerController.h"
-
 #include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
 #include "Game/OnsetGameModeBase.h"
@@ -11,14 +10,13 @@
 #include "Core/TargetingComponent.h"
 #include "OnsetPlayerDataTypes.h"
 #include "EnhancedInputSubsystems.h"
+#include "MeshAttributes.h"
 #include "NavigationSystem.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "TimerManager.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
-#include "GameFramework/Pawn.h"
-#include "GameFramework/PlayerState.h"
 #include "Player/InteractionComponent.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Engine/GameInstance.h"
@@ -47,13 +45,21 @@
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
+#include "NavFilters/NavigationQueryFilter.h"
 
 DEFINE_LOG_CATEGORY(LogGamepad);
-
+DEFINE_LOG_CATEGORY(LogPlayerNavigation);
+DECLARE_CYCLE_STAT(TEXT("MoveTo"), STAT_MoveTo, STATGROUP_Navigation);
 
 AOnsetPlayerController::AOnsetPlayerController()
 {
+	bSetControlRotationFromPawnOrientation = true;
 	CursorManager = CreateDefaultSubobject<UCursorManager>(TEXT("CursorManager"));
+	PathFollowingComponent = CreateDefaultSubobject<UPathFollowingComponent>(TEXT("PathFollowingComponent"));
+	if (PathFollowingComponent)
+	{
+		PathFollowingComponent->OnRequestFinished.AddUObject(this, &AOnsetPlayerController::OnMoveCompleted);
+	}
 	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
 	if (!BasicAttackAbility)
 	{
@@ -199,6 +205,7 @@ void AOnsetPlayerController::StopAutoAttack()
 	GetWorldTimerManager().ClearTimer(AutoAttackTimerHandle);
 }
 
+
 void AOnsetPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -257,6 +264,79 @@ void AOnsetPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(IA_PvPToggle, ETriggerEvent::Started, this, &AOnsetPlayerController::OnPvPToggleTriggered);
 		EnhancedInputComponent->BindAction(IA_Inventory, ETriggerEvent::Started, this, &AOnsetPlayerController::OnInventoryToggleTriggered);
 		
+	}
+}
+
+void AOnsetPlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+
+	if (bIsFollowingPath && IsLocalController())
+	{
+		APawn* ControlledPawn = GetPawn();
+		if (!ControlledPawn)
+		{
+			ControlledPawn = CachedPlayerPawn;
+		}
+
+		if (!ControlledPawn)
+		{
+			StopMovement();
+			return;
+		}
+
+		// If following an actor, check if reached or invalid
+		if (FollowTargetActor.IsValid())
+		{
+			const AOnsetBaseCharacter* TargetChar = Cast<AOnsetBaseCharacter>(FollowTargetActor.Get());
+			if (TargetChar && !TargetChar->IsAlive())
+			{
+				StopMovement();
+				return;
+			}
+
+			const float DistToActor = FVector::Dist2D(ControlledPawn->GetActorLocation(), FollowTargetActor->GetActorLocation());
+			if (DistToActor <= PathAcceptanceRadius)
+			{
+				StopMovement();
+				return;
+			}
+		}
+
+		// Advance past reached waypoints
+		while (CurrentPathIndex < ActivePathPoints.Num())
+		{
+			const FVector CurrentTarget = ActivePathPoints[CurrentPathIndex];
+			const FVector PawnLocation = ControlledPawn->GetActorLocation();
+			const float DistToWaypoint = FVector::Dist2D(PawnLocation, CurrentTarget);
+			const float Acceptance = (CurrentPathIndex == ActivePathPoints.Num() - 1) ? PathAcceptanceRadius : FMath::Max(PathAcceptanceRadius, 80.0f);
+
+			if (DistToWaypoint <= Acceptance)
+			{
+				CurrentPathIndex++;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if (CurrentPathIndex < ActivePathPoints.Num())
+		{
+			const FVector TargetPoint = ActivePathPoints[CurrentPathIndex];
+			const FVector PawnLocation = ControlledPawn->GetActorLocation();
+			FVector MoveDirection = TargetPoint - PawnLocation;
+			MoveDirection.Z = 0.0f;
+			if (!MoveDirection.IsNearlyZero())
+			{
+				MoveDirection.Normalize();
+				ControlledPawn->AddMovementInput(MoveDirection, 1.0f);
+			}
+		}
+		else
+		{
+			StopMovement();
+		}
 	}
 }
 
@@ -424,21 +504,45 @@ void AOnsetPlayerController::HideGamepadCursor()
 void AOnsetPlayerController::OnAutoAttackTick()
 {
 	AOnsetBaseCharacter* Self = GetPawn<AOnsetBaseCharacter>();
-	if (!Self || !Self->AbilitySystemComponent || !Self->TargetingComponent || !Self->TargetingComponent->GetTarget() || !BasicAttackAbility)
+	if (!Self)
+	{
+		Self = Cast<AOnsetBaseCharacter>(CachedPlayerPawn);
+	}
+
+	if (!Self || !Self->AbilitySystemComponent || !Self->TargetingComponent || !BasicAttackAbility)
 	{
 		StopAutoAttack();
 		return;
 	}
+
+	AActor* Target = Self->TargetingComponent->GetTarget();
+	if (!Target || !Self->TargetingComponent->IsActorTargetValid(Target))
+	{
+		Self->TargetingComponent->ClearTarget();
+		StopAutoAttack();
+		return;
+	}
+
+	const float Dist2D = FVector::Dist2D(Self->GetActorLocation(), Target->GetActorLocation());
+	const float MaxCombatRange = 300.0f;
+
+	// If the target moved out of range and we are not already pathing, move towards it
+	if (Dist2D > MaxCombatRange && !bIsFollowingPath && IsLocalController())
+	{
+		MoveToActor(Target, 200.0f);
+	}
+
 	Self->AbilitySystemComponent->TryActivateAbilityByClass(BasicAttackAbility);
 }
 
 void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 {
+	FVector2D MovementVector = Value.Get<FVector2D>();
+	if (MovementVector.IsNearlyZero()) return;
 	Server_DisableAutoCombat();
 	ResetIdleTimer();
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	if (MovementVector.IsZero()) return;	
 	StopMovement();
+	StopAutoAttack();
 	APawn* ControlledPawn = GetPawn();
 	if (!ControlledPawn) ControlledPawn = CachedPlayerPawn;
 	if (ControlledPawn)
@@ -482,6 +586,7 @@ void AOnsetPlayerController::OnCursorMoveEnded(const FInputActionValue& Value)
 
 void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value)
 {
+	Server_DisableAutoCombat();
 	ResetIdleTimer();
 	FVector2D ScreenPos;
 	if (!CursorManager->GetCursorPosition(ScreenPos)) return;
@@ -520,39 +625,27 @@ void AOnsetPlayerController::OnPrimaryInteraction(const FInputActionValue& Value
 	}
 
 	UE_LOG(LogGamepad, Log, TEXT("Click: HitActor=%s"), HitActor ? *HitActor->GetName() : TEXT("null"));
-	Server_ProcessPrimaryInteraction(HitActor, HitLocation);
+	ProcessPrimaryInteraction(HitActor, HitLocation);
 }
 
-void AOnsetPlayerController::Server_ProcessPrimaryInteraction_Implementation(AActor* HitActor, FVector HitLocation)
+void AOnsetPlayerController::ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation)
 {
-	if (!InteractionComponent)
-	{
-		return;
-	}
-	
+	if (!InteractionComponent) return;
 	if (HitActor && !IsValid(HitActor))
 	{
 		HitActor = nullptr;
 	}
-
-	// Process targeting first.
-	InteractionComponent->ProcessPrimaryInteraction(HitActor, HitLocation);
-
-	FVector MoveTarget = InteractionComponent->GetPendingMoveTarget();
-	if (MoveTarget != FVector::ZeroVector)
+	// Process targeting.
+	FMoveTarget MoveTarget = InteractionComponent->ProcessPrimaryInteraction(HitActor, HitLocation);
+	if (MoveTarget.Actor.IsValid())
 	{
-		if (!bAutoCombatEnabled)
-		{
-			EnableAutoCombat();
-		}
-
-		if (AutoCombatController && AutoCombatController->GetPawn())
-		{
-			AutoCombatController->StopStateTree();
-			AutoCombatController->MoveToLocation(MoveTarget);
-		}
+		MoveToActor(MoveTarget.Actor.Get(), 200.0f);
 	}
-}	
+	else if (!MoveTarget.Position.IsZero())
+	{
+		MoveToLocation(MoveTarget.Position);
+	}
+}
 
 void AOnsetPlayerController::Client_ShowLootOverlay_Implementation(const TArray<FOnsetInventoryEntry>& LootedItems)
 {
@@ -784,11 +877,24 @@ AOnsetPlayerAIController* AOnsetPlayerController::GetAutoCombatController() cons
 	return AutoCombatController;
 }
 
+
 void AOnsetPlayerController::Server_OnClientPossessed_Implementation()
 {
 	ResetIdleTimer();
 }
-
+void AOnsetPlayerController::SetPawn(APawn* InPawn)
+{
+	Super::SetPawn(InPawn);
+	if (InPawn)
+	{
+		CachedPlayerPawn = InPawn;
+		TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
+	}
+	if (PathFollowingComponent)
+	{
+		PathFollowingComponent->Initialize();
+	}
+}
 void AOnsetPlayerController::EnableAutoCombat()
 {
 	if (!AutoCombatController || bAutoCombatEnabled) return;
@@ -839,13 +945,35 @@ const AController* AOnsetPlayerController::GetActiveController() const
 
 void AOnsetPlayerController::ResetIdleTimer()
 {
+	const float Delay = GetEffectiveIdleDelay();
 	bIdleTimerInitialized = true;
+
+	if (!HasAuthority())
+	{
+		Server_ResetIdleTimer();
+		return;
+	}
+
 	GetWorldTimerManager().ClearTimer(IdleAutoCombatTimerHandle);
-	if (IdleAutoCombatDelay > 0.0f)
+	if (Delay > 0.0f)
 	{	
 		GetWorldTimerManager().SetTimer(IdleAutoCombatTimerHandle, this,
-			&AOnsetPlayerController::EnableAutoCombat, IdleAutoCombatDelay, false);
+			&AOnsetPlayerController::EnableAutoCombat, Delay, false);
 	}
+}
+
+void AOnsetPlayerController::Server_ResetIdleTimer_Implementation()
+{
+	ResetIdleTimer();
+}
+
+float AOnsetPlayerController::GetEffectiveIdleDelay() const
+{
+	if (const AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
+	{
+		return PS->IdleAutoCombatDelaySeconds;
+	}
+	return 0.0f;
 }
 
 void AOnsetPlayerController::Client_CharacterData_Implementation(const FOnsetFullCharacterData& CharacterData)
@@ -1126,6 +1254,14 @@ bool AOnsetPlayerController::SaveCurrentCharacter(APawn* InPawn)
 	return bSaved;
 }
 
+void AOnsetPlayerController::Server_SetIdleAutoCombatDelay_Implementation(float Seconds)
+{
+	if (AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>())
+	{
+		PS->SetIdleAutoCombatDelaySeconds(Seconds);
+	}
+}
+
 void AOnsetPlayerController::PawnLeavingGame()
 {
 	// If autoplay is already active, the AI controller already possesses our pawn,
@@ -1216,4 +1352,365 @@ void AOnsetPlayerController::ReconnectToGameServer()
 	}
 
 	ClientTravel(URL, TRAVEL_Absolute);
+}
+
+// Recreate AI Character movement from AIController
+
+EPathFollowingRequestResult::Type AOnsetPlayerController::MoveToActor(AActor* Goal, float AcceptanceRadius,
+	bool bStopOnOverlap, bool bUsePathfinding, bool bCanStrafe, TSubclassOf<UNavigationQueryFilter> FilterClass,
+	bool bAllowPartialPath)
+{
+	if (bIsFollowingPath)
+	{
+		StopMovement();
+	}
+
+	FAIMoveRequest MoveReq(Goal);
+	MoveReq.SetUsePathfinding(bUsePathfinding);
+	MoveReq.SetAllowPartialPath(bAllowPartialPath);
+	MoveReq.SetNavigationFilter(*FilterClass ? FilterClass : DefaultNavigationFilterClass);
+	MoveReq.SetAcceptanceRadius(AcceptanceRadius);
+	MoveReq.SetReachTestIncludesAgentRadius(bStopOnOverlap);
+	MoveReq.SetCanStrafe(bCanStrafe);
+
+	return MoveTo(MoveReq);
+}
+
+EPathFollowingRequestResult::Type AOnsetPlayerController::MoveToLocation(const FVector& Dest, float AcceptanceRadius,
+	bool bStopOnOverlap, bool bUsePathfinding, bool bProjectDestinationToNavigation, bool bCanStrafe,
+	TSubclassOf<UNavigationQueryFilter> FilterClass, bool bAllowPartialPath)
+{
+	if (bIsFollowingPath)
+	{
+		StopMovement();
+	}
+
+	FAIMoveRequest MoveReq(Dest);
+	MoveReq.SetUsePathfinding(bUsePathfinding);
+	MoveReq.SetAllowPartialPath(bAllowPartialPath);
+	MoveReq.SetProjectGoalLocation(bProjectDestinationToNavigation);
+	MoveReq.SetNavigationFilter(*FilterClass ? FilterClass : DefaultNavigationFilterClass);
+	MoveReq.SetAcceptanceRadius(AcceptanceRadius);
+	MoveReq.SetReachTestIncludesAgentRadius(bStopOnOverlap);
+	MoveReq.SetCanStrafe(bCanStrafe);
+
+	return MoveTo(MoveReq);
+}
+
+FPathFollowingRequestResult AOnsetPlayerController::MoveTo(const FAIMoveRequest& MoveRequest,
+	FNavPathSharedPtr* OutPath)
+{
+	SCOPE_CYCLE_COUNTER(STAT_MoveTo);
+	UE_LOG(LogPlayerNavigation, Log, TEXT("MoveTo: %s"), *MoveRequest.ToString());
+
+	FPathFollowingRequestResult ResultData;
+	ResultData.Code = EPathFollowingRequestResult::Failed;
+
+	if (MoveRequest.IsValid() == false)
+	{
+		UE_LOG(LogPlayerNavigation, Error, TEXT("MoveTo request failed due MoveRequest not being valid. Most probably desired Goal Actor no longer exists. MoveRequest: '%s'"), *MoveRequest.ToString());
+		return ResultData;
+	}
+
+	bool bCanRequestMove = true;
+	bool bAlreadyAtGoal = false;
+	const float EffectiveRadius = MoveRequest.GetAcceptanceRadius() > 0.0f ? MoveRequest.GetAcceptanceRadius() : 50.0f;
+
+	if (!MoveRequest.IsMoveToActorRequest())
+	{
+		if (MoveRequest.GetGoalLocation().ContainsNaN() || FAISystem::IsValidLocation(MoveRequest.GetGoalLocation()) == false)
+		{
+			UE_LOG(LogPlayerNavigation, Error, TEXT("OnsetPlayerController::MoveTo: Destination is not valid! Goal(%s)"), TEXT_AI_LOCATION(MoveRequest.GetGoalLocation()));
+			bCanRequestMove = false;
+		}
+
+		// fail if projection to navigation is required but it failed
+		if (bCanRequestMove && MoveRequest.IsProjectingGoal())
+		{
+			UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+			const FNavAgentProperties& AgentProps = GetNavAgentPropertiesRef();
+			FNavLocation ProjectedLocation;
+
+			if (NavSys && !NavSys->ProjectPointToNavigation(MoveRequest.GetGoalLocation(), ProjectedLocation, INVALID_NAVEXTENT, &AgentProps))
+			{
+				if (MoveRequest.IsUsingPathfinding())
+				{
+					UE_LOG(LogPlayerNavigation, Error, TEXT("OnsetPlayerController::MoveTo failed to project destination location to navmesh. Location: %s"), *MoveRequest.GetGoalLocation().ToString());
+				}
+				else
+				{
+					UE_LOG(LogPlayerNavigation, Error, TEXT("OnsetPlayerController::MoveTo failed to project destination location to navmesh, path finding is disabled perhaps disable goal projection ?"));
+				}
+
+				bCanRequestMove = false;
+			}
+
+			MoveRequest.UpdateGoalLocation(ProjectedLocation.Location);
+		}
+
+		if (GetPawn())
+		{
+			bAlreadyAtGoal = bCanRequestMove && (FVector::Dist2D(GetPawn()->GetActorLocation(), MoveRequest.GetGoalLocation()) <= EffectiveRadius);
+		}
+	}
+	else 
+	{
+		if (GetPawn() && MoveRequest.GetGoalActor())
+		{
+			bAlreadyAtGoal = bCanRequestMove && (FVector::Dist2D(GetPawn()->GetActorLocation(), MoveRequest.GetGoalActor()->GetActorLocation()) <= EffectiveRadius);
+		}
+	}
+
+	if (bAlreadyAtGoal)
+	{
+		UE_LOG(LogPlayerNavigation, Log, TEXT("MoveTo: already at goal!"));
+		ResultData.MoveId = FAIRequestID(1);
+		ResultData.Code = EPathFollowingRequestResult::AlreadyAtGoal;
+	}
+	else if (bCanRequestMove)
+	{
+		FPathFindingQuery PFQuery;
+
+		bool bShouldMergePaths = false;
+		FVector StartLocation = GetNavAgentLocation();
+		if (MoveRequest.ShouldStartFromPreviousPath())
+		{
+			if (ActivePathPoints.Num() > 0)
+			{
+				StartLocation = ActivePathPoints.Last();
+				bShouldMergePaths = true;
+			}
+		}
+
+		const bool bValidQuery = BuildPathfindingQuery(MoveRequest, StartLocation, PFQuery);
+		if (bValidQuery)
+		{
+			FNavPathSharedPtr Path;
+			FindPathForMoveRequest(MoveRequest, PFQuery, Path);
+
+			if (Path.IsValid() && Path->GetPathPoints().Num() > 0)
+			{
+				if (!bShouldMergePaths)
+				{
+					ActivePathPoints.Empty();
+				}
+
+				const TArray<FNavPathPoint>& PathPoints = Path->GetPathPoints();
+				const int32 StartIdx = (bShouldMergePaths || ActivePathPoints.Num() > 0) ? 1 : 0;
+				for (int32 i = StartIdx; i < PathPoints.Num(); ++i)
+				{
+					ActivePathPoints.Add(PathPoints[i].Location);
+				}
+
+				if (!bShouldMergePaths)
+				{
+					CurrentPathIndex = (ActivePathPoints.Num() > 1) ? 1 : 0;
+				}
+
+				PathAcceptanceRadius = EffectiveRadius;
+				FollowTargetActor = MoveRequest.IsMoveToActorRequest() ? MoveRequest.GetGoalActor() : nullptr;
+				bIsFollowingPath = true;
+
+				static uint32 NextMoveID = 1;
+				ResultData.MoveId = FAIRequestID(NextMoveID++);
+				ResultData.Code = EPathFollowingRequestResult::RequestSuccessful;
+
+				if (OutPath)
+				{
+					*OutPath = Path;
+				}
+			}
+		}
+	}
+
+	if (ResultData.Code == EPathFollowingRequestResult::Failed)
+	{
+		StopMovement();
+	}
+
+	return ResultData;
+}
+
+FAIRequestID AOnsetPlayerController::RequestMove(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr Path)
+{
+	uint32 RequestID = FAIRequestID::InvalidRequest;
+	if (PathFollowingComponent)
+	{
+		RequestID = PathFollowingComponent->RequestMove(MoveRequest, Path);
+	}
+
+	return RequestID;
+}
+
+void AOnsetPlayerController::FindPathForMoveRequest(const FAIMoveRequest& MoveRequest, FPathFindingQuery& Query,
+	FNavPathSharedPtr& OutPath) const
+{
+	SCOPE_CYCLE_COUNTER(STAT_AI_Overall);
+
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (NavSys)
+	{
+		FPathFindingResult PathResult = NavSys->FindPathSync(Query);
+		if (PathResult.Result != ENavigationQueryResult::Error)
+		{
+			if (PathResult.IsSuccessful() && PathResult.Path.IsValid())
+			{
+				if (MoveRequest.IsMoveToActorRequest())
+				{
+					PathResult.Path->SetGoalActorObservation(*MoveRequest.GetGoalActor(), 100.0f);
+				}
+
+				PathResult.Path->EnableRecalculationOnInvalidation(true);
+				OutPath = PathResult.Path;
+			}
+		}
+		else
+		{
+			UE_LOG(LogPlayerNavigation, Error, TEXT("Trying to find path to %s resulted in Error")
+				, MoveRequest.IsMoveToActorRequest() ? *GetNameSafe(MoveRequest.GetGoalActor()) : *MoveRequest.GetGoalLocation().ToString());
+			UE_LOG(LogPlayerNavigation, Error, TEXT("Failed move to %s"), GetPawn() ? *(GetPawn()->GetActorLocation()).ToString() : *FAISystem::InvalidLocation.ToString());
+		}
+	}
+}
+
+bool AOnsetPlayerController::BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, FPathFindingQuery& OutQuery) const
+{
+	return BuildPathfindingQuery(MoveRequest, GetNavAgentLocation(), OutQuery);
+}
+
+bool AOnsetPlayerController::BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, const FVector& StartLocation,
+	FPathFindingQuery& OutQuery) const
+{
+	bool bResult = false;
+
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	const ANavigationData* NavData = (NavSys == nullptr) ? nullptr :
+		MoveRequest.IsUsingPathfinding() ? NavSys->GetNavDataForProps(GetNavAgentPropertiesRef(), GetNavAgentLocation()) :
+		NavSys->GetAbstractNavData();
+
+	if (NavData)
+	{
+		FVector GoalLocation = MoveRequest.GetGoalLocation();
+		if (MoveRequest.IsMoveToActorRequest())
+		{
+			const INavAgentInterface* NavGoal = Cast<const INavAgentInterface>(MoveRequest.GetGoalActor());
+			if (NavGoal)
+			{
+				const FVector Offset = NavGoal->GetMoveGoalOffset(this);
+				GoalLocation = FQuatRotationTranslationMatrix(MoveRequest.GetGoalActor()->GetActorQuat(), NavGoal->GetNavAgentLocation()).TransformPosition(Offset);
+			}
+			else
+			{
+				GoalLocation = MoveRequest.GetGoalActor()->GetActorLocation();
+			}
+		}
+
+		FSharedConstNavQueryFilter NavFilter = UNavigationQueryFilter::GetQueryFilter(*NavData, this, MoveRequest.GetNavigationFilter());
+		OutQuery = FPathFindingQuery(*this, *NavData, StartLocation, GoalLocation, NavFilter);
+		OutQuery.SetAllowPartialPaths(MoveRequest.IsUsingPartialPaths());
+		OutQuery.SetRequireNavigableEndLocation(MoveRequest.IsNavigableEndLocationRequired());
+		if (MoveRequest.IsApplyingCostLimitFromHeuristic())
+		{
+			const float HeuristicScale = NavFilter->GetHeuristicScale();
+			OutQuery.CostLimit = FPathFindingQuery::ComputeCostLimitFromHeuristic(OutQuery.StartLocation, OutQuery.EndLocation, HeuristicScale, MoveRequest.GetCostLimitFactor(), MoveRequest.GetMinimumCostLimit()); 
+		}
+
+		if (PathFollowingComponent)
+		{
+			PathFollowingComponent->OnPathfindingQuery(OutQuery);
+		}
+
+		bResult = true;
+	}
+	else
+	{
+		if (NavSys == nullptr)
+		{
+			UE_LOG(LogPlayerNavigation, Warning, TEXT("Unable OnsetPlayerController::BuildPathfindingQuery due to no NavigationSystem present. Note that even pathfinding-less movement requires presence of NavigationSystem."));
+		}
+		else 
+		{
+			UE_LOG(LogPlayerNavigation, Warning, TEXT("Unable to find NavigationData instance while calling OnsetPlayerController::BuildPathfindingQuery"));
+		}
+	}
+
+	return bResult;
+}
+
+void AOnsetPlayerController::StopMovement()
+{
+	bIsFollowingPath = false;
+	ActivePathPoints.Empty();
+	CurrentPathIndex = 0;
+	FollowTargetActor.Reset();
+
+	if (InteractionComponent)
+	{
+		InteractionComponent->ClearPendingLoot();
+	}
+
+	if (PathFollowingComponent)
+	{
+		PathFollowingComponent->AbortMove(*this, FPathFollowingResultFlags::MovementStop);
+	}
+}
+
+void AOnsetPlayerController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+{
+	ReceiveMoveCompleted.Broadcast(RequestID, Result.Code);
+}
+
+EPathFollowingStatus::Type AOnsetPlayerController::GetMoveStatus() const
+{
+	if (bIsFollowingPath)
+	{
+		return EPathFollowingStatus::Moving;
+	}
+	return (PathFollowingComponent) ? PathFollowingComponent->GetStatus() : EPathFollowingStatus::Idle;
+}
+
+bool AOnsetPlayerController::HasPartialPath() const
+{
+	return (PathFollowingComponent != NULL) && (PathFollowingComponent->HasPartialPath());
+}
+
+void AOnsetPlayerController::MergePaths(const FNavPathSharedPtr& InitialPath, FNavPathSharedPtr& InOutMergedPath) const
+{
+	if (!InitialPath.IsValid() || !InitialPath->IsValid())
+	{
+		UE_LOG(LogPlayerNavigation, Error, TEXT("%hs: InitialPath is Invalid"), __FUNCTION__);
+		return;
+	}
+
+	if (!InOutMergedPath.IsValid() || !InOutMergedPath->IsValid())
+	{
+		UE_LOG(LogPlayerNavigation, Error, TEXT("%hs: InOutMergedPath is Invalid"), __FUNCTION__);
+		return;
+	}
+
+	const TArray<FNavPathPoint>& InitialPathPoints = InitialPath->GetPathPoints();
+	TArray<FNavPathPoint>& InOutPathPoints = InOutMergedPath->GetPathPoints();
+
+	if (!InitialPathPoints.Last().Location.Equals(InOutPathPoints[0].Location))
+	{
+		UE_LOG(LogPlayerNavigation, Error, TEXT("%hs: last %s and first %s points don't match."), __FUNCTION__, *InitialPathPoints.Last().Location.ToString(), *InOutPathPoints[0].Location.ToString());
+		return;
+	}
+
+	// We don't want to keep path points that have already been traversed, so only merge the points starting from "CurrentPathIndex".
+	const int32 StartingPointIndex = PathFollowingComponent ? PathFollowingComponent->GetCurrentPathIndex() : 0;
+	if (StartingPointIndex < InitialPathPoints.Num())
+	{
+		InOutPathPoints.Insert(&InitialPathPoints[StartingPointIndex], InitialPathPoints.Num() - StartingPointIndex - 1, 0);
+	}
+}
+
+bool AOnsetPlayerController::IsFollowingAPath() const
+{
+	return bIsFollowingPath || ((PathFollowingComponent != nullptr) && (PathFollowingComponent->GetStatus() != EPathFollowingStatus::Idle));
+}
+
+IPathFollowingAgentInterface* AOnsetPlayerController::GetPathFollowingAgent() const
+{
+	return PathFollowingComponent;
 }
