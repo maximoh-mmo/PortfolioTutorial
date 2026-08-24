@@ -4,6 +4,7 @@
 #include "Core/OnsetBaseCharacter.h"
 
 #include "AbilitySystemComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Combat/OnsetEquipmentLibrary.h"
 #include "Core/OnsetCCDiminishingComponent.h"
 #include "Data/OnsetClassInfoTypes.h"

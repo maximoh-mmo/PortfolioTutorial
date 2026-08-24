@@ -28,13 +28,14 @@ public:
 	bool bContinueOnDisconnect = true;
 
 	/** Seconds of input silence before autoplay re-engages; 0 = never auto-engage.
-	 *  Owner-replicated; authored via Server_SetIdleAutoCombatDelay (autoplay settings menu). */
+	*  Owner-replicated; authored via Server_SetIdleAutoCombatDelay (autoplay settings menu). */
 	UPROPERTY(ReplicatedUsing=OnRep_IdleAutoCombatDelay)
-	float IdleAutoCombatDelaySeconds = 0.0f;
+	float IdleAutoCombatDelaySeconds = 5.0f;
 
 	/** Server-side clamp-and-apply for IdleAutoCombatDelaySeconds (negative values clamped to 0). */
 	void SetIdleAutoCombatDelaySeconds(float Seconds);
 
+	
 	/** Steam auth ticket (server-only, never replicated). */
 	UPROPERTY()
 	FString SteamAuthTicket;
@@ -70,7 +71,7 @@ public:
 	/** Called when IdleAutoCombatDelaySeconds changes on a client. Refreshes settings UI. */
 	UFUNCTION()
 	void OnRep_IdleAutoCombatDelay();
-
+	
 	/** Broadcast on the local client whenever autoplay/continue-on-disconnect state replicates. */
 	UPROPERTY(BlueprintAssignable, Category = "Settings")
 	FOnsetPlayerSettingsChanged OnPlayerSettingsChanged;

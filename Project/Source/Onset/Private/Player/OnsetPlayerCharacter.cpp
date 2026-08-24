@@ -7,6 +7,7 @@
 #include "Camera/CameraComponent.h"
 #include "Combat/OnsetEquipmentLibrary.h"
 #include "Combat/OnsetLevelingLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "GAS/OnsetCombatAttributeSet.h"
 #include "GAS/OnsetGameplayTags.h"
@@ -32,10 +33,10 @@ AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 	CameraBoom->bDoCollisionTest = true;
 	CameraBoom->bEnableCameraLag = true;
 	CameraBoom->CameraLagSpeed = 8.f;
-
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-}
+	GetCharacterMovement()->bRequestedMoveUseAcceleration = true;
+	}
 
 void AOnsetPlayerCharacter::BeginPlay()
 {

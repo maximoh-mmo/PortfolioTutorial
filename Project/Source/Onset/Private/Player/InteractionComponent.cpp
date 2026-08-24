@@ -1,7 +1,10 @@
 #include "Player/InteractionComponent.h"
 
+#include "NavigationSystem.h"
+#include "TimerManager.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Corpse/OnsetCorpse.h"
+#include "Enemy/OnsetEnemy.h"
 #include "Inventory/UOnsetInventoryComponent.h"
 #include "Player/OnsetPlayerController.h"
 #include "Core/TargetingComponent.h"
@@ -12,61 +15,79 @@ UInteractionComponent::UInteractionComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation)
+FMoveTarget UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation)
 {
 	AOnsetPlayerController* PlayerController = Cast<AOnsetPlayerController>(GetOwner());
 	if (!PlayerController)
 	{
 		UE_LOG(LogGamepad, Log, TEXT("ProcessPrimaryInteraction: Owner is null or not OnsetPlayerController"));
-		return;
+		return {};
 	}
 
-	// Lazily resolve the pawn's targeting component (shared by every branch).
-	if (!TargetingComponent)
-	{
-		if (APawn* Pawn = PlayerController->GetPawn())
-		{
-			TargetingComponent = Pawn->FindComponentByClass<UTargetingComponent>();
-			if (!TargetingComponent)
-			{
-				return;
-			}
-		}
-		else
-		{
-			return;
-		}
-	}
+	APawn* Pawn = PlayerController->GetPawn();
+	TargetingComponent = Pawn ? Pawn->FindComponentByClass<UTargetingComponent>() : nullptr;
 
-	// Corpse click: clear target and loot only when already in range - the owning
-	// client drives traversal and re-sends this request once it arrives.
+	PendingMovementTarget = {};
+
+	// Corpse click → clear target, stop autoattack, loot now if in range, otherwise auto-path and loot on arrival.
 	if (AOnsetCorpse* Corpse = Cast<AOnsetCorpse>(HitActor))
 	{
-		TargetingComponent->ClearTarget();
+		if (TargetingComponent)
+		{
+			TargetingComponent->ClearTarget();
+		}
 		PlayerController->StopAutoAttack();
 		TryLootCorpse(Corpse);
-		return;
+		return PendingMovementTarget;
 	}
-	
+
+	// Any non-corpse click cancels pending corpse loot
+	ClearPendingLoot();
+
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	FNavLocation NavLoc;
 	bool bIsHostile = false;
-	if (HitActor)
+	
+	if (HitActor && TargetingComponent)
 	{
 		const bool bEnemyTag = HitActor->ActorHasTag("Enemy");
-		const bool bPVPValid = TargetingComponent->IsActorTargetPVPValid(HitActor, PlayerController->GetPawn());
-		if (bEnemyTag || bPVPValid)
+		const bool bIsEnemy = HitActor->IsA<AOnsetEnemy>();
+		const bool bPVPValid = TargetingComponent->IsActorTargetPVPValid(HitActor, Pawn);
+		const bool bValidTarget = TargetingComponent->IsActorTargetValid(HitActor);
+
+		if ((bEnemyTag || bIsEnemy || bPVPValid) && bValidTarget)
 		{
 			TargetingComponent->SetTarget(HitActor);
 			PlayerController->StartAutoAttack();
 			bIsHostile = true;
 		}
 	}
+	
+	const bool bProjected = NavSys && NavSys->ProjectPointToNavigation(HitLocation, NavLoc);
+	if (bProjected)
+	{
+		PendingMovementTarget.Position = NavLoc.Location;
+	}
+	else
+	{
+		PendingMovementTarget.Position = HitLocation;
+	}
 
-	// Floor click (or invalid hostile): drop the target.
+	if (HitActor && bIsHostile)
+	{
+		PendingMovementTarget.Actor = HitActor;
+	}
+
 	if (!bIsHostile)
 	{
-		TargetingComponent->ClearTarget();
+		if (TargetingComponent)
+		{
+			TargetingComponent->ClearTarget();
+		}
 		PlayerController->StopAutoAttack();
 	}
+
+	return PendingMovementTarget;
 }
 
 void UInteractionComponent::TryLootCorpse(AOnsetCorpse* Corpse)
@@ -89,7 +110,26 @@ void UInteractionComponent::TryLootCorpse(AOnsetCorpse* Corpse)
 		return;
 	}
 
-	LootCorpse(Corpse, Pawn);
+	// Out of range: path to the corpse and keep polling until we arrive.
+	PendingLootCorpse = Corpse;
+	PendingMovementTarget.Actor = Corpse;
+	PendingMovementTarget.Position = Corpse->GetActorLocation();
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			LootArrivalTimerHandle, this, &UInteractionComponent::OnLootArrivalTick, LootArrivalPollInterval, true);
+	}
+}
+
+void UInteractionComponent::OnLootArrivalTick()
+{
+	AOnsetCorpse* Corpse = PendingLootCorpse.Get();
+	if (!IsValid(Corpse) || Corpse->bLooted)
+	{
+		ClearPendingLoot();
+		return;
+	}
+	TryLootCorpse(Corpse);
 }
 
 void UInteractionComponent::LootCorpse(AOnsetCorpse* Corpse, APawn* Pawn)
@@ -120,4 +160,15 @@ void UInteractionComponent::LootCorpse(AOnsetCorpse* Corpse, APawn* Pawn)
 	Corpse->Destroy();
 
 	UE_LOG(LogTemp, Log, TEXT("LootCorpse: %s looted %d item(s)"), *Pawn->GetName(), Loot.Num());
+}
+
+void UInteractionComponent::ClearPendingLoot()
+{
+	PendingLootCorpse.Reset();
+	PendingMovementTarget.Position = FVector::ZeroVector;
+	PendingMovementTarget.Actor = nullptr;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(LootArrivalTimerHandle);
+	}
 }

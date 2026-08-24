@@ -7,6 +7,7 @@
 #include "OnsetPlayerDataTypes.h"
 #include "Data/OnsetItemTypes.h"
 #include "GameFramework/PlayerController.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "OnsetPlayerController.generated.h"
 
 struct FOnsetAccountData;
@@ -25,8 +26,10 @@ class UTargetingComponent;
 class UHUDWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogGamepad, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogPlayerNavigation, Log, All);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnsetAccountDataChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMoveCompletedSignature, FAIRequestID, RequestID, EPathFollowingResult::Type, Result);
 
 UCLASS()
 class ONSET_API AOnsetPlayerController : public APlayerController
@@ -43,6 +46,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category="Combat")
 	void StopAutoAttack();
+
+	virtual void SetPawn(APawn* InPawn) override;
 	
 	void EnableAutoCombat();
 	/**
@@ -72,10 +77,109 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auto Combat")
 	AOnsetPlayerAIController* GetAutoCombatController() const;
 
+	//--- Navigation ---
+
+protected:
+
+	/** Component used for moving along a path. */
+	UPROPERTY(VisibleDefaultsOnly, Category = AI)
+	TObjectPtr<UPathFollowingComponent> PathFollowingComponent;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AI)
+	TSubclassOf<UNavigationQueryFilter> DefaultNavigationFilterClass;
+	
+public:
+	/** Is strafing allowed during movement? */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AI)
+	uint32 bAllowStrafe : 1;
+		
+	/** Copy Pawn rotation to ControlRotation, if there is no focus point. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AI)
+	uint32 bSetControlRotationFromPawnOrientation:1;
+	
+	/** Blueprint notification that we've completed the current movement request */
+	UPROPERTY(BlueprintAssignable, meta = (DisplayName = "MoveCompleted"))
+	FMoveCompletedSignature ReceiveMoveCompleted;
+	
+	/** Makes AI go toward specified Goal actor (destination will be continuously updated), aborts any active path following
+	 *  @param AcceptanceRadius - finish move if pawn gets close enough
+	 *  @param bStopOnOverlap - add pawn's radius to AcceptanceRadius
+	 *  @param bUsePathfinding - use navigation data to calculate path (otherwise it will go in straight line)
+	 *  @param bCanStrafe - set focus related flag: bAllowStrafe
+	 *  @param FilterClass - navigation filter for pathfinding adjustments. If none specified DefaultNavigationFilterClass will be used
+	 *  @param bAllowPartialPath - use incomplete path when goal can't be reached
+	 *	@note AcceptanceRadius has default value or -1 due to Header Parser not being able to recognize UPathFollowingComponent::DefaultAcceptanceRadius
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Navigation", Meta = (AdvancedDisplay = "bStopOnOverlap,bCanStrafe,bAllowPartialPath"))
+	EPathFollowingRequestResult::Type MoveToActor(AActor* Goal, float AcceptanceRadius = -1, bool bStopOnOverlap = true,
+		bool bUsePathfinding = true, bool bCanStrafe = true,
+		TSubclassOf<UNavigationQueryFilter> FilterClass = {}, bool bAllowPartialPath = true);
+
+	/** Makes AI go toward specified Dest location, aborts any active path following
+	 *  @param AcceptanceRadius - finish move if pawn gets close enough
+	 *  @param bStopOnOverlap - add pawn's radius to AcceptanceRadius
+	 *  @param bUsePathfinding - use navigation data to calculate path (otherwise it will go in straight line)
+	 *  @param bProjectDestinationToNavigation - project location on navigation data before using it
+	 *  @param bCanStrafe - set focus related flag: bAllowStrafe
+	 *  @param FilterClass - navigation filter for pathfinding adjustments. If none specified DefaultNavigationFilterClass will be used
+	 *  @param bAllowPartialPath - use incomplete path when goal can't be reached
+	 *	@note AcceptanceRadius has default value or -1 due to Header Parser not being able to recognize UPathFollowingComponent::DefaultAcceptanceRadius
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AI|Navigation", Meta = (AdvancedDisplay = "bStopOnOverlap,bCanStrafe,bAllowPartialPath"))
+	EPathFollowingRequestResult::Type MoveToLocation(const FVector& Dest, float AcceptanceRadius = -1, bool bStopOnOverlap = true,
+		bool bUsePathfinding = true, bool bProjectDestinationToNavigation = false, bool bCanStrafe = true,
+		TSubclassOf<UNavigationQueryFilter> FilterClass = {}, bool bAllowPartialPath = true);
+	
+	/** Makes AI go toward specified destination
+	 *  @param MoveRequest - details about move
+	 *  @param OutPath - optional output param, filled in with assigned path
+	 *  @return struct holding MoveId and enum code
+	 */
+	virtual FPathFollowingRequestResult MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath = nullptr);
+
+	/** Passes move request and path object to path following */
+	virtual FAIRequestID RequestMove(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr Path);
+
+	/** Finds path for given move request
+ 	 *  @param MoveRequest - details about move
+	 *  @param Query - pathfinding query for navigation system
+	 *  @param OutPath - generated path
+	 */
+	virtual void FindPathForMoveRequest(const FAIMoveRequest& MoveRequest, FPathFindingQuery& Query, FNavPathSharedPtr& OutPath) const;
+
+	/** Helper function for creating pathfinding query for this agent from move request data */
+	bool BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, FPathFindingQuery& OutQuery) const;
+
+	/** Helper function for creating pathfinding query for this agent from move request data and starting location */
+	bool BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, const FVector& StartLocation, FPathFindingQuery& OutQuery) const;
+
+	/** Aborts the move the controller is currently performing */
+	virtual void StopMovement() override;
+
+	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result);
+	
+	TSubclassOf<UNavigationQueryFilter> GetDefaultNavigationFilterClass() const { return DefaultNavigationFilterClass; }
+
+	/** Returns status of path following */
+	UFUNCTION(BlueprintCallable, Category = "AI|Navigation")
+	EPathFollowingStatus::Type GetMoveStatus() const;
+
+	/** Returns true if the current PathFollowingComponent's path is partial (does not reach desired destination). */
+	UFUNCTION(BlueprintCallable, Category = "AI|Navigation")
+	bool HasPartialPath() const;
+	
+	/** Merges the remaining points of InitialPath, with the points of InOutMergedPath. The resulting merged path is outputted into InOutMergedPath. */
+	void MergePaths(const FNavPathSharedPtr& InitialPath, FNavPathSharedPtr& InOutMergedPath) const;
+	
+	virtual bool IsFollowingAPath() const override;
+	
+	virtual IPathFollowingAgentInterface* GetPathFollowingAgent() const override;
 protected:
 	virtual void BeginPlay() override;
 
 	virtual void SetupInputComponent() override;
+	
+	virtual void PlayerTick(float DeltaTime) override;
 	
 	virtual void OnPossess(APawn* InPawn) override;
 	
@@ -106,25 +210,11 @@ private:
 	bool bAutoCombatEnabled = false;
 	bool bIdleTimerInitialized = false;
 	
-	UPROPERTY(EditDefaultsOnly, Category="Auto Combat")
-	float IdleAutoCombatDelay = 0.0f;
-	
 	FTimerHandle IdleAutoCombatTimerHandle;
 
 	void ResetIdleTimer();
-
-	/** Effective delay: PlayerState value when available, else the fallback above. */
 	float GetEffectiveIdleDelay() const;
 
-	UFUNCTION(Server, Reliable)
-	void Server_ClearTarget();
-
-	/** Sets the idle auto-engage delay (seconds; 0 = never auto-engage). Clamped >= 0 server-side.
-	 *  Called by the upcoming autoplay settings menu. */
-	UFUNCTION(Server, Reliable)
-	void Server_SetIdleAutoCombatDelay(float Seconds);
-
-private:
 	// --- Input Mapping Contexts ---
 	
 	/** Virtual joystick + tap + virtual ability buttons for touch input. */                                      
@@ -315,7 +405,6 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_SaveCharacter();
 
-
 	UFUNCTION(Client, Reliable)
 	void Client_ClearAuthTimeout();
 
@@ -323,13 +412,16 @@ public:
 	void Server_DisableAutoCombat();
 
 	UFUNCTION(Server, Reliable)
+	void Server_ResetIdleTimer();
+
+	UFUNCTION(Server, Reliable)
 	void Server_SetAutoCombatEnabled(bool bEnabled);
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetContinueOnDisconnect(bool bEnabled);
 
-	UFUNCTION(Server, Reliable)
-	void Server_ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
+	UFUNCTION()
+	void ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
 
 	/** Shows the looted-items popup on the owning client after a successful loot. */
 	UFUNCTION(Client, Reliable)
@@ -354,6 +446,7 @@ public:
 	/** Saves the given pawn's character data (if a slot is available), at most once per session.
 	 *  Returns true if the save was performed and succeeded. Subsequent calls are no-ops. */
 	bool SaveCurrentCharacter(APawn* InPawn = nullptr);
+	void Server_SetIdleAutoCombatDelay_Implementation(float Seconds);
 
 	// --- Character Appearance ---
 	UFUNCTION(BlueprintImplementableEvent, Category = "Character")
@@ -381,4 +474,11 @@ private:
 	FTimerHandle AutoPlayTimerHandle;
 	int32 AutoPlaySlotIndex = -1;
 	void AutoPlaySelectCharacter();
+
+	/** Active path points for client-side click-to-move using AddMovementInput */
+	TArray<FVector> ActivePathPoints;
+	int32 CurrentPathIndex = 0;
+	float PathAcceptanceRadius = 50.0f;
+	bool bIsFollowingPath = false;
+	TWeakObjectPtr<AActor> FollowTargetActor;
 };

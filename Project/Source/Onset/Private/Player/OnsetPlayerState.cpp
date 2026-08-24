@@ -65,10 +65,10 @@ void AOnsetPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AOnsetPlayerState, bIsPvPEnabled);
-  	DOREPLIFETIME(AOnsetPlayerState, bAutoplayEnabled);
-  	DOREPLIFETIME(AOnsetPlayerState, bContinueOnDisconnect);
+	DOREPLIFETIME(AOnsetPlayerState, bAutoplayEnabled);
 	DOREPLIFETIME_CONDITION(AOnsetPlayerState, IdleAutoCombatDelaySeconds, COND_OwnerOnly);
-  	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatform);
+	DOREPLIFETIME(AOnsetPlayerState, bContinueOnDisconnect);
+	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatform);
 	DOREPLIFETIME(AOnsetPlayerState, PlayerPlatformID);
 }
 
