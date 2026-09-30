@@ -31,6 +31,8 @@ Manifest_DebugFiles_Win64.xml
 *.ilk
 *.exp
 *.lib
+# Required PostgreSQL import library
+!/Project/Source/Onset/ThirdParty/PostgreSQL/lib/libpq.lib
 *.metagen
 
 # Content
