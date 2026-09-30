@@ -35,7 +35,7 @@ void UOnsetGA_HitReaction::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	if (CooldownGameplayEffectClass)
 	{
 		// void to avoid IDE warnings for unused statement result
-		(void)ApplyGameplayEffectToOwner(Handle, ActorInfo, ActivationInfo, CooldownGameplayEffectClass, GetAbilityLevel());
+		(void)ApplyGameplayEffectToOwner(Handle, ActorInfo, ActivationInfo, CooldownGameplayEffectClass->GetDefaultObject<UGameplayEffect>(), GetAbilityLevel());
 		if (StaggerEffect)
 		{
 			ApplyGameplayEffectToOwner(Handle, ActorInfo, ActivationInfo, StaggerEffect, GetAbilityLevel());
