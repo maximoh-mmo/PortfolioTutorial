@@ -27,6 +27,9 @@
 		}
 	],
 	"Plugins": [
+		{ "Name": "MHCore", "Enabled": true },
+		{ "Name": "MHBackend", "Enabled": true },
+		{ "Name": "MHOnline", "Enabled": true },
 		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,

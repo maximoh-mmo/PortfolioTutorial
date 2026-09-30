@@ -263,3 +263,9 @@ This repo is the **master source of truth** for:
 The public repo will contain only the **clean, step‑by‑step episode snapshots**.
 
 ---
+
+## MH framework
+
+See the [framework documentation](Docs/Framework/README.md),
+[roadmap](Planning/Framework/Roadmap.md), and
+[active checklist](TODO/Framework/README.md) for the UE 5.8 plugin foundation.

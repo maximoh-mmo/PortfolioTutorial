@@ -1,0 +1,30 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "MHOnline",
+  "Description": "MH framework foundation. Service implementations are planned; see Docs/Framework.",
+  "Category": "MH Framework",
+  "CreatedBy": "Maximo H",
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "MHOnlineCore",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "MHOnlineSteam",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Enabled": true,
+      "Name": "MHCore"
+    }
+  ]
+}
