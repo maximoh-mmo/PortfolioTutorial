@@ -17,8 +17,11 @@ bool FMHResultTest::RunTest(const FString& Parameters)
     const auto Failure = TMHResult<int32>::Failure({EMHErrorCode::InvalidArgument, TEXT("Invalid input")});
     TestTrue(TEXT("Failure has error only"), Failure.GetError() && !Failure.GetValue());
     TestTrue(TEXT("Error code preserved"), Failure.GetError()->Code == EMHErrorCode::InvalidArgument);
-    const auto MoveOnly = TMHResult<TUniquePtr<int32>>::Success(MakeUnique<int32>(7));
+    auto MoveOnly = TMHResult<TUniquePtr<int32>>::Success(MakeUnique<int32>(7));
     TestEqual(TEXT("Move-only payload supported"), **MoveOnly.GetValue(), 7);
+    TUniquePtr<int32> Consumed = MoveTemp(*MoveOnly.GetValue());
+    TestEqual(TEXT("Payload ownership transfers to caller"), *Consumed, 7);
+    TestFalse(TEXT("Transferred payload no longer owns the value"), MoveOnly.GetValue()->IsValid());
     TestTrue(TEXT("Void-like success"), TMHResult<FMHUnit>::Success({}).IsSuccess());
     FMHRequestHandle Empty;
     TestFalse(TEXT("Empty handle is invalid"), Empty.IsValid());

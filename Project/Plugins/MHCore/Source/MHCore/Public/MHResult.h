@@ -20,6 +20,10 @@ public:
     static TMHResult Failure(FMHError Error) { return TMHResult(MoveTemp(Error), false); }
 
     bool IsSuccess() const { return Storage.template IsType<FSuccess>(); }
+    T* GetValue()
+    {
+        return IsSuccess() ? &Storage.template Get<FSuccess>().Value : nullptr;
+    }
     const T* GetValue() const
     {
         return IsSuccess() ? &Storage.template Get<FSuccess>().Value : nullptr;

@@ -38,3 +38,6 @@ Automation tests: `MH.Core.Result` and `MH.Core.RequestLifecycle`. They cover re
 invariants, move-only payloads, empty handles, delayed game-thread delivery, duplicate
 completion, validation error, cancellation, late responses, weak owner teardown and
 sixteen worker-thread completion/cancellation races.
+
+`GetValue()` on a mutable result also allows moving the payload into the consumer,
+for example `auto Owned = MoveTemp(*Result.GetValue())` after checking success.
