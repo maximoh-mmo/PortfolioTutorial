@@ -19,3 +19,12 @@ UE 5.8.2 is installed, but UnrealBuildTool stopped before compilation with
 System.UnauthorizedAccessException while rotating its LocalAppData log. Requested
 build-directory access was not granted. Editor/game/server builds and runtime plugin
 loading remain unverified. Existing Onset code has not been migrated.
+
+## Build retry (2026-09-30)
+
+Build-directory permissions were granted on retry, including the Unreal Build Accelerator
+cache. UE 5.8.2 successfully compiled and linked all six MH runtime modules for
+OnsetEditor Win64 Development. The full editor build encountered LNK1181 in the existing
+OnsetDataStore module: Project/Source/Onset/ThirdParty/PostgreSQL/lib/libpq.lib is missing
+and is not tracked in this repository. Supply the matching PostgreSQL import library
+before repeating the full build. Game/server builds and runtime loading remain pending.
