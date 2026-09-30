@@ -7,7 +7,8 @@
 - [x] Document dependency, naming, async and migration rules.
 - [ ] Pass UE 5.8 editor, game and server builds and plugin-load smoke check.
 - [x] Implement MHCore result/error and request lifetime with automation tests.
-- [ ] Implement backend session services and async transport.
+- [x] Implement backend session signing/verification and configuration.
+- [ ] Implement async HTTP transport.
 - [ ] Implement persistence contracts and providers.
 - [ ] Implement identity contracts and Steam provider.
 - [ ] Migrate Onset auth and persistence with regression gates.

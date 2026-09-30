@@ -13,7 +13,9 @@ replacement. Lyra and GameFeature integration belongs in optional adapters above
 | MHOnline | MHOnlineCore | Provider-neutral identity contracts |
 | MHOnline | MHOnlineSteam | Steam implementation of identity contracts |
 
-MHCore implements results, errors and cancellable requests; other modules remain skeletons. Dependencies are private
+MHCore implements results, errors and cancellable requests. MHBackendCore implements
+session-token signing, verification and configuration; other modules remain skeletons.
+Dependencies are private
 until a public API requires them. HTTP, Steam SDK and database dependencies will be
 introduced with their implementations, not as unused dependencies in skeletons.
 SQLite, PostgreSQL and HTTP persistence provider modules follow later inside MHBackend.

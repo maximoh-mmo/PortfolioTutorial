@@ -19,6 +19,8 @@ broad reuse with optional Lyra/GameFeature adapters.
 | 10 | Cleanup and extraction hardening | Independent host, packaging, docs, legacy removal |
 | 11+ | Online/gameplay/UI services and adapters | Prioritized by concrete consumers |
 
-Current status: milestone 0 editor/game builds and plugin loading pass; server gate is blocked by the installed engine. Milestone 1 primitives and automation tests pass. Milestone 2 onward
-is planned, not delivered. Do not begin migration until the foundation build is verified.
+Current status: milestone 0 editor/game builds and plugin loading pass; server validation
+is blocked by the installed engine. Milestone 1 primitives and automation tests pass.
+Milestone 2 session-token service and configuration are implemented alongside the legacy
+Onset path. Milestone 3 onward is pending. Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).
