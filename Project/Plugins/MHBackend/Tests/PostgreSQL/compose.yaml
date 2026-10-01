@@ -1,0 +1,23 @@
+name: mh-backend-postgres-test
+
+services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: mh_test
+      POSTGRES_USER: mh_test
+      POSTGRES_PASSWORD: mh_local_test_only
+    ports:
+      - "127.0.0.1:${MH_POSTGRES_TEST_PORT:-55432}:5432"
+    # Disposable data: stop/recreate the container to discard the database.
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./smoke.sql:/tests/smoke.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mh_test -d mh_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
