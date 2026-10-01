@@ -22,5 +22,8 @@ broad reuse with optional Lyra/GameFeature adapters.
 Current status: milestone 0 editor/game builds and plugin loading pass; server validation
 is blocked by the installed engine. Milestone 1 primitives and automation tests pass.
 Milestone 2 session-token service and configuration are implemented alongside the legacy
-Onset path. Milestone 3 onward is pending. Production migration must wait for server validation.
+Onset path. Milestones 3 (HTTP) and 4 (persistence contract) are implemented and tested.
+Milestone 5 is partial: SQLite passes; PostgreSQL and HTTP persistence providers remain pending.
+PostgreSQL integration is blocked by database/Docker access. Milestones 6 onward remain pending.
+Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).

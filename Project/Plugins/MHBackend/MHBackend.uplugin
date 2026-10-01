@@ -24,12 +24,21 @@
       "Name": "MHPersistence",
       "Type": "Runtime",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "MHPersistenceSQLite",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
     }
   ],
   "Plugins": [
     {
       "Enabled": true,
       "Name": "MHCore"
+    },
+    {
+      "Name": "SQLiteCore",
+      "Enabled": true
     }
   ]
 }

@@ -8,12 +8,15 @@
 - [ ] Pass UE 5.8 editor, game and server builds and plugin-load smoke check.
 - [x] Implement MHCore result/error and request lifetime with automation tests.
 - [x] Implement backend session signing/verification and configuration.
-- [ ] Implement async HTTP transport.
-- [ ] Implement persistence contracts and providers.
+- [x] Implement async HTTP transport and loopback integration tests.
+- [x] Implement persistence contract and memory reference tests.
+- [x] Implement SQLite provider with worker I/O and durability tests.
+- [ ] Implement PostgreSQL provider (integration database access pending).
+- [ ] Implement generic HTTP persistence protocol/provider and server fixture.
 - [ ] Implement identity contracts and Steam provider.
 - [ ] Migrate Onset auth and persistence with regression gates.
 
 See [roadmap](../../Planning/Framework/Roadmap.md) and [backlog](Backlog.md).
 
-Validation: editor/game builds and MH.Core automation pass. Dedicated-server validation
+Validation: editor/game builds and nine MH automation tests pass (2026-10-01). Dedicated-server validation
 is blocked by the installed engine distribution; requires a server-capable UE 5.8 build.

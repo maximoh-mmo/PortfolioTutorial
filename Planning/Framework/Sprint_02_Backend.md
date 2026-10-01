@@ -19,3 +19,6 @@ MH.Core.RequestLifecycle, MH.Backend.SessionTokens and MH.Backend.SessionConfig.
 OnsetServer cannot build with the installed distribution; this remains an explicit
 integration gate, not a code-validation success. No production Onset auth migration
 has been performed.
+
+Update 2026-10-01: async HTTP and the persistence foundation are now implemented.
+See Sprint_03_Persistence.md for current validation and remaining provider work.
