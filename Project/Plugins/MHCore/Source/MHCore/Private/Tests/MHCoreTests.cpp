@@ -62,6 +62,8 @@ bool FMHRequestTest::RunTest(const FString& Parameters)
     {
         int32 Calls = 0;
         int32 OwnerCalls = 0;
+        int32 CleanupCalls = 0;
+        int32 UnwantedCleanups = 0;
         bool bGameThread = true;
         bool bResultsCorrect = true;
         std::atomic<int32> RaceWinners{0};
@@ -77,15 +79,19 @@ bool FMHRequestTest::RunTest(const FString& Parameters)
     TMHRequest<int32> Success([Observe](TMHResult<int32> Result)
     {
         Observe(Result.GetValue() && *Result.GetValue() == 42);
-    });
+    }, [Observed]() { ++Observed->UnwantedCleanups; });
     TestTrue(TEXT("First success accepted"), Success.Complete(TMHResult<int32>::Success(42)));
     TestFalse(TEXT("Duplicate rejected"), Success.Complete(TMHResult<int32>::Success(99)));
     TestFalse(TEXT("Cancellation after success rejected"), Success.GetHandle().Cancel());
     TestFalse(TEXT("Resolved request no longer pending"), Success.GetHandle().IsPending());
 
-    TMHRequest<int32> Cancelled([Observe](TMHResult<int32> Result)
+    TMHRequest<int32> Cancelled([Observe, Observed](TMHResult<int32> Result)
     {
-        Observe(Result.GetError() && Result.GetError()->Code == EMHErrorCode::Cancelled);
+        Observe(Result.GetError() && Result.GetError()->Code == EMHErrorCode::Cancelled && Observed->CleanupCalls == 1);
+    }, [Observed]()
+    {
+        ++Observed->CleanupCalls;
+        Observed->bGameThread &= IsInGameThread();
     });
     const auto HandleCopy = Cancelled.GetHandle();
     TestTrue(TEXT("Pending before cancellation"), HandleCopy.IsPending());
@@ -129,6 +135,7 @@ bool FMHRequestTest::RunTest(const FString& Parameters)
         Cancel.Wait();
     }
     TestEqual(TEXT("Callbacks never run inline"), Observed->Calls, 0);
+    TestEqual(TEXT("Cleanup never runs inline"), Observed->CleanupCalls, 0);
     TestEqual(TEXT("One winner per race"), Observed->RaceWinners.load(), Races);
     ADD_LATENT_AUTOMATION_COMMAND(FMHWaitForCallbacks([this, Observed]()
     {
@@ -137,6 +144,8 @@ bool FMHRequestTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("All callbacks on game thread"), Observed->bGameThread);
         TestTrue(TEXT("Terminal results preserved"), Observed->bResultsCorrect);
         TestEqual(TEXT("Destroyed owner is not invoked"), Observed->OwnerCalls, 0);
+        TestEqual(TEXT("Cancellation cleanup runs exactly once"), Observed->CleanupCalls, 1);
+        TestEqual(TEXT("Successful requests do not run cancellation cleanup"), Observed->UnwantedCleanups, 0);
         return true;
     }, this));
     return true;

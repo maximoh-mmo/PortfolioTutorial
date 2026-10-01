@@ -41,3 +41,9 @@ sixteen worker-thread completion/cancellation races.
 
 `GetValue()` on a mutable result also allows moving the payload into the consumer,
 for example `auto Owned = MoveTemp(*Result.GetValue())` after checking success.
+
+Providers may pass an optional cancellation cleanup callback to the TMHRequest
+constructor. It runs once on the game thread before cancelled completion, only if
+handle cancellation wins. It is discarded on normal completion. Use weak service
+references in cleanup callbacks to avoid ownership cycles. MHBackendHttp uses this
+hook to abort the underlying request; other providers must supply their own cleanup.

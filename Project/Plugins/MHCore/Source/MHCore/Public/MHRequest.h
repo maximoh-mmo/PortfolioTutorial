@@ -25,30 +25,40 @@ namespace MH::Private
         mutable FCriticalSection Mutex;
         bool bPending = true;
         TUniqueFunction<void(TMHResult<T>)> Completion;
+        TUniqueFunction<void()> Cancellation;
 
-    public:
-        explicit TRequestState(TUniqueFunction<void(TMHResult<T>)>&& InCompletion)
-            : Completion(MoveTemp(InCompletion)) {}
-
-        bool Complete(TMHResult<T> Result)
+        bool Resolve(TMHResult<T> Result, bool bCancelled)
         {
             TUniqueFunction<void(TMHResult<T>)> Callback;
+            TUniqueFunction<void()> Cleanup;
             {
                 FScopeLock Lock(&Mutex);
                 if (!bPending) { return false; }
                 bPending = false;
                 Callback = MoveTemp(Completion);
+                Cleanup = MoveTemp(Cancellation);
             }
-            DispatchCompletion([Callback = MoveTemp(Callback), Result = MoveTemp(Result)]() mutable
+            DispatchCompletion([Callback = MoveTemp(Callback), Cleanup = MoveTemp(Cleanup),
+                Result = MoveTemp(Result), bCancelled]() mutable
             {
+                if (bCancelled && Cleanup) { Cleanup(); }
                 if (Callback) { Callback(MoveTemp(Result)); }
             });
             return true;
         }
 
+    public:
+        TRequestState(TUniqueFunction<void(TMHResult<T>)>&& InCompletion, TUniqueFunction<void()>&& InCancellation)
+            : Completion(MoveTemp(InCompletion)), Cancellation(MoveTemp(InCancellation)) {}
+
+        bool Complete(TMHResult<T> Result)
+        {
+            return Resolve(MoveTemp(Result), false);
+        }
+
         bool Cancel() override
         {
-            return Complete(TMHResult<T>::Failure({EMHErrorCode::Cancelled, TEXT("Request cancelled")}));
+            return Resolve(TMHResult<T>::Failure({EMHErrorCode::Cancelled, TEXT("Request cancelled")}), true);
         }
 
         bool IsPending() const override
@@ -83,8 +93,9 @@ class TMHRequest
     TSharedRef<MH::Private::TRequestState<T>, ESPMode::ThreadSafe> State;
 
 public:
-    explicit TMHRequest(TUniqueFunction<void(TMHResult<T>)>&& Completion)
-        : State(MakeShared<MH::Private::TRequestState<T>, ESPMode::ThreadSafe>(MoveTemp(Completion))) {}
+    /** Cancellation cleanup runs once, on the game thread, before the cancelled completion. */
+    explicit TMHRequest(TUniqueFunction<void(TMHResult<T>)>&& Completion, TUniqueFunction<void()>&& Cancellation = {})
+        : State(MakeShared<MH::Private::TRequestState<T>, ESPMode::ThreadSafe>(MoveTemp(Completion), MoveTemp(Cancellation))) {}
 
     FMHRequestHandle GetHandle() const { return FMHRequestHandle(State); }
     /** Thread-safe: first completion or cancellation wins, later attempts return false. */
