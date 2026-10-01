@@ -1,3 +1,4 @@
+#include "MHHttpClient.h"
 #include "MHHttpClientState.h"
 
 namespace

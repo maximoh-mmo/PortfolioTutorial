@@ -11,3 +11,5 @@ a [backend session-token service](SessionTokens.md), [async HTTP](Http.md), and
 [PostgreSQL provider](PostgreSQL.md). Onset production consumers
 have not been migrated. Onset remains the compatibility baseline.
 The foundation compile gate must pass before extracting production behavior.
+
+See [server testing](ServerTesting.md) for the cooked dedicated-server validation script.

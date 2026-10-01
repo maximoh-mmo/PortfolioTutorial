@@ -10,7 +10,7 @@ the coding sandbox; the saved build log and resulting executable were inspected.
 - MH_POSTGRES_ROOT was supplied by the build script for the existing libpq SDK.
 - The build emitted a first-header diagnostic for MHHttpClient.cpp (expects
   MHHttpClient.h before MHHttpClientState.h), but still compiled/linked successfully.
-  Correct and recheck that include ordering during the next code/build pass.
+  The source now includes MHHttpClient.h first; the next build must verify the fix.
 - The engine dependency scan needed `-maxCpuCount:1` in DotnetDepends.bat.
   This fixes the observed solution scan failure without limiting C++ build parallelism.
   The user applied that engine-local change; it is not a project source modification.
@@ -24,3 +24,8 @@ Remaining gates: cook/package server content, start the server in an isolated te
 configuration, verify runtime libraries/module initialization, and run client login,
 auth and persistence regressions. A successful compile does not establish these.
 Do not redirect production Onset consumers until those runtime checks pass.
+
+The next run is prepared in `Scripts/Framework/Validate-Server.ps1`; see
+`Docs/Framework/ServerTesting.md`. It builds the matching editor, cooks/stages the
+server and runs an isolated local startup check. Its syntax has been checked, but
+execution still requires engine write access outside the current coding sandbox.
