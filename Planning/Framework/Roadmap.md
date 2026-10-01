@@ -23,8 +23,8 @@ Current status: milestone 0 editor/game builds and plugin loading pass; server v
 is blocked by the installed engine. Milestone 1 primitives and automation tests pass.
 Milestone 2 session-token service and configuration are implemented alongside the legacy
 Onset path. Milestones 3 (HTTP) and 4 (persistence contract) are implemented and tested.
-Milestone 5 is partial: SQLite passes; PostgreSQL and HTTP persistence providers remain pending.
-PostgreSQL fixture access and its host libpq smoke test pass; provider implementation and
-integration tests remain pending. Milestones 6 onward remain pending.
+Milestone 5 is partial: SQLite and PostgreSQL providers are implemented and their integration
+tests pass. HTTP persistence remains pending. PostgreSQL uses an optional host-supplied libpq
+SDK and the local disposable fixture. Milestones 6 onward remain pending.
 Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).

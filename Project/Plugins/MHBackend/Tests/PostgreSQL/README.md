@@ -14,8 +14,8 @@ docker compose ps
 
 The smoke test uses a TCP/password connection inside the container and rolls back
 its temporary table. It verifies basic SQL, binary/empty values and case-sensitive
-keys. It does not yet test the Unreal PostgreSQL provider, which remains pending,
-or connectivity from the host. Provider integration tests must use the host endpoint:
+keys. It does not test the Unreal PostgreSQL provider or connectivity from the host.
+Provider integration tests use the host endpoint:
 
 ```text
 host=127.0.0.1 port=55432 dbname=mh_test user=mh_test password=mh_local_test_only connect_timeout=5
@@ -40,6 +40,13 @@ updates. See the [official image documentation](https://hub.docker.com/_/postgre
 
 If Docker reports an engine-pipe permission error, run these commands from a terminal
 with Docker access. A running Docker Desktop alone does not grant sandbox access.
+
+For Unreal provider tests, build MHPersistencePostgres with `MH_POSTGRES_ROOT` set to
+your SDK root, then run automation `MH.Persistence.Postgres` with `-MHPostgresTest`.
+These integration tests currently use the default port 55432. They create the provider
+table, use unique record namespaces, clean records on success and test server timeouts.
+The connection uses the fixture credentials above; no credentials are built into the
+provider implementation. See `Docs/Framework/PostgreSQL.md` in the host repository.
 
 To test from the host without Docker engine access, use Python 3 and a libpq library:
 

@@ -12,12 +12,15 @@
 - [x] Implement persistence contract and memory reference tests.
 - [x] Implement SQLite provider with worker I/O and durability tests.
 - [x] Verify local PostgreSQL fixture access with host libpq smoke test.
-- [ ] Implement PostgreSQL provider and Unreal integration tests.
+- [x] Implement PostgreSQL provider and Unreal integration tests.
 - [ ] Implement generic HTTP persistence protocol/provider and server fixture.
 - [ ] Implement identity contracts and Steam provider.
 - [ ] Migrate Onset auth and persistence with regression gates.
 
 See [roadmap](../../Planning/Framework/Roadmap.md) and [backlog](Backlog.md).
 
-Validation: editor/game builds and nine MH automation tests pass (2026-10-01). Dedicated-server validation
+Validation: editor/game builds without unity and eleven MH automation tests pass (2026-10-01).
+PostgreSQL contract/timeout tests pass against the local container. One full-suite test collected
+an unrelated background Unreal HTTP connectivity warning from the sandbox proxy. The PostgreSQL
+module also compiles with no SDK configured. Dedicated-server validation
 is blocked by the installed engine distribution; requires a server-capable UE 5.8 build.

@@ -29,6 +29,11 @@
       "Name": "MHPersistenceSQLite",
       "Type": "Runtime",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "MHPersistencePostgres",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
     }
   ],
   "Plugins": [

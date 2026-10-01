@@ -4,6 +4,7 @@
 - MHBackendCore and MHPersistence may depend on MHCore.
 - MHBackendHttp depends on MHCore; Unreal HTTP stays implementation-private.
 - MHPersistenceSQLite depends on MHPersistence/MHCore; SQLiteCore stays implementation-private.
+- MHPersistencePostgres depends on MHPersistence/MHCore; libpq stays private and its SDK path is supplied by the host.
 - MHOnlineCore may depend on MHCore, never on Steam.
 - MHOnlineSteam may depend on MHOnlineCore; provider SDK details stay private.
 - MHBackend and MHOnline do not depend on each other. Onset coordinates them.

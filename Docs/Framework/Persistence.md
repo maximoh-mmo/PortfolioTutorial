@@ -52,8 +52,9 @@ Tests use unique scratch databases under Project/Saved and remove successful fix
 SQL-shaped key, case/namespace isolation, idempotent deletion, missing records, cancellation,
 shutdown, configuration/I/O failure, and persistence across a fresh store instance.
 
-PostgreSQL and HTTP persistence providers are pending. PostgreSQL integration requires a
-disposable test database; local fixture connectivity is now verified. The HTTP provider
+The [PostgreSQL provider](PostgreSQL.md) implements the same record contract with a private,
+host-supplied libpq SDK. PostgreSQL integration requires a disposable test database;
+local fixture connectivity is verified. The HTTP provider remains pending and
 also needs an agreed generic record protocol and server-side implementation; the existing
 Onset endpoints carry game-specific schemas and cannot be moved unchanged into MH.
 
@@ -61,4 +62,4 @@ A reusable [PostgreSQL Docker fixture](../../Project/Plugins/MHBackend/Tests/Pos
 ships with the plugin source, including startup/cleanup commands and a rollback-only SQL
 smoke test. Compose configuration and a host-side libpq smoke test pass against PostgreSQL
 17.11. The user started the container; Docker engine management remains unavailable from
-the coding sandbox. Unreal provider integration remains pending.
+the coding sandbox. See PostgreSQL.md for the Unreal integration test entry points.

@@ -11,15 +11,16 @@ replacement. Lyra and GameFeature integration belongs in optional adapters above
 | MHBackend | MHBackendHttp | Async HTTP transport |
 | MHBackend | MHPersistence | Generic record persistence contracts |
 | MHBackend | MHPersistenceSQLite | Worker-based durable SQLite records |
+| MHBackend | MHPersistencePostgres | Worker-based durable PostgreSQL records with optional libpq SDK |
 | MHOnline | MHOnlineCore | Provider-neutral identity contracts |
 | MHOnline | MHOnlineSteam | Steam implementation of identity contracts |
 
 MHCore implements results, errors and cancellable requests. MHBackendCore implements
 session-token signing, verification and configuration. MHBackendHttp provides async
 transport. MHPersistence provides the record contract and a memory reference store;
-MHPersistenceSQLite provides durable records. The two online modules remain skeletons.
+MHPersistenceSQLite and MHPersistencePostgres provide durable records. The two online modules remain skeletons.
 Dependencies are private until required by a public API. Unreal HTTP and SQLite types
-remain private to their providers. PostgreSQL and HTTP persistence providers are pending.
+remain private to their providers, as does libpq. HTTP persistence remains pending.
 
 Onset retains account/character structures, slots, classes, inventory and quest JSON,
 progression, actor ownership and gameplay policy. No MH module owns those schemas.
