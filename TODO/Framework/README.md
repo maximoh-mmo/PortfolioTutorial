@@ -11,7 +11,8 @@
 - [x] Implement async HTTP transport and loopback integration tests.
 - [x] Implement persistence contract and memory reference tests.
 - [x] Implement SQLite provider with worker I/O and durability tests.
-- [ ] Implement PostgreSQL provider (integration database access pending).
+- [x] Verify local PostgreSQL fixture access with host libpq smoke test.
+- [ ] Implement PostgreSQL provider and Unreal integration tests.
 - [ ] Implement generic HTTP persistence protocol/provider and server fixture.
 - [ ] Implement identity contracts and Steam provider.
 - [ ] Migrate Onset auth and persistence with regression gates.

@@ -20,10 +20,10 @@ loopback test run without MHHttpTestBaseUrl as a successful integration check.
 
 Remaining provider work:
 
-- PostgreSQL: no standalone server detected. Docker desktop-linux exists, but its named
-  pipe denies access. The permission tool rejected that device path as unrepresentable;
-  a disposable accessible PostgreSQL instance or a permitted Docker environment is needed
-  for its integration gate. No existing user database was used or modified.
+- PostgreSQL: user started the supplied Docker fixture. Host libpq authentication and
+  rollback-only SQL smoke tests pass against PostgreSQL 17.11. Provider implementation
+  and Unreal integration tests remain pending. Docker engine pipe access is still denied,
+  but database access is no longer blocked. No existing user database was used or modified.
 - HTTP persistence: define a generic record protocol and matching server fixture on top
   of the tested transport; existing Onset endpoints remain game-specific.
 - Online identity/Steam are still pending. Production Onset migration remains gated on

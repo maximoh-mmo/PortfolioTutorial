@@ -41,6 +41,20 @@ updates. See the [official image documentation](https://hub.docker.com/_/postgre
 If Docker reports an engine-pipe permission error, run these commands from a terminal
 with Docker access. A running Docker Desktop alone does not grant sandbox access.
 
-Validation on 2026-10-01: Compose configuration parsed successfully. Container startup
-and SQL execution could not be verified from the coding sandbox because Docker engine
-pipe access was denied; the permission tool could not represent the pipe path.
+To test from the host without Docker engine access, use Python 3 and a libpq library:
+
+```sh
+python host_smoke.py --libpq /absolute/path/to/libpq.dll
+```
+
+On Linux/macOS use the corresponding libpq shared library. On Windows, keep its
+dependency DLLs beside it. This checkout provides libpq under
+`Project/Source/Onset/ThirdParty/PostgreSQL/bin`; the helper accepts an explicit path
+so extracted plugin users can supply their own library. No Python packages are needed.
+The helper only connects to the local fixture, supports `--port`, executes the same
+SQL smoke test and exits nonzero on failure. It does not test the Unreal provider.
+
+Validation on 2026-10-01: Compose configuration parsed successfully. After the user
+started the container, host TCP/password authentication and the SQL smoke test passed
+against PostgreSQL 17.11 using the checkout's libpq. Docker engine management remains
+unavailable from the coding sandbox, but database access is verified.

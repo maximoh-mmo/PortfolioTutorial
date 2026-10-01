@@ -24,6 +24,7 @@ is blocked by the installed engine. Milestone 1 primitives and automation tests 
 Milestone 2 session-token service and configuration are implemented alongside the legacy
 Onset path. Milestones 3 (HTTP) and 4 (persistence contract) are implemented and tested.
 Milestone 5 is partial: SQLite passes; PostgreSQL and HTTP persistence providers remain pending.
-PostgreSQL integration is blocked by database/Docker access. Milestones 6 onward remain pending.
+PostgreSQL fixture access and its host libpq smoke test pass; provider implementation and
+integration tests remain pending. Milestones 6 onward remain pending.
 Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).
