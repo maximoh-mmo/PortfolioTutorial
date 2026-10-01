@@ -6,6 +6,8 @@
 - [x] Enable plugins in Onset without migrating existing behavior.
 - [x] Document dependency, naming, async and migration rules.
 - [ ] Pass UE 5.8 editor, game and server builds and plugin-load smoke check.
+- [x] Compile/link OnsetServer Win64 Development using source-built UE 5.8.3.
+- [ ] Validate cooked dedicated-server startup and runtime auth/persistence flows.
 - [x] Implement MHCore result/error and request lifetime with automation tests.
 - [x] Implement backend session signing/verification and configuration.
 - [x] Implement async HTTP transport and loopback integration tests.
@@ -22,5 +24,6 @@ See [roadmap](../../Planning/Framework/Roadmap.md) and [backlog](Backlog.md).
 Validation: editor/game builds without unity and eleven MH automation tests pass (2026-10-01).
 PostgreSQL contract/timeout tests pass against the local container. One full-suite test collected
 an unrelated background Unreal HTTP connectivity warning from the sandbox proxy. The PostgreSQL
-module also compiles with no SDK configured. Dedicated-server validation
-is blocked by the installed engine distribution; requires a server-capable UE 5.8 build.
+module also compiles with no SDK configured. OnsetServer compilation/linking now passes
+with source-built UE 5.8.3. Server runtime checks and editor/game revalidation on 5.8.3
+remain pending; see [server validation](../../Planning/Framework/Server_Validation.md).

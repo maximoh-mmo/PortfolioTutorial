@@ -19,8 +19,10 @@ broad reuse with optional Lyra/GameFeature adapters.
 | 10 | Cleanup and extraction hardening | Independent host, packaging, docs, legacy removal |
 | 11+ | Online/gameplay/UI services and adapters | Prioritized by concrete consumers |
 
-Current status: milestone 0 editor/game builds and plugin loading pass; server validation
-is blocked by the installed engine. Milestone 1 primitives and automation tests pass.
+Current status: milestone 0 editor/game builds and plugin loading pass on 5.8.2;
+OnsetServer Win64 Development compiles and links with source-built UE 5.8.3.
+Server runtime validation remains pending; see [server validation](Server_Validation.md).
+Milestone 1 primitives and automation tests pass.
 Milestone 2 session-token service and configuration are implemented alongside the legacy
 Onset path. Milestones 3 (HTTP) and 4 (persistence contract) are implemented and tested.
 Milestone 5 is partial: SQLite and PostgreSQL providers are implemented and their integration
