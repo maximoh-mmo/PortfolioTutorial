@@ -7,7 +7,8 @@
 - [x] Document dependency, naming, async and migration rules.
 - [ ] Pass UE 5.8 editor, game and server builds and plugin-load smoke check.
 - [x] Compile/link OnsetServer Win64 Development using source-built UE 5.8.3.
-- [ ] Validate cooked dedicated-server startup and runtime auth/persistence flows.
+- [x] Validate cooked dedicated-server startup with isolated SQLite and Token auth initialization.
+- [ ] Validate client login and runtime auth/persistence flows.
 - [x] Implement MHCore result/error and request lifetime with automation tests.
 - [x] Implement backend session signing/verification and configuration.
 - [x] Implement async HTTP transport and loopback integration tests.

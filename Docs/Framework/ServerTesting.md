@@ -30,7 +30,7 @@ regressions. Those are separate gates.
 To repeat startup without rebuilding/cooking, supply `-PackageRoot` with the existing
 archived `WindowsServer` directory. This still creates a new log/database directory.
 
-Validated here: PowerShell syntax and option/log-marker names against UE 5.8.3 and
-Onset source. Execution remains pending: engine write-permission requests returned
-no granted paths in the coding sandbox. A passing build from the earlier stage is
-not evidence that this cook/startup script has passed.
+Validated 2026-10-02: the user ran this script outside the coding sandbox against
+source UE 5.8.3. Editor build, BuildCookRun and all seven runtime checks passed in
+run `20261002-000109-1be122df`; the result JSON and logs were inspected. The server
+log confirms normal timed shutdown. Client/auth/persistence regressions remain separate.

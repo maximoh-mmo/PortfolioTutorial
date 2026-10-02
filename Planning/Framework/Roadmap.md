@@ -21,7 +21,8 @@ broad reuse with optional Lyra/GameFeature adapters.
 
 Current status: milestone 0 editor/game builds and plugin loading pass on 5.8.2;
 OnsetServer Win64 Development compiles and links with source-built UE 5.8.3.
-Server runtime validation remains pending; see [server validation](Server_Validation.md).
+The 5.8.3 editor build and cooked server startup also pass. Client/auth/persistence
+runtime regressions remain pending; see [server validation](Server_Validation.md).
 Milestone 1 primitives and automation tests pass.
 Milestone 2 session-token service and configuration are implemented alongside the legacy
 Onset path. Milestones 3 (HTTP) and 4 (persistence contract) are implemented and tested.

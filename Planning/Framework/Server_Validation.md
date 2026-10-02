@@ -1,5 +1,26 @@
 # Dedicated-server validation
 
+## Current result: cooked startup passed, 2026-10-02
+
+The user ran Validate-Server.ps1 and the resulting files were inspected in
+`Project/Saved/MHServerValidation/20261002-000109-1be122df`:
+
+- OnsetEditor builds successfully against source UE 5.8.3.
+- BuildCookRun builds, cooks, stages and archives WindowsServer successfully (exit 0).
+- All seven startup checks in result.json pass: local SQLite initialization, Token
+  auth initialization, IP listener on port 17877, world startup, scratch database
+  creation, no datastore fallback and no fatal error markers.
+- The server log confirms normal engine shutdown after the timed test.
+- The earlier MHHttpClient first-header diagnostic is absent from both build logs.
+
+This removes the cooked-server startup gate. Remaining: client login, actual auth
+accept/reject behavior, persistence regression/data compatibility, Steam integration
+and MH provider migration checks. Token auth initialization alone is not a login test.
+The prior eleven-test suite has not yet been rerun on 5.8.3, nor has a 5.8.3 game build
+been validated. Earlier entries below describe historical status before this run.
+
+## Initial server build
+
 OnsetServer Win64 Development built successfully on 2026-10-01 using the UE 5.8.3
 source engine at `Z:\UnrealEngine`. The user ran the prepared build script outside
 the coding sandbox; the saved build log and resulting executable were inspected.
