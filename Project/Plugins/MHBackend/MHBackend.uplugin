@@ -34,6 +34,11 @@
       "Name": "MHPersistencePostgres",
       "Type": "Runtime",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "MHPersistenceHttp",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
     }
   ],
   "Plugins": [

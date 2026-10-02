@@ -54,9 +54,10 @@ shutdown, configuration/I/O failure, and persistence across a fresh store instan
 
 The [PostgreSQL provider](PostgreSQL.md) implements the same record contract with a private,
 host-supplied libpq SDK. PostgreSQL integration requires a disposable test database;
-local fixture connectivity is verified. The HTTP provider remains pending and
-also needs an agreed generic record protocol and server-side implementation; the existing
-Onset endpoints carry game-specific schemas and cannot be moved unchanged into MH.
+local fixture connectivity is verified. The [HTTP record provider](HttpPersistence.md)
+implements a versioned binary protocol with a local in-memory service fixture. A durable
+production implementation of that protocol remains host-owned. The existing Onset
+endpoints carry game-specific schemas and cannot be moved unchanged into MH.
 
 A reusable [PostgreSQL Docker fixture](../../Project/Plugins/MHBackend/Tests/PostgreSQL/README.md)
 ships with the plugin source, including startup/cleanup commands and a rollback-only SQL

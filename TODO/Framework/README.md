@@ -16,7 +16,8 @@
 - [x] Implement SQLite provider with worker I/O and durability tests.
 - [x] Verify local PostgreSQL fixture access with host libpq smoke test.
 - [x] Implement PostgreSQL provider and Unreal integration tests.
-- [ ] Implement generic HTTP persistence protocol/provider and server fixture.
+- [x] Implement generic HTTP persistence protocol/provider and server fixture.
+- [ ] Repeat PostgreSQL integration on 5.8.3 once the local database is running again.
 - [ ] Implement identity contracts and Steam provider.
 - [ ] Migrate Onset auth and persistence with regression gates.
 
@@ -28,3 +29,8 @@ an unrelated background Unreal HTTP connectivity warning from the sandbox proxy.
 module also compiles with no SDK configured. OnsetServer compilation/linking now passes
 with source-built UE 5.8.3. Server runtime checks and editor/game revalidation on 5.8.3
 remain pending; see [server validation](../../Planning/Framework/Server_Validation.md).
+
+2026-10-02 update: HTTP record contract/failure tests pass on source UE 5.8.3; editor
+and server builds pass with the new module. Latest full suite: 11 pass (one incidental
+EOS connectivity warning), two PostgreSQL tests fail because port 55432 is unavailable.
+No clean full-suite result is claimed for that run. See Docs/Framework/HttpPersistence.md.

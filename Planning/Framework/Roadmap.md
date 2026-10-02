@@ -26,8 +26,10 @@ runtime regressions remain pending; see [server validation](Server_Validation.md
 Milestone 1 primitives and automation tests pass.
 Milestone 2 session-token service and configuration are implemented alongside the legacy
 Onset path. Milestones 3 (HTTP) and 4 (persistence contract) are implemented and tested.
-Milestone 5 is partial: SQLite and PostgreSQL providers are implemented and their integration
-tests pass. HTTP persistence remains pending. PostgreSQL uses an optional host-supplied libpq
-SDK and the local disposable fixture. Milestones 6 onward remain pending.
+Milestone 5 provider foundations are implemented: SQLite, PostgreSQL and HTTP records.
+HTTP record tests pass on 5.8.3; the latest full run needs the PostgreSQL fixture restarted
+to repeat its integration gate (previously passed on 5.8.2). The HTTP service fixture is
+in-memory; a durable production service and migration compatibility remain host work.
+Milestones 6 onward remain pending.
 Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).
