@@ -34,7 +34,7 @@ release, shutdown revocation and rejection after shutdown. It does not validate 
 
 In the inspected UE 5.8.3 source, `FOnlineIdentitySteam::GetLinkedAccountAuthToken` forwards
 the Web API ticket string but discards `AuthTicketHandle` from its internal callback.
-That public abstraction cannot implement individual native revocation. The adapter must
-retain the handle through a supported native integration; do not access private engine
-headers or treat an unrevocable string as an owned lease. Steam implementation and a real
-logged-in client smoke test remain pending.
+That public abstraction cannot implement individual native revocation. MHOnlineSteam
+therefore uses private Steamworks calls with a public SteamShared lifetime handle and
+the existing OSS callback pump. It does not depend on private engine headers. See the
+[Steam adapter and validation guide](Steam.md) for supported targets and test gates.

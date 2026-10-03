@@ -5,6 +5,14 @@ public class MHOnlineSteam : ModuleRules
     public MHOnlineSteam(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        PrivateDependencyModuleNames.AddRange(new string[] { "Core", "MHOnlineCore" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "MHOnlineCore" });
+        PrivateDependencyModuleNames.Add("MHCore");
+        bool NativeSteam = Target.Platform == UnrealTargetPlatform.Win64 && Target.Type != TargetType.Server;
+        PrivateDefinitions.Add("MH_STEAM_NATIVE=" + (NativeSteam ? "1" : "0"));
+        if (NativeSteam)
+        {
+            PrivateDependencyModuleNames.AddRange(new string[] { "OnlineSubsystem", "SteamShared" });
+            AddEngineThirdPartyPrivateStaticDependencies(Target, "Steamworks");
+        }
     }
 }

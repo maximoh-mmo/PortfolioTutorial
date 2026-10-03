@@ -22,6 +22,8 @@
     }
   ],
   "Plugins": [
+    { "Name": "OnlineSubsystemSteam", "Enabled": true, "PlatformAllowList": ["Win64"] },
+    { "Name": "SteamShared", "Enabled": true, "PlatformAllowList": ["Win64"] },
     {
       "Enabled": true,
       "Name": "MHCore"

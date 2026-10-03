@@ -34,6 +34,13 @@ in-memory; a durable production service and migration compatibility remain host 
 Milestone 6 is implemented: provider-neutral account/ticket contracts, shared ticket
 revocation and mock lifecycle automation. Editor and server builds and the identity
 test pass on source UE 5.8.3 (2026-10-03); the test recorded an EOS connectivity warning.
-Milestones 7 onward remain pending. See [identity contract](../../Docs/Framework/Identity.md).
+Milestone 7 client adapter is implemented: mock lifecycle tests and live acquisition/release
+of session and Web API tickets pass with Steam App ID 480 on 2026-10-03. The live run records
+the OSS warning for an MH-owned Web API handle. Editor and server builds pass; the server
+target intentionally cannot acquire local client tickets. See [Steam guide](../../Docs/Framework/Steam.md).
+Milestone 8 remains gated on validated client/server authentication and two-client regressions;
+the existing ticket handlers only check for nonempty strings. The user can provide a second
+Steam client; its setup details are pending. Milestones 9 onward remain pending.
+See [identity contract](../../Docs/Framework/Identity.md).
 Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).
