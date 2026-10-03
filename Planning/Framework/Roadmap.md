@@ -30,6 +30,9 @@ Milestone 5 provider foundations are implemented: SQLite, PostgreSQL and HTTP re
 HTTP record tests pass on 5.8.3; the latest full run needs the PostgreSQL fixture restarted
 to repeat its integration gate (previously passed on 5.8.2). The HTTP service fixture is
 in-memory; a durable production service and migration compatibility remain host work.
-Milestones 6 onward remain pending.
+Milestone 6 is implemented: provider-neutral account/ticket contracts, shared ticket
+revocation and mock lifecycle automation. Editor and server builds and the identity
+test pass on source UE 5.8.3 (2026-10-03); the test recorded an EOS connectivity warning.
+Milestones 7 onward remain pending. See [identity contract](../../Docs/Framework/Identity.md).
 Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).
