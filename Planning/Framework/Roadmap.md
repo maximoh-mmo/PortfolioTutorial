@@ -40,7 +40,10 @@ the OSS warning for an MH-owned Web API handle. Editor and server builds pass; t
 target intentionally cannot acquire local client tickets. See [Steam guide](../../Docs/Framework/Steam.md).
 Milestone 8 remains gated on validated client/server authentication and two-client regressions;
 the existing ticket handlers only check for nonempty strings. The user can provide a second
-Steam client; its setup details are pending. Milestones 9 onward remain pending.
+Steam client on a second Windows 11 machine on the same LAN. The client-only package,
+credential inspection and packaged Steam acquisition/release smoke pass on 2026-10-03.
+See [LAN setup](../../Docs/Framework/LanTesting.md). Two-machine execution and actual
+server ticket verification remain pending. Milestones 9 onward remain pending.
 See [identity contract](../../Docs/Framework/Identity.md).
 Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).

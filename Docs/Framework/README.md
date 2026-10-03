@@ -13,3 +13,4 @@ have not been migrated. Onset remains the compatibility baseline.
 The foundation compile gate must pass before extracting production behavior.
 
 See [server testing](ServerTesting.md) for the cooked dedicated-server validation script.
+See [Windows LAN testing](LanTesting.md) for packaging a client and setting up a second Steam machine.

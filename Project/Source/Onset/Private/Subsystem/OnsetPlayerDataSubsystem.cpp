@@ -98,11 +98,16 @@ void UOnsetPlayerDataSubsystem::StopAutoSaveTimer()
 
 bool UOnsetPlayerDataSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
+#if !WITH_SERVER_CODE
+    // Client-only builds also have standalone menu worlds; they must not initialize a backend.
+    return false;
+#else
 	if (!Super::ShouldCreateSubsystem(Outer))
 		return false;
 
 	UWorld* World = Cast<UWorld>(Outer);
 	return World && World->GetNetMode() != NM_Client;
+#endif
 }
 
 bool UOnsetPlayerDataSubsystem::LoadAccount(const FString& Platform, const FString& PlatformID, FOnsetAccountData& OutAccount)

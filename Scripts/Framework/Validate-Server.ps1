@@ -51,7 +51,7 @@ try {
         Invoke-NativeStep $uatScript @("-ScriptsForProject=$projectFile",'BuildCookRun',
             "-project=$projectFile",'-noP4','-unattended','-utf8output',
             '-server','-noclient','-serverplatform=Win64','-serverconfig=Development',
-            '-build','-cook','-stage','-pak','-archive','-map=/Game/Maps/DemoLevel',
+            '-build','-cook','-stage','-pak','-archive','-map=/Game/Maps/LoginServer+/Game/Maps/DemoLevel',
             "-stagingdirectory=$(Join-Path $runRoot 'stage')", "-archivedirectory=$archive") (Join-Path $runRoot 'build-cook-stage.log')
         $PackageRoot = Join-Path $archive 'WindowsServer'
     }
