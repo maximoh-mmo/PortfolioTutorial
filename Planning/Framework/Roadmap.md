@@ -27,8 +27,9 @@ Milestone 1 primitives and automation tests pass.
 Milestone 2 session-token service and configuration are implemented alongside the legacy
 Onset path. Milestones 3 (HTTP) and 4 (persistence contract) are implemented and tested.
 Milestone 5 provider foundations are implemented: SQLite, PostgreSQL and HTTP records.
-HTTP record tests pass on 5.8.3; the latest full run needs the PostgreSQL fixture restarted
-to repeat its integration gate (previously passed on 5.8.2). The HTTP service fixture is
+HTTP record tests pass on 5.8.3. After restarting the PostgreSQL fixture on 2026-10-03,
+host SQL smoke, PostgresContract and PostgresTimeout tests pass on 5.8.3 without warnings.
+The HTTP service fixture is
 in-memory; a durable production service and migration compatibility remain host work.
 Milestone 6 is implemented: provider-neutral account/ticket contracts, shared ticket
 revocation and mock lifecycle automation. Editor and server builds and the identity

@@ -12,6 +12,11 @@ Validation with source Unreal Engine 5.8.3:
 - MH.Online.IdentityContract: succeeded, with an unrelated EOS_NoConnection warning.
 - PostgreSQL loopback port 55432: connection timed out; no database regression rerun.
 
+Follow-up after the user restarted the fixture on 2026-10-03: host TCP/password and
+SQL smoke passed against PostgreSQL 17.11. Both `MH.Persistence.PostgresContract` and
+`MH.Persistence.PostgresTimeout` passed without warnings in source UE 5.8.3. The earlier
+database availability blocker is cleared; this does not imply production migration.
+
 The mock verifies deferred completion, exactly-once cancellation, disposal of late tickets,
 idempotent shared release, automatic final-owner release, shutdown revocation and rejection
 of new requests after shutdown. It is not a Steam integration test. Native Steam acquisition,
