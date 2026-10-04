@@ -5,7 +5,9 @@ param(
     [ValidateRange(1024,65535)][int]$Port = 17877,
     [ValidateRange(1024,65535)][int]$GamePort = 17878,
     [string]$ResultsDirectory,
-    [switch]$SteamSmoke
+    [switch]$SteamSmoke,
+    # Development-only regression control: replaces the packet-handler ticket with a malformed value.
+    [switch]$PacketAuthBadKey
 )
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path -LiteralPath $PackageRoot).Path
@@ -16,6 +18,7 @@ $run = Join-Path $results ((Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::
 New-Item -ItemType Directory -Force -Path $run | Out-Null
 $launchArgs = @('-nosplash', '-noanalytics', '-CustomConfig=MHLanTest', "-abslog=$run/client.log")
 if ($SteamSmoke) {
+	if ($PacketAuthBadKey) { throw 'PacketAuthBadKey cannot be combined with SteamSmoke.' }
     $launchArgs = @('/Engine/Maps/Entry?game=/Script/Engine.GameModeBase') + $launchArgs + @('-unattended', '-NullRHI', '-nosound',
         '-MHSteamLiveTest', '-ExecCmds=Automation RunTests MH.Online.SteamLive',
         '-TestExit=Automation Test Queue Empty', "-ReportExportPath=$run")
@@ -29,6 +32,7 @@ if ($SteamSmoke) {
     if (!$local) { throw 'This development launcher accepts private LAN or loopback addresses only.' }
     $launchArgs = @("${ServerAddress}:$Port") + $launchArgs + @('-windowed', '-ResX=1280', '-ResY=720', '-AuthMode=Direct',
         "-ini:Engine:[Onset.Auth]:GameServerIP=$ServerAddress", "-ini:Engine:[Onset.Auth]:GameServerPort=$GamePort")
+	if ($PacketAuthBadKey) { $launchArgs += '-MHPacketAuthBadKey' }
 }
 # The development Steam SDK looks beside the real executable, not the bootstrap exe.
 Set-Content -LiteralPath (Join-Path (Split-Path $exe) 'steam_appid.txt') -Value '480' -Encoding ascii
