@@ -99,19 +99,30 @@ public:
 
 private:
 #if MH_STEAM_NATIVE
-	bool TryStartServerDiagnostics(float)
+	bool TryStartServerDiagnostics(float DeltaSeconds)
 	{
-		if (SteamGameServer())
+		ISteamGameServer* const GameServer = SteamGameServer();
+		if (!ServerDiagnostics && GameServer)
 		{
 			ServerDiagnostics = MakeUnique<FMHSteamServerDiagnostics>();
-			UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: observing Game Server callbacks."));
-			return false;
+			UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: observing Game Server callbacks (logged-on=%d, secure=%d)."),
+				GameServer->BLoggedOn() ? 1 : 0, SteamGameServer_BSecure() ? 1 : 0);
 		}
+
+		StatusLogSeconds += DeltaSeconds;
+		if (ServerDiagnostics && StatusLogSeconds >= 15.0f)
+		{
+			StatusLogSeconds = 0.0f;
+			UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: game-server status (logged-on=%d, secure=%d)."),
+				GameServer && GameServer->BLoggedOn() ? 1 : 0, SteamGameServer_BSecure() ? 1 : 0);
+		}
+
 		return true;
 	}
 
 	FTSTicker::FDelegateHandle StartupTicker;
 	TUniquePtr<FMHSteamServerDiagnostics> ServerDiagnostics;
+	float StatusLogSeconds = 0.0f;
 #endif
 };
 
