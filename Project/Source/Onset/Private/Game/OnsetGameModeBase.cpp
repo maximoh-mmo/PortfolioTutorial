@@ -106,7 +106,8 @@ void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 		return;
 
 	UOnsetAuthSubsystem* Auth = GetWorld()->GetSubsystem<UOnsetAuthSubsystem>();
-	if (Auth)
+	const bool bSteamDirectAuthPending = Auth && Auth->QueueSteamDirectAuth(NewPlayer);
+	if (Auth && !bSteamDirectAuthPending)
 	{
 		Auth->HandlePostLogin(NewPlayer);
 	}

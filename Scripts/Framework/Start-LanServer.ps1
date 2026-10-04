@@ -62,5 +62,5 @@ try {
 }
 $ids = ($owned | ForEach-Object { $_.Id }) -join ','
 Write-Host "Results: $run"
-Write-Host 'This tests legacy DirectAuth-to-TokenAuth connectivity; it does not prove Steam ticket validation.'
+Write-Host 'Steam packet authentication is active; test acceptance and rejection before production rollout.'
 Write-Host "Stop these servers with: Stop-Process -Id $ids"

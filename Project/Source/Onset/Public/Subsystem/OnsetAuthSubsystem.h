@@ -59,6 +59,7 @@ class ONSET_API UOnsetAuthSubsystem : public UWorldSubsystem
 
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
 	/** The auth mode resolved from config at Initialize (Direct when unset). */
@@ -73,6 +74,8 @@ public:
 	/** Runs Steam ticket validation (Direct) or consumes cached token identity (Token),
 	 *  then loads/creates the account. Called from GameMode PostLogin. */
 	void HandlePostLogin(APlayerController* NewPlayer);
+	/** Queues a Steam DirectAuth login until the packet handler reports success. */
+	bool QueueSteamDirectAuth(APlayerController* NewPlayer);
 	/** Persists + cleans up the leaving player (threat tables, engagement). */
 	void HandleLogout(AController* Exiting);
 
@@ -106,4 +109,7 @@ private:
 
 	/** Dev-only: assigns stable test identities to local multi-client sessions. */
 	TMap<FString, int32> PendingDevClientIndexMap;
+	TMap<FString, TWeakObjectPtr<APlayerController>> PendingSteamDirectAuth;
+	bool bSteamAuthResultBound = false;
+	void OnSteamAuthenticationResult(const class FUniqueNetId& UserId, bool bWasSuccess);
 };

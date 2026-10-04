@@ -15,6 +15,9 @@
 #include "HAL/PlatformMisc.h"
 #include "HAL/PlatformProcess.h"
 #include "OnlineSubsystemNames.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSubsystemSteam.h"
+#include "OnlineAuthInterfaceUtilsSteam.h"
 
 
 DEFINE_LOG_CATEGORY(LogOnsetAuth);
@@ -62,6 +65,32 @@ void UOnsetAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	UE_LOG(LogOnsetAuth, Log, TEXT("AuthSubsystem initialized: AuthMode=%s, TokenLifetime=%ds"),
 		*AuthModeStr, AuthTokenLifetimeSeconds);
+	if (AuthMode == EOnsetAuthMode::Direct)
+	{
+		if (FOnlineSubsystemSteam* Steam = static_cast<FOnlineSubsystemSteam*>(IOnlineSubsystem::Get(STEAM_SUBSYSTEM)))
+		{
+			if (FOnlineAuthSteamUtilsPtr Utils = Steam->GetAuthInterfaceUtils(); Utils.IsValid() && Utils->IsSteamAuthEnabled())
+			{
+				Utils->OnAuthenticationResultDelegate.BindUObject(this, &UOnsetAuthSubsystem::OnSteamAuthenticationResult);
+				bSteamAuthResultBound = true;
+				UE_LOG(LogOnsetAuth, Log, TEXT("DirectAuth will wait for Steam packet-auth results."));
+			}
+		}
+	}
+}
+
+void UOnsetAuthSubsystem::Deinitialize()
+{
+	if (bSteamAuthResultBound)
+	{
+		if (FOnlineSubsystemSteam* Steam = static_cast<FOnlineSubsystemSteam*>(IOnlineSubsystem::Get(STEAM_SUBSYSTEM)))
+		{
+			if (FOnlineAuthSteamUtilsPtr Utils = Steam->GetAuthInterfaceUtils(); Utils.IsValid())
+				Utils->OnAuthenticationResultDelegate.Unbind();
+		}
+	}
+	PendingSteamDirectAuth.Empty();
+	Super::Deinitialize();
 }
 
 bool UOnsetAuthSubsystem::ShouldCreateSubsystem(UObject* Outer) const
@@ -251,6 +280,39 @@ void UOnsetAuthSubsystem::ValidateAuthTicket(APlayerController* NewPlayer, const
 	// Steam's asynchronous validation result. Retain this entry point temporarily for
 	// source compatibility, but do not accept, persist, or log caller-provided tickets.
 	UE_LOG(LogOnsetAuth, Warning, TEXT("Ignored deprecated gameplay Steam-ticket validation request."));
+}
+
+bool UOnsetAuthSubsystem::QueueSteamDirectAuth(APlayerController* NewPlayer)
+{
+	if (AuthMode != EOnsetAuthMode::Direct || !bSteamAuthResultBound || !NewPlayer)
+		return false;
+	if (const AOnsetPlayerState* PlayerState = NewPlayer->GetPlayerState<AOnsetPlayerState>())
+	{
+		const FUniqueNetIdRepl UniqueId = PlayerState->GetUniqueId();
+		if (UniqueId.IsValid() && UniqueId.GetType() == STEAM_SUBSYSTEM)
+		{
+			PendingSteamDirectAuth.Add(UniqueId->ToString(), NewPlayer);
+			UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: awaiting Steam packet-auth result for %s"), *NewPlayer->GetName());
+			return true;
+		}
+	}
+	return false;
+}
+
+void UOnsetAuthSubsystem::OnSteamAuthenticationResult(const FUniqueNetId& UserId, bool bWasSuccess)
+{
+	TWeakObjectPtr<APlayerController> Player;
+	if (!PendingSteamDirectAuth.RemoveAndCopyValue(UserId.ToString(), Player)) return;
+	if (!bWasSuccess)
+	{
+		UE_LOG(LogOnsetAuth, Warning, TEXT("Steam packet-auth failed; account work was not started."));
+		return;
+	}
+	if (Player.IsValid() && Player->HasAuthority())
+	{
+		UE_LOG(LogOnsetAuth, Log, TEXT("Steam packet-auth succeeded; continuing account login."));
+		HandlePostLogin(Player.Get());
+	}
 }
 
 TArray<uint8> UOnsetAuthSubsystem::HmacSha256(const TArray<uint8>& Key, const TArray<uint8>& Data)
