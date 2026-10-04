@@ -36,10 +36,6 @@ public:
 	void SetIdleAutoCombatDelaySeconds(float Seconds);
 
 	
-	/** Steam auth ticket (server-only, never replicated). */
-	UPROPERTY()
-	FString SteamAuthTicket;
-
 	/** Platform identifier (e.g. "Steam" / "Xbox" / "PSN"). Replicated for client display. */
 	UPROPERTY(Replicated)
 	FString PlayerPlatform;

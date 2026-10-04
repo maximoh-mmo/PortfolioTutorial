@@ -7,21 +7,12 @@
 
 bool FSteamAuth::ValidateTicket(APlayerController* PC, const FString& Ticket)
 {
-	if (!PC)
-		return false;
-
-	if (Ticket.IsEmpty())
-	{
-		UE_LOG(LogSteamAuth, Warning, TEXT("FSteamAuth: empty ticket from %s"), *PC->GetName());
-		return false;
-	}
-
-	// Transport-level Steam auth is handled by OnlineSubsystemSteam on connection.
-	// The ticket arrival confirms the client has an active Steam session.
-	// Full BeginAuthSession validation can be added here when Steamworks SDK headers
-	// are directly accessible from the game module.
-	UE_LOG(LogSteamAuth, Log, TEXT("FSteamAuth: ticket accepted from %s (%d chars)"), *PC->GetName(), Ticket.Len());
-	return true;
+	// Gameplay-level tickets are not an authentication boundary. The Steam packet
+	// handler validates the connection before a player controller is admitted. Fail
+	// closed here so future callers cannot accidentally restore the old empty-string
+	// check as an authentication path.
+	UE_LOG(LogSteamAuth, Warning, TEXT("FSteamAuth: deprecated gameplay ticket validation was ignored."));
+	return false;
 }
 
 FString FSteamAuth::GetPlatformID(APlayerController* PC)

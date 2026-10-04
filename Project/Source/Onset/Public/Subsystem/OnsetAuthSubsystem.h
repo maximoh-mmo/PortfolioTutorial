@@ -76,8 +76,8 @@ public:
 	/** Persists + cleans up the leaving player (threat tables, engagement). */
 	void HandleLogout(AController* Exiting);
 
-	/** Direct mode: validates a client-sent Steam ticket via BeginAuthSession; rejects the
-	 *  connection on failure and starts the auth-timeout handshake on success. */
+	/** Deprecated compatibility entry point. Steam connection authentication is performed
+	 * by OnlineSubsystemSteam's packet handler before gameplay RPCs are available. */
 	void ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket);
 
 	/** Builds + signs a session token for the given identity (Token mode issue path). */

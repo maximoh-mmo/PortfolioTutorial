@@ -28,5 +28,19 @@ Prepare a portable Windows client and two local servers before changing Onset au
   evidence only; character selection and token handoff were not exercised.
 - Server logs retain unset StateTree errors and a missing loading-screen class warning.
 
-Actual server ticket validation, two-machine login/logout and DirectAuth-to-TokenAuth
-handoff are still pending. Successful ticket acquisition does not satisfy those gates.
+## Steam packet-auth migration (2026-10-04)
+
+- Enabled `OnlineSubsystemSteam.SteamAuthComponentModuleInterface` in the project
+  packet-handler configuration. It calls `SteamGameServer::BeginAuthSession` during
+  connection establishment, before player-controller RPCs are available.
+- Legacy gameplay ticket submission and validation are compatibility no-ops. They no
+  longer accept, store, or log ticket material; the standalone legacy validator fails
+  closed if called.
+- OnsetClient and OnsetServer Development builds passed with the change.
+- The new packaged client passed its Steam ticket smoke test and packaged-config
+  inspection. The matching server package started with `Steam Auth Enabled` and the
+  Steam dedicated-server API initialized.
+- A distinct LAN Steam client passed packet-handler acceptance on LoginServer and
+  DemoLevel, then completed DirectAuth character selection and TokenAuth handoff.
+
+Ticket rejection and logout/revocation remain required checks before production rollout.

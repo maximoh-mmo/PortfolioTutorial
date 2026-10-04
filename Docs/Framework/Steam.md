@@ -57,9 +57,14 @@ it is not suppressed or treated as server validation.
 
 ## Migration gate
 
-Inspection found that Onset's existing `FSteamAuth::ValidateTicket` and
-`UOnsetAuthSubsystem::ValidateAuthTicket` only reject empty ticket strings. Their comments
-must not be treated as evidence of transport authentication. Before migrating production
-login, establish actual verifier behavior and run accept/reject, logout and handoff checks
-with distinct Steam clients. Keep Onset consumers on their existing route until that gate
-passes; do not substitute a successful client ticket acquisition for proof of validation.
+Onset now enables `OnlineSubsystemSteam.SteamAuthComponentModuleInterface` through
+`PacketHandlerComponents`. On a dedicated server, that handler sends the connection ticket
+to `SteamGameServer::BeginAuthSession` and processes Steam's asynchronous response. The
+former gameplay RPC ticket route is retained only as a compatibility no-op, and
+`FSteamAuth::ValidateTicket` fails closed if called.
+
+The 2026-10-04 LAN test recorded packet-handler acceptance for a distinct Steam client on
+both the DirectAuth login server and TokenAuth game server, followed by successful character
+handoff. Before production migration, retain explicit malformed-ticket rejection and
+logout/revocation regression checks; a successful client ticket acquisition alone is not
+proof of either behavior.

@@ -71,36 +71,10 @@ AOnsetPlayerController::AOnsetPlayerController()
 
 void AOnsetPlayerController::RequestSteamAuth()
 {
-	if (!GetLocalPlayer())
-	{
-		return;
-	}
-
-	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld(), STEAM_SUBSYSTEM);
-	if (!Subsystem || !Subsystem->IsEnabled())
-	{
-		UE_LOG(LogSteamAuth, Log, TEXT("Steam not available — skipping auth (LAN mode)."));
-		return;
-	}
-
-	IOnlineIdentityPtr Identity = Subsystem->GetIdentityInterface();
-	if (!Identity.IsValid())
-	{
-		UE_LOG(LogSteamAuth, Warning, TEXT("Steam available but identity interface missing — skipping auth."));
-		return;
-	}
-
-	const FString AuthTicket = Identity->GetAuthToken(0);
-	if (AuthTicket.IsEmpty())
-	{
-		UE_LOG(LogSteamAuth, Error, TEXT("Steam auth ticket is empty — cannot authenticate."));
-		return;
-	}
-
-	UE_LOG(LogSteamAuth, Log, TEXT("Auth ticket obtained (%d chars), sending to server."), AuthTicket.Len());
-	Server_SendAuthTicket(AuthTicket);
-
-	GetWorldTimerManager().SetTimer(AuthTimeoutTimerHandle, this, &AOnsetPlayerController::OnAuthTimeout, 10.0f, false);
+	// Authentication is handled by OnlineSubsystemSteam's packet handler before this
+	// controller exists on the server. Keep this Blueprint entry point as a no-op for
+	// existing content that still calls it during BeginPlay.
+	UE_LOG(LogSteamAuth, VeryVerbose, TEXT("Steam connection authentication is handled by the packet handler."));
 }
 
 void AOnsetPlayerController::OnAuthTimeout()
@@ -180,11 +154,9 @@ void AOnsetPlayerController::Client_ClearAuthTimeout_Implementation()
 
 void AOnsetPlayerController::Server_SendAuthTicket_Implementation(const FString& AuthTicket)
 {
-	UOnsetAuthSubsystem* Auth = GetWorld()->GetSubsystem<UOnsetAuthSubsystem>();
-	if (Auth)
-	{
-		Auth->ValidateAuthTicket(this, AuthTicket);
-	}
+	// Deprecated compatibility RPC. Tickets are never accepted through gameplay RPCs;
+	// the Steam packet handler validates them during the connection handshake.
+	UE_LOG(LogSteamAuth, Warning, TEXT("Ignored deprecated gameplay Steam-ticket RPC."));
 }
 
 void AOnsetPlayerController::StartAutoAttack()

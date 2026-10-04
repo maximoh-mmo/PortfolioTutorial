@@ -246,30 +246,11 @@ void UOnsetAuthSubsystem::HandleLogout(AController* Exiting)
 
 void UOnsetAuthSubsystem::ValidateAuthTicket(APlayerController* NewPlayer, const FString& AuthTicket)
 {
-	if (!NewPlayer) return;
-
-	if (AuthTicket.IsEmpty())
-	{
-		UE_LOG(LogOnsetAuth, Error, TEXT("Steam auth failed — empty ticket from player, kicking."));
-		NewPlayer->Destroy();
-		return;
-	}
-
-	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
-	if (PC)
-	{
-		PC->ClearAuthTimeout();
-		PC->Client_ClearAuthTimeout();
-	}
-
-	AOnsetPlayerState* PS = NewPlayer->GetPlayerState<AOnsetPlayerState>();
-	if (PS)
-	{
-		PS->SteamAuthTicket = AuthTicket;
-	}
-
-	UE_LOG(LogOnsetAuth, Log, TEXT("Steam auth ticket accepted for player %s (%d chars)."),
-		*NewPlayer->GetName(), AuthTicket.Len());
+	// Gameplay RPC ticket validation was replaced by the Steam packet handler. It uses
+	// SteamGameServer::BeginAuthSession before gameplay RPCs are available and receives
+	// Steam's asynchronous validation result. Retain this entry point temporarily for
+	// source compatibility, but do not accept, persist, or log caller-provided tickets.
+	UE_LOG(LogOnsetAuth, Warning, TEXT("Ignored deprecated gameplay Steam-ticket validation request."));
 }
 
 TArray<uint8> UOnsetAuthSubsystem::HmacSha256(const TArray<uint8>& Key, const TArray<uint8>& Data)

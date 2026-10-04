@@ -38,12 +38,12 @@ Milestone 7 client adapter is implemented: mock lifecycle tests and live acquisi
 of session and Web API tickets pass with Steam App ID 480 on 2026-10-03. The live run records
 the OSS warning for an MH-owned Web API handle. Editor and server builds pass; the server
 target intentionally cannot acquire local client tickets. See [Steam guide](../../Docs/Framework/Steam.md).
-Milestone 8 remains gated on validated client/server authentication and two-client regressions;
-the existing ticket handlers only check for nonempty strings. The user can provide a second
-Steam client on a second Windows 11 machine on the same LAN. The client-only package,
-credential inspection and packaged Steam acquisition/release smoke pass on 2026-10-03.
-See [LAN setup](../../Docs/Framework/LanTesting.md). Two-machine execution and actual
-server ticket verification remain pending. Milestones 9 onward remain pending.
+Milestone 8 now has Steam packet-handler authentication enabled: it starts dedicated-server
+ticket validation before gameplay RPCs, and a distinct LAN Steam client completed packet
+handler acceptance plus DirectAuth-to-TokenAuth handoff on 2026-10-04. The client-only
+package, credential inspection and packaged Steam acquisition/release smoke pass. See
+[LAN setup](../../Docs/Framework/LanTesting.md). Explicit malformed-ticket rejection and
+logout/revocation regressions remain pending. Milestones 9 onward remain pending.
 See [identity contract](../../Docs/Framework/Identity.md).
 Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).

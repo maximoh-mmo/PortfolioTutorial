@@ -1,6 +1,6 @@
 # Windows LAN test setup
 
-The second machine needs Windows 11 and Steam signed into a **different account** from
+The second machine needs Windows 10 or Windows 11 and Steam signed into a **different account** from
 the first client. It does not need Unreal Engine, Visual Studio, Git, Docker or PostgreSQL.
 This development package uses Steam test App ID 480. No Steam password or publisher key
 is needed by the test launchers.
@@ -34,7 +34,8 @@ The scripts do not modify firewall rules or create a network share.
 
 ## Server on the development computer
 
-Use the matching freshly built server archive, then run:
+Use the matching freshly built server archive, then run. Replace the placeholder with
+the real directory path; do not include the angle brackets.
 
 To build that archive from source, run `Scripts/Framework/Validate-Server.ps1
 -EngineRoot 'Z:\UnrealEngine'`. Its output directory contains `archive/WindowsServer`
@@ -50,10 +51,13 @@ The launcher starts a DirectAuth login server on 17877 and a TokenAuth game serv
 17878, with separate Steam query ports 17879 and 17880. It prints both process IDs, the
 log directory and an exact stop command. Each run gets one fresh SQLite database shared
 by the two servers. It overrides datastore selection, the shared development secret,
-AuthMode and the game-server LAN address; existing databases are not used. This first
-run exercises the legacy login and handoff path. Do not call a successful connection
-proof of Steam authentication: the existing ticket handlers only reject empty strings.
-Validated ticket accept/reject, logout and TokenAuth handoff remain migration gates.
+AuthMode and the game-server LAN address; existing databases are not used.
+
+Steam's packet handler is enabled in the packaged client and server. It starts Steam's
+dedicated-server ticket validation during the network handshake, before gameplay RPCs
+are available. A remote two-machine acceptance test passed on 2026-10-04, including
+DirectAuth login and TokenAuth character handoff. Rejection and logout/revocation cases
+remain required checks before production rollout.
 
 ## Build and package on the development computer
 
