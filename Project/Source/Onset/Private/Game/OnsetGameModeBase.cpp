@@ -32,11 +32,6 @@ DEFINE_LOG_CATEGORY(LogSteamAuth);
 		DefaultPawnClass = PlayerBP.Class;
 	}
 	PlayerControllerClass = AOnsetPlayerController::StaticClass();
-	static ConstructorHelpers::FClassFinder<APlayerController> ControllerBP(TEXT("/Game/Input/MyOnsetPlayerController.MyOnsetPlayerController_C"));
-	if (ControllerBP.Class != nullptr)
-	{
-		PlayerControllerClass = ControllerBP.Class;
-	}
 	PlayerStateClass = AOnsetPlayerState::StaticClass();
 	GameStateClass = AOnsetGameState::StaticClass();
 	HUDClass = nullptr;
