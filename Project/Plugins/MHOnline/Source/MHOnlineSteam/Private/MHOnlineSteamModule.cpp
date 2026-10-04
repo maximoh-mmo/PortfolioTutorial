@@ -109,6 +109,17 @@ private:
 				GameServer->BLoggedOn() ? 1 : 0, SteamGameServer_BSecure() ? 1 : 0);
 		}
 
+		// OnlineSubsystemSteam normally does this only while creating an advertised
+		// online session. Onset's LAN servers do not create such a session, but
+		// Steam ticket validation still requires the Game Server backend logon.
+		if (GameServer && !bAnonymousLogonRequested && !GameServer->BLoggedOn())
+		{
+			GameServer->SetDedicatedServer(true);
+			GameServer->LogOnAnonymous();
+			bAnonymousLogonRequested = true;
+			UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: anonymous game-server logon requested."));
+		}
+
 		StatusLogSeconds += DeltaSeconds;
 		if (ServerDiagnostics && StatusLogSeconds >= 15.0f)
 		{
@@ -122,6 +133,7 @@ private:
 
 	FTSTicker::FDelegateHandle StartupTicker;
 	TUniquePtr<FMHSteamServerDiagnostics> ServerDiagnostics;
+	bool bAnonymousLogonRequested = false;
 	float StatusLogSeconds = 0.0f;
 #endif
 };
