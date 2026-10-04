@@ -5,6 +5,7 @@
 #include "Misc/App.h"
 THIRD_PARTY_INCLUDES_START
 #include "steam/steam_api.h"
+#include "steam/steam_gameserver.h"
 THIRD_PARTY_INCLUDES_END
 
 DEFINE_LOG_CATEGORY_STATIC(LogMHOnlineSteam, Log, All);
@@ -42,31 +43,32 @@ private:
 	STEAM_GAMESERVER_CALLBACK(FMHSteamServerDiagnostics, OnPolicyResponse, GSPolicyResponse_t, PolicyResponseCallback);
 	STEAM_GAMESERVER_CALLBACK(FMHSteamServerDiagnostics, OnValidateAuthTicketResponse, ValidateAuthTicketResponse_t, ValidateAuthTicketResponseCallback);
 
-	void OnServersConnected(SteamServersConnected_t*)
-	{
-		UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: game-server backend connected."));
-	}
-
-	void OnServersDisconnected(SteamServersDisconnected_t* Data)
-	{
-		UE_LOG(LogMHOnlineSteam, Warning, TEXT("Steam diagnostics: game-server backend disconnected (result=%d)."), static_cast<int32>(Data->m_eResult));
-	}
-
-	void OnServerConnectFailure(SteamServerConnectFailure_t* Data)
-	{
-		UE_LOG(LogMHOnlineSteam, Warning, TEXT("Steam diagnostics: game-server backend connection failure (result=%d, retrying=%d)."), static_cast<int32>(Data->m_eResult), Data->m_bStillRetrying ? 1 : 0);
-	}
-
-	void OnPolicyResponse(GSPolicyResponse_t* Data)
-	{
-		UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: game-server policy response (secure=%d)."), Data->m_bSecure ? 1 : 0);
-	}
-
-	void OnValidateAuthTicketResponse(ValidateAuthTicketResponse_t* Data)
-	{
-		UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: ticket validation callback received (response=%d)."), static_cast<int32>(Data->m_eAuthSessionResponse));
-	}
 };
+
+void FMHSteamServerDiagnostics::OnServersConnected(SteamServersConnected_t*)
+{
+	UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: game-server backend connected."));
+}
+
+void FMHSteamServerDiagnostics::OnServersDisconnected(SteamServersDisconnected_t* Data)
+{
+	UE_LOG(LogMHOnlineSteam, Warning, TEXT("Steam diagnostics: game-server backend disconnected (result=%d)."), static_cast<int32>(Data->m_eResult));
+}
+
+void FMHSteamServerDiagnostics::OnServerConnectFailure(SteamServerConnectFailure_t* Data)
+{
+	UE_LOG(LogMHOnlineSteam, Warning, TEXT("Steam diagnostics: game-server backend connection failure (result=%d, retrying=%d)."), static_cast<int32>(Data->m_eResult), Data->m_bStillRetrying ? 1 : 0);
+}
+
+void FMHSteamServerDiagnostics::OnPolicyResponse(GSPolicyResponse_t* Data)
+{
+	UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: game-server policy response (secure=%d)."), Data->m_bSecure ? 1 : 0);
+}
+
+void FMHSteamServerDiagnostics::OnValidateAuthTicketResponse(ValidateAuthTicketResponse_t* Data)
+{
+	UE_LOG(LogMHOnlineSteam, Log, TEXT("Steam diagnostics: ticket validation callback received (response=%d)."), static_cast<int32>(Data->m_eAuthSessionResponse));
+}
 #endif
 
 class FMHOnlineSteamModule final : public IModuleInterface
@@ -108,7 +110,7 @@ private:
 		return true;
 	}
 
-	FDelegateHandle StartupTicker;
+	FTSTicker::FDelegateHandle StartupTicker;
 	TUniquePtr<FMHSteamServerDiagnostics> ServerDiagnostics;
 #endif
 };
