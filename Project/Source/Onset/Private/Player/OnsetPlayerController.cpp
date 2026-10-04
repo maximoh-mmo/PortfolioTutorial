@@ -90,6 +90,7 @@ void AOnsetPlayerController::ClearAuthTimeout()
 void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccountData& InAccountData)
 {
 	CachedAccountData = InAccountData;
+	bAccountDataReady = true;
 	bShowMouseCursor = true;
 	SetInputMode(FInputModeGameAndUI());
 	OnAccountDataChanged.Broadcast();

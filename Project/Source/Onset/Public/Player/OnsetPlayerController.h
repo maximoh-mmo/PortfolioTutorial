@@ -200,6 +200,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Onset|Auth")           
 	FOnsetAccountData CachedAccountData; 
+
+	/** True after the server has accepted authentication and supplied account data for this connection. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Onset|Auth")
+	bool bAccountDataReady = false;
 private:
 	// --- Auto Combat ---
 	
@@ -354,6 +358,10 @@ private:
 		
 public:
 	const FOnsetAccountData& GetCachedAccountData() const { return CachedAccountData; }
+
+	/** Whether this connection has completed server-side authentication and received account data. */
+	UFUNCTION(BlueprintPure, Category = "Onset|Auth")
+	bool IsAccountDataReady() const { return bAccountDataReady; }
 
 	/** Broadcast whenever new account data arrives from the server (see Client_AccountData). */
 	UPROPERTY(BlueprintAssignable, Category = "Account")
