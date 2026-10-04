@@ -5,7 +5,8 @@ param(
     [Alias('Port')][ValidateRange(1024,65535)][int]$LoginPort = 17877,
     [ValidateRange(1024,65535)][int]$GamePort = 17878,
     [ValidateRange(1024,65535)][int]$LoginQueryPort = 17879,
-    [ValidateRange(1024,65535)][int]$GameQueryPort = 17880
+    [ValidateRange(1024,65535)][int]$GameQueryPort = 17880,
+    [switch]$VerboseSteamAuth
 )
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path -LiteralPath $PackageRoot).Path
@@ -28,6 +29,7 @@ $common = @('-unattended', '-NullRHI', '-nosound', '-nosplash', '-noanalytics',
     "-OnsetDataStoreURL=$run/local-test.db", '-ini:Engine:[Onset.Auth]:AuthTokenSecret=mh-lan-test-only',
     "-ini:Engine:[Onset.Auth]:GameServerIP=$BindAddress", "-ini:Engine:[Onset.Auth]:GameServerPort=$GamePort",
     '-ini:Engine:[OnlineSubsystemSteam]:SteamDevAppId=480')
+if ($VerboseSteamAuth) { $common += '-LogCmds=LogOnline Verbose' }
 $owned = @()
 try {
     foreach ($role in @(
