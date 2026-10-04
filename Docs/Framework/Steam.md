@@ -63,8 +63,11 @@ to `SteamGameServer::BeginAuthSession` and processes Steam's asynchronous respon
 former gameplay RPC ticket route is retained only as a compatibility no-op, and
 `FSteamAuth::ValidateTicket` fails closed if called.
 
-The 2026-10-04 LAN test recorded packet-handler acceptance for a distinct Steam client on
-both the DirectAuth login server and TokenAuth game server, followed by successful character
-handoff. Before production migration, retain explicit malformed-ticket rejection and
-logout/revocation regression checks; a successful client ticket acquisition alone is not
-proof of either behavior.
+The 2026-10-04 LAN test recorded callback-validated packet-handler authentication for a
+Steam client on the DirectAuth login server, followed by TokenAuth game-server handoff.
+The server bootstrap requested anonymous Game Server logon because Onset does not create an
+advertised OnlineSubsystem Steam session; both servers then reported backend connection and
+secure policy before accepting the client. A malformed-ticket test was refused during the
+packet handshake without `PostLogin`, account work or token issuance. Closing the accepted
+client ended its server-side Steam authentication session. These are development regressions;
+repeat them before a production deployment with the production App ID and server settings.

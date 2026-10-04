@@ -8,7 +8,7 @@
 - [ ] Pass UE 5.8 editor, game and server builds and plugin-load smoke check.
 - [x] Compile/link OnsetServer Win64 Development using source-built UE 5.8.3.
 - [x] Validate cooked dedicated-server startup with isolated SQLite and Token auth initialization.
-- [ ] Validate client login and runtime auth/persistence flows.
+- [x] Validate packet-authenticated client login, account creation, token handoff and malformed-ticket rejection.
 - [x] Implement MHCore result/error and request lifetime with automation tests.
 - [x] Implement backend session signing/verification and configuration.
 - [x] Implement async HTTP transport and loopback integration tests.
@@ -18,8 +18,9 @@
 - [x] Implement PostgreSQL provider and Unreal integration tests.
 - [x] Implement generic HTTP persistence protocol/provider and server fixture.
 - [ ] Repeat PostgreSQL integration on 5.8.3 once the local database is running again.
-- [ ] Implement identity contracts and Steam provider.
-- [ ] Migrate Onset auth and persistence with regression gates.
+- [x] Implement identity contracts and Steam provider.
+- [x] Migrate Onset DirectAuth and TokenAuth with regression gates.
+- [ ] Migrate Onset persistence with regression gates.
 
 See [roadmap](../../Planning/Framework/Roadmap.md) and [backlog](Backlog.md).
 
