@@ -71,3 +71,17 @@ secure policy before accepting the client. A malformed-ticket test was refused d
 packet handshake without `PostLogin`, account work or token issuance. Closing the accepted
 client ended its server-side Steam authentication session. These are development regressions;
 repeat them before a production deployment with the production App ID and server settings.
+
+The 2026-10-05 Connect-button regression exposed two callback lifecycle issues in the
+host's world subsystem: an outgoing world could unbind the incoming world's Steam result
+delegate, and validation arriving before `PostLogin` was discarded. Teardown now unbinds
+only the delegate owned by that subsystem. Early results are retained per Steam user,
+consumed once at `PostLogin`, and cleared at logout/world teardown. Account work still
+requires a successful asynchronous Steam validation result.
+
+`Onset.Auth.SteamEarlyResult` passed the early-success, rejection, latest-result,
+user-isolation and cleanup checks. Editor/server builds, cooking and dedicated-server
+startup checks also passed. A real Steam DirectAuth connection then produced the server's
+validation-success message and delivered `Client_AccountData` to the client, which created
+the main menu and exited cleanly. This headless check verifies the prerequisite for the
+Connect gate; the rendered button still needs confirmation in the packaged client.

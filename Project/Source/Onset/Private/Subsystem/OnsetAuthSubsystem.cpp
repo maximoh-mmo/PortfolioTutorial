@@ -85,11 +85,14 @@ void UOnsetAuthSubsystem::Deinitialize()
 	{
 		if (FOnlineSubsystemSteam* Steam = static_cast<FOnlineSubsystemSteam*>(IOnlineSubsystem::Get(STEAM_SUBSYSTEM)))
 		{
-			if (FOnlineAuthSteamUtilsPtr Utils = Steam->GetAuthInterfaceUtils(); Utils.IsValid())
+			if (FOnlineAuthSteamUtilsPtr Utils = Steam->GetAuthInterfaceUtils();
+				Utils.IsValid() && Utils->OnAuthenticationResultDelegate.IsBoundToObject(this))
 				Utils->OnAuthenticationResultDelegate.Unbind();
 		}
 	}
 	PendingSteamDirectAuth.Empty();
+	EarlySteamAuthResults.Reset();
+	bSteamAuthResultBound = false;
 	Super::Deinitialize();
 }
 
@@ -263,6 +266,12 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 void UOnsetAuthSubsystem::HandleLogout(AController* Exiting)
 {
 	AOnsetPlayerState* PS = Exiting ? Exiting->GetPlayerState<AOnsetPlayerState>() : nullptr;
+	if (PS && PS->GetUniqueId().IsValid())
+	{
+		const FString UserId = PS->GetUniqueId()->ToString();
+		PendingSteamDirectAuth.Remove(UserId);
+		EarlySteamAuthResults.Forget(UserId);
+	}
 	if (!PS || PS->SelectedCharacterSlot < 0) return;
 
 	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(Exiting);
@@ -291,6 +300,20 @@ bool UOnsetAuthSubsystem::QueueSteamDirectAuth(APlayerController* NewPlayer)
 		const FUniqueNetIdRepl UniqueId = PlayerState->GetUniqueId();
 		if (UniqueId.IsValid() && UniqueId.GetType() == STEAM_SUBSYSTEM)
 		{
+			bool bWasSuccess = false;
+			if (EarlySteamAuthResults.Consume(UniqueId->ToString(), bWasSuccess))
+			{
+				if (bWasSuccess)
+				{
+					UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: Steam packet-auth already succeeded; continuing account login."));
+					HandlePostLogin(NewPlayer);
+				}
+				else
+				{
+					UE_LOG(LogOnsetAuth, Warning, TEXT("PostLogin: Steam packet-auth already failed; account work was not started."));
+				}
+				return true;
+			}
 			PendingSteamDirectAuth.Add(UniqueId->ToString(), NewPlayer);
 			UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: awaiting Steam packet-auth result for %s"), *NewPlayer->GetName());
 			return true;
@@ -301,8 +324,14 @@ bool UOnsetAuthSubsystem::QueueSteamDirectAuth(APlayerController* NewPlayer)
 
 void UOnsetAuthSubsystem::OnSteamAuthenticationResult(const FUniqueNetId& UserId, bool bWasSuccess)
 {
+	if (!UserId.IsValid()) return;
 	TWeakObjectPtr<APlayerController> Player;
-	if (!PendingSteamDirectAuth.RemoveAndCopyValue(UserId.ToString(), Player)) return;
+	if (!PendingSteamDirectAuth.RemoveAndCopyValue(UserId.ToString(), Player))
+	{
+		EarlySteamAuthResults.Record(UserId.ToString(), bWasSuccess);
+		UE_LOG(LogOnsetAuth, Log, TEXT("Steam packet-auth result received before PostLogin (success=%d)."), bWasSuccess);
+		return;
+	}
 	if (!bWasSuccess)
 	{
 		UE_LOG(LogOnsetAuth, Warning, TEXT("Steam packet-auth failed; account work was not started."));
