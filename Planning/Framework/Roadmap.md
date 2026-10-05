@@ -46,7 +46,11 @@ handoff. The malformed-ticket regression was refused during the packet handshake
 server-side `PostLogin`, account work or token issuance. The valid-client disconnect also
 ended its Steam authentication session. The client-only package, credential inspection and
 packaged Steam acquisition/release smoke pass. See [LAN setup](../../Docs/Framework/LanTesting.md).
-Milestone 9 is next.
+On 2026-10-05, the remaining Onset token consumer was migrated to MHBackendCore through a
+small host adapter. It retains the exact deployed token envelope and enforces Onset's
+character-slot range at the host boundary. OnsetEditor, OnsetServer, cooked server startup
+and OnsetClient builds pass on source UE 5.8.3; `Onset.Auth.SessionTokens` passes its
+legacy-format, expiry, tamper and slot validation checks. Milestone 9 is next.
 See [identity contract](../../Docs/Framework/Identity.md).
 Production migration must wait for server validation.
 See [foundation sprint](Sprint_01_Foundation.md).

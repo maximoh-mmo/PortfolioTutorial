@@ -25,9 +25,8 @@ enum class EOnsetAuthMode : uint8
 };
 
 /**
- * Payload carried by a session token (base64 of "Platform|PlatformID|Expiry|Signature").
- * Signature is HMAC-SHA256(AuthTokenSecret, "Platform|PlatformID|Expiry") so the server
- * can verify authenticity without storing token state.
+ * Historical data holder. The wire envelope is Base64(UTF8(PlatformID|Platform|Slot|Expiry))
+ * followed by a period and Base64(HMAC-SHA256 over those UTF-8 payload bytes).
  */
 struct FOnsetSessionToken
 {
@@ -37,7 +36,7 @@ struct FOnsetSessionToken
 	FString Platform;
 	/** Unix timestamp after which the token must be rejected. */
 	int64 ExpiryUnix = 0;
-	/** Hex-encoded HMAC-SHA256 over "Platform|PlatformID|Expiry". */
+	/** Base64-encoded HMAC-SHA256. */
 	FString Signature;
 
 	bool IsValid() const { return !PlatformID.IsEmpty() && !Platform.IsEmpty() && ExpiryUnix > 0; }
@@ -66,8 +65,8 @@ public:
 	/** The auth mode resolved from config at Initialize (Direct when unset). */
 	EOnsetAuthMode GetAuthMode() const { return AuthMode; }
 
-	/** Token mode gate: validates ?Token= from the login options. Returns empty on failure
-	 *  (caller rejects the connection); on success fills OutPlatform/OutPlatformID and
+	/** Token mode gate: validates ?Token= from the login options. Returns an error on failure
+	 *  (caller rejects the connection); on success returns empty, fills OutPlatform/OutPlatformID and
 	 *  caches identity for HandlePostLogin keyed by address. */
 	FString PreLoginTokenAuth(const FString& Options, const FString& Address, FString& OutPlatform, FString& OutPlatformID);
 	/** Direct mode gate: resolves platform identity from the net connection (no Steam call here). */
@@ -98,9 +97,6 @@ public:
 	};
 
 private:
-	/** Pure-software HMAC-SHA256 (no platform dependency; see TODO/DONE A5c notes). */
-	static TArray<uint8> HmacSha256(const TArray<uint8>& Key, const TArray<uint8>& Data);
-
 	EOnsetAuthMode AuthMode = EOnsetAuthMode::Direct;
 	FString AuthTokenSecret;
 	int32 AuthTokenLifetimeSeconds = 300;

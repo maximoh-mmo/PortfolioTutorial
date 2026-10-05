@@ -21,6 +21,11 @@ public class Onset : ModuleRules
 
 		// Data store (SQLite/PostgreSQL) — abstracted via IPlayerDataStore
 		PublicDependencyModuleNames.Add("OnsetDataStore");
+
+		// Signing/verifying is server-side; clients only carry opaque session tokens.
+		if (Target.Type != TargetType.Client)
+		{
+			PrivateDependencyModuleNames.Add("MHBackendCore");
+		}
 	}
 }
-	

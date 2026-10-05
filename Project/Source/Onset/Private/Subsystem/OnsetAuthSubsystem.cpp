@@ -1,13 +1,12 @@
 #include "Subsystem/OnsetAuthSubsystem.h"
 
-#include "SHA256.h"
+#include "Data/OnsetSessionTokens.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Player/OnsetPlayerState.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
 #include "GameFramework/GameModeBase.h"
 #include "Engine/World.h"
-#include "Misc/Base64.h"
 #include "Misc/DateTime.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
@@ -44,6 +43,7 @@ void UOnsetAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		AuthMode = EOnsetAuthMode::Direct;
 	}
 
+#if WITH_SERVER_CODE
 	FString Secret;
 	GConfig->GetString(TEXT("Onset.Auth"), TEXT("AuthTokenSecret"), Secret, GEngineIni);
 	if (!Secret.IsEmpty())
@@ -62,6 +62,7 @@ void UOnsetAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		AuthTokenLifetimeSeconds = Lifetime;
 	}
+#endif
 
 	UE_LOG(LogOnsetAuth, Log, TEXT("AuthSubsystem initialized: AuthMode=%s, TokenLifetime=%ds"),
 		*AuthModeStr, AuthTokenLifetimeSeconds);
@@ -160,13 +161,13 @@ void UOnsetAuthSubsystem::HandlePostLogin(APlayerController* NewPlayer)
 		FString CleanAddress;
 		Address.Split(TEXT(":"), &CleanAddress, nullptr, ESearchCase::IgnoreCase, ESearchDir::FromStart);
 		if (CleanAddress.IsEmpty()) CleanAddress = Address;
-		if (FPendingTokenAuth* Pending = PendingTokenAuthMap.Find(CleanAddress))
+		FPendingTokenAuth Pending;
+		if (PendingTokenAuthMap.RemoveAndCopyValue(CleanAddress, Pending))
 		{
-			Platform = Pending->Platform;
-			PlatformID = Pending->PlatformID;
-			PlayerState->SelectedCharacterSlot = Pending->SlotIndex;
-			PendingTokenAuthMap.Remove(Address);
-			UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: using token auth — %s/%s slot=%d"), *Platform, *PlatformID, Pending->SlotIndex);
+			Platform = Pending.Platform;
+			PlatformID = Pending.PlatformID;
+			PlayerState->SelectedCharacterSlot = Pending.SlotIndex;
+			UE_LOG(LogOnsetAuth, Log, TEXT("PostLogin: using token auth — %s/%s slot=%d"), *Platform, *PlatformID, Pending.SlotIndex);
 		}
 		else
 		{
@@ -344,74 +345,15 @@ void UOnsetAuthSubsystem::OnSteamAuthenticationResult(const FUniqueNetId& UserId
 	}
 }
 
-TArray<uint8> UOnsetAuthSubsystem::HmacSha256(const TArray<uint8>& Key, const TArray<uint8>& Data)
-{
-	constexpr int32 BlockSize = 64;
-	TArray<uint8> K = Key;
-
-	if (K.Num() > BlockSize)
-	{
-		FSHA256Signature Hash;
-		
-		FSHA256::GetSHA256Signature(K.GetData(), K.Num(), Hash);
-		K.Empty();
-	K.Append(Hash.Signature, 32);
-	}
-
-	while (K.Num() < BlockSize)
-	{
-		K.Add(0);
-	}
-
-	TArray<uint8> iPad;
-	iPad.SetNum(BlockSize);
-	TArray<uint8> oPad;
-	oPad.SetNum(BlockSize);
-	for (int32 i = 0; i < BlockSize; ++i)
-	{
-		iPad[i] = K[i] ^ 0x36;
-		oPad[i] = K[i] ^ 0x5C;
-	}
-
-	TArray<uint8> InnerInput;
-	InnerInput.Append(iPad);
-	InnerInput.Append(Data);
-
-	FSHA256Signature InnerHash;
-	FSHA256::GetSHA256Signature(InnerInput.GetData(), InnerInput.Num(), InnerHash);
-
-	TArray<uint8> OuterInput;
-	OuterInput.Append(oPad);
-	OuterInput.Append(InnerHash.Signature, 32);
-
-	FSHA256Signature OuterHash;
-	FSHA256::GetSHA256Signature(OuterInput.GetData(), OuterInput.Num(), OuterHash);
-
-	TArray<uint8> Result;
-	Result.Append(OuterHash.Signature, 32);
-	return Result;
-}
-
 FString UOnsetAuthSubsystem::GenerateToken(const FString& Platform, const FString& PlatformID, int32 SlotIndex)
 {
-	if (AuthTokenSecret.IsEmpty()) return {};
-
-	int64 NowUnix = FDateTime::UtcNow().ToUnixTimestamp();
-	int64 ExpiryUnix = NowUnix + AuthTokenLifetimeSeconds;
-
-	FString PayloadStr = FString::Printf(TEXT("%s|%s|%d|%lld"), *PlatformID, *Platform, SlotIndex, ExpiryUnix);
-	FTCHARToUTF8 PayloadConv(*PayloadStr);
-	TArray<uint8> PayloadBytes;
-	PayloadBytes.Append(reinterpret_cast<const uint8*>(PayloadConv.Get()), PayloadConv.Length());
-	FString PayloadB64 = FBase64::Encode(PayloadBytes);
-
-	FTCHARToUTF8 KeyConv(*AuthTokenSecret);
-	TArray<uint8> KeyBytes;
-	KeyBytes.Append(reinterpret_cast<const uint8*>(KeyConv.Get()), KeyConv.Length());
-	TArray<uint8> SigBytes = HmacSha256(KeyBytes, PayloadBytes);
-	FString SigB64 = FBase64::Encode(SigBytes);
-
-	return PayloadB64 + TEXT(".") + SigB64;
+#if WITH_SERVER_CODE
+	const auto Result = Onset::SessionTokens::Issue({AuthTokenSecret, AuthTokenLifetimeSeconds},
+		Platform, PlatformID, SlotIndex, FDateTime::UtcNow().ToUnixTimestamp());
+	if (const auto* Token = Result.GetValue()) return *Token;
+	UE_LOG(LogOnsetAuth, Warning, TEXT("GenerateToken: session token issuance failed"));
+#endif
+	return {};
 }
 
 bool UOnsetAuthSubsystem::ValidateToken(const FString& TokenStr, FString& OutPlatform, FString& OutPlatformID, int32& OutSlotIndex)
@@ -419,59 +361,17 @@ bool UOnsetAuthSubsystem::ValidateToken(const FString& TokenStr, FString& OutPla
 	OutPlatform.Empty();
 	OutPlatformID.Empty();
 	OutSlotIndex = -1;
-
-	if (TokenStr.IsEmpty()) return false;
-
-	FString PayloadB64, SigB64;
-	if (!TokenStr.Split(TEXT("."), &PayloadB64, &SigB64))
+#if WITH_SERVER_CODE
+	const auto Result = Onset::SessionTokens::Validate({AuthTokenSecret, AuthTokenLifetimeSeconds},
+		TokenStr, FDateTime::UtcNow().ToUnixTimestamp());
+	if (const auto* Claims = Result.GetValue())
 	{
-		UE_LOG(LogOnsetAuth, Warning, TEXT("ValidateToken: malformed token (no separator)"));
-		return false;
+		OutPlatform = Claims->Platform;
+		OutPlatformID = Claims->PlatformID;
+		OutSlotIndex = Claims->SlotIndex;
+		return true;
 	}
-
-	TArray<uint8> PayloadBytes;
-	if (!FBase64::Decode(PayloadB64, PayloadBytes))
-	{
-		UE_LOG(LogOnsetAuth, Warning, TEXT("ValidateToken: failed to decode payload"));
-		return false;
-	}
-
-	PayloadBytes.Add(0);
-	FString PayloadStr(UTF8_TO_TCHAR(PayloadBytes.GetData()));
-
-	TArray<FString> Parts;
-	PayloadStr.ParseIntoArray(Parts, TEXT("|"));
-	if (Parts.Num() != 4)
-	{
-		UE_LOG(LogOnsetAuth, Warning, TEXT("ValidateToken: payload has %d parts (expected 4)"), Parts.Num());
-		return false;
-	}
-
-	OutPlatformID = Parts[0];
-	OutPlatform = Parts[1];
-	OutSlotIndex = FCString::Atoi(*Parts[2]);
-	int64 ExpiryUnix = FCString::Atoi64(*Parts[3]);
-
-	if (ExpiryUnix < FDateTime::UtcNow().ToUnixTimestamp())
-	{
-		UE_LOG(LogOnsetAuth, Warning, TEXT("ValidateToken: token expired (exp=%lld, now=%lld)"),
-			ExpiryUnix, FDateTime::UtcNow().ToUnixTimestamp());
-		return false;
-	}
-
-	FTCHARToUTF8 KeyConv(*AuthTokenSecret);
-	TArray<uint8> KeyBytes;
-	KeyBytes.Append(reinterpret_cast<const uint8*>(KeyConv.Get()), KeyConv.Length());
-
-	PayloadBytes.Pop(); // remove null terminator before re-hashing
-	TArray<uint8> ExpectedSig = HmacSha256(KeyBytes, PayloadBytes);
-
-	TArray<uint8> ActualSig;
-	if (!FBase64::Decode(SigB64, ActualSig) || ExpectedSig != ActualSig)
-	{
-		UE_LOG(LogOnsetAuth, Warning, TEXT("ValidateToken: signature mismatch"));
-		return false;
-	}
-
-	return true;
+	UE_LOG(LogOnsetAuth, Warning, TEXT("ValidateToken: invalid or expired session token"));
+#endif
+	return false;
 }
