@@ -7,7 +7,6 @@
 #include "MainMenuScreen.generated.h"
 
 class AOnsetPlayerController;
-class UCommonButtonBase;
 
 UCLASS()
 class ONSET_API UMainMenuScreen : public UOnsetScreenBase
@@ -25,10 +24,6 @@ protected:
 	virtual void NativeOnActivated() override;
 	virtual void NativeDestruct() override;
 
-	/** Disabled until Client_AccountData confirms that server-side authentication completed. */
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCommonButtonBase> ConnectButton;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Menu")                                     
 	TSubclassOf<UCharacterSelectScreen> CharacterSelectScreenClass;    
 
@@ -38,5 +33,5 @@ private:
 	UFUNCTION()
 	void HandleAccountDataChanged();
 
-	TObjectPtr<AOnsetPlayerController> BoundPlayerController;
+	TWeakObjectPtr<AOnsetPlayerController> BoundPlayerController;
 };

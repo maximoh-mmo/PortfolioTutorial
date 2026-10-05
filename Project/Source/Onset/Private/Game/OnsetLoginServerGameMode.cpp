@@ -9,7 +9,12 @@
 AOnsetLoginServerGameMode::AOnsetLoginServerGameMode()
 {
 	HUDClass = nullptr;
-	PlayerControllerClass = AOnsetPlayerController::StaticClass();
+
+	static ConstructorHelpers::FClassFinder<APlayerController> ControllerBP(TEXT("/Game/Input/MyOnsetPlayerController.MyOnsetPlayerController_C"));
+	if (ControllerBP.Class != nullptr)
+	{
+		PlayerControllerClass = ControllerBP.Class;
+	}
 }
 
 void AOnsetLoginServerGameMode::PostLogin(APlayerController* NewPlayer)

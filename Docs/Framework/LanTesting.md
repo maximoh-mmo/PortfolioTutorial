@@ -66,6 +66,21 @@ remain required checks before production rollout.
   -OutputDirectory '<new absolute output directory>'
 ```
 
+The packaging script builds OnsetEditor before cooking so the cooker's reflected C++
+classes match the client. `-SkipBuild` skips only the client build; the editor build still
+runs. After changing C++ source, use the full build command above.
+
+The script also launches the cooked menu with rendering and Steam disabled to catch
+asset serialization failures. Its results are written to `startup-check/result.json`
+under the output directory; this check does not validate Steam authentication or the
+rendered UI.
+
+Validated 2026-10-05: the startup check reproduced the previous cooked-menu bad-export
+failure, then passed after building matching editor/client modules and removing the
+native property that shadowed the Blueprint's ConnectButton variable. The original
+MyOnsetPlayerController Blueprint remains the runtime controller. The Connect-button
+authentication gate still requires a live LAN UI check.
+
 The OnsetClient target excludes legacy database backends. `CustomConfig=MHLanTest` enables
 local test settings and a packaging denylist for credential keys. Before distributing a
 build, inspect the staged/package INI files to confirm filtering, and run the packaged

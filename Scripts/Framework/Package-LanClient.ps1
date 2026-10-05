@@ -22,6 +22,10 @@ function RunStep([string]$File, [string[]]$Arguments, [string]$Log) {
 }
 Push-Location -LiteralPath $repo
 try {
+    # Cooking serializes reflected classes from the editor DLL, so it must match
+    # the current source even when reusing an existing client executable.
+    RunStep (Join-Path $engine 'Engine/Build/BatchFiles/Build.bat') @('OnsetEditor', 'Win64', 'Development',
+        $project, '-WaitMutex', '-NoHotReloadFromIDE', '-NoUBA') (Join-Path $output 'editor-build.log')
     if (!$SkipBuild) {
         RunStep (Join-Path $engine 'Engine/Build/BatchFiles/Build.bat') @('OnsetClient', 'Win64', 'Development',
             $project, '-CustomConfig=MHLanTest', '-WaitMutex', '-NoHotReloadFromIDE', '-NoUBA') (Join-Path $output 'client-build.log')
@@ -48,5 +52,6 @@ try {
     Copy-Item -LiteralPath $redist -Destination $redistDestination
     Copy-Item -LiteralPath (Join-Path $repo 'Docs/Framework/LanTesting.md') -Destination (Join-Path $package 'README-LAN.md')
     & (Join-Path $PSScriptRoot 'Verify-LanPackage.ps1') -EngineRoot $engine -PackageRoot $package -InspectionDirectory (Join-Path $output 'config-inspection')
+    & (Join-Path $PSScriptRoot 'Test-LanClientStartup.ps1') -PackageRoot $package -ResultsDirectory (Join-Path $output 'startup-check')
     Write-Host "Packaged client: $package. Run Steam smoke before distribution."
 } finally { Pop-Location }

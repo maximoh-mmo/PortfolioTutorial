@@ -10,15 +10,15 @@ void UMainMenuScreen::NativeOnActivated()
 	Super::NativeOnActivated();
 
 	AOnsetPlayerController* PlayerController = GetOwningPlayer<AOnsetPlayerController>();
-	if (BoundPlayerController != PlayerController)
+	if (BoundPlayerController.Get() != PlayerController)
 	{
-		if (BoundPlayerController)
+		if (BoundPlayerController.IsValid())
 		{
 			BoundPlayerController->OnAccountDataChanged.RemoveDynamic(this, &UMainMenuScreen::HandleAccountDataChanged);
 		}
 
 		BoundPlayerController = PlayerController;
-		if (BoundPlayerController)
+		if (BoundPlayerController.IsValid())
 		{
 			BoundPlayerController->OnAccountDataChanged.AddDynamic(this, &UMainMenuScreen::HandleAccountDataChanged);
 		}
@@ -29,7 +29,7 @@ void UMainMenuScreen::NativeOnActivated()
 
 void UMainMenuScreen::NativeDestruct()
 {
-	if (BoundPlayerController)
+	if (BoundPlayerController.IsValid())
 	{
 		BoundPlayerController->OnAccountDataChanged.RemoveDynamic(this, &UMainMenuScreen::HandleAccountDataChanged);
 		BoundPlayerController = nullptr;
@@ -46,9 +46,11 @@ bool UMainMenuScreen::CanConnectToServer() const
 
 void UMainMenuScreen::RefreshConnectAvailability()
 {
-	if (ConnectButton)
+	// Keep the Blueprint's existing WBP_ButtonBase variable and graph pin type.
+	// A native BindWidget property with the same name shadows that variable.
+	if (UCommonButtonBase* Button = Cast<UCommonButtonBase>(GetWidgetFromName(TEXT("ConnectButton"))))
 	{
-		ConnectButton->SetIsEnabled(CanConnectToServer());
+		Button->SetIsEnabled(CanConnectToServer());
 	}
 }
 
