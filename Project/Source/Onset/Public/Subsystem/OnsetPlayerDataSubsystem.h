@@ -52,6 +52,9 @@ public:
 	bool DeleteCharacter(const FString& Platform, const FString& PlatformID, int32 SlotIndex);
 
 private:
+#if WITH_EDITOR
+    friend class UOnsetAppearanceIntegrationAuditCommandlet;
+#endif
 	TUniquePtr<IPlayerDataStore> Store;
 	FTimerHandle AutoSaveTimerHandle;
 

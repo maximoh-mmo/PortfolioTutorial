@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -29,7 +29,16 @@ protected:
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
+	virtual bool NativeOnHandleBackAction() override;
 	//~ End UCommonActivatableWidget interface
+
+	/** Explicit widget to focus when this screen activates. If unset, searches for the first focusable button. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Onset|Screen|Input")
+	TObjectPtr<UWidget> DesiredFocusWidget;
+
+	/** Recursively finds the first visible, enabled, focusable button under Root. */
+	UWidget* FindFirstFocusableChild(UWidget* Root) const;
 
 	/** Fired after the screen has activated. Hook per-screen setup here in Blueprint. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Onset|Screen", meta = (DisplayName = "On Screen Activated"))

@@ -8,6 +8,8 @@
 #include "GameplayTagContainer.h"
 #include "OnsetAbilityTypes.generated.h"
 
+class UAnimMontage;
+
 class UOnsetGameplayAbility;
 
 /** Which targeting/dispatch shape an ability uses. */

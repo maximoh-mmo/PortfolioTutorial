@@ -8,6 +8,7 @@
 #include "Data/OnsetItemTypes.h"
 #include "GameFramework/PlayerController.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "OnsetAppearanceTypes.h"
 #include "OnsetPlayerController.generated.h"
 
 struct FOnsetAccountData;
@@ -29,6 +30,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogGamepad, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogPlayerNavigation, Log, All);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnsetAccountDataChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnsetAppearanceResult, bool, bSuccess, const TArray<FOnsetAppearanceIssue>&, Issues);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMoveCompletedSignature, FAIRequestID, RequestID, EPathFollowingResult::Type, Result);
 
 UCLASS()
@@ -367,6 +369,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Account")
 	FOnsetAccountDataChanged OnAccountDataChanged;
 
+	/** Lets the active creation screen display server validation and persistence errors. */
+	UPROPERTY(BlueprintAssignable, Category = "Appearance")
+	FOnsetAppearanceResult OnCharacterAppearanceResult;
+
 	const FString& GetCachedSessionToken() const { return CachedSessionToken; }
 
 	UFUNCTION(BlueprintCallable, Category="Auth")
@@ -406,6 +412,10 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_CreateCharacter(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, int32 AppearancePresetIndex);
+    UFUNCTION(Server, Reliable) void Server_CreateCharacterWithAppearance(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, const FString& AppearanceJSON);
+    UFUNCTION(Server, Reliable) void Server_UpdateCharacterAppearance(const FString& AppearanceJSON);
+    UFUNCTION(Client, Reliable) void Client_CharacterAppearanceResult(bool bSuccess, const TArray<FOnsetAppearanceIssue>& Issues);
+    UFUNCTION(BlueprintImplementableEvent, Category="Appearance") void BP_OnCharacterAppearanceResult(bool bSuccess, const TArray<FOnsetAppearanceIssue>& Issues);
 
 	UFUNCTION(Server, Reliable)
 	void Server_DeleteCharacter(int32 SlotIndex);
@@ -467,6 +477,7 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+	void CreateCharacterRecord(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, const FString& AppearanceJSON);
 	void OnAuthTimeout();
 	FTimerHandle AuthTimeoutTimerHandle;
 

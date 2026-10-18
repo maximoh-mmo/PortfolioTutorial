@@ -1,6 +1,8 @@
+#include "UI/OnsetEnemyEditorWidget.h"
+#include "Editor.h"
+#include "Engine/Engine.h"
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "UI/OnsetEnemyEditorWidget.h"
 
 #include "AI/OnsetAIController.h"
 #include "Combat/OnsetEquipmentLibrary.h"

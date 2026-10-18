@@ -1,4 +1,6 @@
 #include "Enemy/OnsetEnemy.h"
+#include "Player/OnsetCharacterAppearanceComponent.h"
+#include "Engine/StaticMesh.h"
 
 #include "TimerManager.h"
 #include "Combat/OnsetEquipmentLibrary.h"
@@ -34,6 +36,8 @@ void AOnsetEnemy::ApplyProfile(UVisualProfile* InProfile)
 	checkf(!InProfile || !InProfile->SkeletalMesh.IsNull(),
 	       TEXT("ApplyProfile called with a VisualProfile that has no SkeletalMesh assigned"));
 	VisualProfile = InProfile;
+    // Explicit native recipes own the mesh; a later profile OnRep must not replace it.
+    if (CharacterAppearance && !CharacterAppearance->AppearanceJSON.IsEmpty()) { CharacterAppearance->ReapplyAppearance(); return; }
 	USkeletalMeshComponent* SkeletalComp = GetMesh();
 	if (!SkeletalComp) return;
 

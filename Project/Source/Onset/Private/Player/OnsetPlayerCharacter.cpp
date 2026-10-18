@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Player/OnsetPlayerCharacter.h"
+#include "Engine/World.h"
 
 #include "TimerManager.h"
 #include "Player/OnsetMovementValidationComponent.h"

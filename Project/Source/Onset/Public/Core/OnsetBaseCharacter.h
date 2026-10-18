@@ -8,6 +8,7 @@
 #include "OnsetPlayerDataTypes.h"
 #include "OnsetBaseCharacter.generated.h"
 
+class UOnsetCharacterAppearanceComponent;
 class UOnsetMovementAttributeSet;
 class UOnsetCombatAttributeSet;
 class UOnsetCCDiminishingComponent;
@@ -35,6 +36,9 @@ class ONSET_API AOnsetBaseCharacter : public ACharacter
 
 public:
 	AOnsetBaseCharacter();
+	/** Native appearance state, replicated independently of account ownership. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Appearance")
+	TObjectPtr<UOnsetCharacterAppearanceComponent> CharacterAppearance;
 	/** Binds the ASC's actor info to this pawn (owner + avatar); safe to re-run on re-possess. */
 	void InitAbilityActorInfo();
 	virtual void PossessedBy(AController* NewController) override;

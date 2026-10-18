@@ -21,6 +21,7 @@ router.get('/:platform/:id', authMiddleware, async (req, res) => {
         slotIndex: i,
         characterName: char?.characterName || '',
         level: char?.level || 1,
+        characterClass: char?.characterClass ?? 0,
         bOccupied: !!char,
       });
     }

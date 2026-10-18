@@ -9,11 +9,11 @@ public class Onset : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", 
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "OnsetAppearance", "Engine", "InputCore",
 			"EnhancedInput", "AIModule", "UMG", "NavigationSystem", "StateTreeModule", "GameplayStateTreeModule",
 			"GameplayAbilities", "GameplayTags", "GameplayTasks", "CommonUI"});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "SlateCore", "AITestSuite", "Json"});
+		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore", "AITestSuite", "Json"});
 
 		// Online features
 		PrivateDependencyModuleNames.Add("OnlineSubsystem");

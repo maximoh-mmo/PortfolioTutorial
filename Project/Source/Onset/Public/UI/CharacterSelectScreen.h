@@ -31,6 +31,7 @@ public:
 	void RefreshAccountData();
 	UFUNCTION(BlueprintCallable)
 	void CreateCharacter(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, int32 AppearancePresetIndex);
+    UFUNCTION(BlueprintCallable, Category="Character") void CreateCharacterWithAppearance(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, const FString& AppearanceJSON);
 
 protected:
 	TObjectPtr<AOnsetPlayerController> CachedPlayerController;

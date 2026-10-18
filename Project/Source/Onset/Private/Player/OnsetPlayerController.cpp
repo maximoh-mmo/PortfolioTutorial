@@ -2,6 +2,8 @@
 
 
 #include "Player/OnsetPlayerController.h"
+#include "Player/OnsetCharacterAppearanceComponent.h"
+#include "OnsetAppearanceLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
 #include "Game/OnsetGameModeBase.h"
@@ -35,6 +37,7 @@
 #include "UI/OnsetScreenBase.h"
 #include "UI/OnsetActivatableWidgetStack.h"
 #include "UI/InventoryScreen.h"
+#include "UI/CharacterCreationScreen.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
@@ -96,39 +99,51 @@ void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccou
 	OnAccountDataChanged.Broadcast();
 	BP_OnAccountDataUpdated();
 
-	// Test harness: -AutoPlaySlot=N auto-enters an occupied slot (no menu clicks).
+	// Test harness: -AutoPlaySlot=N auto-enters an occupied slot (or opens creation if unoccupied).
 	int32 AutoSlot = -1;
 	if (FParse::Value(FCommandLine::Get(), TEXT("AutoPlaySlot="), AutoSlot) && IsLocalController())
 	{
-		if (AutoSlot < 0 || AutoSlot >= CachedAccountData.Slots.Num() || !CachedAccountData.Slots[AutoSlot].bOccupied)
-		{
-			for (int32 SlotIdx = 0; SlotIdx < CachedAccountData.Slots.Num(); ++SlotIdx)
-			{
-				if (CachedAccountData.Slots[SlotIdx].bOccupied)
-				{
-					AutoSlot = SlotIdx;
-					break;
-				}
-			}
-		}
-		if (AutoSlot >= 0 && AutoSlot < CachedAccountData.Slots.Num() && CachedAccountData.Slots[AutoSlot].bOccupied)
-		{
-			AutoPlaySlotIndex = AutoSlot;
-			GetWorldTimerManager().SetTimer(AutoPlayTimerHandle, this, &AOnsetPlayerController::AutoPlaySelectCharacter, 0.5f, false);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Client_AccountData: AutoPlaySlot requested but no occupied slot found (slots=%d)"), CachedAccountData.Slots.Num());
-		}
+		AutoPlaySlotIndex = AutoSlot;
+		GetWorldTimerManager().SetTimer(AutoPlayTimerHandle, this, &AOnsetPlayerController::AutoPlaySelectCharacter, 0.5f, false);
 	}
 }
 
 void AOnsetPlayerController::AutoPlaySelectCharacter()
 {
-	if (AutoPlaySlotIndex >= 0 && AutoPlaySlotIndex < CachedAccountData.Slots.Num() && CachedAccountData.Slots[AutoPlaySlotIndex].bOccupied)
+	if (AutoPlaySlotIndex >= 0 && AutoPlaySlotIndex < CachedAccountData.Slots.Num())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AutoPlay: selecting character slot %d"), AutoPlaySlotIndex);
-		Server_SelectCharacter(AutoPlaySlotIndex);
+		if (CachedAccountData.Slots[AutoPlaySlotIndex].bOccupied)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("AutoPlay: selecting occupied character slot %d"), AutoPlaySlotIndex);
+			Server_SelectCharacter(AutoPlaySlotIndex);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("AutoPlay: slot %d unoccupied, opening character creation screen..."), AutoPlaySlotIndex);
+			UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>();
+			static UClass* CreationScreenClass = LoadClass<UCharacterCreationScreen>(nullptr, TEXT("/Game/UI/Screens/WBP_CharacterCreation.WBP_CharacterCreation_C"));
+			if (UI && CreationScreenClass)
+			{
+				UCharacterCreationScreen* CreationScreen = Cast<UCharacterCreationScreen>(UI->PushScreen(EOnsetUILayer::Menu, CreationScreenClass));
+				if (CreationScreen)
+				{
+					CreationScreen->SetPlayerController(this);
+					CreationScreen->SetSlotIndex(AutoPlaySlotIndex);
+					FTimerHandle AutoCreateHandle;
+					GetWorldTimerManager().SetTimer(AutoCreateHandle, [this, CreationScreen, Slot = AutoPlaySlotIndex]()
+					{
+						if (IsValid(CreationScreen))
+						{
+							CreationScreen->CreateCharacter(TEXT("DevOperative"), EOnsetCharacterClass::Tank, 0);
+						}
+					}, 2.0f, false);
+				}
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AutoPlay: slot %d out of range (slots=%d)"), AutoPlaySlotIndex, CachedAccountData.Slots.Num());
 	}
 }
 
@@ -392,17 +407,16 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 		PlayerChar->MovementValidator->SnapToCurrentPosition();
 	}
 
-	// Apply appearance preset if JSON is available
-	if (!CharData.AppearanceJSON.IsEmpty())
-	{
-		TSharedPtr<FJsonObject> AppObj;
-		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(CharData.AppearanceJSON);
-		if (FJsonSerializer::Deserialize(Reader, AppObj) && AppObj.IsValid())
-		{
-			int32 PresetIndex = AppObj->GetIntegerField(TEXT("PresetIndex"));
-			BP_ApplyAppearancePreset(PlayerChar, PresetIndex);
-		}
-	}
+    FOnsetAppearanceRecipe SavedRecipe; TArray<FOnsetAppearanceIssue> AppearanceIssues;
+    const bool bValidAppearance = CharData.AppearanceJSON.IsEmpty()
+        ? UOnsetCharacterAppearanceComponent::GetPlayerPreset(0, SavedRecipe)
+        : UOnsetCharacterAppearanceComponent::ResolveStoredAppearance(CharData.AppearanceJSON, SavedRecipe, AppearanceIssues);
+    if (bValidAppearance && PlayerChar->CharacterAppearance)
+    {
+        if (!PlayerChar->CharacterAppearance->SetAppearanceRecipe(SavedRecipe, AppearanceIssues))
+            UE_LOG(LogTemp, Warning, TEXT("OnPossess: could not assemble appearance for slot %d"), CharData.SlotIndex);
+    }
+    else UE_LOG(LogTemp, Warning, TEXT("OnPossess: unsupported saved appearance for slot %d; keeping the fallback mesh"), CharData.SlotIndex);
 
 	UE_LOG(LogTemp, Log, TEXT("OnPossess: restored %s (slot %d) at %s"),
 		*CharData.CharacterName, CharData.SlotIndex, *CharData.SavedPosition.ToString());
@@ -1040,6 +1054,19 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 			PlayerCharacter->ApplyCharacterProgression(CharData.Level, CharData.Experience, CharData.UnspentStatPoints, CharData.PrestigeLevel);
 			PlayerCharacter->SetPersistIdentity(PS->PlayerPlatform, PS->PlayerPlatformID, SlotIndex);
 
+			// Selection may reuse the pawn spawned for the account lobby. In that case
+			// OnPossess does not run again, so restore the selected slot's appearance here.
+			FOnsetAppearanceRecipe SavedRecipe;
+			TArray<FOnsetAppearanceIssue> AppearanceIssues;
+			const bool bValidAppearance = CharData.AppearanceJSON.IsEmpty()
+				? UOnsetCharacterAppearanceComponent::GetPlayerPreset(0, SavedRecipe)
+				: UOnsetCharacterAppearanceComponent::ResolveStoredAppearance(CharData.AppearanceJSON, SavedRecipe, AppearanceIssues);
+			if (!bValidAppearance || !PlayerCharacter->CharacterAppearance
+				|| !PlayerCharacter->CharacterAppearance->SetAppearanceRecipe(SavedRecipe, AppearanceIssues))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Server_SelectCharacter: could not assemble appearance for slot %d"), SlotIndex);
+			}
+
 			PlayerCharacter->GrantDefaultAbilities();
 
 			// Saved position was just restored - trust it (validator snap).
@@ -1058,13 +1085,31 @@ void AOnsetPlayerController::Server_SelectCharacter_Implementation(int32 SlotInd
 
 void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, int32 AppearancePresetIndex)
 {
-	if (SlotIndex < 0 || SlotIndex > 2 || CharacterName.IsEmpty()) return;
+    FOnsetAppearanceRecipe Recipe;
+    if (!UOnsetCharacterAppearanceComponent::GetPlayerPreset(AppearancePresetIndex, Recipe)) { TArray<FOnsetAppearanceIssue> Issues;auto& I=Issues.AddDefaulted_GetRef();I.Code=TEXT("InvalidPreset");I.Message=TEXT("Select a supported adult preset.");Client_CharacterAppearanceResult(false,Issues);return; }
+    FString JSON; if (!UOnsetAppearanceLibrary::EncodeRecipe(Recipe, JSON)) return;
+    Server_CreateCharacterWithAppearance_Implementation(SlotIndex, CharacterName, CharacterClass, JSON);
+}
+
+void AOnsetPlayerController::Server_CreateCharacterWithAppearance_Implementation(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, const FString& AppearanceJSON)
+{
+    FOnsetAppearanceRecipe Recipe; TArray<FOnsetAppearanceIssue> Issues;
+    if (!UOnsetAppearanceLibrary::DecodeAndValidateRecipe(AppearanceJSON, UOnsetCharacterAppearanceComponent::LoadDefaultCatalog(), EOnsetAppearanceUse::Player, Recipe, Issues))
+    { Client_CharacterAppearanceResult(false, Issues); return; }
+    FString Canonical; if (!UOnsetAppearanceLibrary::EncodeRecipe(Recipe, Canonical)) return;
+    CreateCharacterRecord(SlotIndex, CharacterName, CharacterClass, Canonical);
+}
+
+void AOnsetPlayerController::CreateCharacterRecord(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, const FString& AppearanceJSON)
+{
+    auto Reject=[this](FName Code,const FString& Message) { TArray<FOnsetAppearanceIssue> Issues;auto& I=Issues.AddDefaulted_GetRef();I.Code=Code;I.Message=Message;Client_CharacterAppearanceResult(false,Issues); };
+	if (SlotIndex < 0 || SlotIndex > 2 || CharacterName.TrimStartAndEnd().IsEmpty() || !StaticEnum<EOnsetCharacterClass>()->IsValidEnumValue(static_cast<int64>(CharacterClass))) { Reject(TEXT("InvalidCreationRequest"),TEXT("Slot, name or class is invalid."));return; }
 
 	AOnsetPlayerState* PS = GetPlayerState<AOnsetPlayerState>();
-	if (!PS) return;
+	if (!PS || PS->PlayerPlatform.IsEmpty() || PS->PlayerPlatformID.IsEmpty()) { Reject(TEXT("AccountUnavailable"),TEXT("No authenticated account identity is available."));return; }
 
 	UOnsetPlayerDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
-	if (!DataSubsystem) return;
+	if (!DataSubsystem) { Reject(TEXT("PersistenceUnavailable"),TEXT("Character storage is unavailable."));return; }
 
 	FOnsetAccountData AccountData;
 	if (DataSubsystem->LoadAccount(PS->PlayerPlatform, PS->PlayerPlatformID, AccountData))
@@ -1074,7 +1119,7 @@ void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotInd
 			if (Slot.SlotIndex == SlotIndex && Slot.bOccupied)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("Server_CreateCharacter: slot %d already occupied"), SlotIndex);
-				return;
+				Reject(TEXT("SlotOccupied"),TEXT("The character slot is already occupied."));return;
 			}
 		}
 	}
@@ -1099,15 +1144,6 @@ void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotInd
 		}
 	}
 
-	FOnsetCharacterAppearance Appearance;
-	Appearance.PresetIndex = FMath::Clamp(AppearancePresetIndex, 0, 255);
-	FString AppearanceJSON;
-	{
-		TSharedPtr<FJsonObject> AppObj = MakeShareable(new FJsonObject);
-		AppObj->SetNumberField(TEXT("PresetIndex"), Appearance.PresetIndex);
-		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&AppearanceJSON);
-		FJsonSerializer::Serialize(AppObj.ToSharedRef(), Writer);
-	}
 
 	FOnsetFullCharacterData NewChar;
 	NewChar.SlotIndex = SlotIndex;
@@ -1126,8 +1162,8 @@ void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotInd
 
 	if (DataSubsystem->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, NewChar))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Server_CreateCharacter: created '%s' (class=%d) in slot %d, preset %d"),
-			*CharacterName, static_cast<int32>(CharacterClass), SlotIndex, AppearancePresetIndex);
+		UE_LOG(LogTemp, Log, TEXT("Server_CreateCharacter: created '%s' (class=%d) in slot %d with native appearance"),
+			*CharacterName, static_cast<int32>(CharacterClass), SlotIndex);
 
 		// Send refreshed account data so the client cache is up to date.
 		FOnsetAccountData RefreshedAccount;
@@ -1136,10 +1172,13 @@ void AOnsetPlayerController::Server_CreateCharacter_Implementation(int32 SlotInd
 			Client_AccountData(RefreshedAccount);
 		}
 
+        TArray<FOnsetAppearanceIssue> Issues; Client_CharacterAppearanceResult(true,Issues);
 		// Enter the world with the newly created character.
 		Server_SelectCharacter(SlotIndex);
 	}
+	else Reject(TEXT("PersistenceFailed"), TEXT("The character could not be saved."));
 }
+
 
 void AOnsetPlayerController::Server_DeleteCharacter_Implementation(int32 SlotIndex)
 {
@@ -1699,4 +1738,36 @@ bool AOnsetPlayerController::IsFollowingAPath() const
 IPathFollowingAgentInterface* AOnsetPlayerController::GetPathFollowingAgent() const
 {
 	return PathFollowingComponent;
+}
+
+void AOnsetPlayerController::Client_CharacterAppearanceResult_Implementation(bool bSuccess, const TArray<FOnsetAppearanceIssue>& Issues)
+{ OnCharacterAppearanceResult.Broadcast(bSuccess, Issues); BP_OnCharacterAppearanceResult(bSuccess, Issues); }
+
+void AOnsetPlayerController::Server_UpdateCharacterAppearance_Implementation(const FString& JSON)
+{
+    auto* PS = GetPlayerState<AOnsetPlayerState>();
+    auto* AppearancePawn = Cast<AOnsetPlayerCharacter>(GetPawn());
+    auto* Data = GetWorld()->GetSubsystem<UOnsetPlayerDataSubsystem>();
+    if (!PS || !AppearancePawn || !AppearancePawn->CharacterAppearance || !Data || PS->SelectedCharacterSlot < 0 || PS->SelectedCharacterSlot > 2) return;
+    if (PS->PlayerPlatform.IsEmpty() || PS->PlayerPlatformID.IsEmpty() || !AppearancePawn->MatchesPersistIdentity(PS->PlayerPlatform,PS->PlayerPlatformID,PS->SelectedCharacterSlot)) return;
+    if (!AppearancePawn->CharacterAppearance->GetBodyMesh())
+    { TArray<FOnsetAppearanceIssue> NotReady;auto& I=NotReady.AddDefaulted_GetRef();I.Code=TEXT("AppearanceNotReady");I.Message=TEXT("The current character appearance is not ready.");Client_CharacterAppearanceResult(false,NotReady);return; }
+    FOnsetAppearanceRecipe Recipe; TArray<FOnsetAppearanceIssue> Issues;
+    if (!UOnsetAppearanceLibrary::DecodeAndValidateRecipe(JSON, UOnsetCharacterAppearanceComponent::LoadDefaultCatalog(), EOnsetAppearanceUse::Player, Recipe, Issues))
+    { Client_CharacterAppearanceResult(false, Issues); return; }
+    FOnsetFullCharacterData Record;
+    if (!Data->LoadCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, PS->SelectedCharacterSlot, Record)) return;
+    const FOnsetAppearanceRecipe Previous = AppearancePawn->CharacterAppearance->AppliedRecipe;
+    if (!AppearancePawn->CharacterAppearance->SetAppearanceRecipe(Recipe, Issues)) { Client_CharacterAppearanceResult(false, Issues);return; }
+    Record.Level=AppearancePawn->Level; Record.Experience=AppearancePawn->Experience; Record.UnspentStatPoints=AppearancePawn->UnspentStatPoints; Record.PrestigeLevel=AppearancePawn->PrestigeLevel;
+    Record.AppearanceJSON = AppearancePawn->CharacterAppearance->AppearanceJSON;
+    if (!Data->SaveCharacter(PS->PlayerPlatform, PS->PlayerPlatformID, Record))
+    {
+        Data->UpdateRuntimeProgression(PS->PlayerPlatform, PS->PlayerPlatformID, PS->SelectedCharacterSlot, AppearancePawn->Level, AppearancePawn->Experience, AppearancePawn->UnspentStatPoints, AppearancePawn->PrestigeLevel);
+        TArray<FOnsetAppearanceIssue> RestoreIssues;
+        if (!AppearancePawn->CharacterAppearance->SetAppearanceRecipe(Previous, RestoreIssues)) UE_LOG(LogTemp, Error, TEXT("Failed to restore appearance after persistence failure"));
+        auto& Issue=Issues.AddDefaulted_GetRef(); Issue.Code=TEXT("PersistenceFailed");Issue.Message=TEXT("Appearance could not be saved.");
+        Client_CharacterAppearanceResult(false, Issues); return;
+    }
+    Client_CharacterAppearanceResult(true, Issues);
 }

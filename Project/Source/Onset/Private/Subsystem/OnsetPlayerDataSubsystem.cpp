@@ -1,4 +1,5 @@
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
+#include "TimerManager.h"
 #include "DataStoreFactory.h"
 #include "Engine/World.h"
 #include "Misc/CommandLine.h"
@@ -136,7 +137,9 @@ bool UOnsetPlayerDataSubsystem::LoadCharacter(const FString& Platform, const FSt
 bool UOnsetPlayerDataSubsystem::SaveCharacter(const FString& Platform, const FString& PlatformID, const FOnsetFullCharacterData& Data)
 {
 	if (!Store) return false;
-	return Store->SaveCharacter(Platform, PlatformID, Data);
+	if (!Store->SaveCharacter(Platform, PlatformID, Data)) return false;
+	IdentityCache.Add(MakeCharacterCacheKey(Platform, PlatformID, Data.SlotIndex), Data);
+	return true;
 }
 
 bool UOnsetPlayerDataSubsystem::SaveCharacterPreservingIdentity(const FString& Platform, const FString& PlatformID, FOnsetFullCharacterData& Data)

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Editor.h"
 #include "ToolMenus.h"
@@ -29,6 +29,8 @@ public:
 	TSharedRef<SDockTab> SpawnItemEditorTab(const FSpawnTabArgs& Args);
 
 private:
+    void HandleEngineReady();
+    FDelegateHandle EngineReadyHandle;
 	static const FName AbilityEditorTabID;
 	static const FName EnemyEditorTabID;
 	static const FName ItemEditorTabID;

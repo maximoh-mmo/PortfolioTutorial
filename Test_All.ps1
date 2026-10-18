@@ -1,15 +1,55 @@
 param(
     [int]$LoginPort = 7777,
     [int]$GamePort = 7778,
-    [string]$EnginePath = "C:\Program Files\Epic Games\UE_5.8",
+    [string]$EnginePath = "C:\Program Files\Epic Games\UE_5.8.3",
     [string]$ProjectPath = "E:\Unreal Projects\PortfolioTutorial\Project\Onset.uproject",
     [string]$DataStoreType = "HttpApi",
     [string]$DataStoreURL = "",
     [string]$DataStoreAPIKey = "",
     [string]$AuthTokenSecret = "",
     [switch]$Cloud,
-    [int]$AutoPlaySlot = -1
+    [int]$AutoPlaySlot = -1,
+    [int]$DurationSeconds = 0,
+    [switch]$ValidateOnly
 )
+
+# These editor processes load the project's editor DLLs. The executable and every
+# enabled project plugin must come from the same engine build, not merely UE 5.8.
+$EngineBin = Join-Path $EnginePath "Engine\Binaries\Win64\UnrealEditor.exe"
+$ProjectDir = Split-Path $ProjectPath -Parent
+if (!(Test-Path -LiteralPath $EngineBin)) {
+    Write-Error "UnrealEditor.exe not found at $EngineBin"
+    exit 1
+}
+if (!(Test-Path -LiteralPath $ProjectPath)) {
+    Write-Error "Project file not found at $ProjectPath"
+    exit 1
+}
+$EngineManifest = Join-Path $EnginePath "Engine\Binaries\Win64\UnrealEditor.modules"
+$ProjectManifest = Join-Path $ProjectDir "Binaries\Win64\UnrealEditor.modules"
+if (!(Test-Path -LiteralPath $EngineManifest) -or !(Test-Path -LiteralPath $ProjectManifest)) {
+    Write-Error "Editor module manifest missing. Build OnsetEditor with the selected engine before running Test_All.ps1."
+    exit 1
+}
+$EngineBuildId = (Get-Content -LiteralPath $EngineManifest -Raw | ConvertFrom-Json).BuildId
+$ProjectBuildId = (Get-Content -LiteralPath $ProjectManifest -Raw | ConvertFrom-Json).BuildId
+if ($EngineBuildId -ne $ProjectBuildId) {
+    Write-Error "Engine build mismatch: $EnginePath has BuildId $EngineBuildId; Onset editor modules have $ProjectBuildId. Use -EnginePath C:\Program Files\Epic Games\UE_5.8.3 or rebuild OnsetEditor and its plugins with the selected engine."
+    exit 1
+}
+$ProjectDescriptor = Get-Content -LiteralPath $ProjectPath -Raw | ConvertFrom-Json
+foreach ($Plugin in @($ProjectDescriptor.Plugins | Where-Object { $_.Enabled })) {
+    $PluginManifest = Join-Path $ProjectDir "Plugins\$($Plugin.Name)\Binaries\Win64\UnrealEditor.modules"
+    if (Test-Path -LiteralPath $PluginManifest) {
+        $PluginBuildId = (Get-Content -LiteralPath $PluginManifest -Raw | ConvertFrom-Json).BuildId
+        if ($PluginBuildId -ne $EngineBuildId) {
+            Write-Error "Plugin $($Plugin.Name) has BuildId $PluginBuildId, but $EnginePath has $EngineBuildId. Rebuild that plugin with the selected engine."
+            exit 1
+        }
+    }
+}
+Write-Host "Engine/module BuildId matched: $EngineBuildId ($EnginePath)" -ForegroundColor Green
+if ($ValidateOnly) { return }
 
 $CloudEndpoint = "qnghmsigrompw56v5wrlojl7z40dwtqm.lambda-url.us-east-1.on.aws/"
 $LocalEndpoint = "http://localhost:3000"
@@ -136,19 +176,9 @@ if (!$Cloud) {
     Ensure-LocalAccountApi
 }
 
-$EngineBin = Join-Path $EnginePath "Engine\Binaries\Win64\UnrealEditor.exe"
-$ProjectDir = Split-Path $ProjectPath -Parent
 $LogDir = "$ProjectDir\Saved\Logs"
 $ExitLog = "$LogDir\ProcessExitCodes.log"
 
-if (!(Test-Path $EngineBin)) {
-    Write-Host "UnrealEditor.exe not found at $EngineBin" -ForegroundColor Red
-    exit 1
-}
-if (!(Test-Path $ProjectPath)) {
-    Write-Host "Project file not found at $ProjectPath" -ForegroundColor Red
-    exit 1
-}
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
 $LogFilter = "LogOnsetAuth Verbose, LogTemp Verbose, LogOnsetPlayerData Verbose, LogSteamAuth Verbose"
@@ -267,10 +297,22 @@ Write-Host "  [Q]      Quit and clean up all processes" -ForegroundColor Gray
 Write-Host "  Exit codes are logged to ProcessExitCodes.log as processes die." -ForegroundColor DarkGray
 
 try {
+    $startTime = Get-Date
     $running = $true
     while ($running) {
         Update-TrackedProcs
-        if ([Console]::KeyAvailable) {
+        if ($DurationSeconds -gt 0 -and ((Get-Date) - $startTime).TotalSeconds -ge $DurationSeconds) {
+            Write-Host "`nDuration ($DurationSeconds s) reached." -ForegroundColor Cyan
+            $running = $false
+            break
+        }
+        $keyAvailable = $false
+        try {
+            if (![Console]::IsInputRedirected) {
+                $keyAvailable = [Console]::KeyAvailable
+            }
+        } catch {}
+        if ($keyAvailable) {
             $keyInfo = [Console]::ReadKey($true)
             if ($keyInfo.Key -eq [ConsoleKey]::Enter) {
                 $clientCount++

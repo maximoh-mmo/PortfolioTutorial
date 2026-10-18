@@ -91,6 +91,7 @@ public:
 	 * rely on it. Server-only.
 	 */
 	void SetPersistIdentity(const FString& Platform, const FString& PlatformID, int32 SlotIndex);
+    bool MatchesPersistIdentity(const FString& Platform, const FString& PlatformID, int32 SlotIndex) const { return PersistPlatform==Platform && PersistPlatformID==PlatformID && PersistSlotIndex==SlotIndex; }
 
 	/** XP required to advance from the current level (curve, §12). */
 	UFUNCTION(BlueprintCallable, Category = "Progression")

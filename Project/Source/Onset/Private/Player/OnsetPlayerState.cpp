@@ -2,6 +2,8 @@
 
 
 #include "Player/OnsetPlayerState.h"
+#include "Engine/World.h"
+#include "Engine/NetDriver.h"
 
 #include "GameFramework/Controller.h"
 #include "Net/UnrealNetwork.h"

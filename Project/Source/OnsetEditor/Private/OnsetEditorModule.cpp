@@ -1,4 +1,6 @@
-﻿#include "OnsetEditorModule.h"
+#include "OnsetEditorModule.h"
+#include "Misc/CoreDelegates.h"
+#include "Modules/ModuleManager.h"
 
 #include "LevelEditor.h"
 #include "PropertyEditorModule.h"
@@ -21,24 +23,22 @@ static void OnSpawnPointMoved(AActor* Actor)
 }
 
 void FOnsetEditorModule::StartupModule()
-{	
-	UToolMenus::RegisterStartupCallback(
-				FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FOnsetEditorModule::RegisterMenus));
-
-	if (GEngine)
-	{
-		OnLevelActorDeletedHandle = GEngine->OnLevelActorDeleted().AddStatic(
-			&FSpawnerEditorUtilities::OnActorDeleted
-		);
-
-		OnActorMovedHandle = GEngine->OnActorMoved().AddStatic(
-			&OnSpawnPointMoved
-		);
-	}
+{
+    if (IsRunningCommandlet()) return;
+    UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FOnsetEditorModule::RegisterMenus));
+    EngineReadyHandle=FCoreDelegates::GetOnPostEngineInit().AddRaw(this,&FOnsetEditorModule::HandleEngineReady);
+    if (GEngine) HandleEngineReady();
 }
-
+void FOnsetEditorModule::HandleEngineReady()
+{
+    if (!GEngine) return;
+    if (!OnLevelActorDeletedHandle.IsValid()) OnLevelActorDeletedHandle=GEngine->OnLevelActorDeleted().AddStatic(&FSpawnerEditorUtilities::OnActorDeleted);
+    if (!OnActorMovedHandle.IsValid()) OnActorMovedHandle=GEngine->OnActorMoved().AddStatic(&OnSpawnPointMoved);
+}
 void FOnsetEditorModule::ShutdownModule()
 {
+    if (IsRunningCommandlet()) return;
+    FCoreDelegates::GetOnPostEngineInit().Remove(EngineReadyHandle);
 	UToolMenus::UnRegisterStartupCallback(this);
 	UToolMenus::UnregisterOwner(this);
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(AbilityEditorTabID);

@@ -69,6 +69,7 @@ bool FSQLiteStore::Initialize(const FString& InConnectionString)
 		: NormalizePath(InConnectionString);
 
 	IFileManager& FileManager = IFileManager::Get();
+	FileManager.MakeDirectory(*FPaths::GetPath(DBPath), true);
 	bool bFileExisted = FileManager.FileExists(*DBPath);
 
 	if (sqlite3_open(TCHAR_TO_UTF8(*DBPath), &DB) != SQLITE_OK)

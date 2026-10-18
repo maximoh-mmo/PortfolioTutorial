@@ -1,9 +1,14 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.8",
+	"EngineAssociation": "{400815B4-48BA-D7ED-CBB9-D8A90DD773B8}",
 	"Category": "",
 	"Description": "",
 	"Modules": [
+		{
+			"Name": "OnsetAppearance",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
 		{
 			"Name": "Onset",
 			"Type": "Runtime",
@@ -18,7 +23,7 @@
 		{
 			"Name": "OnsetEditor",
 			"Type": "Editor",
-			"LoadingPhase": "PostEngineInit",
+			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Blutility",
 				"ScriptableEditorWidgets",

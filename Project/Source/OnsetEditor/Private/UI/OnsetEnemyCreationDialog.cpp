@@ -1,6 +1,7 @@
+#include "UI/OnsetEnemyCreationDialog.h"
+#include "Modules/ModuleManager.h"
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "UI/OnsetEnemyCreationDialog.h"
 
 #include "PropertyEditorModule.h"
 #include "IDetailsView.h"

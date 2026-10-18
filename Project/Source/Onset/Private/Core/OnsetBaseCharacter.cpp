@@ -2,6 +2,8 @@
 
 
 #include "Core/OnsetBaseCharacter.h"
+#include "Player/OnsetCharacterAppearanceComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 
 #include "AbilitySystemComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -39,6 +41,8 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
+	CharacterAppearance = CreateDefaultSubobject<UOnsetCharacterAppearanceComponent>(TEXT("CharacterAppearance"));
+	CharacterAppearance->SetupAttachment(GetMesh());
 	SetReplicateMovement(true);
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent"));

@@ -1,7 +1,8 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/CharacterSelectScreen.h"
+#include "Engine/GameInstance.h"
 #include "UI/CharacterCreationScreen.h"
 #include "UI/CharacterSlot.h"
 #include "Player/OnsetPlayerController.h"
@@ -217,4 +218,9 @@ void UCharacterSelectScreen::RefreshSlotWidgets()
 			SlotWidget->SetSlotData(EmptySlot);
 		}
 	}
+}
+
+void UCharacterSelectScreen::CreateCharacterWithAppearance(int32 SlotIndex, const FString& CharacterName, EOnsetCharacterClass CharacterClass, const FString& AppearanceJSON)
+{
+    if (CachedPlayerController) CachedPlayerController->Server_CreateCharacterWithAppearance(SlotIndex, CharacterName, CharacterClass, AppearanceJSON);
 }
