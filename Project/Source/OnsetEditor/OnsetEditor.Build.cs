@@ -24,7 +24,8 @@ public class OnsetEditor : ModuleRules
 			"PropertyEditor",
 			"ScriptableEditorWidgets",
 			"ToolMenus",
-			"WorkspaceMenuStructure"
+			"WorkspaceMenuStructure",
+			"CommonUI"
 		});
 	}
 }

@@ -95,7 +95,19 @@ void AOnsetPlayerController::Client_AccountData_Implementation(const FOnsetAccou
 	CachedAccountData = InAccountData;
 	bAccountDataReady = true;
 	bShowMouseCursor = true;
-	SetInputMode(FInputModeGameAndUI());
+	const UGameInstance* GI = GetGameInstance();
+	const UOnsetUISubsystem* UI = GI ? GI->GetSubsystem<UOnsetUISubsystem>() : nullptr;
+	const UOnsetRootLayout* RootLayout = UI ? UI->GetRootLayout() : nullptr;
+	const bool bHasActiveScreen = RootLayout && (
+		(RootLayout->GetStackForLayer(EOnsetUILayer::Game) && RootLayout->GetStackForLayer(EOnsetUILayer::Game)->GetActiveWidget()) ||
+		(RootLayout->GetStackForLayer(EOnsetUILayer::Menu) && RootLayout->GetStackForLayer(EOnsetUILayer::Menu)->GetActiveWidget()) ||
+		(RootLayout->GetStackForLayer(EOnsetUILayer::Modal) && RootLayout->GetStackForLayer(EOnsetUILayer::Modal)->GetActiveWidget())
+	);
+
+	if (!bHasActiveScreen)
+	{
+		SetInputMode(FInputModeGameAndUI());
+	}
 	OnAccountDataChanged.Broadcast();
 	BP_OnAccountDataUpdated();
 

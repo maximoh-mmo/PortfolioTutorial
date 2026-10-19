@@ -15,13 +15,17 @@ class UPanelWidget;
 class UScrollBox;
 class UVerticalBox;
 class UViewport;
+class UMHTerminalInputController;
 
-UCLASS(Abstract)
+UCLASS(Abstract, Config = Game)
 class ONSET_API UCharacterCreationScreen : public UOnsetScreenBase
 {
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditDefaultsOnly, Config, Category = "Onset|Character Creation", meta = (DisplayName = "Default Character Name"))
+	FString DefaultCharacterName = TEXT("Kael");
+
 	void SetPlayerController(AOnsetPlayerController* PlayerController);
 	void SetSlotIndex(int32 InSlotIndex);
 
@@ -42,11 +46,23 @@ public:
     UFUNCTION(BlueprintCallable, Category="Onset|Character Creation")
     void AdjustMorph(FName Morph, bool bFace, float Delta);
 
+    void InitializeTerminalInput();
+
+    UFUNCTION(BlueprintPure, Category = "Onset|Character Creation")
+    UMHTerminalInputController* GetTerminalInputController() const { return TerminalInputController; }
+
 protected:
     virtual void NativeOnActivated() override;
     virtual void NativeOnDeactivated() override;
     virtual void NativeDestruct() override;
     virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+    virtual UWidget* NativeGetDesiredFocusTarget() const override;
+    virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+    void CyclePanelFocus(bool bForward);
+    void SetupNavigationRules();
+    UWidget* GetSelectedClassButton() const;
+    TArray<UWidget*> GetClassButtons() const;
+    UWidget* GetActiveAppearanceOption() const;
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<AOnsetPlayerController> CachedPlayerController;
@@ -65,6 +81,8 @@ private:
     UPROPERTY(Transient) TObjectPtr<UViewport> PreviewViewport;
     UPROPERTY(Transient) TObjectPtr<AOnsetAppearancePreviewActor> PreviewActor;
     UPROPERTY(Transient) TObjectPtr<UCommonButtonBase> NativeCreateButton;
+    UPROPERTY(Transient) TObjectPtr<UWidget> LastFocusedAppearanceWidget;
+    UPROPERTY(Transient) TObjectPtr<UMHTerminalInputController> TerminalInputController;
     bool bDraftReady = false;
     bool bRequestPending = false;
 

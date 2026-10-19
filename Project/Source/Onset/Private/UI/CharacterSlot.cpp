@@ -53,6 +53,7 @@ void UCharacterSlot::NativeOnInitialized()
 
 	if (DeleteButton)
 	{
+		DeleteButton->SetIsFocusable(false);
 		DeleteButton->OnClicked().AddUObject(this, &UCharacterSlot::HandleDeleteClicked);
 	}
 

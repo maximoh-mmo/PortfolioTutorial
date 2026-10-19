@@ -1,4 +1,5 @@
 #include "UI/CharacterCreationScreen.h"
+#include "UI/MHTerminalTextInputController.h"
 
 #include "OnsetAppearanceCatalog.h"
 #include "OnsetAppearanceComponent.h"
@@ -7,6 +8,7 @@
 #include "Player/OnsetCharacterAppearanceComponent.h"
 #include "Player/OnsetPlayerController.h"
 #include "Blueprint/WidgetTree.h"
+#include "Blueprint/WidgetNavigation.h"
 #include "CommonButtonBase.h"
 #include "CommonTextBlock.h"
 #include "Components/CanvasPanel.h"
@@ -41,17 +43,21 @@ void UCharacterCreationScreen::NativeOnActivated()
     EnsureDraft();
     BuildAppearancePanel();
     EnsureCreateButton();
+    InitializeTerminalInput();
+    SetupNavigationRules();
     RefreshPreview();
 }
 
 void UCharacterCreationScreen::NativeOnDeactivated()
 {
+    if (TerminalInputController) { TerminalInputController->Shutdown(); }
     if (PreviewActor) { PreviewActor->Destroy(); PreviewActor = nullptr; }
     Super::NativeOnDeactivated();
 }
 
 void UCharacterCreationScreen::NativeDestruct()
 {
+    if (TerminalInputController) { TerminalInputController->Shutdown(); }
     SetPlayerController(nullptr);
     Super::NativeDestruct();
 }
@@ -64,6 +70,426 @@ void UCharacterCreationScreen::NativeTick(const FGeometry& MyGeometry, float InD
         EnsurePreview();
         if (PreviewActor) RefreshPreview();
     }
+
+    APlayerController* PC = CachedPlayerController ? CachedPlayerController.Get() : GetOwningPlayer();
+    if (PC && PreviewActor)
+    {
+        const float RightX = PC->GetInputAnalogKeyState(EKeys::Gamepad_RightX);
+        if (FMath::Abs(RightX) > 0.15f)
+        {
+            const float YawDelta = -RightX * 120.f * InDeltaTime;
+            PreviewActor->AddActorLocalRotation(FRotator(0.f, YawDelta, 0.f));
+        }
+    }
+}
+
+UWidget* UCharacterCreationScreen::NativeGetDesiredFocusTarget() const
+{
+    // 1. First preference: Selected class button on the left panel (or first available class button)
+    if (UWidget* ClassTarget = GetSelectedClassButton())
+    {
+        if (ClassTarget->IsVisible() && ClassTarget->GetIsEnabled())
+        {
+            return ClassTarget;
+        }
+    }
+
+    // 2. Second preference: Callsign input field in the center panel
+    if (UWidget* NameInput = Cast<UWidget>(GetWidgetFromName(TEXT("CharacterName"))))
+    {
+        if (NameInput->IsVisible() && NameInput->GetIsEnabled())
+        {
+            return NameInput;
+        }
+    }
+
+    // 3. Fall back to first appearance option
+    if (UWidget* AppTarget = GetActiveAppearanceOption())
+    {
+        return AppTarget;
+    }
+
+    return Super::NativeGetDesiredFocusTarget();
+}
+
+TArray<UWidget*> UCharacterCreationScreen::GetClassButtons() const
+{
+    TArray<UWidget*> Buttons;
+    const TCHAR* ClassButtonNames[] = { TEXT("Tank"), TEXT("DPS"), TEXT("Ranged"), TEXT("Support") };
+    for (const TCHAR* Name : ClassButtonNames)
+    {
+        if (UWidget* Btn = Cast<UWidget>(GetWidgetFromName(Name)))
+        {
+            if (Btn->IsVisible() && Btn->GetIsEnabled())
+            {
+                Buttons.Add(Btn);
+            }
+        }
+    }
+    return Buttons;
+}
+
+UWidget* UCharacterCreationScreen::GetSelectedClassButton() const
+{
+    const TCHAR* ClassButtonNames[] = { TEXT("Tank"), TEXT("DPS"), TEXT("Ranged"), TEXT("Support") };
+    for (const TCHAR* Name : ClassButtonNames)
+    {
+        if (UCommonButtonBase* Btn = Cast<UCommonButtonBase>(GetWidgetFromName(Name)))
+        {
+            if (Btn->IsVisible() && Btn->GetIsEnabled() && Btn->GetSelected())
+            {
+                return Btn;
+            }
+        }
+    }
+    for (const TCHAR* Name : ClassButtonNames)
+    {
+        if (UWidget* Btn = Cast<UWidget>(GetWidgetFromName(Name)))
+        {
+            if (Btn->IsVisible() && Btn->GetIsEnabled())
+            {
+                return Btn;
+            }
+        }
+    }
+    return nullptr;
+}
+
+UWidget* UCharacterCreationScreen::GetActiveAppearanceOption() const
+{
+    if (LastFocusedAppearanceWidget && LastFocusedAppearanceWidget->IsVisible() && LastFocusedAppearanceWidget->GetIsEnabled())
+    {
+        return LastFocusedAppearanceWidget.Get();
+    }
+    if (OptionsList)
+    {
+        for (int32 Index = 0; Index < OptionsList->GetChildrenCount(); ++Index)
+        {
+            UWidget* Child = OptionsList->GetChildAt(Index);
+            if (UCommonButtonBase* Btn = Cast<UCommonButtonBase>(Child))
+            {
+                if (Btn->IsVisible() && Btn->GetIsEnabled() && Btn->GetIsFocusable())
+                {
+                    return Btn;
+                }
+            }
+            else if (UHorizontalBox* Row = Cast<UHorizontalBox>(Child))
+            {
+                for (int32 Col = 0; Col < Row->GetChildrenCount(); ++Col)
+                {
+                    if (UCommonButtonBase* RowBtn = Cast<UCommonButtonBase>(Row->GetChildAt(Col)))
+                    {
+                        if (RowBtn->IsVisible() && RowBtn->GetIsEnabled() && RowBtn->GetIsFocusable())
+                        {
+                            return RowBtn;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
+void UCharacterCreationScreen::SetupNavigationRules()
+{
+    UWidget* TankBtn = Cast<UWidget>(GetWidgetFromName(TEXT("Tank")));
+    UWidget* DpsBtn = Cast<UWidget>(GetWidgetFromName(TEXT("DPS")));
+    UWidget* RangedBtn = Cast<UWidget>(GetWidgetFromName(TEXT("Ranged")));
+    UWidget* SupportBtn = Cast<UWidget>(GetWidgetFromName(TEXT("Support")));
+    UWidget* NameInput = Cast<UWidget>(GetWidgetFromName(TEXT("CharacterName")));
+    UWidget* BackBtn = Cast<UWidget>(GetWidgetFromName(TEXT("BackButton")));
+    UWidget* CreateBtn = NativeCreateButton ? Cast<UWidget>(NativeCreateButton) : Cast<UWidget>(GetWidgetFromName(TEXT("CreateCharacterButton")));
+    UWidget* FirstAppBtn = GetActiveAppearanceOption();
+
+    // 1. Left panel: Class buttons (Tank -> DPS -> Ranged -> Support)
+    if (TankBtn)
+    {
+        if (DpsBtn) TankBtn->SetNavigationRuleExplicit(EUINavigation::Down, DpsBtn);
+        if (NameInput) TankBtn->SetNavigationRuleExplicit(EUINavigation::Right, NameInput);
+        TankBtn->SetNavigationRuleBase(EUINavigation::Up, EUINavigationRule::Stop);
+        TankBtn->SetNavigationRuleBase(EUINavigation::Left, EUINavigationRule::Stop);
+    }
+    if (DpsBtn)
+    {
+        if (TankBtn) DpsBtn->SetNavigationRuleExplicit(EUINavigation::Up, TankBtn);
+        if (RangedBtn) DpsBtn->SetNavigationRuleExplicit(EUINavigation::Down, RangedBtn);
+        if (NameInput) DpsBtn->SetNavigationRuleExplicit(EUINavigation::Right, NameInput);
+        DpsBtn->SetNavigationRuleBase(EUINavigation::Left, EUINavigationRule::Stop);
+    }
+    if (RangedBtn)
+    {
+        if (DpsBtn) RangedBtn->SetNavigationRuleExplicit(EUINavigation::Up, DpsBtn);
+        if (SupportBtn) RangedBtn->SetNavigationRuleExplicit(EUINavigation::Down, SupportBtn);
+        if (NameInput) RangedBtn->SetNavigationRuleExplicit(EUINavigation::Right, NameInput);
+        RangedBtn->SetNavigationRuleBase(EUINavigation::Left, EUINavigationRule::Stop);
+    }
+    if (SupportBtn)
+    {
+        if (RangedBtn) SupportBtn->SetNavigationRuleExplicit(EUINavigation::Up, RangedBtn);
+        if (BackBtn) SupportBtn->SetNavigationRuleExplicit(EUINavigation::Down, BackBtn);
+        if (NameInput) SupportBtn->SetNavigationRuleExplicit(EUINavigation::Right, NameInput);
+        SupportBtn->SetNavigationRuleBase(EUINavigation::Left, EUINavigationRule::Stop);
+    }
+
+    // 2. Center panel: Callsign input
+    if (NameInput)
+    {
+        UWidget* SelectedClass = GetSelectedClassButton();
+        if (!SelectedClass) SelectedClass = TankBtn;
+        if (SelectedClass)
+        {
+            NameInput->SetNavigationRuleExplicit(EUINavigation::Left, SelectedClass);
+            NameInput->SetNavigationRuleExplicit(EUINavigation::Up, SelectedClass);
+        }
+        if (FirstAppBtn) NameInput->SetNavigationRuleExplicit(EUINavigation::Right, FirstAppBtn);
+        if (CreateBtn) NameInput->SetNavigationRuleExplicit(EUINavigation::Down, CreateBtn);
+    }
+
+    // 3. Bottom panel: Footer buttons
+    if (BackBtn)
+    {
+        if (SupportBtn) BackBtn->SetNavigationRuleExplicit(EUINavigation::Up, SupportBtn);
+        if (CreateBtn) BackBtn->SetNavigationRuleExplicit(EUINavigation::Right, CreateBtn);
+        BackBtn->SetNavigationRuleBase(EUINavigation::Down, EUINavigationRule::Stop);
+        BackBtn->SetNavigationRuleBase(EUINavigation::Left, EUINavigationRule::Stop);
+    }
+    if (CreateBtn)
+    {
+        if (BackBtn) CreateBtn->SetNavigationRuleExplicit(EUINavigation::Left, BackBtn);
+        if (NameInput) CreateBtn->SetNavigationRuleExplicit(EUINavigation::Up, NameInput);
+        CreateBtn->SetNavigationRuleBase(EUINavigation::Down, EUINavigationRule::Stop);
+        CreateBtn->SetNavigationRuleBase(EUINavigation::Right, EUINavigationRule::Stop);
+    }
+
+    // 4. Right panel: Appearance options
+    if (OptionsList)
+    {
+        const int32 ChildCount = OptionsList->GetChildrenCount();
+        UWidget* LastButton = nullptr;
+        for (int32 Index = 0; Index < ChildCount; ++Index)
+        {
+            UWidget* Child = OptionsList->GetChildAt(Index);
+            if (UCommonButtonBase* Btn = Cast<UCommonButtonBase>(Child))
+            {
+                if (NameInput) Btn->SetNavigationRuleExplicit(EUINavigation::Left, NameInput);
+                LastButton = Btn;
+            }
+            else if (UHorizontalBox* Row = Cast<UHorizontalBox>(Child))
+            {
+                if (Row->GetChildrenCount() > 0)
+                {
+                    if (UWidget* FirstInRow = Row->GetChildAt(0))
+                    {
+                        if (NameInput) FirstInRow->SetNavigationRuleExplicit(EUINavigation::Left, NameInput);
+                    }
+                    LastButton = Row->GetChildAt(Row->GetChildrenCount() - 1);
+                }
+            }
+        }
+        if (LastButton && CreateBtn)
+        {
+            LastButton->SetNavigationRuleExplicit(EUINavigation::Down, CreateBtn);
+        }
+    }
+}
+
+void UCharacterCreationScreen::CyclePanelFocus(bool bForward)
+{
+    // Panels arranged Left to Right, matching screen layout:
+    // 0: Class selection (Left panel: Tank, DPS, Ranged, Support)
+    // 1: Callsign input (Center panel: CharacterName)
+    // 2: Appearance customizer (Right panel: OptionsList in OptionsScroll)
+    // 3: Footer actions (Bottom panel: Create Operative / Back)
+
+    enum ECreationPanel : int32
+    {
+        Panel_Class = 0,
+        Panel_Callsign = 1,
+        Panel_Appearance = 2,
+        Panel_Footer = 3,
+        Panel_MAX = 4
+    };
+
+    ECreationPanel CurrentPanel = Panel_Class;
+    APlayerController* PC = GetOwningPlayer();
+
+    TArray<UWidget*> ClassButtons = GetClassButtons();
+    bool bFoundCurrent = false;
+
+    for (UWidget* Btn : ClassButtons)
+    {
+        if (Btn && Btn->HasUserFocus(PC))
+        {
+            CurrentPanel = Panel_Class;
+            bFoundCurrent = true;
+            break;
+        }
+    }
+
+    if (!bFoundCurrent)
+    {
+        if (UWidget* NameInput = Cast<UWidget>(GetWidgetFromName(TEXT("CharacterName"))))
+        {
+            if (NameInput->HasUserFocus(PC))
+            {
+                CurrentPanel = Panel_Callsign;
+                bFoundCurrent = true;
+            }
+        }
+    }
+
+    if (!bFoundCurrent && OptionsScroll)
+    {
+        if (OptionsScroll->HasUserFocusedDescendants(PC))
+        {
+            CurrentPanel = Panel_Appearance;
+            bFoundCurrent = true;
+        }
+    }
+
+    if (!bFoundCurrent)
+    {
+        UWidget* BackBtn = Cast<UWidget>(GetWidgetFromName(TEXT("BackButton")));
+        if ((NativeCreateButton && NativeCreateButton->HasUserFocus(PC)) ||
+            (BackBtn && BackBtn->HasUserFocus(PC)))
+        {
+            CurrentPanel = Panel_Footer;
+            bFoundCurrent = true;
+        }
+    }
+
+    int32 NextPanelIdx = 0;
+    if (bFoundCurrent)
+    {
+        NextPanelIdx = bForward
+            ? ((static_cast<int32>(CurrentPanel) + 1) % Panel_MAX)
+            : ((static_cast<int32>(CurrentPanel) - 1 + Panel_MAX) % Panel_MAX);
+    }
+    else
+    {
+        NextPanelIdx = bForward ? Panel_Callsign : Panel_Footer;
+    }
+
+    switch (static_cast<ECreationPanel>(NextPanelIdx))
+    {
+    case Panel_Class:
+        if (UWidget* ClassTarget = GetSelectedClassButton())
+        {
+            ClassTarget->SetFocus();
+        }
+        break;
+
+    case Panel_Callsign:
+        if (UWidget* NameInput = Cast<UWidget>(GetWidgetFromName(TEXT("CharacterName"))))
+        {
+            NameInput->SetFocus();
+        }
+        break;
+
+    case Panel_Appearance:
+        if (UWidget* AppTarget = GetActiveAppearanceOption())
+        {
+            AppTarget->SetFocus();
+            if (OptionsScroll)
+            {
+                OptionsScroll->ScrollWidgetIntoView(AppTarget, true, EDescendantScrollDestination::IntoView);
+            }
+        }
+        break;
+
+    case Panel_Footer:
+        if (bForward)
+        {
+            if (NativeCreateButton && NativeCreateButton->IsVisible() && NativeCreateButton->GetIsEnabled())
+            {
+                NativeCreateButton->SetFocus();
+            }
+            else if (UWidget* BackBtn = Cast<UWidget>(GetWidgetFromName(TEXT("BackButton"))))
+            {
+                BackBtn->SetFocus();
+            }
+        }
+        else
+        {
+            if (UWidget* BackBtn = Cast<UWidget>(GetWidgetFromName(TEXT("BackButton"))))
+            {
+                if (BackBtn->IsVisible() && BackBtn->GetIsEnabled())
+                {
+                    BackBtn->SetFocus();
+                }
+                else if (NativeCreateButton)
+                {
+                    NativeCreateButton->SetFocus();
+                }
+            }
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
+FReply UCharacterCreationScreen::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+    const FKey Key = InKeyEvent.GetKey();
+
+    // 1. Shoulder bumpers: Cycle horizontally across screen panels (LB / RB)
+    if (Key == EKeys::Gamepad_RightShoulder || Key == EKeys::Gamepad_LeftShoulder)
+    {
+        CyclePanelFocus(Key == EKeys::Gamepad_RightShoulder);
+        return FReply::Handled();
+    }
+
+    // 2. Triggers: Fast page scroll for appearance options (LT / RT)
+    if (Key == EKeys::Gamepad_RightTrigger || Key == EKeys::Gamepad_RightTriggerAxis)
+    {
+        if (OptionsScroll)
+        {
+            OptionsScroll->SetScrollOffset(OptionsScroll->GetScrollOffset() + 250.f);
+        }
+        return FReply::Handled();
+    }
+    if (Key == EKeys::Gamepad_LeftTrigger || Key == EKeys::Gamepad_LeftTriggerAxis)
+    {
+        if (OptionsScroll)
+        {
+            OptionsScroll->SetScrollOffset(FMath::Max(0.f, OptionsScroll->GetScrollOffset() - 250.f));
+        }
+        return FReply::Handled();
+    }
+
+    // 3. Direct shortcut to Create Operative: Face Button Left (X) or Special Right (Menu/Start)
+    if (Key == EKeys::Gamepad_FaceButton_Left || Key == EKeys::Gamepad_Special_Right)
+    {
+        HandleNativeCreateClicked();
+        return FReply::Handled();
+    }
+
+    // 4. R3 Click: Reset 3D preview turntable rotation
+    if (Key == EKeys::Gamepad_RightThumbstick && PreviewActor)
+    {
+        PreviewActor->SetActorRotation(FRotator(0.f, 0.f, 0.f));
+        return FReply::Handled();
+    }
+
+    // 5. Gamepad Accept (A) on Callsign input: Open Virtual Keyboard
+    if (Key == EKeys::Gamepad_FaceButton_Bottom)
+    {
+        APlayerController* PC = GetOwningPlayer();
+        UWidget* NameInput = Cast<UWidget>(GetWidgetFromName(TEXT("CharacterName")));
+        if (NameInput && NameInput->HasUserFocus(PC))
+        {
+            if (TerminalInputController)
+            {
+                TerminalInputController->OpenVirtualKeyboard();
+                return FReply::Handled();
+            }
+        }
+    }
+
+    return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
 void UCharacterCreationScreen::EnsureDraft()
@@ -104,6 +530,19 @@ UCommonButtonBase* UCharacterCreationScreen::AddOption(UPanelWidget* Parent, con
     if (auto* RowSlot = Cast<UHorizontalBoxSlot>(Button->Slot))
     { RowSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill)); RowSlot->SetPadding(FMargin(2.f, 0.f)); }
     else if (auto* ColumnSlot = Cast<UVerticalBoxSlot>(Button->Slot)) ColumnSlot->SetPadding(FMargin(0.f, 2.f));
+
+    if (OptionsScroll)
+    {
+        Button->OnFocusReceived().AddWeakLambda(this, [this, Button]()
+        {
+            LastFocusedAppearanceWidget = Button;
+            if (OptionsScroll)
+            {
+                OptionsScroll->ScrollWidgetIntoView(Button, true, EDescendantScrollDestination::IntoView);
+            }
+        });
+    }
+
     return Button;
 }
 
@@ -230,6 +669,8 @@ void UCharacterCreationScreen::BuildAppearancePanel()
         }
     }
     OptionsScroll->SetScrollOffset(OldScroll);
+    SetupNavigationRules();
+    if (IsActivated()) RequestRefreshFocus();
 }
 
 void UCharacterCreationScreen::EnsurePreview()
@@ -292,42 +733,143 @@ void UCharacterCreationScreen::EnsureCreateButton()
     NativeCreateButton = CreateWidget<UCommonButtonBase>(GetOwningPlayer(), LegacyButton->GetClass(), TEXT("OnsetNativeCreateButton"));
     if (!NativeCreateButton) return;
     Footer->AddChild(NativeCreateButton);
+    if (auto* NewSlot = Cast<UHorizontalBoxSlot>(NativeCreateButton->Slot))
+    {
+        if (auto* OldSlot = Cast<UHorizontalBoxSlot>(LegacyButton->Slot))
+        {
+            NewSlot->SetPadding(OldSlot->GetPadding());
+            NewSlot->SetSize(OldSlot->GetSize());
+            NewSlot->SetHorizontalAlignment(OldSlot->GetHorizontalAlignment());
+            NewSlot->SetVerticalAlignment(OldSlot->GetVerticalAlignment());
+        }
+    }
     if (auto* Label = Cast<UCommonTextBlock>(NativeCreateButton->GetWidgetFromName(TEXT("ButtonText"))))
         Label->SetText(NSLOCTEXT("OnsetCreation", "CreateOperative", "CREATE OPERATIVE"));
     NativeCreateButton->OnClicked().AddWeakLambda(this, [this]() { HandleNativeCreateClicked(); });
+    SetupNavigationRules();
+}
+
+void UCharacterCreationScreen::InitializeTerminalInput()
+{
+    // Clear old Blueprint blink timer if it was set in Blueprint EventGraph
+    for (const TCHAR* PropName : {TEXT("BlinkTimer"), TEXT("Blink Timer")})
+    {
+        if (FProperty* Prop = GetClass()->FindPropertyByName(PropName))
+        {
+            if (FStructProperty* StructProp = CastField<FStructProperty>(Prop))
+            {
+                if (StructProp->Struct == TBaseStructure<FTimerHandle>::Get())
+                {
+                    FTimerHandle* HandlePtr = StructProp->ContainerPtrToValuePtr<FTimerHandle>(this);
+                    if (HandlePtr && HandlePtr->IsValid() && GetWorld())
+                    {
+                        GetWorld()->GetTimerManager().ClearTimer(*HandlePtr);
+                        *HandlePtr = FTimerHandle();
+                    }
+                }
+            }
+        }
+    }
+
+    auto* NameField = Cast<UEditableText>(GetWidgetFromName(TEXT("CharacterName")));
+    auto* DefaultBorder = Cast<UBorder>(GetWidgetFromName(TEXT("DefaultNameBorder")));
+    auto* DisplayText = Cast<UCommonTextBlock>(GetWidgetFromName(TEXT("text")));
+    auto* CursorBorder = Cast<UBorder>(GetWidgetFromName(TEXT("CursorTextBorder")));
+    auto* CursorText = Cast<UCommonTextBlock>(GetWidgetFromName(TEXT("text_1")));
+
+    if (NameField && DisplayText)
+    {
+        if (!TerminalInputController)
+        {
+            TerminalInputController = NewObject<UMHTerminalInputController>(this);
+        }
+
+        const FString InitialPlaceholder = DefaultCharacterName.IsEmpty() ? TEXT("Kael") : DefaultCharacterName;
+        TerminalInputController->Initialize(
+            this,
+            NameField,
+            DisplayText,
+            CursorText,
+            DefaultBorder,
+            CursorBorder,
+            InitialPlaceholder,
+            0.5f,
+            16
+        );
+    }
 }
 
 void UCharacterCreationScreen::HandleNativeCreateClicked()
 {
-    auto* NameField = Cast<UEditableText>(GetWidgetFromName(TEXT("CharacterName")));
-    if (!NameField) { SetFeedback(NSLOCTEXT("OnsetCreation", "MissingNameField", "Callsign control is unavailable.")); return; }
+    FString ChosenName;
+    if (TerminalInputController)
+    {
+        ChosenName = TerminalInputController->GetFinalText().TrimStartAndEnd();
+    }
+    else
+    {
+        auto* NameField = Cast<UEditableText>(GetWidgetFromName(TEXT("CharacterName")));
+        if (!NameField) { SetFeedback(NSLOCTEXT("OnsetCreation", "MissingNameField", "Callsign control is unavailable.")); return; }
+        ChosenName = NameField->GetText().ToString().TrimStartAndEnd();
+        if (ChosenName.IsEmpty())
+        {
+            ChosenName = DefaultCharacterName.IsEmpty() ? TEXT("Kael") : DefaultCharacterName;
+        }
+    }
+
+    if (ChosenName.IsEmpty())
+    {
+        ChosenName = TEXT("Kael");
+    }
 
     EOnsetCharacterClass ChosenClass = EOnsetCharacterClass::Tank;
     bool bFoundClass = false;
-    for (TFieldIterator<FProperty> It(GetClass(), EFieldIterationFlags::IncludeSuper); It; ++It)
+
+    if (UCommonButtonBase* TankBtn = Cast<UCommonButtonBase>(GetWidgetFromName(TEXT("Tank"))))
     {
-        FProperty* Property = *It;
-        if (const auto* EnumProperty = CastField<FEnumProperty>(Property))
+        if (TankBtn->GetSelected()) { ChosenClass = EOnsetCharacterClass::Tank; bFoundClass = true; }
+    }
+    if (UCommonButtonBase* DPSBtn = Cast<UCommonButtonBase>(GetWidgetFromName(TEXT("DPS"))))
+    {
+        if (DPSBtn->GetSelected()) { ChosenClass = EOnsetCharacterClass::DPS; bFoundClass = true; }
+    }
+    if (UCommonButtonBase* RangedBtn = Cast<UCommonButtonBase>(GetWidgetFromName(TEXT("Ranged"))))
+    {
+        if (RangedBtn->GetSelected()) { ChosenClass = EOnsetCharacterClass::Ranged; bFoundClass = true; }
+    }
+    if (UCommonButtonBase* SupportBtn = Cast<UCommonButtonBase>(GetWidgetFromName(TEXT("Support"))))
+    {
+        if (SupportBtn->GetSelected()) { ChosenClass = EOnsetCharacterClass::Support; bFoundClass = true; }
+    }
+
+    if (!bFoundClass)
+    {
+        for (TFieldIterator<FProperty> It(GetClass(), EFieldIterationFlags::IncludeSuper); It; ++It)
         {
-            if (EnumProperty->GetEnum() == StaticEnum<EOnsetCharacterClass>())
+            FProperty* Property = *It;
+            if (const auto* EnumProperty = CastField<FEnumProperty>(Property))
             {
-                ChosenClass = static_cast<EOnsetCharacterClass>(EnumProperty->GetUnderlyingProperty()->GetSignedIntPropertyValue(EnumProperty->ContainerPtrToValuePtr<void>(this)));
-                bFoundClass = true;
-                break;
+                if (EnumProperty->GetEnum() == StaticEnum<EOnsetCharacterClass>())
+                {
+                    ChosenClass = static_cast<EOnsetCharacterClass>(EnumProperty->GetUnderlyingProperty()->GetSignedIntPropertyValue(EnumProperty->ContainerPtrToValuePtr<void>(this)));
+                    bFoundClass = true;
+                    break;
+                }
             }
-        }
-        else if (const auto* ByteProperty = CastField<FByteProperty>(Property))
-        {
-            if (ByteProperty->Enum == StaticEnum<EOnsetCharacterClass>())
+            else if (const auto* ByteProperty = CastField<FByteProperty>(Property))
             {
-                ChosenClass = static_cast<EOnsetCharacterClass>(ByteProperty->GetPropertyValue_InContainer(this));
-                bFoundClass = true;
-                break;
+                if (ByteProperty->Enum == StaticEnum<EOnsetCharacterClass>())
+                {
+                    ChosenClass = static_cast<EOnsetCharacterClass>(ByteProperty->GetPropertyValue_InContainer(this));
+                    bFoundClass = true;
+                    break;
+                }
             }
         }
     }
+
     if (!bFoundClass) { SetFeedback(NSLOCTEXT("OnsetCreation", "MissingClassField", "Choose a class.")); return; }
-    CreateCharacter(NameField->GetText().ToString(), ChosenClass, 0);
+    CreateCharacter(ChosenName, ChosenClass, 0);
 }
 
 void UCharacterCreationScreen::CommitDraft(FOnsetAppearanceRecipe Candidate)

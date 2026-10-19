@@ -36,6 +36,8 @@ protected:
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 	virtual void NativeDestruct() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
+	virtual bool NativeOnHandleBackAction() override;
 
 	/** Resolves the owning pawn's inventory component (null if not possessed). */
 	UOnsetInventoryComponent* GetInventoryComponent() const;

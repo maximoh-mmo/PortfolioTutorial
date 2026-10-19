@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "UI/OnsetButtonBase.h"
 #include "Sound/SoundBase.h"
@@ -31,6 +31,17 @@ void UOnsetButtonBase::NativeOnClicked()
 	if (ClickSound)
 	{
 		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+}
+
+void UOnsetButtonBase::HandleFocusReceived()
+{
+	Super::HandleFocusReceived();
+
+	// Play HoverSound on gamepad / keyboard focus when not already hovered
+	if (HoverSound && !IsHovered())
+	{
+		UGameplayStatics::PlaySound2D(this, HoverSound);
 	}
 }
  

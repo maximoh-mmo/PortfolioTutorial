@@ -47,6 +47,22 @@ void UInventoryScreen::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+UWidget* UInventoryScreen::NativeGetDesiredFocusTarget() const
+{
+	if (BagSlots.Num() > 0 && BagSlots[0])
+	{
+		return BagSlots[0];
+	}
+
+	return Super::NativeGetDesiredFocusTarget();
+}
+
+bool UInventoryScreen::NativeOnHandleBackAction()
+{
+	CloseInventory();
+	return true;
+}
+
 UOnsetInventoryComponent* UInventoryScreen::GetInventoryComponent() const
 {
 	if (const APlayerController* PC = GetOwningPlayer())
@@ -123,6 +139,10 @@ void UInventoryScreen::RebuildSlots()
 
 	RefreshBag();
 	RefreshEquipment();
+	if (IsActivated())
+	{
+		RequestRefreshFocus();
+	}
 }
 
 void UInventoryScreen::RefreshBag()

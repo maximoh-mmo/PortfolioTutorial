@@ -38,6 +38,20 @@ void UMainMenuScreen::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+UWidget* UMainMenuScreen::NativeGetDesiredFocusTarget() const
+{
+	if (UCommonButtonBase* ConnectBtn = Cast<UCommonButtonBase>(GetWidgetFromName(TEXT("ConnectButton"))))
+	{
+		const ESlateVisibility Vis = ConnectBtn->GetVisibility();
+		if (Vis != ESlateVisibility::Collapsed && Vis != ESlateVisibility::Hidden && ConnectBtn->GetIsEnabled())
+		{
+			return ConnectBtn;
+		}
+	}
+
+	return Super::NativeGetDesiredFocusTarget();
+}
+
 bool UMainMenuScreen::CanConnectToServer() const
 {
 	const AOnsetPlayerController* PlayerController = GetOwningPlayer<AOnsetPlayerController>();
@@ -50,7 +64,12 @@ void UMainMenuScreen::RefreshConnectAvailability()
 	// A native BindWidget property with the same name shadows that variable.
 	if (UCommonButtonBase* Button = Cast<UCommonButtonBase>(GetWidgetFromName(TEXT("ConnectButton"))))
 	{
-		Button->SetIsEnabled(CanConnectToServer());
+		const bool bCanConnect = CanConnectToServer();
+		Button->SetIsEnabled(bCanConnect);
+		if (bCanConnect && IsActivated())
+		{
+			RequestRefreshFocus();
+		}
 	}
 }
 

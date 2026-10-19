@@ -1,0 +1,8 @@
+Loaded BP: <Object '/Game/UI/Screens/WBP_CharacterCreation.WBP_CharacterCreation' (0x000001A8BFB57000) Class 'WidgetBlueprint'>
+WidgetTree: <Object '/Game/UI/Screens/WBP_CharacterCreation.WBP_CharacterCreation:WidgetTree' (0x000001A8BFA58E80) Class 'WidgetTree'>
+AllWidgets error: WidgetTree: Property 'AllWidgets' for attribute 'AllWidgets' on 'WidgetTree' is protected and cannot be read
+Total widgets: 0
+
+--- Blueprint Graphs ---
+UberGraphPages error: WidgetBlueprint: Property 'UbergraphPages' for attribute 'UberGraphPages' on 'WidgetBlueprint' is protected and cannot be read
+FunctionGraphs error: WidgetBlueprint: Property 'FunctionGraphs' for attribute 'FunctionGraphs' on 'WidgetBlueprint' is protected and cannot be read

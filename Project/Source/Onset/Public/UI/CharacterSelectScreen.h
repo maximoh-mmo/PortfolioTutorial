@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -54,6 +54,8 @@ protected:
 
 	//~ Begin UOnsetScreenBase interface
 	virtual void NativeOnActivated() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 	//~ End UOnsetScreenBase interface
 
 	virtual void NativeDestruct() override;

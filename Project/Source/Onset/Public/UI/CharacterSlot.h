@@ -42,6 +42,10 @@ public:
 	/** Level text ("Level N"); empty when the slot is unoccupied. */
 	FText GetDisplayLevel() const;
 
+	UCommonButtonBase* GetInteractionButton() const { return InteractionButton; }
+	UCommonButtonBase* GetDeleteButton() const { return DeleteButton; }
+	int32 GetSlotIndex() const { return SlotIndex; }
+
 	/** Fired when the slot's main interaction area is clicked. */
 	UPROPERTY(BlueprintAssignable, Category = "Onset|CharacterSlot")
 	FOnsetCharacterSlotClicked OnSlotActivated;

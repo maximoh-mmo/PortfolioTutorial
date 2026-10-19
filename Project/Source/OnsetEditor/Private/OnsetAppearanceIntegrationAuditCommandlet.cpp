@@ -21,6 +21,18 @@
 #include "Misc/Paths.h"
 #include "Misc/PackageName.h"
 #include "UObject/SavePackage.h"
+#include "UI/CharacterCreationScreen.h"
+#include "UI/MHTerminalTextInputController.h"
+#include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetTree.h"
+#include "CommonButtonBase.h"
+#include "UI/OnsetRootLayout.h"
+#include "UI/MainMenuScreen.h"
+#include "CommonTextBlock.h"
+#include "Components/Border.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Components/EditableText.h"
+#include "Components/Image.h"
 
 UOnsetAppearanceIntegrationAuditCommandlet::UOnsetAppearanceIntegrationAuditCommandlet()
 { IsClient = false; IsServer = false; IsEditor = true; LogToConsole = true; }
@@ -182,6 +194,184 @@ int32 UOnsetAppearanceIntegrationAuditCommandlet::Main(const FString& Params)
     if (NPC) NPC->Destroy();
     if (Replica) Replica->Destroy();
     if (Character) Character->Destroy();
+    // Audit Terminal Text Input and Cursor Blink jitter-free behavior on WBP_CharacterCreation
+    auto* CreationClass = LoadClass<UCharacterCreationScreen>(nullptr, TEXT("/Game/UI/Screens/WBP_CharacterCreation.WBP_CharacterCreation_C"));
+    Check(CreationClass != nullptr, TEXT("load WBP_CharacterCreation class"));
+    if (CreationClass)
+    {
+        auto* CreationScreen = CreateWidget<UCharacterCreationScreen>(World, CreationClass);
+        Check(CreationScreen != nullptr, TEXT("instantiate WBP_CharacterCreation"));
+        if (CreationScreen)
+        {
+            CreationScreen->InitializeTerminalInput();
+
+            UMHTerminalInputController* TerminalCtrl = CreationScreen->GetTerminalInputController();
+            Check(TerminalCtrl != nullptr, TEXT("terminal input controller initialized"));
+
+            auto* DisplayText = Cast<UCommonTextBlock>(CreationScreen->GetWidgetFromName(TEXT("text")));
+            auto* CursorText = Cast<UCommonTextBlock>(CreationScreen->GetWidgetFromName(TEXT("text_1")));
+            auto* CursorBorder = Cast<UBorder>(CreationScreen->GetWidgetFromName(TEXT("CursorTextBorder")));
+            auto* NameField = Cast<UEditableText>(CreationScreen->GetWidgetFromName(TEXT("CharacterName")));
+
+            Check(DisplayText != nullptr, TEXT("find DisplayText (text)"));
+            Check(CursorText != nullptr, TEXT("find CursorText (text_1)"));
+            Check(CursorBorder != nullptr, TEXT("find CursorBorder"));
+            Check(NameField != nullptr, TEXT("find CharacterName"));
+
+            if (DisplayText && CursorText && CursorBorder && NameField && TerminalCtrl)
+            {
+                // Verify initial placeholder
+                Check(TerminalCtrl->IsPlaceholderActive(), TEXT("initial placeholder active"));
+                Check(DisplayText->GetText().ToString() == TEXT("Kael"), TEXT("initial placeholder text is Kael"));
+                Check(CursorText->GetText().ToString() == TEXT("_"), TEXT("cursor glyph is underscore"));
+
+                UCanvasPanelSlot* CursorSlot = Cast<UCanvasPanelSlot>(CursorBorder->Slot);
+                Check(CursorSlot != nullptr, TEXT("cursor border has canvas slot"));
+                const float InitialCursorX = CursorSlot ? CursorSlot->GetPosition().X : 0.0f;
+                Report += FString::Printf(TEXT("Initial cursor X position: %.2f (for Kael)\n"), InitialCursorX);
+
+                // Simulate typing text
+                NameField->SetText(FText::FromString(TEXT("TestOperative")));
+                NameField->OnTextChanged.Broadcast(FText::FromString(TEXT("TestOperative")));
+
+                Check(!TerminalCtrl->IsPlaceholderActive(), TEXT("placeholder deactivated after text entered"));
+                Check(DisplayText->GetText().ToString() == TEXT("TestOperative"), TEXT("display text updated to TestOperative"));
+                Check(TerminalCtrl->GetFinalText() == TEXT("TestOperative"), TEXT("final text returns typed operative name"));
+
+                const float TypedCursorX = CursorSlot ? CursorSlot->GetPosition().X : 0.0f;
+                Report += FString::Printf(TEXT("Typed cursor X position: %.2f (for TestOperative)\n"), TypedCursorX);
+                Check(TypedCursorX > InitialCursorX, TEXT("cursor moved right after typing longer string"));
+
+                // Simulate clearing text
+                NameField->SetText(FText::GetEmpty());
+                NameField->OnTextChanged.Broadcast(FText::GetEmpty());
+
+                Check(TerminalCtrl->IsPlaceholderActive(), TEXT("placeholder restored on empty text"));
+                Check(DisplayText->GetText().ToString() == TEXT("Kael"), TEXT("placeholder text Kael restored"));
+                Check(TerminalCtrl->GetFinalText() == TEXT("Kael"), TEXT("final text returns default Kael on empty"));
+
+                // Verify legacy Blueprint timer is cleared
+                if (FProperty* BlinkProp = CreationClass->FindPropertyByName(TEXT("BlinkTimer")))
+                {
+                    if (FStructProperty* StructProp = CastField<FStructProperty>(BlinkProp))
+                    {
+                        FTimerHandle* HandlePtr = StructProp->ContainerPtrToValuePtr<FTimerHandle>(CreationScreen);
+                        Check(HandlePtr && !HandlePtr->IsValid(), TEXT("legacy blueprint BlinkTimer is cleared"));
+                    }
+                }
+            }
+
+            CreationScreen->RemoveFromParent();
+        }
+    }
+    // Audit WBP_RootLayout and WBP_MainMenu hierarchy and focus
+    auto* RootLayoutClass = LoadClass<UOnsetRootLayout>(nullptr, TEXT("/Game/UI/Core/WBP_RootLayout.WBP_RootLayout_C"));
+    Check(RootLayoutClass != nullptr, TEXT("load WBP_RootLayout class"));
+    auto* MainMenuClass = LoadClass<UMainMenuScreen>(nullptr, TEXT("/Game/UI/Screens/WBP_MainMenu.WBP_MainMenu_C"));
+    Check(MainMenuClass != nullptr, TEXT("load WBP_MainMenu class"));
+    if (RootLayoutClass && MainMenuClass)
+    {
+        auto* RootLayout = CreateWidget<UOnsetRootLayout>(World, RootLayoutClass);
+        Check(RootLayout != nullptr, TEXT("instantiate WBP_RootLayout"));
+        if (RootLayout)
+        {
+            auto* GameStack = RootLayout->GetStackForLayer(EOnsetUILayer::Game);
+            Check(GameStack != nullptr, TEXT("GameLayerStack bound on WBP_RootLayout"));
+            auto* MenuStack = RootLayout->GetStackForLayer(EOnsetUILayer::Menu);
+            Check(MenuStack != nullptr, TEXT("MenuLayerStack bound on WBP_RootLayout"));
+            auto* ModalStack = RootLayout->GetStackForLayer(EOnsetUILayer::Modal);
+            Check(ModalStack != nullptr, TEXT("ModalLayerStack bound on WBP_RootLayout"));
+
+            if (RootLayout->WidgetTree)
+            {
+                TArray<UWidget*> RootWidgets;
+                RootLayout->WidgetTree->GetAllWidgets(RootWidgets);
+                Report += FString::Printf(TEXT("RootLayout total widgets: %d\n"), RootWidgets.Num());
+                for (UWidget* W : RootWidgets)
+                {
+                    Report += FString::Printf(TEXT("  RootLayout Widget: %s (%s) Vis=%d Enabled=%d\n"),
+                        *W->GetName(), *W->GetClass()->GetName(), (int32)W->GetVisibility(), W->GetIsEnabled());
+                }
+            }
+
+            auto* MainMenu = CreateWidget<UMainMenuScreen>(World, MainMenuClass);
+            Check(MainMenu != nullptr, TEXT("instantiate WBP_MainMenu"));
+            if (MainMenu)
+            {
+                Report += FString::Printf(TEXT("MainMenu widget tree root: %s (%s)\n"),
+                    MainMenu->WidgetTree && MainMenu->WidgetTree->RootWidget ? *MainMenu->WidgetTree->RootWidget->GetName() : TEXT("null"),
+                    MainMenu->WidgetTree && MainMenu->WidgetTree->RootWidget ? *MainMenu->WidgetTree->RootWidget->GetClass()->GetName() : TEXT("null"));
+
+                if (MainMenu->WidgetTree)
+                {
+                    TArray<UWidget*> AllWidgets;
+                    MainMenu->WidgetTree->GetAllWidgets(AllWidgets);
+                    Report += FString::Printf(TEXT("MainMenu total widgets: %d\n"), AllWidgets.Num());
+                    for (UWidget* W : AllWidgets)
+                    {
+                        UCommonButtonBase* CommonBtn = Cast<UCommonButtonBase>(W);
+                        Report += FString::Printf(TEXT("  Widget: %s (%s) Vis=%d Enabled=%d CommonBtn=%d\n"),
+                            *W->GetName(), *W->GetClass()->GetName(), (int32)W->GetVisibility(), W->GetIsEnabled(), CommonBtn != nullptr);
+                    }
+                }
+
+                auto* FocusTarget = MainMenu->GetDesiredFocusTarget();
+                Report += FString::Printf(TEXT("MainMenu GetDesiredFocusTarget: %s\n"),
+                    FocusTarget ? *FocusTarget->GetName() : TEXT("null"));
+
+                UWidget* ConnectWidget = MainMenu->GetWidgetFromName(TEXT("ConnectButton"));
+                UCommonButtonBase* ConnectBtn = Cast<UCommonButtonBase>(ConnectWidget);
+                Report += FString::Printf(TEXT("ConnectButton resolved: Widget=%s CommonBtn=%s\n"),
+                    ConnectWidget ? *ConnectWidget->GetName() : TEXT("null"),
+                    ConnectBtn ? *ConnectBtn->GetName() : TEXT("null"));
+                if (ConnectWidget)
+                {
+                    Report += FString::Printf(TEXT("  ConnectWidget: Vis=%d Enabled=%d IsVisible=%d\n"),
+                        (int32)ConnectWidget->GetVisibility(), ConnectWidget->GetIsEnabled(), ConnectWidget->IsVisible());
+                    if (UUserWidget* UserBtn = Cast<UUserWidget>(ConnectWidget))
+                    {
+                        if (UserBtn->WidgetTree)
+                        {
+                            TArray<UWidget*> BtnWidgets;
+                            UserBtn->WidgetTree->GetAllWidgets(BtnWidgets);
+                            Report += FString::Printf(TEXT("  ConnectButton child widgets: %d\n"), BtnWidgets.Num());
+                            for (UWidget* BW : BtnWidgets)
+                            {
+                                Report += FString::Printf(TEXT("    Child: %s (%s) Vis=%d Enabled=%d\n"),
+                                    *BW->GetName(), *BW->GetClass()->GetName(), (int32)BW->GetVisibility(), BW->GetIsEnabled());
+                            }
+                        }
+                    }
+                }
+
+                for (const TCHAR* ImgName : { TEXT("Image_206"), TEXT("Image_96"), TEXT("Image_561") })
+                {
+                    if (UImage* Img = Cast<UImage>(MainMenu->GetWidgetFromName(ImgName)))
+                    {
+                        UObject* Res = Img->GetBrush().GetResourceObject();
+                        Report += FString::Printf(TEXT("  %s: Res=%s Vis=%d\n"),
+                            ImgName, Res ? *Res->GetPathName() : TEXT("null"), (int32)Img->GetVisibility());
+                    }
+                }
+
+                MainMenu->RemoveFromParent();
+            }
+
+            // Test pushing MainMenu onto GameLayerStack
+            auto* PushedScreen = Cast<UMainMenuScreen>(GameStack->AddWidget(MainMenuClass));
+            Check(PushedScreen != nullptr, TEXT("GameStack->AddWidget(MainMenuClass) succeeds"));
+            if (PushedScreen)
+            {
+                Report += FString::Printf(TEXT("PushedScreen: %s IsActive=%d\n"),
+                    *PushedScreen->GetName(), PushedScreen->IsActivated());
+                auto* ActiveTarget = PushedScreen->GetDesiredFocusTarget();
+                Report += FString::Printf(TEXT("PushedScreen GetDesiredFocusTarget: %s\n"),
+                    ActiveTarget ? *ActiveTarget->GetName() : TEXT("null"));
+            }
+
+            RootLayout->RemoveFromParent();
+        }
+    }
     if (Controller) Controller->Destroy();
     FFileHelper::SaveStringToFile(Report, *(FPaths::ProjectSavedDir()/TEXT("OnsetAppearanceIntegrationAudit.txt")));
     UE_LOG(LogTemp, Display, TEXT("ONSET APPEARANCE INTEGRATION AUDIT: failures=%d\n%s"), Failures, *Report);

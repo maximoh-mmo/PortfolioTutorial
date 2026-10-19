@@ -33,10 +33,6 @@ protected:
 	virtual bool NativeOnHandleBackAction() override;
 	//~ End UCommonActivatableWidget interface
 
-	/** Explicit widget to focus when this screen activates. If unset, searches for the first focusable button. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Onset|Screen|Input")
-	TObjectPtr<UWidget> DesiredFocusWidget;
-
 	/** Recursively finds the first visible, enabled, focusable button under Root. */
 	UWidget* FindFirstFocusableChild(UWidget* Root) const;
 

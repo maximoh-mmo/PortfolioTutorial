@@ -23,6 +23,7 @@ public:
 protected:
 	virtual void NativeOnActivated() override;
 	virtual void NativeDestruct() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Menu")                                     
 	TSubclassOf<UCharacterSelectScreen> CharacterSelectScreenClass;    

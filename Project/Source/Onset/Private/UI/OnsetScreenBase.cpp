@@ -11,6 +11,7 @@ UOnsetScreenBase::UOnsetScreenBase(const FObjectInitializer& ObjectInitializer)
 {
 	bIsBackHandler = true;
 	bAutoRestoreFocus = true;
+	SetConsumePointerInput(true);
 }
  
 void UOnsetScreenBase::NativeOnActivated()
@@ -44,9 +45,13 @@ TOptional<FUIInputConfig> UOnsetScreenBase::GetDesiredInputConfig() const
 
 UWidget* UOnsetScreenBase::NativeGetDesiredFocusTarget() const
 {
-	if (DesiredFocusWidget && DesiredFocusWidget->IsVisible() && DesiredFocusWidget->GetIsEnabled())
+	if (UWidget* ExplicitFocus = GetDesiredFocusWidget())
 	{
-		return DesiredFocusWidget;
+		const ESlateVisibility Vis = ExplicitFocus->GetVisibility();
+		if (Vis != ESlateVisibility::Collapsed && Vis != ESlateVisibility::Hidden && ExplicitFocus->GetIsEnabled())
+		{
+			return ExplicitFocus;
+		}
 	}
 
 	if (WidgetTree && WidgetTree->RootWidget)
@@ -69,7 +74,8 @@ UWidget* UOnsetScreenBase::FindFirstFocusableChild(UWidget* Root) const
 
 	if (UCommonButtonBase* Button = Cast<UCommonButtonBase>(Root))
 	{
-		if (Button->IsVisible() && Button->GetIsEnabled() && Button->GetIsFocusable())
+		const ESlateVisibility Vis = Button->GetVisibility();
+		if (Vis != ESlateVisibility::Collapsed && Vis != ESlateVisibility::Hidden && Button->GetIsEnabled() && Button->GetIsFocusable())
 		{
 			return Button;
 		}
@@ -109,9 +115,10 @@ bool UOnsetScreenBase::NativeOnHandleBackAction()
 
 	if (UCommonButtonBase* BackBtn = Cast<UCommonButtonBase>(GetWidgetFromName(TEXT("BackButton"))))
 	{
-		if (BackBtn->IsVisible() && BackBtn->GetIsEnabled())
+		const ESlateVisibility Vis = BackBtn->GetVisibility();
+		if (Vis != ESlateVisibility::Collapsed && Vis != ESlateVisibility::Hidden && BackBtn->GetIsEnabled())
 		{
-			BackBtn->HandleClicked();
+			BackBtn->OnClicked().Broadcast();
 			return true;
 		}
 	}

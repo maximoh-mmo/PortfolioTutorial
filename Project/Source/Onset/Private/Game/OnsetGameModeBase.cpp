@@ -115,7 +115,8 @@ void AOnsetGameModeBase::PostLogin(APlayerController* NewPlayer)
 	AOnsetPlayerState* PS = NewPlayer->GetPlayerState<AOnsetPlayerState>();
 	AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(NewPlayer);
 
-	if (Auth && Auth->GetAuthMode() == EOnsetAuthMode::Token)
+	const bool bIsDedicatedTokenServer = IsRunningDedicatedServer() && Auth && Auth->GetAuthMode() == EOnsetAuthMode::Token;
+	if (bIsDedicatedTokenServer)
 	{
 		if (PC && PS && PS->SelectedCharacterSlot >= 0)
 		{

@@ -2,6 +2,7 @@
 
 
 #include "UI/CharacterSelectScreen.h"
+#include "CommonButtonBase.h"
 #include "Engine/GameInstance.h"
 #include "UI/CharacterCreationScreen.h"
 #include "UI/CharacterSlot.h"
@@ -110,6 +111,46 @@ void UCharacterSelectScreen::NativeOnActivated()
 	RefreshAccountData();
 }
 
+UWidget* UCharacterSelectScreen::NativeGetDesiredFocusTarget() const
+{
+	const int32 DesiredIndex = (SelectedSlot >= 0 && SelectedSlot < SlotWidgets.Num()) ? SelectedSlot : 0;
+	if (SlotWidgets.IsValidIndex(DesiredIndex) && SlotWidgets[DesiredIndex])
+	{
+		if (UWidget* Btn = SlotWidgets[DesiredIndex]->GetInteractionButton())
+		{
+			return Btn;
+		}
+	}
+
+	for (UCharacterSlot* SlotWidget : SlotWidgets)
+	{
+		if (SlotWidget)
+		{
+			if (UWidget* Btn = SlotWidget->GetInteractionButton())
+			{
+				return Btn;
+			}
+		}
+	}
+
+	return Super::NativeGetDesiredFocusTarget();
+}
+
+FReply UCharacterSelectScreen::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	const FKey Key = InKeyEvent.GetKey();
+	if (Key == EKeys::Gamepad_FaceButton_Top || Key == EKeys::Gamepad_FaceButton_Left || Key == EKeys::Delete)
+	{
+		if (SelectedSlot >= 0 && SelectedSlot < CachedAccountData.Slots.Num() && CachedAccountData.Slots[SelectedSlot].bOccupied)
+		{
+			DeleteCharacter(SelectedSlot);
+			return FReply::Handled();
+		}
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
 void UCharacterSelectScreen::NativeDestruct()
 {
 	if (CachedPlayerController)
@@ -193,6 +234,15 @@ void UCharacterSelectScreen::BuildSlotWidgets()
 		SlotWidget->SetSlotIndex(Index);
 		SlotWidget->OnSlotActivated.AddDynamic(this, &UCharacterSelectScreen::HandleSlotActivated);
 		SlotWidget->OnDeleteRequested.AddDynamic(this, &UCharacterSelectScreen::HandleDeleteRequested);
+
+		if (UCommonButtonBase* InteractionBtn = SlotWidget->GetInteractionButton())
+		{
+			InteractionBtn->OnFocusReceived().AddWeakLambda(this, [this, Index]()
+			{
+				SelectedSlot = Index;
+			});
+		}
+
 		SlotWidgets.Add(SlotWidget);
 	}
 }
@@ -217,6 +267,11 @@ void UCharacterSelectScreen::RefreshSlotWidgets()
 			EmptySlot.SlotIndex = Index;
 			SlotWidget->SetSlotData(EmptySlot);
 		}
+	}
+
+	if (IsActivated())
+	{
+		RequestRefreshFocus();
 	}
 }
 
