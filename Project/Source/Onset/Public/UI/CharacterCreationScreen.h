@@ -14,8 +14,12 @@ class UOnsetAppearanceCatalog;
 class UPanelWidget;
 class UScrollBox;
 class UVerticalBox;
-class UViewport;
+class UImage;
+class UTextureRenderTarget2D;
+class USceneCaptureComponent2D;
 class UMHTerminalInputController;
+class UMaterialInterface;
+class UMaterialInstanceDynamic;
 
 UCLASS(Abstract, Config = Game)
 class ONSET_API UCharacterCreationScreen : public UOnsetScreenBase
@@ -58,6 +62,10 @@ protected:
     virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
     virtual UWidget* NativeGetDesiredFocusTarget() const override;
     virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+    virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+    virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+    virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+    virtual void NativeOnMouseCaptureLost(const FCaptureLostEvent& CaptureLostEvent) override;
     void CyclePanelFocus(bool bForward);
     void SetupNavigationRules();
     UWidget* GetSelectedClassButton() const;
@@ -73,18 +81,26 @@ protected:
     UPROPERTY(BlueprintReadOnly, Category="Onset|Character Creation")
     FOnsetAppearanceRecipe DraftAppearance;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Onset|Preview")
+    TSoftObjectPtr<UMaterialInterface> PreviewMaterial;
+
 private:
     UPROPERTY(Transient) TObjectPtr<UOnsetAppearanceCatalog> AppearanceCatalog;
     UPROPERTY(Transient) TObjectPtr<UScrollBox> OptionsScroll;
     UPROPERTY(Transient) TObjectPtr<UVerticalBox> OptionsList;
     UPROPERTY(Transient) TObjectPtr<UCommonTextBlock> FeedbackText;
-    UPROPERTY(Transient) TObjectPtr<UViewport> PreviewViewport;
+    UPROPERTY(Transient) TObjectPtr<UImage> PreviewImage;
+    UPROPERTY(Transient) TObjectPtr<UTextureRenderTarget2D> PreviewRenderTarget;
+    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> PreviewMaterialInstance;
+    UPROPERTY(Transient) TObjectPtr<AActor> PreviewRigActor;
+    UPROPERTY(Transient) TObjectPtr<USceneCaptureComponent2D> PreviewCaptureComponent;
     UPROPERTY(Transient) TObjectPtr<AOnsetAppearancePreviewActor> PreviewActor;
     UPROPERTY(Transient) TObjectPtr<UCommonButtonBase> NativeCreateButton;
     UPROPERTY(Transient) TObjectPtr<UWidget> LastFocusedAppearanceWidget;
     UPROPERTY(Transient) TObjectPtr<UMHTerminalInputController> TerminalInputController;
     bool bDraftReady = false;
     bool bRequestPending = false;
+    bool bIsDraggingPreview = false;
 
     void EnsureDraft();
     void BuildAppearancePanel();

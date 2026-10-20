@@ -18,7 +18,9 @@ AOnsetAppearancePreviewActor::AOnsetAppearancePreviewActor()
 
 bool AOnsetAppearancePreviewActor::RebuildPreview()
 {
+    if (!Appearance) return false;
     Appearance->Catalog = Catalog.LoadSynchronous();
+    if (!Appearance->IsRegistered() && GetWorld()) Appearance->RegisterComponentWithWorld(GetWorld());
     return Appearance->ApplyRecipe(Recipe, Use);
 }
 

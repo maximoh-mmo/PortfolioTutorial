@@ -118,6 +118,10 @@ int32 UOnsetAppearanceIntegrationAuditCommandlet::Main(const FString& Params)
     const auto OriginalTransform = Character->GetMesh()->GetRelativeTransform();
     auto* OriginalComponent = Character->GetMesh();
     UClass* OriginalAnimClass = Character->GetMesh()->GetAnimClass();
+    if (!OriginalAnimClass)
+    {
+        OriginalAnimClass = LoadClass<UAnimInstance>(nullptr, TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"));
+    }
     FOnsetAppearanceRecipe Female, Male; TArray<FOnsetAppearanceIssue> Issues;
     Check(UOnsetCharacterAppearanceComponent::GetPlayerPreset(0, Female), TEXT("female menu preset"));
     Check(UOnsetCharacterAppearanceComponent::GetPlayerPreset(1, Male), TEXT("male menu preset"));

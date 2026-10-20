@@ -82,7 +82,8 @@ USkeletalMeshComponent* UOnsetAppearanceComponent::MakeMesh(USkeletalMesh* Mesh,
     C->SetSkeletalMesh(Mesh);
     C->SetupAttachment(Parent, Socket);
     C->SetRelativeTransform(Relative);
-    C->RegisterComponent();
+    if (GetWorld()) C->RegisterComponentWithWorld(GetWorld());
+    else C->RegisterComponent();
     C->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
     for (int32 I = 0; I < C->GetNumMaterials(); ++I) C->CreateDynamicMaterialInstance(I);
     BuiltMeshes.Add(C);
@@ -93,7 +94,15 @@ bool UOnsetAppearanceComponent::BuildLoaded(const FOnsetAppearanceRecipe& R)
 {
     auto Fail = [this](const FString& Field, const FString& Message)
     { auto& I = LastIssues.AddDefaulted_GetRef(); I.Code = TEXT("AssemblyFailed"); I.Field = Field; I.Message = Message; return false; };
-    if (!GetOwner() || !IsRegistered() || !Catalog) return Fail(TEXT("Component"), TEXT("Appearance component must be registered on an actor."));
+    if (!GetOwner()) return Fail(TEXT("Component"), TEXT("Appearance component has no owning actor."));
+    if (!Catalog) return Fail(TEXT("Catalog"), TEXT("Appearance catalog is unavailable."));
+    if (!IsRegistered())
+    {
+        UWorld* WorldToRegisterWith = GetWorld();
+        if (!WorldToRegisterWith && GetOwner()) WorldToRegisterWith = GetOwner()->GetWorld();
+        if (WorldToRegisterWith) RegisterComponentWithWorld(WorldToRegisterWith);
+    }
+    if (!IsRegistered()) return Fail(TEXT("Component"), TEXT("Appearance component must be registered on an actor."));
     const auto* B = Catalog->Bodies.Find(R.BodyId); const auto* H = Catalog->Heads.Find(R.HeadId);
     if (!B || !H || !B->Mesh.Get() || !H->Mesh.Get()) return Fail(TEXT("BodyId"), TEXT("Body or head asset is unavailable."));
     // Validate attachment sockets before replacing a previously valid preview.
