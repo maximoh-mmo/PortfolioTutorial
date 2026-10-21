@@ -62,6 +62,8 @@ public:
 	void SetCameraSettings(const FVector& InRelativeLocation, const FRotator& InRelativeRotation, float InFOV);
 
 	/** Rotates the preview character by the specified yaw delta. */
+	void SetCharacterRotation(const FRotator& InRotation);
+
 	void AddCharacterYaw(float DeltaYaw);
 
 	/** Accessors */

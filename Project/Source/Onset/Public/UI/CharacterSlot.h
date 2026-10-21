@@ -144,6 +144,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
 	FRotator CameraRotation = FRotator(0.f, 180.f, 0.f);
 
+	/** Character rotation relative to the preview rig (default Yaw = -90 to face camera). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
+	FRotator CharacterRotation = FRotator(0.f, -90.f, 0.f);
+
 	/** Camera field of view angle. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
 	float CameraFOV = 35.f;

@@ -158,6 +158,7 @@ void UCharacterSlot::EnsurePreview()
 		if (PreviewRig)
 		{
 			PreviewRig->SetCameraSettings(CameraOffset, CameraRotation, CameraFOV);
+			PreviewRig->SetCharacterRotation(CharacterRotation);
 			PreviewRig->AttachToCanvas(CharacterPreview, WidgetTree);
 		}
 	}

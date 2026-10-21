@@ -178,13 +178,15 @@ void AOnsetAppearancePreviewRig::InitializeRig(
 		PreviewActor = World->SpawnActor<AOnsetAppearancePreviewActor>(
 			AOnsetAppearancePreviewActor::StaticClass(),
 			GetActorLocation(),
-			FRotator::ZeroRotator,
+			FRotator(0.f, -90.f, 0.f),
 			ActorParams);
 
 		if (PreviewActor)
 		{
 			PreviewActor->SetActorEnableCollision(false);
-			PreviewActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+			PreviewActor->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+			PreviewActor->SetActorRelativeLocation(FVector::ZeroVector);
+			PreviewActor->SetActorRelativeRotation(FRotator(0.f, -90.f, 0.f));
 			PreviewActor->Use = EOnsetAppearanceUse::Player;
 			PreviewActor->Catalog = Catalog;
 
@@ -352,6 +354,14 @@ void AOnsetAppearancePreviewRig::SetCameraSettings(const FVector& InRelativeLoca
 	{
 		PreviewCaptureComponent->SetRelativeLocationAndRotation(InRelativeLocation, InRelativeRotation);
 		PreviewCaptureComponent->FOVAngle = InFOV;
+	}
+}
+
+void AOnsetAppearancePreviewRig::SetCharacterRotation(const FRotator& InRotation)
+{
+	if (PreviewActor)
+	{
+		PreviewActor->SetActorRelativeRotation(InRotation);
 	}
 }
 
