@@ -744,7 +744,6 @@ void UCharacterCreationScreen::EnsurePreview()
 
     auto* Center = Cast<UCanvasPanel>(GetWidgetFromName(TEXT("Preview")));
     if (!Center) return;
-    if (auto* OldImage = GetWidgetFromName(TEXT("ScaleBox_1"))) OldImage->SetVisibility(ESlateVisibility::Collapsed);
 
     if (!PreviewRenderTarget)
     {
