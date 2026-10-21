@@ -58,6 +58,8 @@ bool UOnsetCharacterAppearanceComponent::BindCharacterMesh()
     auto* Character=Cast<ACharacter>(GetOwner());
     if (!IsRegistered() || !Character || !Character->GetMesh()) return false;
     if (!Catalog) Catalog=LoadDefaultCatalog();
+    if (Character->GetMesh()->GetRelativeRotation().IsNearlyZero())
+        Character->GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
     if (!Character->GetMesh()->GetSkeletalMeshAsset())
         Character->GetMesh()->SetRelativeLocation(FVector(0.f,0.f,-Character->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()));
     BindExternalBodyMesh(Character->GetMesh());

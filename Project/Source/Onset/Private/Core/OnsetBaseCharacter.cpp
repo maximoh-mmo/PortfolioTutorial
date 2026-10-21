@@ -44,6 +44,24 @@ AOnsetBaseCharacter::AOnsetBaseCharacter()
 	CharacterAppearance = CreateDefaultSubobject<UOnsetCharacterAppearanceComponent>(TEXT("CharacterAppearance"));
 	CharacterAppearance->SetupAttachment(GetMesh());
 	SetReplicateMovement(true);
+
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+
+	if (GetMesh())
+	{
+		GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	}
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->bOrientRotationToMovement = true;
+		MoveComp->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
+		MoveComp->bConstrainToPlane = true;
+		MoveComp->bSnapToPlaneAtStart = true;
+	}
+
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("TargetingComponent"));
 	AttributeSet = CreateDefaultSubobject<UOnsetAttributeSet>(TEXT("AttributeSet"));

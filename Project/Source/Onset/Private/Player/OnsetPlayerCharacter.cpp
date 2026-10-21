@@ -36,12 +36,42 @@ AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 	CameraBoom->CameraLagSpeed = 8.f;
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	GetCharacterMovement()->bRequestedMoveUseAcceleration = true;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+
+	if (GetMesh())
+	{
+		GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 	}
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->bOrientRotationToMovement = true;
+		MoveComp->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
+		MoveComp->bConstrainToPlane = true;
+		MoveComp->bSnapToPlaneAtStart = true;
+		MoveComp->bRequestedMoveUseAcceleration = true;
+	}
+}
 
 void AOnsetPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (GetMesh())
+	{
+		GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	}
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->bOrientRotationToMovement = true;
+		MoveComp->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
+		MoveComp->bConstrainToPlane = true;
+		MoveComp->bSnapToPlaneAtStart = true;
+	}
+
 	HomeTransform = FTransform(
 		GetActorRotation().GetEquivalentRotator(),
 		GetActorLocation()

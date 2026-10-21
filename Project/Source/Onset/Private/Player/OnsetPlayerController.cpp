@@ -298,6 +298,12 @@ void AOnsetPlayerController::PlayerTick(float DeltaTime)
 			const float DistToActor = FVector::Dist2D(ControlledPawn->GetActorLocation(), FollowTargetActor->GetActorLocation());
 			if (DistToActor <= PathAcceptanceRadius)
 			{
+				FVector ToTarget = FollowTargetActor->GetActorLocation() - ControlledPawn->GetActorLocation();
+				ToTarget.Z = 0.0f;
+				if (!ToTarget.IsNearlyZero())
+				{
+					ControlledPawn->SetActorRotation(FRotator(0.0f, ToTarget.Rotation().Yaw, 0.0f));
+				}
 				StopMovement();
 				return;
 			}
@@ -546,6 +552,14 @@ void AOnsetPlayerController::OnAutoAttackTick()
 		MoveToActor(Target, 200.0f);
 	}
 
+	// Always face the combat target when attacking
+	FVector ToTarget = Target->GetActorLocation() - Self->GetActorLocation();
+	ToTarget.Z = 0.0f;
+	if (!ToTarget.IsNearlyZero())
+	{
+		Self->SetActorRotation(FRotator(0.0f, ToTarget.Rotation().Yaw, 0.0f));
+	}
+
 	Self->AbilitySystemComponent->TryActivateAbilityByClass(BasicAttackAbility);
 }
 
@@ -561,7 +575,8 @@ void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 	if (!ControlledPawn) ControlledPawn = CachedPlayerPawn;
 	if (ControlledPawn)
 	{
-		const FRotator CameraYaw(0.0f, GetControlRotation().Yaw, 0.0f);
+		const float CamYaw = PlayerCameraManager ? PlayerCameraManager->GetCameraRotation().Yaw : 0.0f;
+		const FRotator CameraYaw(0.0f, CamYaw, 0.0f);
 		const FVector Forward = FRotationMatrix(CameraYaw).GetUnitAxis(EAxis::X);
 		const FVector Right   = FRotationMatrix(CameraYaw).GetUnitAxis(EAxis::Y);
 		ControlledPawn->AddMovementInput(Forward, MovementVector.Y);

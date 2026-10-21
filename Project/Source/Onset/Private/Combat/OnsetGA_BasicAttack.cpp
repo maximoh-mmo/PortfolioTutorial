@@ -70,6 +70,14 @@ void UOnsetGA_BasicAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 		return;
 	}
 
+	// Face the target actor when executing the attack
+	FVector ToTarget = TargetActor->GetActorLocation() - Self->GetActorLocation();
+	ToTarget.Z = 0.0f;
+	if (!ToTarget.IsNearlyZero())
+	{
+		Self->SetActorRotation(FRotator(0.0f, ToTarget.Rotation().Yaw, 0.0f));
+	}
+
 	// Play montage if available
 	if (AttackMontage && Self->GetMesh() && Self->GetMesh()->GetAnimInstance())
 	{
