@@ -109,6 +109,25 @@ void UCharacterSelectScreen::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 	RefreshAccountData();
+	for (UCharacterSlot* SlotWidget : SlotWidgets)
+	{
+		if (SlotWidget)
+		{
+			SlotWidget->SetPreviewActive(true);
+		}
+	}
+}
+
+void UCharacterSelectScreen::NativeOnDeactivated()
+{
+	for (UCharacterSlot* SlotWidget : SlotWidgets)
+	{
+		if (SlotWidget)
+		{
+			SlotWidget->SetPreviewActive(false);
+		}
+	}
+	Super::NativeOnDeactivated();
 }
 
 UWidget* UCharacterSelectScreen::NativeGetDesiredFocusTarget() const

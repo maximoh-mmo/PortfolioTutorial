@@ -40,6 +40,9 @@ struct FOnsetCharacterSlotData
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Account")
 	bool bOccupied = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Account")
+	FString AppearanceJSON;
 };
 
 USTRUCT(BlueprintType)

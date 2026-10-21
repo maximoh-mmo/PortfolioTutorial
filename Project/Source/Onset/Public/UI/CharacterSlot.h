@@ -9,6 +9,11 @@
 
 class UCommonButtonBase;
 class UCommonTextBlock;
+class UCanvasPanel;
+class AOnsetAppearancePreviewRig;
+class AOnsetAppearancePreviewActor;
+class UMaterialInterface;
+class UAnimSequence;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnsetCharacterSlotClicked, int32, SlotIndex);
 
@@ -16,10 +21,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnsetCharacterSlotClicked, int32, S
  * Base class for a single character-select slot.
  *
  * All behavior lives in C++: the slot index, per-slot account data, the
- * occupied/empty display state (name text, level text, delete button visibility)
- * and click routing. Blueprints only provide aesthetics (layout, fonts, colors,
- * per-class visuals) via BP_OnSlotDataChanged and may read SlotData/SlotIndex
- * for extra styling.
+ * occupied/empty display state (name text, level text, delete button visibility),
+ * 3D character model preview via AOnsetAppearancePreviewRig, and click routing.
+ * Blueprints provide layout/styling and may include an optional CanvasPanel
+ * named "CharacterPreview" to display the character's 3D appearance.
  */
 UCLASS(Abstract)
 class ONSET_API UCharacterSlot : public UUserWidget
@@ -62,11 +67,36 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Onset|CharacterSlot")
 	void HandleDeleteClicked();
 
+	/** Enables or suspends the 3D capture rig for performance when screens deactivate. */
+	void SetPreviewActive(bool bActive);
+
+	/** Rotates the preview character model in the slot (e.g. on mouse drag or hover). */
+	UFUNCTION(BlueprintCallable, Category = "Onset|CharacterSlot")
+	void AddPreviewYaw(float YawDelta);
+
+	/** Access to the underlying preview rig and actor. */
+	UFUNCTION(BlueprintPure, Category = "Onset|CharacterSlot")
+	AOnsetAppearancePreviewRig* GetPreviewRig() const { return PreviewRig; }
+
+	UFUNCTION(BlueprintPure, Category = "Onset|CharacterSlot")
+	AOnsetAppearancePreviewActor* GetPreviewActor() const;
+
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	/** Applies the current SlotData/SlotIndex to the bound widgets, then notifies Blueprint. */
 	void Refresh();
+
+	/** Ensures the 3D capture rig is spawned and attached to CharacterPreview. */
+	void EnsurePreview();
+
+	/** Updates the 3D model appearance and animation on the preview rig. */
+	void RefreshPreview();
+
+	/** Destroys the 3D capture rig and frees render target resources. */
+	void DestroyPreview();
 
 	/** Hook for Blueprint to style the slot after the logical state has been applied. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Onset|CharacterSlot")
@@ -90,7 +120,39 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UCommonButtonBase> DeleteButton;
 
+	/** Optional canvas panel in WBP_CharacterSlot where the 3D character image is rendered. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UCanvasPanel> CharacterPreview;
+
 	/** Text displayed on an empty slot. */
 	UPROPERTY(EditDefaultsOnly, Category = "Onset|CharacterSlot")
 	FText EmptySlotLabel = NSLOCTEXT("CharacterSlot", "EmptySlotLabel", "Create Character");
+
+	/** Custom material to render the preview render target (defaults to M_CharacterPreview). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
+	TSoftObjectPtr<UMaterialInterface> PreviewMaterial;
+
+	/** Optional idle animation sequence to loop in the character slot. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
+	TSoftObjectPtr<UAnimSequence> IdleAnimation;
+
+	/** Camera position relative to the character in the isolated studio. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
+	FVector CameraOffset = FVector(240.f, 0.f, 95.f);
+
+	/** Camera rotation relative to the character in the isolated studio. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
+	FRotator CameraRotation = FRotator(0.f, 180.f, 0.f);
+
+	/** Camera field of view angle. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
+	float CameraFOV = 35.f;
+
+	/** Resolution for the 2D render target. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
+	FIntPoint RenderTargetResolution = FIntPoint(512, 640);
+
+private:
+	UPROPERTY(Transient)
+	TObjectPtr<AOnsetAppearancePreviewRig> PreviewRig;
 };

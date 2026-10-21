@@ -22,6 +22,8 @@
 #include "Misc/PackageName.h"
 #include "UObject/SavePackage.h"
 #include "UI/CharacterCreationScreen.h"
+#include "UI/OnsetAppearancePreviewRig.h"
+#include "UI/CharacterSlot.h"
 #include "UI/MHTerminalTextInputController.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
@@ -376,6 +378,53 @@ int32 UOnsetAppearanceIntegrationAuditCommandlet::Main(const FString& Params)
             RootLayout->RemoveFromParent();
         }
     }
+    // Audit Reusable Preview Rig standalone
+    {
+        AOnsetAppearancePreviewRig* StandaloneRig = AOnsetAppearancePreviewRig::SpawnPreviewRig(
+            World,
+            FVector(0.f, 5000.f, -10000.f),
+            FIntPoint(512, 640)
+        );
+        Check(StandaloneRig != nullptr, TEXT("spawn standalone preview rig"));
+        if (StandaloneRig)
+        {
+            Check(StandaloneRig->GetPreviewActor() != nullptr, TEXT("standalone rig has preview actor"));
+            Check(StandaloneRig->GetCaptureComponent() != nullptr, TEXT("standalone rig has capture component"));
+            Check(StandaloneRig->GetRenderTarget() != nullptr, TEXT("standalone rig has render target"));
+            Check(StandaloneRig->ApplyAppearanceFromJSON(TEXT("{}"), EOnsetCharacterClass::DPS), TEXT("standalone rig apply default appearance"));
+            StandaloneRig->Destroy();
+        }
+    }
+
+    // Audit WBP_CharacterSlot preview integration
+    auto* SlotClass = LoadClass<UCharacterSlot>(nullptr, TEXT("/Game/UI/Components/WBP_CharacterSlot.WBP_CharacterSlot_C"));
+    Check(SlotClass != nullptr, TEXT("load WBP_CharacterSlot class"));
+    if (SlotClass)
+    {
+        auto* SlotWidget = CreateWidget<UCharacterSlot>(World, SlotClass);
+        Check(SlotWidget != nullptr, TEXT("instantiate WBP_CharacterSlot"));
+        if (SlotWidget)
+        {
+            FOnsetCharacterSlotData TestSlot;
+            TestSlot.SlotIndex = 0;
+            TestSlot.CharacterName = TEXT("AuditPreviewChar");
+            TestSlot.Level = 5;
+            TestSlot.CharacterClass = EOnsetCharacterClass::DPS;
+            TestSlot.bOccupied = true;
+            SlotWidget->SetSlotData(TestSlot);
+
+            UWidget* CanvasWidget = SlotWidget->GetWidgetFromName(TEXT("CharacterPreview"));
+            Report += FString::Printf(TEXT("CharacterSlot CharacterPreview canvas found: %d\n"), CanvasWidget != nullptr);
+            if (CanvasWidget)
+            {
+                Check(SlotWidget->GetPreviewRig() != nullptr, TEXT("CharacterSlot spawned preview rig for occupied slot"));
+                Check(SlotWidget->GetPreviewActor() != nullptr, TEXT("CharacterSlot has preview actor"));
+            }
+
+            SlotWidget->RemoveFromParent();
+        }
+    }
+
     if (Controller) Controller->Destroy();
     FFileHelper::SaveStringToFile(Report, *(FPaths::ProjectSavedDir()/TEXT("OnsetAppearanceIntegrationAudit.txt")));
     UE_LOG(LogTemp, Display, TEXT("ONSET APPEARANCE INTEGRATION AUDIT: failures=%d\n%s"), Failures, *Report);

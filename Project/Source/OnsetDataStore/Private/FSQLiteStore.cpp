@@ -264,7 +264,7 @@ bool FSQLiteStore::LoadAccount(const FString& Platform, const FString& PlatformI
 	sqlite3_finalize(ActiveStmt);
 	ActiveStmt = nullptr;
 
-	const char* SlotSQL = "SELECT slot_index, character_name, level, character_class FROM characters WHERE platform = ?1 AND platform_id = ?2 ORDER BY slot_index;";
+	const char* SlotSQL = "SELECT slot_index, character_name, level, character_class, appearance_json FROM characters WHERE platform = ?1 AND platform_id = ?2 ORDER BY slot_index;";
 	if (!PrepareAndBind(SlotSQL))
 		return false;
 
@@ -289,6 +289,8 @@ bool FSQLiteStore::LoadAccount(const FString& Platform, const FString& PlatformI
 		Slot.CharacterName = UTF8_TO_TCHAR(sqlite3_column_text(ActiveStmt, 1));
 		Slot.Level = sqlite3_column_int(ActiveStmt, 2);
 		Slot.CharacterClass = static_cast<EOnsetCharacterClass>(sqlite3_column_int(ActiveStmt, 3));
+		const unsigned char* AppearanceText = sqlite3_column_text(ActiveStmt, 4);
+		Slot.AppearanceJSON = AppearanceText ? UTF8_TO_TCHAR(AppearanceText) : TEXT("");
 		Slot.bOccupied = true;
 		ExpectedSlot = SlotIdx + 1;
 	}

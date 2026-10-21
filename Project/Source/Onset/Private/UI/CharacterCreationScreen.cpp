@@ -5,6 +5,7 @@
 #include "OnsetAppearanceComponent.h"
 #include "OnsetAppearanceLibrary.h"
 #include "OnsetAppearancePreviewActor.h"
+#include "UI/OnsetAppearancePreviewRig.h"
 #include "Player/OnsetCharacterAppearanceComponent.h"
 #include "Player/OnsetPlayerController.h"
 #include "Blueprint/WidgetTree.h"
@@ -745,191 +746,26 @@ void UCharacterCreationScreen::EnsurePreview()
     auto* Center = Cast<UCanvasPanel>(GetWidgetFromName(TEXT("Preview")));
     if (!Center) return;
 
-    if (!PreviewRenderTarget)
-    {
-        PreviewRenderTarget = NewObject<UTextureRenderTarget2D>(this);
-        PreviewRenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8_SRGB;
-        PreviewRenderTarget->ClearColor = FLinearColor(0.f, 0.f, 0.f, 0.f);
-        PreviewRenderTarget->bAutoGenerateMips = false;
-        PreviewRenderTarget->InitAutoFormat(1024, 1280);
-        PreviewRenderTarget->UpdateResourceImmediate(true);
-    }
-
     if (!PreviewRigActor)
     {
-        FActorSpawnParameters SpawnParams;
-        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-        SpawnParams.bNoFail = true;
+        AOnsetAppearancePreviewRig* Rig = AOnsetAppearancePreviewRig::SpawnPreviewRig(
+            GetWorld(),
+            FVector(0.f, 0.f, -10000.f),
+            FIntPoint(1024, 1280),
+            PreviewMaterial,
+            AppearanceCatalog
+        );
 
-        const FVector RigLocation(0.f, 0.f, -10000.f);
-        PreviewRigActor = GetWorld()->SpawnActor<AActor>(AActor::StaticClass(), RigLocation, FRotator::ZeroRotator, SpawnParams);
-        if (PreviewRigActor)
+        if (Rig)
         {
-            PreviewRigActor->SetActorEnableCollision(false);
-
-            USceneComponent* RootComp = NewObject<USceneComponent>(PreviewRigActor, TEXT("RigRoot"));
-            PreviewRigActor->SetRootComponent(RootComp);
-            RootComp->SetWorldLocation(RigLocation);
-            RootComp->RegisterComponent();
-
-            PreviewCaptureComponent = NewObject<USceneCaptureComponent2D>(PreviewRigActor, TEXT("PreviewCapture"));
-            PreviewCaptureComponent->SetupAttachment(RootComp);
-            PreviewCaptureComponent->SetRelativeLocationAndRotation(FVector(240.f, 0.f, 95.f), FRotator(0.f, 180.f, 0.f));
-            PreviewCaptureComponent->TextureTarget = PreviewRenderTarget;
-            PreviewCaptureComponent->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
-            PreviewCaptureComponent->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
-            PreviewCaptureComponent->bCaptureEveryFrame = true;
-            PreviewCaptureComponent->bCaptureOnMovement = false;
-            PreviewCaptureComponent->bAlwaysPersistRenderingState = true;
-            PreviewCaptureComponent->FOVAngle = 35.f;
-
-            PreviewCaptureComponent->ShowFlags.SetAtmosphere(false);
-            PreviewCaptureComponent->ShowFlags.SetFog(false);
-            PreviewCaptureComponent->ShowFlags.SetVolumetricFog(false);
-            PreviewCaptureComponent->ShowFlags.SetBloom(false);
-            PreviewCaptureComponent->ShowFlags.SetEyeAdaptation(false);
-            PreviewCaptureComponent->ShowFlags.TemporalAA = false;
-            PreviewCaptureComponent->ShowFlags.MotionBlur = false;
-            PreviewCaptureComponent->ShowFlags.SetLighting(true);
-            PreviewCaptureComponent->ShowFlags.SetLumenGlobalIllumination(false);
-            PreviewCaptureComponent->ShowFlags.SetLumenReflections(false);
-            PreviewCaptureComponent->ShowFlags.SetAmbientOcclusion(false);
-            PreviewCaptureComponent->RegisterComponent();
-
-            // 1. Camera-aligned direct front fill light
-            UPointLightComponent* CameraLight = NewObject<UPointLightComponent>(PreviewRigActor, TEXT("CameraLight"));
-            CameraLight->SetupAttachment(PreviewCaptureComponent);
-            CameraLight->SetMobility(EComponentMobility::Movable);
-            CameraLight->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-            CameraLight->Intensity = 5000.f;
-            CameraLight->AttenuationRadius = 1200.f;
-            CameraLight->LightColor = FColor(255, 250, 245);
-            CameraLight->CastShadows = false;
-            CameraLight->CastDynamicShadows = false;
-            CameraLight->CastStaticShadows = false;
-            CameraLight->RegisterComponent();
-
-            // 2. Key light (front-right, 20 deg down)
-            UDirectionalLightComponent* KeyLight = NewObject<UDirectionalLightComponent>(PreviewRigActor, TEXT("KeyLight"));
-            KeyLight->SetupAttachment(RootComp);
-            KeyLight->SetMobility(EComponentMobility::Movable);
-            KeyLight->SetRelativeRotation(FRotator(-20.f, 160.f, 0.f));
-            KeyLight->Intensity = 5.0f;
-            KeyLight->LightColor = FColor(255, 250, 240);
-            KeyLight->CastShadows = false;
-            KeyLight->CastDynamicShadows = false;
-            KeyLight->CastStaticShadows = false;
-            KeyLight->bCastVolumetricShadow = false;
-            KeyLight->RegisterComponent();
-
-            // 3. Fill light (front-left, 10 deg down)
-            UDirectionalLightComponent* FillLight = NewObject<UDirectionalLightComponent>(PreviewRigActor, TEXT("FillLight"));
-            FillLight->SetupAttachment(RootComp);
-            FillLight->SetMobility(EComponentMobility::Movable);
-            FillLight->SetRelativeRotation(FRotator(-10.f, -160.f, 0.f));
-            FillLight->Intensity = 2.5f;
-            FillLight->LightColor = FColor(215, 230, 255);
-            FillLight->CastShadows = false;
-            FillLight->CastDynamicShadows = false;
-            FillLight->CastStaticShadows = false;
-            FillLight->bCastVolumetricShadow = false;
-            FillLight->RegisterComponent();
-
-            // 4. Rim / kicker light (behind character, pointing towards camera edges)
-            UDirectionalLightComponent* RimLight = NewObject<UDirectionalLightComponent>(PreviewRigActor, TEXT("RimLight"));
-            RimLight->SetupAttachment(RootComp);
-            RimLight->SetMobility(EComponentMobility::Movable);
-            RimLight->SetRelativeRotation(FRotator(-25.f, 20.f, 0.f));
-            RimLight->Intensity = 4.0f;
-            RimLight->LightColor = FColor(255, 255, 255);
-            RimLight->CastShadows = false;
-            RimLight->CastDynamicShadows = false;
-            RimLight->CastStaticShadows = false;
-            RimLight->bCastVolumetricShadow = false;
-            RimLight->RegisterComponent();
-
-            // 5. Bounce light (from below front, soft warm bounce)
-            UDirectionalLightComponent* BounceLight = NewObject<UDirectionalLightComponent>(PreviewRigActor, TEXT("BounceLight"));
-            BounceLight->SetupAttachment(RootComp);
-            BounceLight->SetMobility(EComponentMobility::Movable);
-            BounceLight->SetRelativeRotation(FRotator(40.f, 170.f, 0.f));
-            BounceLight->Intensity = 1.0f;
-            BounceLight->LightColor = FColor(220, 215, 200);
-            BounceLight->CastShadows = false;
-            BounceLight->CastDynamicShadows = false;
-            BounceLight->CastStaticShadows = false;
-            BounceLight->bCastVolumetricShadow = false;
-            BounceLight->RegisterComponent();
+            Rig->AttachToCanvas(Center, WidgetTree);
+            PreviewRigActor = Rig;
+            PreviewCaptureComponent = Rig->GetCaptureComponent();
+            PreviewActor = Rig->GetPreviewActor();
+            PreviewRenderTarget = Rig->GetRenderTarget();
+            PreviewMaterialInstance = Rig->GetMaterialInstance();
+            PreviewImage = Rig->GetPreviewImage();
         }
-    }
-
-    if (!PreviewActor && PreviewRigActor)
-    {
-        FActorSpawnParameters ActorParams;
-        ActorParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-        ActorParams.bNoFail = true;
-
-        const FVector RigLocation(0.f, 0.f, -10000.f);
-        PreviewActor = GetWorld()->SpawnActor<AOnsetAppearancePreviewActor>(
-            AOnsetAppearancePreviewActor::StaticClass(),
-            RigLocation,
-            FRotator::ZeroRotator,
-            ActorParams);
-
-        if (PreviewActor)
-        {
-            PreviewActor->SetActorEnableCollision(false);
-            PreviewActor->AttachToActor(PreviewRigActor, FAttachmentTransformRules::KeepWorldTransform);
-            PreviewActor->Use = EOnsetAppearanceUse::Player;
-            PreviewActor->Catalog = AppearanceCatalog;
-
-            if (PreviewCaptureComponent)
-            {
-                PreviewCaptureComponent->ClearShowOnlyComponents();
-                PreviewCaptureComponent->ShowOnlyActors.Reset();
-                PreviewCaptureComponent->ShowOnlyActors.Add(PreviewActor);
-            }
-        }
-    }
-
-    if (!PreviewMaterialInstance)
-    {
-        UMaterialInterface* BaseMat = PreviewMaterial.IsValid() ? PreviewMaterial.Get() : PreviewMaterial.LoadSynchronous();
-        if (!BaseMat)
-        {
-            BaseMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_CharacterPreview.M_CharacterPreview"));
-        }
-
-        if (BaseMat)
-        {
-            PreviewMaterialInstance = UMaterialInstanceDynamic::Create(BaseMat, this);
-        }
-    }
-
-    if (PreviewMaterialInstance && PreviewRenderTarget)
-    {
-        PreviewMaterialInstance->SetTextureParameterValue(TEXT("PreviewTexture"), PreviewRenderTarget);
-    }
-
-    UObject* BrushResource = PreviewMaterialInstance ? static_cast<UObject*>(PreviewMaterialInstance.Get()) : static_cast<UObject*>(PreviewRenderTarget.Get());
-
-    if (!PreviewImage)
-    {
-        PreviewImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("OnsetAppearancePreviewImage"));
-        PreviewImage->SetBrushResourceObject(BrushResource);
-        PreviewImage->SetVisibility(ESlateVisibility::Visible);
-
-        auto* ImageSlot = Center->AddChildToCanvas(PreviewImage);
-        if (ImageSlot)
-        {
-            ImageSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
-            ImageSlot->SetOffsets(FMargin(0.f));
-            ImageSlot->SetZOrder(-1);
-        }
-    }
-    else
-    {
-        PreviewImage->SetBrushResourceObject(BrushResource);
     }
 }
 

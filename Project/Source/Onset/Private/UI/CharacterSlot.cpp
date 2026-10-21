@@ -4,6 +4,10 @@
 
 #include "CommonButtonBase.h"
 #include "CommonTextBlock.h"
+#include "Components/CanvasPanel.h"
+#include "UI/OnsetAppearancePreviewRig.h"
+#include "OnsetAppearancePreviewActor.h"
+#include "Animation/AnimSequence.h"
 
 void UCharacterSlot::SetSlotIndex(int32 InSlotIndex)
 {
@@ -60,6 +64,28 @@ void UCharacterSlot::NativeOnInitialized()
 	Refresh();
 }
 
+void UCharacterSlot::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	if (!CharacterPreview)
+	{
+		CharacterPreview = Cast<UCanvasPanel>(GetWidgetFromName(TEXT("CharacterPreview")));
+	}
+
+	if (IsOccupied())
+	{
+		EnsurePreview();
+		RefreshPreview();
+	}
+}
+
+void UCharacterSlot::NativeDestruct()
+{
+	DestroyPreview();
+	Super::NativeDestruct();
+}
+
 void UCharacterSlot::Refresh()
 {
 	const bool bOccupied = IsOccupied();
@@ -80,5 +106,109 @@ void UCharacterSlot::Refresh()
 		DeleteButton->SetVisibility(bOccupied ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 	}
 
+	if (!CharacterPreview)
+	{
+		CharacterPreview = Cast<UCanvasPanel>(GetWidgetFromName(TEXT("CharacterPreview")));
+	}
+
+	if (CharacterPreview)
+	{
+		if (bOccupied)
+		{
+			EnsurePreview();
+			RefreshPreview();
+		}
+		else if (PreviewRig)
+		{
+			PreviewRig->SetActive(false);
+		}
+	}
+
 	BP_OnSlotDataChanged();
+}
+
+void UCharacterSlot::EnsurePreview()
+{
+	if (!IsOccupied() || !GetWorld())
+	{
+		return;
+	}
+
+	if (!CharacterPreview)
+	{
+		CharacterPreview = Cast<UCanvasPanel>(GetWidgetFromName(TEXT("CharacterPreview")));
+	}
+
+	if (!CharacterPreview)
+	{
+		return;
+	}
+
+	if (!PreviewRig)
+	{
+		// Space rigs out in world space (1500 units apart, deep below the world) so multiple slots never intersect
+		const FVector RigLocation(SlotIndex * 1500.f, 0.f, -10000.f);
+		PreviewRig = AOnsetAppearancePreviewRig::SpawnPreviewRig(
+			GetWorld(),
+			RigLocation,
+			RenderTargetResolution,
+			PreviewMaterial
+		);
+
+		if (PreviewRig)
+		{
+			PreviewRig->SetCameraSettings(CameraOffset, CameraRotation, CameraFOV);
+			PreviewRig->AttachToCanvas(CharacterPreview, WidgetTree);
+		}
+	}
+}
+
+void UCharacterSlot::RefreshPreview()
+{
+	EnsurePreview();
+	if (!PreviewRig)
+	{
+		return;
+	}
+
+	PreviewRig->SetActive(true);
+	PreviewRig->ApplyAppearanceFromJSON(SlotData.AppearanceJSON, SlotData.CharacterClass);
+
+	if (IdleAnimation.IsValid() || !IdleAnimation.IsNull())
+	{
+		if (UAnimSequence* Anim = IdleAnimation.LoadSynchronous())
+		{
+			PreviewRig->SetAnimation(Anim, true);
+		}
+	}
+}
+
+void UCharacterSlot::DestroyPreview()
+{
+	if (PreviewRig)
+	{
+		PreviewRig->Destroy();
+		PreviewRig = nullptr;
+	}
+}
+
+void UCharacterSlot::SetPreviewActive(bool bActive)
+{
+	if (PreviewRig)
+	{
+		PreviewRig->SetActive(bActive && IsOccupied());
+	}
+}
+
+void UCharacterSlot::AddPreviewYaw(float YawDelta)
+{
+	if (PreviewRig)
+	{
+		PreviewRig->AddCharacterYaw(YawDelta);
+	}
+}
+
+AOnsetAppearancePreviewActor* UCharacterSlot::GetPreviewActor() const
+{
+	return PreviewRig ? PreviewRig->GetPreviewActor() : nullptr;
 }

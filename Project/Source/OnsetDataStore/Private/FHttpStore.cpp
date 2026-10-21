@@ -206,6 +206,7 @@ bool FHttpStore::LoadAccount(const FString& Platform, const FString& PlatformID,
 			Slot.Level = SlotObj->GetIntegerField(TEXT("level"));
 			Slot.CharacterClass = static_cast<EOnsetCharacterClass>(SlotObj->GetIntegerField(TEXT("characterClass")));
 			Slot.bOccupied = SlotObj->GetBoolField(TEXT("bOccupied"));
+			SlotObj->TryGetStringField(TEXT("appearanceJson"), Slot.AppearanceJSON);
 			OutAccount.Slots.Add(Slot);
 		}
 	}

@@ -229,7 +229,7 @@ bool FPgSQLStore::LoadAccount(const FString& Platform, const FString& PlatformID
 	OutAccount.PlatformID = UTF8_TO_TCHAR(PQgetvalue(Res, 0, 1));
 	PQclear(Res);
 
-	const char* SlotSQL = "SELECT slot_index, character_name, level, character_class FROM characters WHERE platform = $1 AND platform_id = $2 ORDER BY slot_index;";
+	const char* SlotSQL = "SELECT slot_index, character_name, level, character_class, appearance_json FROM characters WHERE platform = $1 AND platform_id = $2 ORDER BY slot_index;";
 	Res = PQexecParams(Conn, SlotSQL, 2, NULL, Params, NULL, NULL, 0);
 
 	if (PQresultStatus(Res) != PGRES_TUPLES_OK)
@@ -258,6 +258,8 @@ bool FPgSQLStore::LoadAccount(const FString& Platform, const FString& PlatformID
 		Slot.CharacterName = UTF8_TO_TCHAR(PQgetvalue(Res, Row, 1));
 		Slot.Level = atoi(PQgetvalue(Res, Row, 2));
 		Slot.CharacterClass = static_cast<EOnsetCharacterClass>(atoi(PQgetvalue(Res, Row, 3)));
+		const char* AppearanceVal = PQgetvalue(Res, Row, 4);
+		Slot.AppearanceJSON = AppearanceVal ? UTF8_TO_TCHAR(AppearanceVal) : TEXT("");
 		Slot.bOccupied = true;
 		ExpectedSlot = SlotIdx + 1;
 	}

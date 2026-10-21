@@ -54,6 +54,7 @@ protected:
 
 	//~ Begin UOnsetScreenBase interface
 	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 	//~ End UOnsetScreenBase interface

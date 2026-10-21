@@ -102,7 +102,7 @@ Combat ephemera (current health, active cooldowns, temporary effects) are **neve
 
 | Struct | Fields | Purpose |
 |--------|--------|---------|
-| `FOnsetCharacterSlotData` | SlotIndex, CharacterName, Level, CharacterClass, bOccupied | Account overview (lightweight, no full state) |
+| `FOnsetCharacterSlotData` | SlotIndex, CharacterName, Level, CharacterClass, bOccupied, AppearanceJSON | Account overview (lightweight preview recipe + status) |
 | `FOnsetAccountData` | PlatformID, Platform, Slots | Full account sent to client |
 | `FOnsetFullCharacterData` | SlotIndex, CharacterName, Level, Experience, UnspentStatPoints, CurrentZone, SavedMaxHealth, SavedPosition, SavedRotationYaw, InventoryJSON, EquipmentJSON, QuestsJSON, CharacterClass, AppearanceJSON | Full character state for save/load |
 

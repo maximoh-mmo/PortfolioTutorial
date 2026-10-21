@@ -36,11 +36,26 @@ The existing `AOnsetPlayerCharacter` mesh component stays in place, including it
 
 The component stores a canonical JSON recipe, replicates it to clients, and rebuilds parts locally. Server-side changes require authority. Creation and customization validate the request against the player-only catalog; child recipes are rejected for player pawns. In an editor map, serialized recipes rebuild synchronously on actor registration so authored actors are immediately inspectable. Runtime client reconstruction remains asynchronous.
 
-## Creation, customization and compatibility
+## Creation, customization, character select preview and compatibility
 
 The existing integer creation API now maps 0 to EpicHuman female and 1 to EpicHuman male. `UCharacterCreationScreen::CreateCharacterWithAppearance` and `UCharacterSelectScreen::CreateCharacterWithAppearance` accept a full recipe JSON for later customizer controls. The controller exposes `Server_CreateCharacterWithAppearance` and `Server_UpdateCharacterAppearance`; completion or structured validation errors arrive through `Client_CharacterAppearanceResult` and the Blueprint event `BP_OnCharacterAppearanceResult`.
 
-The creation screen now fills the existing Onset three-panel `WBP_CharacterCreation` layout at activation. The right panel keeps Onset's class choices; the center keeps the callsign field and hosts a modular character preview; the left panel provides scrollable, catalog-driven adult body, head, clothing, morph, skin, eye and outfit-colour options. The old nine-preset grid is hidden. A native confirmation button uses the existing footer style and sends the validated draft recipe through `Server_CreateCharacterWithAppearance`. It replaces the old Blueprint click path, which required a selected preset button and deactivated the screen before a server result. Server errors are shown in the screen and the button is re-enabled. The screen remains open while creation is pending.
+The creation screen fills the existing Onset three-panel `WBP_CharacterCreation` layout at activation. The right panel keeps Onset's class choices; the center keeps the callsign field and hosts a modular character preview; the left panel provides scrollable, catalog-driven adult body, head, clothing, morph, skin, eye and outfit-colour options. The old nine-preset grid is hidden. A native confirmation button uses the existing footer style and sends the validated draft recipe through `Server_CreateCharacterWithAppearance`. It replaces the old Blueprint click path, which required a selected preset button and deactivated the screen before a server result. Server errors are shown in the screen and the button is re-enabled. The screen remains open while creation is pending.
+
+### Character Select Screen & Slot Preview Architecture
+The 3D character preview is encapsulated into a reusable actor: `AOnsetAppearancePreviewRig` (`UI/OnsetAppearancePreviewRig.h` / `.cpp`). It bundles:
+* Isolated 5-point studio lighting (Direct front fill point light, Key light, Fill light, Rim kicker light, Bounce light).
+* A `USceneCaptureComponent2D` operating in `PRM_UseShowOnlyList` with `SCS_FinalColorLDR`.
+* An auto-managed `UTextureRenderTarget2D` and dynamic material instance targeting `/Game/Materials/M_CharacterPreview.M_CharacterPreview`.
+* An `AOnsetAppearancePreviewActor` rendering the resolved recipe.
+
+Each `UCharacterSlot` (`UI/CharacterSlot.h` / `.cpp`) optionally binds a `CharacterPreview` CanvasPanel in `WBP_CharacterSlot`. When a slot is occupied:
+1. It spawns its preview rig offset by `SlotIndex * 1500.f` units along the X-axis deep below the world (`Z = -10000.f`), ensuring concurrent slots never cross-illuminate or collide in world space.
+2. It attaches the preview render target image with full-stretch anchors (`ZOrder = -1`) behind the slot UI.
+3. It resolves the character's appearance from `FOnsetCharacterSlotData::AppearanceJSON` (populated via SQLite, Postgres, and HTTP data store queries). If empty or invalid, it gracefully falls back to default class presets.
+4. Optional animation sequence (`IdleAnimation`) can be assigned to loop the character in the slot.
+5. Interactive yaw rotation is supported via `AddPreviewYaw()`.
+6. When `CharacterSelectScreen` deactivates (e.g. entering world or opening character creation), `SetPreviewActive(false)` halts capture ticks to preserve performance.
 
 On possession, `AppearanceJSON` is loaded from the existing character record and applied to the pawn. Old stored records containing an integer `PresetIndex` resolve to the EpicHuman female preset because the old `BP_ApplyAppearancePreset` event left the default female mannequin unchanged for the tested values 0, 1, 2, 3 and 255. The old record is not rewritten just by loading it. Empty appearance data also uses the female default. Malformed or unsupported saved data is retained for diagnosis; it does not get silently replaced in storage.
 
