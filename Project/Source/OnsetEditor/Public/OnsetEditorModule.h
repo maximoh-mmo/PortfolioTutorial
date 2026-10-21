@@ -9,6 +9,7 @@
 class UOnsetAbilityEditorWidget;
 class UOnsetEnemyEditorWidget;
 class UOnsetItemEditorWidget;
+class UOnsetProgressionEditorWidget;
 
 class FOnsetEditorModule : public IModuleInterface
 {
@@ -20,6 +21,7 @@ public:
 	void OpenAbilityEditor();
 	void OpenEnemyEditor();
 	void OpenItemEditor();
+	void OpenProgressionEditor();
 	
 	void AddMenu(FMenuBarBuilder& MenuBarBuilder);
 	void FillMenu(FMenuBuilder& MenuBuilder);
@@ -27,6 +29,7 @@ public:
 	TSharedRef<SDockTab> SpawnAbilityEditorTab(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnEnemyEditorTab(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnItemEditorTab(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnProgressionEditorTab(const FSpawnTabArgs& Args);
 
 private:
     void HandleEngineReady();
@@ -34,6 +37,7 @@ private:
 	static const FName AbilityEditorTabID;
 	static const FName EnemyEditorTabID;
 	static const FName ItemEditorTabID;
+	static const FName ProgressionEditorTabID;
 
 	/** Handle for the level actor-deleted subscription used to prune SpawnPoints. */
 	FDelegateHandle OnLevelActorDeletedHandle;

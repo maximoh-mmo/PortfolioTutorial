@@ -7,6 +7,7 @@
 #include "UI/OnsetAbilityEditorWidget.h"
 #include "UI/OnsetEnemyEditorWidget.h"
 #include "UI/OnsetItemEditorWidget.h"
+#include "UI/OnsetProgressionEditorWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/Engine.h"
 #include "SpawnerEditorUtilities.h"
@@ -44,6 +45,7 @@ void FOnsetEditorModule::ShutdownModule()
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(AbilityEditorTabID);
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(EnemyEditorTabID);
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(ItemEditorTabID);
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(ProgressionEditorTabID);
 
 	if (GEngine)
 	{
@@ -98,6 +100,14 @@ void FOnsetEditorModule::OpenItemEditor()
 	FGlobalTabmanager::Get()->TryInvokeTab(ItemEditorTabID);
 }
 
+void FOnsetEditorModule::OpenProgressionEditor()
+{
+	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
+			ProgressionEditorTabID,
+			FOnSpawnTab::CreateRaw(this, &FOnsetEditorModule::SpawnProgressionEditorTab));
+	FGlobalTabmanager::Get()->TryInvokeTab(ProgressionEditorTabID);
+}
+
 void FOnsetEditorModule::AddMenu(FMenuBarBuilder& MenuBarBuilder)
 {
 	MenuBarBuilder.AddPullDownMenu(
@@ -128,6 +138,13 @@ void FOnsetEditorModule::FillMenu(FMenuBuilder& MenuBuilder)
 		FText::FromString("Edit item category tables and DT_Loot with validation and roll preview"),
 		FSlateIcon(FAppStyle::GetAppStyleSetName(), "DeveloperTools.MenuIcon"),
 		FExecuteAction::CreateRaw(this, &FOnsetEditorModule::OpenItemEditor)
+		);
+
+	MenuBuilder.AddMenuEntry(
+		FText::FromString("Progression & Balance Workbench"),
+		FText::FromString("Interlinked tuning for XP curves, combat TTK, equipment tiers, and loot drop rates"),
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), "DeveloperTools.MenuIcon"),
+		FExecuteAction::CreateRaw(this, &FOnsetEditorModule::OpenProgressionEditor)
 		);
 }
 
@@ -215,6 +232,37 @@ TSharedRef<SDockTab> FOnsetEditorModule::SpawnItemEditorTab(const FSpawnTabArgs&
 			.TabRole(NomadTab)
 			[
 				SNew(STextBlock).Text(NSLOCTEXT("OnsetEditor", "CreateFailedItem", "Failed to create the Item & Loot Editor widget."))
+			];
+	}
+
+	Widget->OpenEditor();
+
+	return SNew(SDockTab)
+		.TabRole(ETabRole::NomadTab)
+		[
+			Widget->TakeWidget()
+		];
+}
+
+TSharedRef<SDockTab> FOnsetEditorModule::SpawnProgressionEditorTab(const FSpawnTabArgs& Args)
+{
+	UWorld* World = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
+	if (!World)
+	{
+		return SNew(SDockTab)
+			.TabRole(NomadTab)
+			[
+				SNew(STextBlock).Text(NSLOCTEXT("OnsetEditor", "NoWorldProgression", "Open a level first to use the Progression & Balance Workbench."))
+			];
+	}
+
+	UOnsetProgressionEditorWidget* Widget = CreateWidget<UOnsetProgressionEditorWidget>(World);
+	if (!Widget)
+	{
+		return SNew(SDockTab)
+			.TabRole(NomadTab)
+			[
+				SNew(STextBlock).Text(NSLOCTEXT("OnsetEditor", "CreateFailedProgression", "Failed to create the Progression & Balance Workbench widget."))
 			];
 	}
 
