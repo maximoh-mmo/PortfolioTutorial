@@ -9,6 +9,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Components/Image.h"
+#include "Components/ScaleBox.h"
+#include "Components/ScaleBoxSlot.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Blueprint/WidgetTree.h"
@@ -229,6 +231,51 @@ bool AOnsetAppearancePreviewRig::AttachToCanvas(UCanvasPanel* TargetCanvas, UWid
 
 	UObject* BrushResource = PreviewMaterialInstance ? static_cast<UObject*>(PreviewMaterialInstance.Get()) : static_cast<UObject*>(PreviewRenderTarget.Get());
 
+	const FVector2D TextureSize = PreviewRenderTarget
+		? FVector2D(PreviewRenderTarget->SizeX, PreviewRenderTarget->SizeY)
+		: FVector2D(512.f, 640.f);
+
+	if (!PreviewScaleBox)
+	{
+		if (InWidgetTree)
+		{
+			PreviewScaleBox = InWidgetTree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass(), TEXT("OnsetAppearancePreviewScaleBox"));
+		}
+		else
+		{
+			PreviewScaleBox = NewObject<UScaleBox>(TargetCanvas, TEXT("OnsetAppearancePreviewScaleBox"));
+		}
+
+		if (PreviewScaleBox)
+		{
+			PreviewScaleBox->SetStretch(EStretch::ScaleToFit);
+			PreviewScaleBox->SetStretchDirection(EStretchDirection::Both);
+			PreviewScaleBox->SetVisibility(bIsActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+			UCanvasPanelSlot* ScaleBoxSlot = TargetCanvas->AddChildToCanvas(PreviewScaleBox);
+			if (ScaleBoxSlot)
+			{
+				ScaleBoxSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
+				ScaleBoxSlot->SetOffsets(FMargin(0.f));
+				ScaleBoxSlot->SetZOrder(-1);
+			}
+		}
+	}
+	else
+	{
+		PreviewScaleBox->SetVisibility(bIsActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		if (PreviewScaleBox->GetParent() != TargetCanvas)
+		{
+			UCanvasPanelSlot* ScaleBoxSlot = TargetCanvas->AddChildToCanvas(PreviewScaleBox);
+			if (ScaleBoxSlot)
+			{
+				ScaleBoxSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
+				ScaleBoxSlot->SetOffsets(FMargin(0.f));
+				ScaleBoxSlot->SetZOrder(-1);
+			}
+		}
+	}
+
 	if (!PreviewImage)
 	{
 		if (InWidgetTree)
@@ -237,7 +284,7 @@ bool AOnsetAppearancePreviewRig::AttachToCanvas(UCanvasPanel* TargetCanvas, UWid
 		}
 		else
 		{
-			PreviewImage = NewObject<UImage>(TargetCanvas, TEXT("OnsetAppearancePreviewImage"));
+			PreviewImage = NewObject<UImage>(PreviewScaleBox ? static_cast<UObject*>(PreviewScaleBox.Get()) : static_cast<UObject*>(TargetCanvas), TEXT("OnsetAppearancePreviewImage"));
 		}
 
 		if (!PreviewImage)
@@ -246,22 +293,22 @@ bool AOnsetAppearancePreviewRig::AttachToCanvas(UCanvasPanel* TargetCanvas, UWid
 		}
 
 		PreviewImage->SetBrushResourceObject(BrushResource);
+		FSlateBrush ImageBrush = PreviewImage->GetBrush();
+		ImageBrush.ImageSize = TextureSize;
+		PreviewImage->SetBrush(ImageBrush);
+		PreviewImage->SetDesiredSizeOverride(TextureSize);
 		PreviewImage->SetVisibility(bIsActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
-		UCanvasPanelSlot* ImageSlot = TargetCanvas->AddChildToCanvas(PreviewImage);
-		if (ImageSlot)
+		if (PreviewScaleBox)
 		{
-			ImageSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
-			ImageSlot->SetOffsets(FMargin(0.f));
-			ImageSlot->SetZOrder(-1);
+			UPanelSlot* ChildSlot = PreviewScaleBox->AddChild(PreviewImage);
+			if (UScaleBoxSlot* SBSlot = Cast<UScaleBoxSlot>(ChildSlot))
+			{
+				SBSlot->SetHorizontalAlignment(HAlign_Center);
+				SBSlot->SetVerticalAlignment(VAlign_Center);
+			}
 		}
-	}
-	else
-	{
-		PreviewImage->SetBrushResourceObject(BrushResource);
-		PreviewImage->SetVisibility(bIsActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-
-		if (PreviewImage->GetParent() != TargetCanvas)
+		else
 		{
 			UCanvasPanelSlot* ImageSlot = TargetCanvas->AddChildToCanvas(PreviewImage);
 			if (ImageSlot)
@@ -269,6 +316,25 @@ bool AOnsetAppearancePreviewRig::AttachToCanvas(UCanvasPanel* TargetCanvas, UWid
 				ImageSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
 				ImageSlot->SetOffsets(FMargin(0.f));
 				ImageSlot->SetZOrder(-1);
+			}
+		}
+	}
+	else
+	{
+		PreviewImage->SetBrushResourceObject(BrushResource);
+		FSlateBrush ImageBrush = PreviewImage->GetBrush();
+		ImageBrush.ImageSize = TextureSize;
+		PreviewImage->SetBrush(ImageBrush);
+		PreviewImage->SetDesiredSizeOverride(TextureSize);
+		PreviewImage->SetVisibility(bIsActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+		if (PreviewScaleBox && PreviewImage->GetParent() != PreviewScaleBox)
+		{
+			UPanelSlot* ChildSlot = PreviewScaleBox->AddChild(PreviewImage);
+			if (UScaleBoxSlot* SBSlot = Cast<UScaleBoxSlot>(ChildSlot))
+			{
+				SBSlot->SetHorizontalAlignment(HAlign_Center);
+				SBSlot->SetVerticalAlignment(VAlign_Center);
 			}
 		}
 	}
@@ -337,6 +403,11 @@ void AOnsetAppearancePreviewRig::SetActive(bool bInActive)
 		PreviewCaptureComponent->bCaptureEveryFrame = bInActive;
 	}
 
+	if (PreviewScaleBox)
+	{
+		PreviewScaleBox->SetVisibility(bInActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+
 	if (PreviewImage)
 	{
 		PreviewImage->SetVisibility(bInActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -385,6 +456,12 @@ void AOnsetAppearancePreviewRig::EndPlay(const EEndPlayReason::Type EndPlayReaso
 	{
 		PreviewImage->RemoveFromParent();
 		PreviewImage = nullptr;
+	}
+
+	if (PreviewScaleBox)
+	{
+		PreviewScaleBox->RemoveFromParent();
+		PreviewScaleBox = nullptr;
 	}
 
 	PreviewCaptureComponent = nullptr;

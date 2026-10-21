@@ -109,7 +109,11 @@ FReply UCharacterCreationScreen::NativeOnMouseButtonDown(const FGeometry& InGeom
 {
     if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
     {
-        if (PreviewImage && PreviewImage->GetCachedGeometry().IsUnderLocation(InMouseEvent.GetScreenSpacePosition()))
+        const auto* Center = Cast<UCanvasPanel>(GetWidgetFromName(TEXT("Preview")));
+        const bool bOverImage = PreviewImage && PreviewImage->GetCachedGeometry().IsUnderLocation(InMouseEvent.GetScreenSpacePosition());
+        const bool bOverCanvas = Center && Center->GetCachedGeometry().IsUnderLocation(InMouseEvent.GetScreenSpacePosition());
+
+        if (bOverImage || bOverCanvas)
         {
             bIsDraggingPreview = true;
             return FReply::Handled().CaptureMouse(TakeWidget());

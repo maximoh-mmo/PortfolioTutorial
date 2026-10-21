@@ -15,6 +15,7 @@ class UTextureRenderTarget2D;
 class UMaterialInstanceDynamic;
 class UMaterialInterface;
 class UImage;
+class UScaleBox;
 class UCanvasPanel;
 class UWidgetTree;
 class AOnsetAppearancePreviewActor;
@@ -72,6 +73,7 @@ public:
 	UTextureRenderTarget2D* GetRenderTarget() const { return PreviewRenderTarget; }
 	UMaterialInstanceDynamic* GetMaterialInstance() const { return PreviewMaterialInstance; }
 	UImage* GetPreviewImage() const { return PreviewImage; }
+	UScaleBox* GetScaleBox() const { return PreviewScaleBox; }
 
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -108,6 +110,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> PreviewMaterialInstance;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UScaleBox> PreviewScaleBox;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UImage> PreviewImage;
