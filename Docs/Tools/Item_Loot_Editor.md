@@ -100,3 +100,4 @@ Tables load through the config seams in `[Onset.Gameplay]` (`EquipmentDataTable`
 - [Inventory & Loot System](../Inventory/Inventory_System.md) — item/loot data model, loot flow, config seams.
 - [Enemy Creation Tool](Enemy_Editor.md) — sibling tool whose `LootTable` handle targets `DT_Loot` rows authored here.
 - [Ability System](../GAS/GAS_System.md) / [Abilities](../Abilities/) — `DT_Abilities` rows referenced by scrolls.
+- [Progression & Balance Tool Handoff](Progression_Balance_Tool_Handoff.md) — architectural specification for the holistic progression & balance workbench.

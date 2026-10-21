@@ -101,3 +101,4 @@ All spawn-time and editor-preview code uses the resolved profiles (`SpawnEnemyAt
 - [Leveling System](../Player/Leveling_System.md) — `Level` / `XpReward` and the XP curves shown in the preview line.
 - [Inventory & Loot System](../Inventory/Inventory_System.md) — the `LootTable` handle the tool wires to `DT_Loot`.
 - [Item & Loot Editor](Item_Loot_Editor.md) — sibling tool for authoring `DT_Loot` rows the enemy loot table points at.
+- [Progression & Balance Tool Handoff](Progression_Balance_Tool_Handoff.md) — architectural specification for the holistic progression & balance workbench.

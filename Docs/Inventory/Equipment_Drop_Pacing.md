@@ -2,7 +2,7 @@
 
 **File:** `Docs/Inventory/Equipment_Drop_Pacing.md`  
 **Category:** Itemization · Progression Pacing · Combat Power Growth  
-**Companion Documents:** [`Docs/combat-formulas.md`](../combat-formulas.md) · [`Docs/Inventory/Inventory_System.md`](Inventory_System.md) · [`Docs/Player/Leveling_System.md`](../Player/Leveling_System.md)  
+**Companion Documents:** [`Docs/combat-formulas.md`](../combat-formulas.md) · [`Docs/Inventory/Inventory_System.md`](Inventory_System.md) · [`Docs/Player/Leveling_System.md`](../Player/Leveling_System.md) · [`Docs/Tools/Progression_Balance_Tool_Handoff.md`](../Tools/Progression_Balance_Tool_Handoff.md)  
 **Companion Spreadsheet:** [`Docs/combat-tuning-calculator.xlsx`](../combat-tuning-calculator.xlsx) (`GearTiers` & `ProgressionCurve` sheets)
 
 ---
