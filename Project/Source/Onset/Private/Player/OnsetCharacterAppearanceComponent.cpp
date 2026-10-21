@@ -74,12 +74,14 @@ bool UOnsetCharacterAppearanceComponent::SetAppearanceRecipe(const FOnsetAppeara
 }
 void UOnsetCharacterAppearanceComponent::OnRep_AppearanceJSON()
 {
+    UE_LOG(LogTemp, Log, TEXT("OnRep_AppearanceJSON: actor=%s len=%d"), *GetNameSafe(GetOwner()), AppearanceJSON.Len());
     if (AppearanceJSON.IsEmpty()) return;
     if (!BindCharacterMesh()) { bPendingAppearance=true;return; }
     bPendingAppearance=false;
     FOnsetAppearanceRecipe Recipe;TArray<FOnsetAppearanceIssue> Issues;
     if (UOnsetAppearanceLibrary::DecodeAndValidateRecipe(AppearanceJSON,Catalog,GetUse(),Recipe,Issues))
     {
+        UE_LOG(LogTemp, Log, TEXT("OnRep_AppearanceJSON: applying appearance body=%s head=%s parts=%d"), *Recipe.BodyId.ToString(), *Recipe.HeadId.ToString(), Recipe.Parts.Num());
         if (GetWorld() && GetWorld()->WorldType == EWorldType::Editor) ApplyRecipe(Recipe, GetUse());
         else ApplyRecipeAsync(Recipe, GetUse());
     }
@@ -96,6 +98,8 @@ void UOnsetCharacterAppearanceComponent::EndPlay(const EEndPlayReason::Type Reas
 { CancelPendingBuild();Super::EndPlay(Reason); }
 void UOnsetCharacterAppearanceComponent::HandleReady()
 {
+    UE_LOG(LogTemp, Log, TEXT("HandleReady: appearance applied successfully on %s (Body=%s Head=%s)"),
+        *GetNameSafe(GetOwner()), *AppliedRecipe.BodyId.ToString(), *AppliedRecipe.HeadId.ToString());
     if (AppliedRecipe.BodyId != TEXT("human.kid.authored"))
     {
         if (GetBodyMesh() && !GetBodyMesh()->GetAnimClass())
@@ -103,13 +107,13 @@ void UOnsetCharacterAppearanceComponent::HandleReady()
                 GetBodyMesh()->SetAnimInstanceClass(Class);
         return;
     }
-    const FString Base=TEXT("/Game/IS_CharacterCreator/Character/Human/Kid/Animation/Retarget/");
+    const FString Base=TEXT("/Game/Characters/Humanoid/Kid/Animation/Retarget/");
     auto Load=[&Base](const TCHAR* Name)
     {
         UAnimSequence* Anim = LoadObject<UAnimSequence>(nullptr,*(Base+Name+TEXT(".")+Name));
         if (!Anim)
         {
-            const FString AltBase = TEXT("/Game/IS_CharacterCreator/Character/Human/Maturity/Kid/Animation/Retarget/");
+            const FString AltBase = TEXT("/Game/Characters/Humanoid/Kid/Animation/Retarget/");
             Anim = LoadObject<UAnimSequence>(nullptr,*(AltBase+Name+TEXT(".")+Name));
         }
         return Anim;

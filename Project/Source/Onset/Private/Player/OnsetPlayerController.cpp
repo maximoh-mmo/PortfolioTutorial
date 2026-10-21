@@ -360,9 +360,12 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 	// the auto-combat AI hands control back) must NOT re-apply the saved state.
 	// Otherwise players could toggle auto-combat to warp back to their last save
 	// position or refill to full health.
-	const bool bIsRePossess = (InPawn == CachedPlayerPawn);
+	const AOnsetPlayerCharacter* OnsetChar = Cast<AOnsetPlayerCharacter>(InPawn);
+	const bool bAlreadyRestored = OnsetChar && PossessPS &&
+		OnsetChar->MatchesPersistIdentity(PossessPS->PlayerPlatform, PossessPS->PlayerPlatformID, PossessPS->SelectedCharacterSlot);
+	const bool bIsRePossess = (InPawn != nullptr && InPawn == CachedPlayerPawn) || bAlreadyRestored;
 	CachedPlayerPawn = InPawn;
-	TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
+	TargetingComponent = InPawn ? InPawn->FindComponentByClass<UTargetingComponent>() : nullptr;
 
 	if (bIsRePossess)
 	{
@@ -426,7 +429,13 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
     if (bValidAppearance && PlayerChar->CharacterAppearance)
     {
         if (!PlayerChar->CharacterAppearance->SetAppearanceRecipe(SavedRecipe, AppearanceIssues))
+        {
             UE_LOG(LogTemp, Warning, TEXT("OnPossess: could not assemble appearance for slot %d"), CharData.SlotIndex);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Log, TEXT("OnPossess: successfully applied appearance for slot %d (Body=%s)"), CharData.SlotIndex, *SavedRecipe.BodyId.ToString());
+        }
     }
     else UE_LOG(LogTemp, Warning, TEXT("OnPossess: unsupported saved appearance for slot %d; keeping the fallback mesh"), CharData.SlotIndex);
 
@@ -891,7 +900,7 @@ void AOnsetPlayerController::Server_OnClientPossessed_Implementation()
 void AOnsetPlayerController::SetPawn(APawn* InPawn)
 {
 	Super::SetPawn(InPawn);
-	if (InPawn)
+	if (!HasAuthority() && InPawn)
 	{
 		CachedPlayerPawn = InPawn;
 		TargetingComponent = InPawn->FindComponentByClass<UTargetingComponent>();
