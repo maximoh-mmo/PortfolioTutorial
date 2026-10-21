@@ -138,11 +138,11 @@ protected:
 
 	/** Camera position relative to the character in the isolated studio. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
-	FVector CameraOffset = FVector(240.f, 0.f, 95.f);
+	FVector CameraOffset = FVector(280.f, 0.f, 130.f);
 
 	/** Camera rotation relative to the character in the isolated studio. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
-	FRotator CameraRotation = FRotator(0.f, 180.f, 0.f);
+	FRotator CameraRotation = FRotator(-7.5f, 180.f, 0.f);
 
 	/** Character rotation relative to the preview rig (default Yaw = -90 to face camera). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
@@ -150,7 +150,7 @@ protected:
 
 	/** Camera field of view angle. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
-	float CameraFOV = 35.f;
+	float CameraFOV = 33.f;
 
 	/** Resolution for the 2D render target. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
