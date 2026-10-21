@@ -84,6 +84,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Onset|Preview")
     TSoftObjectPtr<UMaterialInterface> PreviewMaterial;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Onset|Preview")
+    TSoftObjectPtr<UAnimSequence> DefaultIdleAnimation = TSoftObjectPtr<UAnimSequence>(FSoftObjectPath(TEXT("/Game/Characters/Humanoid/Adult/Anims/Unarmed/MM_Idle_F_Adult.MM_Idle_F_Adult")));
+
 private:
     UPROPERTY(Transient) TObjectPtr<UOnsetAppearanceCatalog> AppearanceCatalog;
     UPROPERTY(Transient) TObjectPtr<UScrollBox> OptionsScroll;

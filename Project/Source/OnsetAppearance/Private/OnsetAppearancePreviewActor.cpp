@@ -10,6 +10,7 @@ AOnsetAppearancePreviewActor::AOnsetAppearancePreviewActor()
 {
     PrimaryActorTick.bCanEverTick = true;
     PrimaryActorTick.bStartWithTickEnabled = true;
+    PrimaryActorTick.bTickEvenWhenPaused = true;
     Appearance = CreateDefaultSubobject<UOnsetAppearanceComponent>(TEXT("Appearance"));
     SetRootComponent(Appearance);
     Appearance->OnAppearanceReady.AddUniqueDynamic(this, &AOnsetAppearancePreviewActor::HandleAppearanceReady);
@@ -72,7 +73,7 @@ void AOnsetAppearancePreviewActor::EvaluatePreviewPose()
 void AOnsetAppearancePreviewActor::HandleAppearanceReady()
 {
     if (PreviewAnimation.IsNull()) { ShowReferencePose(); return; }
-    if (ConfigureAnimation()) EvaluatePreviewPose();
+    if (ConfigureAnimation()) { if (bAutoPlay) PlayPreview(); else EvaluatePreviewPose(); }
     else if (ActiveBody.Get() != Appearance->GetBodyMesh()) { bPreviewPlaying = false; ActiveAnimation = nullptr; ActiveBody.Reset(); AnimationLength = 0.f; }
 }
 

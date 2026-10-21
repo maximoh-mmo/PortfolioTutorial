@@ -75,6 +75,10 @@ public:
 	UImage* GetPreviewImage() const { return PreviewImage; }
 	UScaleBox* GetScaleBox() const { return PreviewScaleBox; }
 
+	/** Default idle animation clip to play on the preview actor. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
+	TSoftObjectPtr<UAnimSequence> DefaultIdleAnimation = TSoftObjectPtr<UAnimSequence>(FSoftObjectPath(TEXT("/Game/Characters/Humanoid/Adult/Anims/Unarmed/MM_Idle_F_Adult.MM_Idle_F_Adult")));
+
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 

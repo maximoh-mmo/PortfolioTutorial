@@ -184,12 +184,14 @@ void UCharacterSlot::RefreshPreview()
 	PreviewRig->SetActive(true);
 	PreviewRig->ApplyAppearanceFromJSON(SlotData.AppearanceJSON, SlotData.CharacterClass);
 
-	if (IdleAnimation.IsValid() || !IdleAnimation.IsNull())
+	UAnimSequence* Anim = IdleAnimation.IsValid() ? IdleAnimation.Get() : IdleAnimation.LoadSynchronous();
+	if (!Anim)
 	{
-		if (UAnimSequence* Anim = IdleAnimation.LoadSynchronous())
-		{
-			PreviewRig->SetAnimation(Anim, true);
-		}
+		Anim = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/Characters/Humanoid/Adult/Anims/Unarmed/MM_Idle_F_Adult.MM_Idle_F_Adult"));
+	}
+	if (Anim)
+	{
+		PreviewRig->SetAnimation(Anim, true);
 	}
 }
 

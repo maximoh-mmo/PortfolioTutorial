@@ -30,7 +30,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Animation Preview", meta=(ClampMin="-4", ClampMax="4")) float PlaybackSpeed = 1.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Animation Preview", meta=(ClampMin="0")) float PreviewTime = 0.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Animation Preview") bool bLoopAnimation = true;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Animation Preview") bool bAutoPlay = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Animation Preview") bool bAutoPlay = true;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Animation Preview") bool bPreviewPlaying = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Animation Preview") float AnimationLength = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Animation Preview") FString AnimationStatus;

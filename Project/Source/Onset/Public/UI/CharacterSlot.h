@@ -134,7 +134,7 @@ protected:
 
 	/** Optional idle animation sequence to loop in the character slot. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")
-	TSoftObjectPtr<UAnimSequence> IdleAnimation;
+	TSoftObjectPtr<UAnimSequence> IdleAnimation = TSoftObjectPtr<UAnimSequence>(FSoftObjectPath(TEXT("/Game/Characters/Humanoid/Adult/Anims/Unarmed/MM_Idle_F_Adult.MM_Idle_F_Adult")));
 
 	/** Camera position relative to the character in the isolated studio. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Onset|Preview")

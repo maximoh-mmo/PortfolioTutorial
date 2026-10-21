@@ -220,6 +220,17 @@ void AOnsetAppearancePreviewRig::InitializeRig(
 	{
 		PreviewMaterialInstance->SetTextureParameterValue(TEXT("PreviewTexture"), PreviewRenderTarget);
 	}
+
+	// 4. Default idle animation
+	UAnimSequence* DefaultAnim = DefaultIdleAnimation.IsValid() ? DefaultIdleAnimation.Get() : DefaultIdleAnimation.LoadSynchronous();
+	if (!DefaultAnim)
+	{
+		DefaultAnim = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/Characters/Humanoid/Adult/Anims/Unarmed/MM_Idle_F_Adult.MM_Idle_F_Adult"));
+	}
+	if (DefaultAnim)
+	{
+		SetAnimation(DefaultAnim, true);
+	}
 }
 
 bool AOnsetAppearancePreviewRig::AttachToCanvas(UCanvasPanel* TargetCanvas, UWidgetTree* InWidgetTree)
@@ -351,7 +362,20 @@ bool AOnsetAppearancePreviewRig::ApplyRecipe(const FOnsetAppearanceRecipe& InRec
 
 	PreviewActor->Recipe = InRecipe;
 	PreviewActor->Use = InUse;
-	return PreviewActor->RebuildPreview();
+	const bool bSuccess = PreviewActor->RebuildPreview();
+	if (bSuccess && PreviewActor->PreviewAnimation.IsNull())
+	{
+		UAnimSequence* DefaultAnim = DefaultIdleAnimation.IsValid() ? DefaultIdleAnimation.Get() : DefaultIdleAnimation.LoadSynchronous();
+		if (!DefaultAnim)
+		{
+			DefaultAnim = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/Characters/Humanoid/Adult/Anims/Unarmed/MM_Idle_F_Adult.MM_Idle_F_Adult"));
+		}
+		if (DefaultAnim)
+		{
+			SetAnimation(DefaultAnim, true);
+		}
+	}
+	return bSuccess;
 }
 
 bool AOnsetAppearancePreviewRig::ApplyAppearanceFromJSON(const FString& InJSON, EOnsetCharacterClass FallbackClass)

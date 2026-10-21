@@ -802,6 +802,19 @@ void UCharacterCreationScreen::RefreshPreview()
     const USkeletalMeshComponent* Body = PreviewActor->Appearance->GetBodyMesh();
     UE_LOG(LogTemp, Display, TEXT("Character creation preview: body=%s mesh=%s"),
         *DraftAppearance.BodyId.ToString(), *GetPathNameSafe(Body ? Body->GetSkeletalMeshAsset() : nullptr));
+
+    if (AOnsetAppearancePreviewRig* Rig = Cast<AOnsetAppearancePreviewRig>(PreviewRigActor))
+    {
+        UAnimSequence* Anim = DefaultIdleAnimation.IsValid() ? DefaultIdleAnimation.Get() : DefaultIdleAnimation.LoadSynchronous();
+        if (!Anim)
+        {
+            Anim = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/Characters/Humanoid/Adult/Anims/Unarmed/MM_Idle_F_Adult.MM_Idle_F_Adult"));
+        }
+        if (Anim)
+        {
+            Rig->SetAnimation(Anim, true);
+        }
+    }
 }
 
 void UCharacterCreationScreen::EnsureCreateButton()
