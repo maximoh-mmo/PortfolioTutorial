@@ -1,6 +1,8 @@
 # 📘 **INVENTORY & LOOT SYSTEM**
 
 **File:** `Docs/Inventory/Inventory_System.md`
+**Drop Pacing & Progression Guide:** [`Docs/Inventory/Equipment_Drop_Pacing.md`](Equipment_Drop_Pacing.md)
+**Companion Spreadsheet:** [`Docs/combat-tuning-calculator.xlsx`](../combat-tuning-calculator.xlsx)
 
 ---
 

@@ -1,5 +1,7 @@
 # 📘 **LEVELING SYSTEM**
 **File:** `Docs/Player/Leveling_System.md`
+**Equipment Drop & Progression Pacing Guide:** [`Docs/Inventory/Equipment_Drop_Pacing.md`](../Inventory/Equipment_Drop_Pacing.md)
+**Companion Spreadsheet:** [`Docs/combat-tuning-calculator.xlsx`](../combat-tuning-calculator.xlsx)
 
 ---
 
