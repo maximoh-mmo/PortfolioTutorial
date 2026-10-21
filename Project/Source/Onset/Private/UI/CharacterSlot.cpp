@@ -146,12 +146,13 @@ void UCharacterSlot::EnsurePreview()
 
 	if (!PreviewRig)
 	{
-		// If the Blueprint retained legacy defaults, upgrade to chest-level full-body framing
-		if (CameraOffset.Equals(FVector(240.f, 0.f, 95.f), 1.0f) && CameraRotation.Equals(FRotator(0.f, 180.f, 0.f), 1.0f))
+		// If the Blueprint retained legacy defaults, upgrade to eye-height full-body framing
+		if ((CameraOffset.Equals(FVector(240.f, 0.f, 95.f), 1.0f) && CameraRotation.Equals(FRotator(0.f, 180.f, 0.f), 1.0f)) ||
+		    (CameraOffset.Equals(FVector(280.f, 0.f, 130.f), 1.0f) && CameraRotation.Equals(FRotator(-7.5f, 180.f, 0.f), 1.0f)))
 		{
-			CameraOffset = FVector(280.f, 0.f, 130.f);
-			CameraRotation = FRotator(-7.5f, 180.f, 0.f);
-			CameraFOV = 33.f;
+			CameraOffset = FVector(290.f, 0.f, 162.f);
+			CameraRotation = FRotator(-13.5f, 180.f, 0.f);
+			CameraFOV = 32.f;
 		}
 
 		// Space rigs out in world space (1500 units apart, deep below the world) so multiple slots never intersect

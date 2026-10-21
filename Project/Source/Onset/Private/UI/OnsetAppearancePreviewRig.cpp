@@ -28,13 +28,13 @@ AOnsetAppearancePreviewRig::AOnsetAppearancePreviewRig()
 
 	PreviewCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("PreviewCapture"));
 	PreviewCaptureComponent->SetupAttachment(RigRoot);
-	PreviewCaptureComponent->SetRelativeLocationAndRotation(FVector(280.f, 0.f, 130.f), FRotator(-7.5f, 180.f, 0.f));
+	PreviewCaptureComponent->SetRelativeLocationAndRotation(FVector(290.f, 0.f, 162.f), FRotator(-13.5f, 180.f, 0.f));
 	PreviewCaptureComponent->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
 	PreviewCaptureComponent->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
 	PreviewCaptureComponent->bCaptureEveryFrame = true;
 	PreviewCaptureComponent->bCaptureOnMovement = false;
 	PreviewCaptureComponent->bAlwaysPersistRenderingState = true;
-	PreviewCaptureComponent->FOVAngle = 33.f;
+	PreviewCaptureComponent->FOVAngle = 32.f;
 
 	PreviewCaptureComponent->ShowFlags.SetAtmosphere(false);
 	PreviewCaptureComponent->ShowFlags.SetFog(false);
