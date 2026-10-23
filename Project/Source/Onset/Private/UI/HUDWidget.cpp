@@ -14,6 +14,8 @@
 #include "UI/CombatToggleWidget.h"
 #include "UI/DamageNumberWidget.h"
 #include "UI/LootOverlayWidget.h"
+#include "UI/OnsetDialogueOverlayWidget.h"
+#include "UI/OnsetInteractionPromptWidget.h"
 #include "UI/PlayerHealthBarWidget.h"
 #include "UI/PlayerXPBarWidget.h"
 #include "UI/TargetHUDWidget.h"
@@ -175,6 +177,60 @@ void UHUDWidget::ShowLoot(const TArray<FOnsetInventoryEntry>& LootedItems)
 	if (LootOverlay)
 	{
 		LootOverlay->ShowLoot(LootedItems);
+	}
+}
+
+void UHUDWidget::ShowInteractionPrompt(const FMHInteractionDefinition& Definition)
+{
+	if (!InteractionPromptWidget)
+	{
+		const TSubclassOf<UOnsetInteractionPromptWidget> PromptClass =
+			InteractionPromptWidgetClass ? InteractionPromptWidgetClass : TSubclassOf<UOnsetInteractionPromptWidget>(UOnsetInteractionPromptWidget::StaticClass());
+		InteractionPromptWidget = CreateWidget<UOnsetInteractionPromptWidget>(GetOwningPlayer(), PromptClass);
+		if (InteractionPromptWidget)
+		{
+			InteractionPromptWidget->AddToViewport(2);
+		}
+	}
+
+	if (InteractionPromptWidget)
+	{
+		InteractionPromptWidget->ShowPrompt(Definition);
+	}
+}
+
+void UHUDWidget::HideInteractionPrompt()
+{
+	if (InteractionPromptWidget)
+	{
+		InteractionPromptWidget->HidePrompt();
+	}
+}
+
+void UHUDWidget::ShowDialogue(AActor* TargetNPC, FName DialogueRowName)
+{
+	if (!DialogueOverlayWidget)
+	{
+		const TSubclassOf<UOnsetDialogueOverlayWidget> DialogueClass =
+			DialogueOverlayWidgetClass ? DialogueOverlayWidgetClass : TSubclassOf<UOnsetDialogueOverlayWidget>(UOnsetDialogueOverlayWidget::StaticClass());
+		DialogueOverlayWidget = CreateWidget<UOnsetDialogueOverlayWidget>(GetOwningPlayer(), DialogueClass);
+		if (DialogueOverlayWidget)
+		{
+			DialogueOverlayWidget->AddToViewport(3);
+		}
+	}
+
+	if (DialogueOverlayWidget)
+	{
+		DialogueOverlayWidget->ShowDialogueNode(TargetNPC, DialogueRowName);
+	}
+}
+
+void UHUDWidget::CloseDialogue()
+{
+	if (DialogueOverlayWidget)
+	{
+		DialogueOverlayWidget->CloseDialogue();
 	}
 }
 

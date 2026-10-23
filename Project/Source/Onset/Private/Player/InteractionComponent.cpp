@@ -1,14 +1,16 @@
 #include "Player/InteractionComponent.h"
 
+#include "Engine/OverlapResult.h"
+#include "Engine/World.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "Core/TargetingComponent.h"
 #include "Corpse/OnsetCorpse.h"
 #include "Enemy/OnsetEnemy.h"
-#include "Inventory/UOnsetInventoryComponent.h"
+#include "IMHInteractable.h"
 #include "Player/OnsetPlayerController.h"
-#include "Core/TargetingComponent.h"
-#include "Player/OnsetPlayerState.h"
+#include "UMHInteractionLibrary.h"
 
 UInteractionComponent::UInteractionComponent()
 {
@@ -29,25 +31,32 @@ FMoveTarget UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, F
 
 	PendingMovementTarget = {};
 
-	// Corpse click → clear target, stop autoattack, loot now if in range, otherwise auto-path and loot on arrival.
-	if (AOnsetCorpse* Corpse = Cast<AOnsetCorpse>(HitActor))
+	// 1. Check if HitActor is an MHInteraction interactable (NPC, Door, Switch/Trigger, Corpse, etc.)
+	if (HitActor && UMHInteractionLibrary::IsInteractableActor(HitActor))
 	{
-		if (TargetingComponent)
+		FMHInteractionDefinition Def;
+		UMHInteractionLibrary::GetInteractionDefinition(HitActor, Def);
+
+		if (Def.TriggerMode != EMHInteractionTriggerMode::OverlapOnly)
 		{
-			TargetingComponent->ClearTarget();
+			if (TargetingComponent)
+			{
+				TargetingComponent->ClearTarget();
+			}
+			PlayerController->StopAutoAttack();
+			TryInteractWithActor(HitActor);
+			return PendingMovementTarget;
 		}
-		PlayerController->StopAutoAttack();
-		TryLootCorpse(Corpse);
-		return PendingMovementTarget;
 	}
 
-	// Any non-corpse click cancels pending corpse loot
-	ClearPendingLoot();
+	// Any non-interactable click cancels pending walk-up interaction and closes open dialogue
+	ClearPendingInteraction();
+	PlayerController->CloseActiveDialogue();
 
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	FNavLocation NavLoc;
 	bool bIsHostile = false;
-	
+
 	if (HitActor && TargetingComponent)
 	{
 		const bool bEnemyTag = HitActor->ActorHasTag("Enemy");
@@ -62,7 +71,7 @@ FMoveTarget UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, F
 			bIsHostile = true;
 		}
 	}
-	
+
 	const bool bProjected = NavSys && NavSys->ProjectPointToNavigation(HitLocation, NavLoc);
 	if (bProjected)
 	{
@@ -76,6 +85,7 @@ FMoveTarget UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, F
 	if (HitActor && bIsHostile)
 	{
 		PendingMovementTarget.Actor = HitActor;
+		PendingMovementTarget.AcceptanceRadius = 200.0f;
 	}
 
 	if (!bIsHostile)
@@ -90,10 +100,11 @@ FMoveTarget UInteractionComponent::ProcessPrimaryInteraction(AActor* HitActor, F
 	return PendingMovementTarget;
 }
 
-void UInteractionComponent::TryLootCorpse(AOnsetCorpse* Corpse)
+void UInteractionComponent::TryInteractWithActor(AActor* TargetActor)
 {
-	if (!Corpse || Corpse->bLooted)
+	if (!IsValid(TargetActor) || !UMHInteractionLibrary::IsInteractableActor(TargetActor))
 	{
+		ClearPendingInteraction();
 		return;
 	}
 
@@ -104,71 +115,183 @@ void UInteractionComponent::TryLootCorpse(AOnsetCorpse* Corpse)
 		return;
 	}
 
-	if (FVector::Dist(Pawn->GetActorLocation(), Corpse->GetActorLocation()) > LootRange)
+	FMHInteractionDefinition Def;
+	UMHInteractionLibrary::GetInteractionDefinition(TargetActor, Def);
+
+	FMHInteractionContext Context;
+	Context.InstigatorActor = Pawn;
+	Context.InstigatorController = PlayerController;
+	Context.TargetActor = TargetActor;
+	Context.bTriggeredByOverlap = false;
+
+	// If already within interaction range, stop moving and request the interaction immediately.
+	if (UMHInteractionLibrary::IsWithinInteractionRange(Pawn, TargetActor, 1.0f))
 	{
-		// Out of range: the owning client is walking here and will re-send on arrival.
+		ClearPendingInteraction();
+		PlayerController->StopMovement();
+		PlayerController->RequestInteractWithActor(TargetActor);
 		return;
 	}
 
-	// Out of range: path to the corpse and keep polling until we arrive.
-	PendingLootCorpse = Corpse;
-	PendingMovementTarget.Actor = Corpse;
-	PendingMovementTarget.Position = Corpse->GetActorLocation();
+	// Out of range: set up walk-up movement target and poll until arrival.
+	PendingInteractActor = TargetActor;
+	PendingMovementTarget.Actor = TargetActor;
+	PendingMovementTarget.Position = TargetActor->GetActorLocation();
+	PendingMovementTarget.AcceptanceRadius = FMath::Max(60.0f, Def.InteractionRange * 0.8f);
+
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
-			LootArrivalTimerHandle, this, &UInteractionComponent::OnLootArrivalTick, LootArrivalPollInterval, true);
+			InteractArrivalTimerHandle,
+			this,
+			&UInteractionComponent::OnInteractArrivalTick,
+			InteractArrivalPollInterval,
+			true);
 	}
 }
 
-void UInteractionComponent::OnLootArrivalTick()
+void UInteractionComponent::OnInteractArrivalTick()
 {
-	AOnsetCorpse* Corpse = PendingLootCorpse.Get();
-	if (!IsValid(Corpse) || Corpse->bLooted)
+	AActor* TargetActor = PendingInteractActor.Get();
+	if (!IsValid(TargetActor) || !UMHInteractionLibrary::IsInteractableActor(TargetActor))
 	{
-		ClearPendingLoot();
+		ClearPendingInteraction();
 		return;
 	}
-	TryLootCorpse(Corpse);
+
+	AOnsetPlayerController* PlayerController = Cast<AOnsetPlayerController>(GetOwner());
+	APawn* Pawn = PlayerController ? PlayerController->GetPawn() : nullptr;
+	if (!Pawn)
+	{
+		ClearPendingInteraction();
+		return;
+	}
+
+	if (UMHInteractionLibrary::IsWithinInteractionRange(Pawn, TargetActor, 1.0f))
+	{
+		ClearPendingInteraction();
+		PlayerController->StopMovement();
+		PlayerController->RequestInteractWithActor(TargetActor);
+	}
 }
 
-void UInteractionComponent::LootCorpse(AOnsetCorpse* Corpse, APawn* Pawn)
+bool UInteractionComponent::TryInteractWithFocused()
 {
-	if (!Corpse || Corpse->bLooted)
+	AOnsetPlayerController* PlayerController = Cast<AOnsetPlayerController>(GetOwner());
+	if (!PlayerController)
+	{
+		return false;
+	}
+
+	if (!FocusedInteractableActor.IsValid())
+	{
+		FMHInteractionDefinition UnusedDef;
+		bool bHasFocus = false;
+		UpdateProximityFocus(UnusedDef, bHasFocus);
+	}
+
+	if (AActor* Target = FocusedInteractableActor.Get())
+	{
+		PlayerController->RequestInteractWithActor(Target);
+		return true;
+	}
+
+	return false;
+}
+
+void UInteractionComponent::UpdateProximityFocus(FMHInteractionDefinition& OutFocusedDefinition, bool& bOutHasFocus)
+{
+	bOutHasFocus = false;
+	FocusedInteractableActor.Reset();
+
+	AOnsetPlayerController* PlayerController = Cast<AOnsetPlayerController>(GetOwner());
+	APawn* Pawn = PlayerController ? PlayerController->GetPawn() : nullptr;
+	UWorld* World = GetWorld();
+	if (!Pawn || !World)
 	{
 		return;
 	}
 
-	UOnsetInventoryComponent* CorpseInventory = Corpse->InventoryComponent;
-	UOnsetInventoryComponent* PawnInventory = Pawn->FindComponentByClass<UOnsetInventoryComponent>();
-	if (!CorpseInventory || !PawnInventory)
-	{
-		return;
-	}
+	TArray<FOverlapResult> Overlaps;
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
+	ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
 
-	const TArray<FOnsetInventoryEntry> Loot = CorpseInventory->GetItems();
-	if (Loot.Num() > 0)
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(OnsetProximityInteractScan), false, Pawn);
+
+	World->OverlapMultiByObjectType(
+		Overlaps,
+		Pawn->GetActorLocation(),
+		FQuat::Identity,
+		ObjectParams,
+		FCollisionShape::MakeSphere(ProximitySearchRadius),
+		QueryParams);
+
+	float BestDistSq = TNumericLimits<float>::Max();
+	AActor* BestActor = nullptr;
+	FMHInteractionDefinition BestDef;
+
+	for (const FOverlapResult& Overlap : Overlaps)
 	{
-		PawnInventory->AddItems(Loot);
-		if (AOnsetPlayerController* PlayerController = Cast<AOnsetPlayerController>(GetOwner()))
+		AActor* Candidate = Overlap.GetActor();
+		if (!IsValid(Candidate) || Candidate == Pawn)
 		{
-			PlayerController->Client_ShowLootOverlay(Loot);
+			continue;
+		}
+
+		if (!UMHInteractionLibrary::IsInteractableActor(Candidate))
+		{
+			continue;
+		}
+
+		FMHInteractionDefinition CandidateDef;
+		if (!UMHInteractionLibrary::GetInteractionDefinition(Candidate, CandidateDef))
+		{
+			continue;
+		}
+
+		if (CandidateDef.TriggerMode == EMHInteractionTriggerMode::OverlapOnly)
+		{
+			continue;
+		}
+
+		FMHInteractionContext Context;
+		Context.InstigatorActor = Pawn;
+		Context.InstigatorController = PlayerController;
+		Context.TargetActor = Candidate;
+		Context.bTriggeredByOverlap = false;
+
+		FText FailureReason;
+		if (!UMHInteractionLibrary::ValidateInteraction(Context, FailureReason, 1.0f))
+		{
+			continue;
+		}
+
+		const float DistSq = FVector::DistSquared(Pawn->GetActorLocation(), Candidate->GetActorLocation());
+		if (DistSq < BestDistSq)
+		{
+			BestDistSq = DistSq;
+			BestActor = Candidate;
+			BestDef = CandidateDef;
 		}
 	}
 
-	Corpse->bLooted = true;
-	Corpse->Destroy();
-
-	UE_LOG(LogTemp, Log, TEXT("LootCorpse: %s looted %d item(s)"), *Pawn->GetName(), Loot.Num());
+	if (BestActor)
+	{
+		FocusedInteractableActor = BestActor;
+		OutFocusedDefinition = BestDef;
+		bOutHasFocus = true;
+	}
 }
 
-void UInteractionComponent::ClearPendingLoot()
+void UInteractionComponent::ClearPendingInteraction()
 {
-	PendingLootCorpse.Reset();
+	PendingInteractActor.Reset();
 	PendingMovementTarget.Position = FVector::ZeroVector;
 	PendingMovementTarget.Actor = nullptr;
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().ClearTimer(LootArrivalTimerHandle);
+		World->GetTimerManager().ClearTimer(InteractArrivalTimerHandle);
 	}
 }

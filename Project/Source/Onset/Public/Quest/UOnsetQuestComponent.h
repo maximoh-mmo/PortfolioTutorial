@@ -45,6 +45,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Quest")
 	bool HasQuest(FName QuestRowName) const;
 
+	/** Returns true if the quest is accepted and not yet completed. */
+	UFUNCTION(BlueprintPure, Category = "Quest")
+	bool IsQuestActive(FName QuestRowName) const;
+
+	/** Returns true if the quest has been completed. */
+	UFUNCTION(BlueprintPure, Category = "Quest")
+	bool IsQuestComplete(FName QuestRowName) const;
+
 	/** Live quest states (parallel DT_Quests rows). */
 	UFUNCTION(BlueprintPure, Category = "Quest")
 	TArray<FOnsetQuestState> GetActiveQuests() const { return Quests; }

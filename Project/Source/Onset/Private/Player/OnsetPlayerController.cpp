@@ -20,6 +20,9 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "Player/InteractionComponent.h"
+#include "InputCoreTypes.h"
+#include "NPC/OnsetNPC.h"
+#include "UMHInteractionLibrary.h"
 #include "Player/OnsetMovementValidationComponent.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Engine/GameInstance.h"
@@ -263,13 +266,45 @@ void AOnsetPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(IA_Ability4, ETriggerEvent::Started, this, &AOnsetPlayerController::OnAbility4);
 		EnhancedInputComponent->BindAction(IA_PvPToggle, ETriggerEvent::Started, this, &AOnsetPlayerController::OnPvPToggleTriggered);
 		EnhancedInputComponent->BindAction(IA_Inventory, ETriggerEvent::Started, this, &AOnsetPlayerController::OnInventoryToggleTriggered);
-		
+		if (IA_Interact)
+		{
+			EnhancedInputComponent->BindAction(IA_Interact, ETriggerEvent::Started, this, &AOnsetPlayerController::OnInteractTriggered);
+		}
+	}
+
+	if (InputComponent)
+	{
+		InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AOnsetPlayerController::OnInteractKeyPressed);
+		InputComponent->BindKey(EKeys::Gamepad_FaceButton_Left, IE_Pressed, this, &AOnsetPlayerController::OnInteractKeyPressed);
 	}
 }
 
 void AOnsetPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
+
+	if (IsLocalController() && InteractionComponent)
+	{
+		ProximityScanAccumulator += DeltaTime;
+		if (ProximityScanAccumulator >= 0.15f)
+		{
+			ProximityScanAccumulator = 0.0f;
+			FMHInteractionDefinition FocusedDef;
+			bool bHasFocus = false;
+			InteractionComponent->UpdateProximityFocus(FocusedDef, bHasFocus);
+			if (HUDWidget)
+			{
+				if (bHasFocus)
+				{
+					HUDWidget->ShowInteractionPrompt(FocusedDef);
+				}
+				else
+				{
+					HUDWidget->HideInteractionPrompt();
+				}
+			}
+		}
+	}
 
 	if (bIsFollowingPath && IsLocalController())
 	{
@@ -532,6 +567,10 @@ void AOnsetPlayerController::OnAutoAttackTick()
 	if (!Self || !Self->AbilitySystemComponent || !Self->TargetingComponent || !BasicAttackAbility)
 	{
 		StopAutoAttack();
+	if (InteractionComponent)
+	{
+		InteractionComponent->ClearPendingInteraction();
+	}
 		return;
 	}
 
@@ -540,6 +579,10 @@ void AOnsetPlayerController::OnAutoAttackTick()
 	{
 		Self->TargetingComponent->ClearTarget();
 		StopAutoAttack();
+	if (InteractionComponent)
+	{
+		InteractionComponent->ClearPendingInteraction();
+	}
 		return;
 	}
 
@@ -571,6 +614,10 @@ void AOnsetPlayerController::OnMove(const FInputActionValue& Value)
 	ResetIdleTimer();
 	StopMovement();
 	StopAutoAttack();
+	if (InteractionComponent)
+	{
+		InteractionComponent->ClearPendingInteraction();
+	}
 	APawn* ControlledPawn = GetPawn();
 	if (!ControlledPawn) ControlledPawn = CachedPlayerPawn;
 	if (ControlledPawn)
@@ -670,12 +717,115 @@ void AOnsetPlayerController::ProcessPrimaryInteraction(AActor* HitActor, FVector
 	FMoveTarget MoveTarget = InteractionComponent->ProcessPrimaryInteraction(HitActor, HitLocation);
 	if (MoveTarget.Actor.IsValid())
 	{
-		MoveToActor(MoveTarget.Actor.Get(), 200.0f);
+		MoveToActor(MoveTarget.Actor.Get(), MoveTarget.AcceptanceRadius);
 	}
 	else if (!MoveTarget.Position.IsZero())
 	{
 		MoveToLocation(MoveTarget.Position);
 	}
+}
+
+void AOnsetPlayerController::OnInteractTriggered(const FInputActionValue& Value)
+{
+	OnInteractKeyPressed();
+}
+
+void AOnsetPlayerController::OnInteractKeyPressed()
+{
+	if (!InteractionComponent)
+	{
+		return;
+	}
+
+	Server_DisableAutoCombat();
+	ResetIdleTimer();
+	InteractionComponent->TryInteractWithFocused();
+}
+
+void AOnsetPlayerController::RequestInteractWithActor(AActor* TargetActor)
+{
+	if (!IsValid(TargetActor))
+	{
+		return;
+	}
+
+	if (APawn* ControlledPawn = GetPawn())
+	{
+		FVector ToTarget = TargetActor->GetActorLocation() - ControlledPawn->GetActorLocation();
+		ToTarget.Z = 0.0f;
+		if (!ToTarget.IsNearlyZero())
+		{
+			ControlledPawn->SetActorRotation(FRotator(0.0f, ToTarget.Rotation().Yaw, 0.0f));
+		}
+	}
+
+	Server_RequestInteract(TargetActor);
+}
+
+void AOnsetPlayerController::Server_RequestInteract_Implementation(AActor* TargetActor)
+{
+	DisableAutoCombat();
+
+	APawn* ControlledPawn = GetPawn();
+	if (!ControlledPawn || !IsValid(TargetActor))
+	{
+		return;
+	}
+
+	FMHInteractionContext Context;
+	Context.InstigatorActor = ControlledPawn;
+	Context.InstigatorController = this;
+	Context.TargetActor = TargetActor;
+	Context.bTriggeredByOverlap = false;
+
+	FText FailureReason;
+	if (!UMHInteractionLibrary::TryExecuteInteraction(Context, FailureReason))
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("Server_RequestInteract rejected for %s -> %s: %s"),
+			*ControlledPawn->GetName(), *TargetActor->GetName(), *FailureReason.ToString());
+	}
+}
+
+void AOnsetPlayerController::Client_OpenDialogue_Implementation(AActor* NPCActor, FName DialogueRowName)
+{
+	if (HUDWidget)
+	{
+		HUDWidget->ShowDialogue(NPCActor, DialogueRowName);
+	}
+}
+
+void AOnsetPlayerController::Client_CloseDialogue_Implementation()
+{
+	CloseActiveDialogue();
+}
+
+void AOnsetPlayerController::CloseActiveDialogue()
+{
+	if (HUDWidget)
+	{
+		HUDWidget->CloseDialogue();
+	}
+}
+
+void AOnsetPlayerController::Server_SelectDialogueChoice_Implementation(AActor* NPCActor, FName CurrentDialogueRow, int32 ChoiceIndex)
+{
+	DisableAutoCombat();
+
+	AOnsetNPC* NPC = Cast<AOnsetNPC>(NPCActor);
+	APawn* ControlledPawn = GetPawn();
+	if (!NPC || !ControlledPawn)
+	{
+		Client_CloseDialogue();
+		return;
+	}
+
+	if (!UMHInteractionLibrary::IsWithinInteractionRange(ControlledPawn, NPC, 1.35f))
+	{
+		Client_CloseDialogue();
+		return;
+	}
+
+	NPC->HandleDialogueChoiceSelected(this, CurrentDialogueRow, ChoiceIndex);
 }
 
 void AOnsetPlayerController::Client_ShowLootOverlay_Implementation(const TArray<FOnsetInventoryEntry>& LootedItems)

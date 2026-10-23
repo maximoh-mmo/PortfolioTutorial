@@ -260,6 +260,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")
 	UInputAction* IA_Inventory;
 
+	/** Optional dedicated interact action (also bound to E / Gamepad West button by default). */
+	UPROPERTY(EditDefaultsOnly, Category="Input|Actions")
+	UInputAction* IA_Interact;
+
 	/** Screen class pushed when the inventory toggle is pressed (override with WBP_InventoryScreen). */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UOnsetScreenBase> InventoryScreenClass;
@@ -350,7 +354,11 @@ private:
 	void OnPvPToggleTriggered(const FInputActionValue& Value);                                                      
 
 	// --- Inventory screen toggling ---
-	void OnInventoryToggleTriggered(const FInputActionValue& Value);                                                      
+	void OnInventoryToggleTriggered(const FInputActionValue& Value);
+
+	// --- Proximity Interact Action ---
+	void OnInteractTriggered(const FInputActionValue& Value);
+	void OnInteractKeyPressed();
 
 	UFUNCTION(Server, Reliable)
 	void Server_SendAuthTicket(const FString& AuthTicket);
@@ -441,6 +449,29 @@ public:
 	UFUNCTION()
 	void ProcessPrimaryInteraction(AActor* HitActor, FVector HitLocation);
 
+	/** Initiates an interaction request with TargetActor (dispatches to Server_RequestInteract). */
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	void RequestInteractWithActor(AActor* TargetActor);
+
+	/** Server-authoritative interaction execution via UMHInteractionLibrary. */
+	UFUNCTION(Server, Reliable)
+	void Server_RequestInteract(AActor* TargetActor);
+
+	/** Opens or updates the NPC branching dialogue overlay on the owning client. */
+	UFUNCTION(Client, Reliable)
+	void Client_OpenDialogue(AActor* NPCActor, FName DialogueRowName);
+
+	/** Closes the NPC dialogue overlay on the owning client. */
+	UFUNCTION(Client, Reliable)
+	void Client_CloseDialogue();
+
+	/** Closes any open dialogue locally on the client. */
+	void CloseActiveDialogue();
+
+	/** Server-authoritative handler when the player selects a dialogue response choice. */
+	UFUNCTION(Server, Reliable)
+	void Server_SelectDialogueChoice(AActor* NPCActor, FName CurrentDialogueRow, int32 ChoiceIndex);
+
 	/** Shows the looted-items popup on the owning client after a successful loot. */
 	UFUNCTION(Client, Reliable)
 	void Client_ShowLootOverlay(const TArray<FOnsetInventoryEntry>& LootedItems);
@@ -500,4 +531,5 @@ private:
 	float PathAcceptanceRadius = 50.0f;
 	bool bIsFollowingPath = false;
 	TWeakObjectPtr<AActor> FollowTargetActor;
+	float ProximityScanAccumulator = 0.0f;
 };

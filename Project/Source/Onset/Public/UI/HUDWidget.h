@@ -15,6 +15,9 @@ class UCanvasPanel;
 class UCombatToggleWidget;
 class UDamageNumberWidget;
 class ULootOverlayWidget;
+class UOnsetDialogueOverlayWidget;
+class UOnsetInteractionPromptWidget;
+struct FMHInteractionDefinition;
 class UPlayerHealthBarWidget;
 class UPlayerXPBarWidget;
 class UTargetHUDWidget;
@@ -38,6 +41,18 @@ public:
 
 	/** Shows the looted-items popup overlay (lazy-creates it on first use). */
 	void ShowLoot(const TArray<FOnsetInventoryEntry>& LootedItems);
+
+	/** Shows or updates the bottom-center proximity interaction prompt (lazy-created). */
+	void ShowInteractionPrompt(const FMHInteractionDefinition& Definition);
+
+	/** Hides the proximity interaction prompt. */
+	void HideInteractionPrompt();
+
+	/** Opens or updates the NPC dialogue overlay (lazy-created). */
+	void ShowDialogue(AActor* TargetNPC, FName DialogueRowName);
+
+	/** Closes the NPC dialogue overlay. */
+	void CloseDialogue();
 
 protected:
 	virtual void NativeConstruct() override;
@@ -105,6 +120,20 @@ private:
 	/** The live loot overlay instance (lazy-created). */
 	UPROPERTY()
 	TObjectPtr<ULootOverlayWidget> LootOverlay;
+
+	/** Optional WBP override for the proximity interaction prompt. */
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TSubclassOf<UOnsetInteractionPromptWidget> InteractionPromptWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UOnsetInteractionPromptWidget> InteractionPromptWidget;
+
+	/** Optional WBP override for the branching dialogue overlay. */
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TSubclassOf<UOnsetDialogueOverlayWidget> DialogueOverlayWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UOnsetDialogueOverlayWidget> DialogueOverlayWidget;
 
 	UPROPERTY()
 	TObjectPtr<AOnsetPlayerController> BoundController;

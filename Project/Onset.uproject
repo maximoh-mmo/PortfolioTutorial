@@ -45,6 +45,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "MHInteraction",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [

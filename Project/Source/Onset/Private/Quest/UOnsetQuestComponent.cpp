@@ -145,6 +145,18 @@ bool UOnsetQuestComponent::HasQuest(FName QuestRowName) const
 		[QuestRowName](const FOnsetQuestState& Candidate) { return Candidate.QuestRowName == QuestRowName; });
 }
 
+bool UOnsetQuestComponent::IsQuestActive(FName QuestRowName) const
+{
+	return Quests.ContainsByPredicate(
+		[QuestRowName](const FOnsetQuestState& Candidate) { return Candidate.QuestRowName == QuestRowName && !Candidate.bComplete; });
+}
+
+bool UOnsetQuestComponent::IsQuestComplete(FName QuestRowName) const
+{
+	return Quests.ContainsByPredicate(
+		[QuestRowName](const FOnsetQuestState& Candidate) { return Candidate.QuestRowName == QuestRowName && Candidate.bComplete; });
+}
+
 void UOnsetQuestComponent::ReportObjectiveProgress(EOnsetQuestObjectiveType Type, FName Target, int32 Amount)
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority() || Amount <= 0)
