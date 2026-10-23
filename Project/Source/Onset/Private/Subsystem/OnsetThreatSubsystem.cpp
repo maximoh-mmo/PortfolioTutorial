@@ -1,13 +1,16 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Subsystem/OnsetThreatSubsystem.h"
+#include "AI/OnsetAIController.h"
+#include "Core/TargetingComponent.h"
 #include "Enemy/OnsetEnemy.h"
+#include "Perception/AIPerceptionComponent.h"
 
 void UOnsetThreatSubsystem::AddThreat(AOnsetBaseCharacter* PlayerCharacter, AOnsetEnemy* Enemy, float ThreatAmount)
 {
 	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
-	if (!PlayerCharacter || !Enemy) return;
+	if (!PlayerCharacter || !PlayerCharacter->IsAlive() || !Enemy || !Enemy->IsAlive()) return;
 	TMap<TWeakObjectPtr<AOnsetBaseCharacter>, float>& EnemyThreats = ThreatTable.FindOrAdd(TWeakObjectPtr(Enemy));
 	float& CurrentThreat = EnemyThreats.FindOrAdd(TWeakObjectPtr(PlayerCharacter));
 	CurrentThreat = FMath::Max(0.0f, CurrentThreat + ThreatAmount);
@@ -26,17 +29,44 @@ void UOnsetThreatSubsystem::RemovePlayer(const AOnsetBaseCharacter* PlayerCharac
 {
 	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!PlayerCharacter) return;
+
+	const TWeakObjectPtr<AOnsetBaseCharacter> WeakPlayer(const_cast<AOnsetBaseCharacter*>(PlayerCharacter));
+	EngagementTable.Remove(WeakPlayer);
+
 	TArray<TWeakObjectPtr<AOnsetEnemy>> Enemies;
 	ThreatTable.GetKeys(Enemies);
-	const TWeakObjectPtr WeakPlayer(PlayerCharacter);
 	for (TWeakObjectPtr<AOnsetEnemy>& OnsetEnemy : Enemies)
 	{
-		if (auto* EnemyThreats = ThreatTable.Find(OnsetEnemy))                                                  
-		{                                                                                                       
-			EnemyThreats->Remove(WeakPlayer);                                                                   
-			if (EnemyThreats->IsEmpty())                                                                        
-				ThreatTable.Remove(OnsetEnemy);                                                                 
-		} 
+		if (auto* EnemyThreats = ThreatTable.Find(OnsetEnemy))
+		{
+			EnemyThreats->Remove(WeakPlayer);
+			if (EnemyThreats->IsEmpty())
+			{
+				ThreatTable.Remove(OnsetEnemy);
+			}
+		}
+
+		if (AOnsetEnemy* Enemy = OnsetEnemy.Get())
+		{
+			if (Enemy->TargetingComponent && Enemy->TargetingComponent->GetTarget() == PlayerCharacter)
+			{
+				if (APawn* NextTarget = GetPrimaryTarget(Enemy))
+				{
+					Enemy->TargetingComponent->SetTarget(NextTarget);
+				}
+				else
+				{
+					Enemy->TargetingComponent->ClearTarget();
+				}
+			}
+			if (AOnsetAIController* AIC = Enemy->GetController<AOnsetAIController>())
+			{
+				if (UAIPerceptionComponent* Perc = AIC->GetPerceptionComponent())
+				{
+					Perc->ForgetActor(const_cast<AOnsetBaseCharacter*>(PlayerCharacter));
+				}
+			}
+		}
 	}
 }
 
@@ -48,7 +78,12 @@ int32 UOnsetThreatSubsystem::GetTargetRank(AOnsetEnemy* Enemy, AOnsetBaseCharact
 	TArray<TPair<AOnsetBaseCharacter*, float>> Sorted;
 	Sorted.Reserve(EnemyThreatList->Num());
 	for (const auto& Pair : *EnemyThreatList)
-		Sorted.Emplace(Pair.Key.Get(), Pair.Value);
+	{
+		if (Pair.Key.IsValid() && Pair.Key->IsAlive())
+		{
+			Sorted.Emplace(Pair.Key.Get(), Pair.Value);
+		}
+	}
 	
 	Sorted.Sort([](const auto& A, const auto& B) { return A.Value > B.Value; });
 	for (int i = 0; i < Sorted.Num(); ++i)
@@ -94,22 +129,22 @@ void UOnsetThreatSubsystem::UnregisterEngaged(AOnsetEnemy* Enemy)
 
 int32 UOnsetThreatSubsystem::GetEngagedCount(AOnsetBaseCharacter* PlayerCharacter)
 {
-	if (const auto* EnemyList = EngagementTable.Find(PlayerCharacter))                                          
-		return EnemyList->Num();                                                                                
-	return 0;     
+	if (const auto* EnemyList = EngagementTable.Find(PlayerCharacter))
+		return EnemyList->Num();
+	return 0;
 }
 
 int32 UOnsetThreatSubsystem::GetEngagedIndex(AOnsetEnemy* Enemy, AOnsetBaseCharacter* PlayerCharacter)
 {
-	const auto* EnemyList = EngagementTable.Find(PlayerCharacter);                                              
-	if (!EnemyList) return -1;                                                                                  
-	const TWeakObjectPtr WeakEnemy(Enemy);                                                                      
-	for (int i = 0; i < EnemyList->Num(); ++i)                                                                  
-	{                                                                                                           
-		if ((*EnemyList)[i] == WeakEnemy)                                                                       
-			return i;                                                                                           
-	}                                                                                                           
-	return -1;     
+	const auto* EnemyList = EngagementTable.Find(PlayerCharacter);
+	if (!EnemyList) return -1;
+	const TWeakObjectPtr WeakEnemy(Enemy);
+	for (int i = 0; i < EnemyList->Num(); ++i)
+	{
+		if ((*EnemyList)[i] == WeakEnemy)
+			return i;
+	}
+	return -1;
 }
 
 bool UOnsetThreatSubsystem::IsEnemyEngagedWithPlayer(AOnsetEnemy* Enemy, AOnsetBaseCharacter* PlayerCharacter) const
@@ -167,7 +202,7 @@ AOnsetBaseCharacter* UOnsetThreatSubsystem::GetBestTarget(AOnsetEnemy* Enemy, fl
 	for (const auto& Pair : *ThreatList)
 	{
 		AOnsetBaseCharacter* Player = Pair.Key.Get();
-		if (!Player) continue;
+		if (!Player || !Player->IsAlive()) continue;
 
 		const float DistSq = FVector::DistSquared(EnemyLoc, Player->GetActorLocation());
 		const float ThreatVal = Pair.Value;
@@ -196,6 +231,7 @@ APawn* UOnsetThreatSubsystem::GetPrimaryTarget(AOnsetEnemy* Enemy)
 		float BestThreat = -1.0f;
 		for (const auto& Pair : *EnemyThreatList)
 		{
+			if (!Pair.Key.IsValid() || !Pair.Key->IsAlive()) continue;
 			if (Pair.Value > BestThreat)
 			{
 				BestThreat = Pair.Value;
@@ -215,7 +251,12 @@ APawn* UOnsetThreatSubsystem::GetNthTarget(int32 Rank, AOnsetEnemy* Enemy)
 	TArray<TPair<AOnsetBaseCharacter*, float>> Sorted;
 	Sorted.Reserve(EnemyThreatList->Num());
 	for (const auto& Pair : *EnemyThreatList)
-		Sorted.Emplace(Pair.Key.Get(), Pair.Value);
+	{
+		if (Pair.Key.IsValid() && Pair.Key->IsAlive())
+		{
+			Sorted.Emplace(Pair.Key.Get(), Pair.Value);
+		}
+	}
 	
 	if (Rank >= Sorted.Num()) return nullptr;
 	Sorted.Sort([](const auto& A, const auto& B) { return A.Value > B.Value; });
@@ -226,8 +267,16 @@ int32 UOnsetThreatSubsystem::GetTargetCount(AOnsetEnemy* Enemy)
 {
 	if (!Enemy) return 0;
 	const auto EnemyThreats = ThreatTable.Find(Enemy);
-	if (EnemyThreats) return EnemyThreats->Num();
-	return 0;
+	if (!EnemyThreats) return 0;
+	int32 AliveCount = 0;
+	for (const auto& Pair : *EnemyThreats)
+	{
+		if (Pair.Key.IsValid() && Pair.Key->IsAlive())
+		{
+			++AliveCount;
+		}
+	}
+	return AliveCount;
 }
 
 void UOnsetThreatSubsystem::ClearAll()

@@ -1,13 +1,13 @@
-﻿#include "StateTree/Tasks/Enemy/EnemyFleeTask.h"
+#include "StateTree/Tasks/Enemy/EnemyFleeTask.h"
 #include "NavigationSystem.h"
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
 #include "Enemy/OnsetEnemy.h"
 #include "GAS/OnsetAttributeSet.h"
 #include "Navigation/PathFollowingComponent.h"
-#include "Core/OnsetBaseCharacter.h"                                                            
+#include "Core/OnsetBaseCharacter.h"
 #include "Subsystem/OnsetThreatSubsystem.h"
-                                                          
+
 EStateTreeRunStatus FEnemyFleeTask::EnterState(FStateTreeExecutionContext& Context,
                                                          const FStateTreeTransitionResult& Transition) const
 {
@@ -31,7 +31,7 @@ EStateTreeRunStatus FEnemyFleeTask::EnterState(FStateTreeExecutionContext& Conte
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(AIController->GetWorld());
 	if (!NavSys) return EStateTreeRunStatus::Failed;
 
-	FVector AwayDir = (Self->GetActorLocation() - Target->GetActorLocation()).GetSafeNormal();
+	FVector AwayDir = (Self->GetActorLocation() - Target->GetActorLocation()).GetSafeNormal2D();
 	if (AwayDir.IsNearlyZero())
 	{
 		AwayDir = -FVector::ForwardVector;
@@ -42,16 +42,17 @@ EStateTreeRunStatus FEnemyFleeTask::EnterState(FStateTreeExecutionContext& Conte
 	float RandomAngle = FMath::RandRange(-InstanceData.FleeAngleVariance, InstanceData.FleeAngleVariance);
 	FVector FleeDirection = AwayDir.RotateAngleAxis(RandomAngle, FVector::UpVector);
 
-	FVector Desired = Self->HomeTransform.GetLocation() + FleeDirection * InstanceData.FleeDistance;
+	FVector Desired = Self->GetActorLocation() + FleeDirection * InstanceData.FleeDistance;
 
 	FNavLocation Projected;
-	if (NavSys->ProjectPointToNavigation(Desired, Projected, FVector(500.0f)))
+	if (NavSys->ProjectPointToNavigation(Desired, Projected, FVector(600.0f)) ||
+		NavSys->ProjectPointToNavigation(Self->HomeTransform.GetLocation(), Projected, FVector(500.0f)))
 	{
 		InstanceData.FleeDestination = Projected.Location;
-		float InitialHealthRatio = Self->AttributeSet->GetHealth() / Self->AttributeSet->GetMaxHealth();                
-		float InitialSpeedMod = FMath::Lerp(InstanceData.MinSpeedMultiplier, 1.0f, InitialHealthRatio);                 
-		InstanceData.LastSpeedModifier = InitialSpeedMod;                                           
-		InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(                           
+		float InitialHealthRatio = Self->AttributeSet->GetHealth() / Self->AttributeSet->GetMaxHealth();
+		float InitialSpeedMod = FMath::Lerp(InstanceData.MinSpeedMultiplier, 1.0f, InitialHealthRatio);
+		InstanceData.LastSpeedModifier = InitialSpeedMod;
+		InstanceData.SpeedEffectHandle = ApplyMovementSpeedModifier(
 			Self, InitialSpeedMod);
 		AIController->MoveToLocation(InstanceData.FleeDestination, InstanceData.AcceptanceRadius);
 		return EStateTreeRunStatus::Running;
@@ -66,7 +67,8 @@ EStateTreeRunStatus FEnemyFleeTask::Tick(FStateTreeExecutionContext& Context,
 	AOnsetAIController* AIController = GetController(Context);
 	if (!AIController) return EStateTreeRunStatus::Failed;
 	if (!AIController->HasAuthority()) return EStateTreeRunStatus::Failed;
-	if (!GetPathFollowingComponent(Context)) return EStateTreeRunStatus::Failed;
+	UPathFollowingComponent* PF = GetPathFollowingComponent(Context);
+	if (!PF) return EStateTreeRunStatus::Failed;
 
 	if (AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context))
 	{
@@ -87,7 +89,8 @@ EStateTreeRunStatus FEnemyFleeTask::Tick(FStateTreeExecutionContext& Context,
 		}
 	}
 
-	return HasMoveCompleted(Context) ? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
+	const bool bDone = HasMoveCompleted(Context) || PF->GetStatus() == EPathFollowingStatus::Idle;
+	return bDone ? EStateTreeRunStatus::Succeeded : EStateTreeRunStatus::Running;
 }
 
 void FEnemyFleeTask::ExitState(FStateTreeExecutionContext& Context,
@@ -96,12 +99,12 @@ void FEnemyFleeTask::ExitState(FStateTreeExecutionContext& Context,
 	if (AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context))
 	{
 		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-		if (InstanceData.SpeedEffectHandle.IsValid())                                                                   
-		{                                                                                                               
-			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);                   
-			InstanceData.SpeedEffectHandle.Invalidate();                                                                
-			InstanceData.LastSpeedModifier = -1.0f;                                                                     
-		}        
+		if (InstanceData.SpeedEffectHandle.IsValid())
+		{
+			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);
+			InstanceData.SpeedEffectHandle.Invalidate();
+			InstanceData.LastSpeedModifier = -1.0f;
+		}
 	}
 
 	AOnsetAIController* AIController = GetController(Context);

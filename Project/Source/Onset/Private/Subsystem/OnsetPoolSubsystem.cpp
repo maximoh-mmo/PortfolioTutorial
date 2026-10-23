@@ -61,9 +61,10 @@ AOnsetAIController* UOnsetPoolSubsystem::GetPooledController()
 	for (AOnsetAIController* Controller : ControllerPool)
 	{
 		if (Controller && Controller->IsHidden())
-		{         
+		{
 			Controller->SetActorHiddenInGame(false);
 			Controller->SetActorTickEnabled(true);
+			Controller->SetActorTickInterval(0.0f);
 			Controller->StateTreeComponent->SetComponentTickEnabled(true);
 			Controller->PerceptionComponent->SetComponentTickEnabled(true);
 			return Controller;
@@ -80,6 +81,7 @@ AOnsetAIController* UOnsetPoolSubsystem::GetPooledController()
 		if (!ControllerPool.Contains(Controller)) ControllerPool.Add(Controller);
 		Controller->SetActorHiddenInGame(false);
 		Controller->SetActorTickEnabled(true);
+		Controller->SetActorTickInterval(0.0f);
 		Controller->StateTreeComponent->SetComponentTickEnabled(true);
 		Controller->PerceptionComponent->SetComponentTickEnabled(true);
 		return Controller;
@@ -100,7 +102,7 @@ void UOnsetPoolSubsystem::ReleasePooledController(AOnsetAIController* Controller
 	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!Controller || !IsValid(Controller)) return;
 	Controller->UnPossess();
-	if (!ControllerPool.Contains(Controller)) ControllerPool.Add(Controller);    
+	if (!ControllerPool.Contains(Controller)) ControllerPool.Add(Controller);
 }
 
 void UOnsetPoolSubsystem::InitializePool()
@@ -116,7 +118,7 @@ void UOnsetPoolSubsystem::InitializePool()
 		AOnsetEnemy* Spawned = GetWorld()->SpawnActor<AOnsetEnemy>(AOnsetEnemy::StaticClass(), FTransform::Identity, Params);
 		if (Spawned)
 		{
-			ReturnToPool(Spawned);                                                                  
+			ReturnToPool(Spawned);
 		}
 		AOnsetAIController* SpawnedController = GetWorld()->SpawnActor<AOnsetAIController>(AOnsetAIController::StaticClass(), FTransform::Identity, Params);
 		if (SpawnedController)
@@ -131,10 +133,10 @@ void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 {
 	if (!GetWorld() || GetWorld()->GetNetMode() == NM_Client) return;
 	if (!Enemy) return;	
-	if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())                       
-	{                                                                                                               
-		ThreatSub->RemoveEnemy(Enemy);                                                                              
-	}   
+	if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())
+	{
+		ThreatSub->RemoveEnemy(Enemy);
+	}
 	if (ActiveEnemies.Contains(Enemy)) ActiveEnemies.Remove(Enemy);
 	if (UGroupComponent* GroupComp = Enemy->FindComponentByClass<UGroupComponent>())
 	{
@@ -144,17 +146,17 @@ void UOnsetPoolSubsystem::ReturnToPool(AOnsetEnemy* Enemy)
 	{
 		ReleasePooledController(Controller);
 	}
-	if (Enemy->AbilitySystemComponent)                                                                              
-	{                                                                                                               
-		Enemy->AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery(), -1);  
-	}    
+	if (Enemy->AbilitySystemComponent)
+	{
+		Enemy->AbilitySystemComponent->RemoveActiveEffects(FGameplayEffectQuery(), -1);
+	}
 	Enemy->ResetAttributes();
 	// defensive reset — next retrieval in SpawnEnemyAtSlot will overwrite via ApplyProfile(Config.EnemyAIProfile)
 	Enemy->ApplyProfile(nullptr);
 	Enemy->OwningSpawner = nullptr;
 	Enemy->SetActorLocation(FVector::ZeroVector);
-	Enemy->SetActorHiddenInGame(true);                                                                            
-	Enemy->SetActorTickEnabled(false);                                                    
+	Enemy->SetActorHiddenInGame(true);
+	Enemy->SetActorTickEnabled(false);
 	Enemy->DisableInput(nullptr);
 	Enemy->SetActorEnableCollision(false);
 	if (!ObjectPool.Contains(Enemy)) ObjectPool.Add(Enemy);

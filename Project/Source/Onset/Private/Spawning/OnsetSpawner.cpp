@@ -131,10 +131,10 @@ AOnsetEnemy* AOnsetSpawner::SpawnEnemyAtSlot(int32 SlotIndex)
 		
 		AIController->ApplyAIProfile(const_cast<UAIProfile*>(ResolveAIProfile()));
 		AIController->ApplyPerceptionProfile(ResolvePerceptionProfile());
-		AIController->Possess(Spawned);
+		Spawned->HomeTransform = Slot.SpawnTransform;
 		Slot.Occupant = Spawned;
 		if (GroupManager) GroupManager->RegisterMember(Spawned);
-		Spawned->HomeTransform = Slot.SpawnTransform;
+		AIController->Possess(Spawned);
 	}
 	return Spawned;
 }

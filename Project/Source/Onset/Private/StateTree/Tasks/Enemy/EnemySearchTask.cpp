@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "StateTree/Tasks/Enemy/EnemySearchTask.h"
@@ -74,15 +74,21 @@ EStateTreeRunStatus FEnemySearchTask::Tick(FStateTreeExecutionContext& Context, 
 void FEnemySearchTask::ExitState(FStateTreeExecutionContext& Context,
 	const FStateTreeTransitionResult& Transition) const
 {
-	if (AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context))                                                
-	{                                                                                                             
-		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);                                           
-		if (InstanceData.SpeedEffectHandle.IsValid())                                                               
-		{                                                                                                           
-			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);                 
-			InstanceData.SpeedEffectHandle.Invalidate();                                                              
-		}                                                                                                           
-	}             }
+	if (AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context))
+	{
+		FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+		if (InstanceData.SpeedEffectHandle.IsValid())
+		{
+			Self->AbilitySystemComponent->RemoveActiveGameplayEffect(InstanceData.SpeedEffectHandle);
+			InstanceData.SpeedEffectHandle.Invalidate();
+		}
+	}
+	if (AOnsetAIController* Controller = GetController(Context))
+	{
+		Controller->ClearFocus(EAIFocusPriority::Gameplay);
+		Controller->StopMovement();
+	}
+}
 
 FVector FEnemySearchTask::PickSearchPoint(const FInstanceDataType& InstanceData, const FVector& Origin, UWorld* World) const
 {
@@ -92,35 +98,35 @@ FVector FEnemySearchTask::PickSearchPoint(const FInstanceDataType& InstanceData,
 	for (int32 Attempt = 0; Attempt < 10; ++Attempt)
 	{
 		FVector2D RandomOffset2D = FMath::RandPointInCircle(InstanceData.SearchRadius);
-		FVector RandomPoint = InstanceData.SearchCenter + FVector(RandomOffset2D.X, RandomOffset2D.Y, 0.0f);    
-                                                                                                                     
-		FVector DirToPoint = (RandomPoint - InstanceData.SearchCenter).GetSafeNormal();                         
-		float Dot = FVector::DotProduct(InstanceData.InitialForward, DirToPoint);                               
-		float CosHalfAngle = FMath::Cos(FMath::DegreesToRadians(InstanceData.ConeHalfAngle));                   
-                                                                                                                     
-		if (Dot >= CosHalfAngle)                                                                                
-		{                                                                                                       
-			FNavLocation Projected;                                                                             
-			if (NavSystem->ProjectPointToNavigation(RandomPoint, Projected, FVector(InstanceData.SearchRadius * 0.5f)))         
-			{                                                                                                   
-				return Projected.Location;                                                                      
-			}                                                                                                   
-		}            
+		FVector RandomPoint = InstanceData.SearchCenter + FVector(RandomOffset2D.X, RandomOffset2D.Y, 0.0f);
+
+		FVector DirToPoint = (RandomPoint - InstanceData.SearchCenter).GetSafeNormal();
+		float Dot = FVector::DotProduct(InstanceData.InitialForward, DirToPoint);
+		float CosHalfAngle = FMath::Cos(FMath::DegreesToRadians(InstanceData.ConeHalfAngle));
+
+		if (Dot >= CosHalfAngle)
+		{
+			FNavLocation Projected;
+			if (NavSystem->ProjectPointToNavigation(RandomPoint, Projected, FVector(InstanceData.SearchRadius * 0.5f)))
+			{
+				return Projected.Location;
+			}
+		}
 	}
 	return InstanceData.SearchCenter;
 }
 
-void FEnemySearchTask::ApplyYawSweep(const FStateTreeExecutionContext& Context, AOnsetAIController* Controller, AOnsetBaseCharacter* Self) const                        
-{                                                                                                               
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);                                     
-	if (!Controller || !Self) return;                                                                           
-                                                                                                                     
-	FVector MoveDir = (InstanceData.CurrentSearchPoint - Self->GetActorLocation()).GetSafeNormal();             
-	if (MoveDir.IsNearlyZero()) return;                                                                         
-                                                                                                                     
-	float SweepAngle = FMath::Sin(InstanceData.ElapsedTime * 2.0f) * 60.0f;                                     
-	FVector SweepDir = MoveDir.RotateAngleAxis(SweepAngle, FVector::UpVector);                                  
-	FVector FocusPoint = Self->GetActorLocation() + SweepDir * 1000.0f;                                         
-                                                                                                                     
-	Controller->SetFocalPoint(FocusPoint, EAIFocusPriority::Gameplay);                                          
-}     
+void FEnemySearchTask::ApplyYawSweep(const FStateTreeExecutionContext& Context, AOnsetAIController* Controller, AOnsetBaseCharacter* Self) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+	if (!Controller || !Self) return;
+
+	FVector MoveDir = (InstanceData.CurrentSearchPoint - Self->GetActorLocation()).GetSafeNormal();
+	if (MoveDir.IsNearlyZero()) return;
+
+	float SweepAngle = FMath::Sin(InstanceData.ElapsedTime * 2.0f) * 60.0f;
+	FVector SweepDir = MoveDir.RotateAngleAxis(SweepAngle, FVector::UpVector);
+	FVector FocusPoint = Self->GetActorLocation() + SweepDir * 1000.0f;
+
+	Controller->SetFocalPoint(FocusPoint, EAIFocusPriority::Gameplay);
+}

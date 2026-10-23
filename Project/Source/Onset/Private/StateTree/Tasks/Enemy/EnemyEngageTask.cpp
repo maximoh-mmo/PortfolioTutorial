@@ -1,4 +1,4 @@
-﻿#include "StateTree/Tasks/Enemy/EnemyEngageTask.h"
+#include "StateTree/Tasks/Enemy/EnemyEngageTask.h"
 
 #include "AbilitySystemComponent.h"
 #include "NavigationSystem.h"
@@ -9,6 +9,8 @@
 #include "GAS/OnsetGameplayTags.h"
 #include "Core/OnsetBaseCharacter.h"
 #include "Enemy/Profile/AIProfile.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "Perception/AIPerceptionComponent.h"
 #include "Subsystem/OnsetThreatSubsystem.h"
 
 DEFINE_LOG_CATEGORY(LogEnemyEngageTask);
@@ -42,20 +44,39 @@ EStateTreeRunStatus FEnemyEngageTask::EnterState(FStateTreeExecutionContext& Con
 	Inst.NextTargetReevaluateTime = Stagger;
 	Inst.TimeInState = 0.0f;
 	Inst.TimeWithoutTarget = 0.0f;
+	Inst.CurrentTarget = nullptr;
 
 	UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context);
-	if (Subsystem)
+	AOnsetBaseCharacter* Best = Subsystem ? Subsystem->GetBestTarget(SelfEnemy, Inst.AttackRange, Inst.ChaseRange) : nullptr;
+	if (!Best)
 	{
-		AOnsetBaseCharacter* Best = Subsystem->GetBestTarget(SelfEnemy, Inst.AttackRange, Inst.ChaseRange);
-		if (Best)
+		// Fall back to perceived target if valid and alive
+		if (AOnsetBaseCharacter* PerceivedChar = Cast<AOnsetBaseCharacter>(GetTarget(Context)))
 		{
-			SetTarget(Context, Best);
-			Subsystem->RegisterEngaged(Best, SelfEnemy);
-			AIController->SetFocus(Best);
-			Inst.CurrentTarget = Best;
-			Inst.LastTargetLocation = Best->GetActorLocation();
+			if (PerceivedChar->IsAlive())
+			{
+				Best = PerceivedChar;
+				if (Subsystem)
+				{
+					Subsystem->AddThreat(Best, SelfEnemy, 1.0f);
+				}
+			}
 		}
 	}
+
+	if (!Best)
+	{
+		return EStateTreeRunStatus::Succeeded;
+	}
+
+	SetTarget(Context, Best);
+	if (Subsystem)
+	{
+		Subsystem->RegisterEngaged(Best, SelfEnemy);
+	}
+	AIController->SetFocus(Best);
+	Inst.CurrentTarget = Best;
+	Inst.LastTargetLocation = Best->GetActorLocation();
 
 	Inst.CurrentOffsetPosition = ComputeOffsetPosition(Context, Inst, SelfEnemy);
 	AIController->MoveToLocation(Inst.CurrentOffsetPosition, Inst.AcceptanceRadius);
@@ -82,20 +103,17 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 	
 	UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context);
 
-	AActor* CurrentContextTarget = GetTarget(Context);
-
-	// Track sustained absence of target before giving up
-	if (!CurrentContextTarget && !Inst.CurrentTarget)
+	// Immediately invalidate CurrentTarget if it died or was destroyed
+	if (Inst.CurrentTarget && (!IsValid(Inst.CurrentTarget) || !Inst.CurrentTarget->IsAlive()))
 	{
-		Inst.TimeWithoutTarget += DeltaTime;
-		if (Inst.TimeWithoutTarget >= 2.0f)
+		if (Subsystem)
 		{
-			return EStateTreeRunStatus::Succeeded;
+			Subsystem->RemovePlayer(Inst.CurrentTarget);
 		}
-	}
-	else
-	{
-		Inst.TimeWithoutTarget = 0.0f;
+		Inst.CurrentTarget = nullptr;
+		SetTarget(Context, nullptr);
+		AIController->ClearFocus(EAIFocusPriority::Gameplay);
+		Inst.NextTargetReevaluateTime = 0.0f;
 	}
 
 	// Target re-evaluation
@@ -123,14 +141,66 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 		}
 	}
 
-	AActor* Target = GetTarget(Context);
+	AActor* CurrentContextTarget = GetTarget(Context);
+
+	// Track absence of target or exit immediately if threat table is empty
+	if (!CurrentContextTarget && !Inst.CurrentTarget)
+	{
+		if (!Subsystem || Subsystem->GetTargetCount(SelfEnemy) == 0)
+		{
+			return EStateTreeRunStatus::Succeeded;
+		}
+		Inst.TimeWithoutTarget += DeltaTime;
+		if (Inst.TimeWithoutTarget >= 2.0f)
+		{
+			return EStateTreeRunStatus::Succeeded;
+		}
+		return EStateTreeRunStatus::Running;
+	}
+	else
+	{
+		Inst.TimeWithoutTarget = 0.0f;
+	}
+
+	AActor* Target = CurrentContextTarget ? CurrentContextTarget : Inst.CurrentTarget.Get();
 	if (!Target)
 	{
 		return EStateTreeRunStatus::Running;
 	}
 
+	const FVector SelfLoc = SelfEnemy->GetActorLocation();
 	const FVector TargetLoc = Target->GetActorLocation();
-	const float DistSq = FVector::DistSquared(SelfEnemy->GetActorLocation(), TargetLoc);
+	const FVector HomeLoc = SelfEnemy->HomeTransform.GetLocation();
+
+	// Leash check:
+	// 1. Territory leash: distance from SelfEnemy (or Target) to HomeTransform exceeds ChaseRange
+	// 2. Pursuit leash: distance from SelfEnemy to Target exceeds max(ChaseRange, SightRange * 1.25)
+	if (Inst.ChaseRange > 0.0f)
+	{
+		const float LeashDistSq = FMath::Square(Inst.ChaseRange);
+		const float MaxPursuitDistSq = FMath::Square(FMath::Max(Inst.ChaseRange, AIController->CachedSightRange * 1.25f));
+		const float DistFromHomeSq = FVector::DistSquared2D(SelfLoc, HomeLoc);
+		const float DistToTargetSq = FVector::DistSquared2D(SelfLoc, TargetLoc);
+
+		if (DistFromHomeSq > LeashDistSq || DistToTargetSq > MaxPursuitDistSq)
+		{
+			if (Subsystem)
+			{
+				Subsystem->RemoveEnemy(SelfEnemy);
+			}
+			Inst.CurrentTarget = nullptr;
+			SetTarget(Context, nullptr);
+			AIController->ClearFocus(EAIFocusPriority::Gameplay);
+			if (UAIPerceptionComponent* Perc = AIController->GetPerceptionComponent())
+			{
+				Perc->ForgetAll();
+			}
+			AIController->bIsReturningHome = true;
+			return EStateTreeRunStatus::Succeeded;
+		}
+	}
+
+	const float DistSq = FVector::DistSquared(SelfLoc, TargetLoc);
 
 	// Position re-evaluation
 	bool bShouldRepath = Inst.TimeInState >= Inst.NextPositionReevaluateTime;
@@ -141,13 +211,25 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 			bShouldRepath = true;
 	}
 
+	// If outside attack range and pathing has already gone idle, force a repath into attack range
+	if (!bShouldRepath && DistSq > FMath::Square(Inst.AttackRange))
+	{
+		if (const UPathFollowingComponent* PF = GetPathFollowingComponent(Context))
+		{
+			if (PF->GetStatus() == EPathFollowingStatus::Idle)
+			{
+				bShouldRepath = true;
+			}
+		}
+	}
+
 	if (bShouldRepath)
 	{
 		Inst.NextPositionReevaluateTime = Inst.TimeInState + Inst.PositionReevaluateInterval;
 		Inst.LastTargetLocation = TargetLoc;
 
 		const FVector NewOffset = ComputeOffsetPosition(Context, Inst, SelfEnemy);
-		if (!NewOffset.Equals(Inst.CurrentOffsetPosition, 50.0f))
+		if (!NewOffset.Equals(Inst.CurrentOffsetPosition, 25.0f) || DistSq > FMath::Square(Inst.AttackRange))
 		{
 			Inst.CurrentOffsetPosition = NewOffset;
 			AIController->MoveToLocation(Inst.CurrentOffsetPosition, Inst.AcceptanceRadius);
@@ -174,8 +256,19 @@ EStateTreeRunStatus FEnemyEngageTask::Tick(FStateTreeExecutionContext& Context, 
 void FEnemyEngageTask::ExitState(FStateTreeExecutionContext& Context,
 	const FStateTreeTransitionResult& Transition) const
 {
+	if (UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context))
+	{
+		if (AOnsetEnemy* SelfEnemy = GetSelfPawn<AOnsetEnemy>(Context))
+		{
+			Subsystem->UnregisterEngaged(SelfEnemy);
+		}
+	}
 	AOnsetAIController* AIController = GetController(Context);
-	if (AIController) AIController->StopMovement();
+	if (AIController)
+	{
+		AIController->StopMovement();
+		AIController->ClearFocus(EAIFocusPriority::Gameplay);
+	}
 }
 
 FVector FEnemyEngageTask::ComputeOffsetPosition(const FStateTreeExecutionContext& Context,
@@ -184,23 +277,37 @@ FVector FEnemyEngageTask::ComputeOffsetPosition(const FStateTreeExecutionContext
 	AActor* Target = GetTarget(Context);
 	if (!Target) return FVector::ZeroVector;
 
+	// Ensure the target ring radius plus MoveToLocation's AcceptanceRadius stays strictly inside AttackRange
+	const float CombatRadius = FMath::Max(60.0f, Inst.AttackRange - Inst.AcceptanceRadius - 20.0f);
+
 	AOnsetBaseCharacter* TargetChar = Cast<AOnsetBaseCharacter>(Target);
-	if (!TargetChar) return Target->GetActorLocation() + FVector(Inst.AttackRange, 0, 0);
+	if (!TargetChar) return Target->GetActorLocation() + FVector(CombatRadius, 0, 0);
 
 	UOnsetThreatSubsystem* Subsystem = GetThreatSubsystem(Context);
 	if (!Subsystem) return Target->GetActorLocation();
 
-	const float Dist = FVector::Dist(SelfEnemy->GetActorLocation(), Target->GetActorLocation());
-	const float Radius = (Dist > Inst.AttackRange) ? Inst.SpreadRadius : Inst.AttackRange;
-
 	const int32 Count = Subsystem->GetEngagedCount(TargetChar);
 	const int32 Rank = Subsystem->GetEngagedIndex(SelfEnemy, TargetChar);
 
-	FVector Offset = GetThreatAngularOffset(Count, Rank, Radius);
+	FVector Offset;
+	if (Count <= 1)
+	{
+		// Single attacker: approach directly along the line from Target to SelfEnemy
+		FVector ApproachDir = (SelfEnemy->GetActorLocation() - Target->GetActorLocation()).GetSafeNormal2D();
+		if (ApproachDir.IsNearlyZero())
+		{
+			ApproachDir = FVector::ForwardVector;
+		}
+		Offset = ApproachDir * CombatRadius;
+	}
+	else
+	{
+		Offset = GetThreatAngularOffset(Count, Rank, CombatRadius);
+	}
 
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(SelfEnemy->GetWorld());
 	FNavLocation Projected;
-	if (NavSys && NavSys->ProjectPointToNavigation(Target->GetActorLocation() + Offset, Projected, FVector(Radius * 0.5f)))
+	if (NavSys && NavSys->ProjectPointToNavigation(Target->GetActorLocation() + Offset, Projected, FVector(CombatRadius)))
 		return Projected.Location;
 
 	return Target->GetActorLocation() + Offset;

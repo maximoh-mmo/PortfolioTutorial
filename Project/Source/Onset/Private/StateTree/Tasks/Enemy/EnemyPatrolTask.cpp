@@ -4,6 +4,7 @@
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "GAS/OnsetAttributeSet.h"
 #include "Navigation/PathFollowingComponent.h"
 
 EStateTreeRunStatus FEnemyPatrolTask::EnterState(FStateTreeExecutionContext& Context,
@@ -19,6 +20,24 @@ EStateTreeRunStatus FEnemyPatrolTask::EnterState(FStateTreeExecutionContext& Con
 	AOnsetBaseCharacter* Self = GetSelfPawn<AOnsetBaseCharacter>(Context);
 	if (!Self) return EStateTreeRunStatus::Failed;
 
+	const FVector HomeLocation = Self->HomeTransform.GetLocation();
+	const bool bOutsideRoamTerritory =
+		FVector::DistSquared2D(Self->GetActorLocation(), HomeLocation) > FMath::Square(Inst.RoamRadius * 1.1f);
+
+	// If returning from a leash or standing outside roam territory, force a roam back toward HomeTransform
+	if (AIController->bIsReturningHome || bOutsideRoamTerritory)
+	{
+		if (AIController->bIsReturningHome && Self->AttributeSet)
+		{
+			Self->AttributeSet->SetHealth(Self->AttributeSet->GetMaxHealth());
+		}
+		AIController->bIsReturningHome = false;
+		Inst.bIsRoaming = true;
+		Inst.Destination = HomeLocation;
+		AIController->MoveToLocation(Inst.Destination, Inst.AcceptanceRadius);
+		return EStateTreeRunStatus::Running;
+	}
+
 	if (FMath::FRand() < Inst.RoamChance)
 	{
 		Inst.bIsRoaming = true;
@@ -26,7 +45,7 @@ EStateTreeRunStatus FEnemyPatrolTask::EnterState(FStateTreeExecutionContext& Con
 		if (!NavSys) return EStateTreeRunStatus::Failed;
 
 		FNavLocation RandomPoint;
-		if (NavSys->GetRandomReachablePointInRadius(Self->HomeTransform.GetLocation(), Inst.RoamRadius, RandomPoint))
+		if (NavSys->GetRandomReachablePointInRadius(HomeLocation, Inst.RoamRadius, RandomPoint))
 		{
 			Inst.Destination = RandomPoint.Location;
 			AIController->MoveToLocation(Inst.Destination, Inst.AcceptanceRadius);

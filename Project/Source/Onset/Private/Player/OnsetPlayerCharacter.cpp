@@ -15,6 +15,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Subsystem/OnsetPlayerDataSubsystem.h"
+#include "Subsystem/OnsetThreatSubsystem.h"
 
 AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 {
@@ -29,13 +30,14 @@ AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 	CameraBoom->bInheritYaw = false;  // camera stays at fixed world yaw
 	CameraBoom->bInheritPitch = false; // also fix pitch for good measure
 	CameraBoom->bInheritRoll = false;  // also fix roll  
-	CameraBoom->TargetArmLength = 2000.f;
-	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
+	CameraBoom->TargetArmLength = CameraTargetArmLength;
+	CameraBoom->SetRelativeRotation(CameraRotation);
 	CameraBoom->bDoCollisionTest = true;
 	CameraBoom->bEnableCameraLag = true;
 	CameraBoom->CameraLagSpeed = 8.f;
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	FollowCamera->SetFieldOfView(CameraFOV);
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
@@ -55,9 +57,28 @@ AOnsetPlayerCharacter::AOnsetPlayerCharacter()
 	}
 }
 
+void AOnsetPlayerCharacter::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	if (CameraBoom)
+	{		CameraBoom->TargetArmLength = CameraTargetArmLength;
+		CameraBoom->SetRelativeRotation(CameraRotation);
+	}
+	if (FollowCamera)
+	{		FollowCamera->SetFieldOfView(CameraFOV);
+	}
+}
+
 void AOnsetPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	if (CameraBoom)
+	{		CameraBoom->TargetArmLength = CameraTargetArmLength;
+		CameraBoom->SetRelativeRotation(CameraRotation);
+	}
+	if (FollowCamera)
+	{		FollowCamera->SetFieldOfView(CameraFOV);
+	}
 
 	if (GetMesh())
 	{
@@ -288,5 +309,9 @@ void AOnsetPlayerCharacter::OnDeath(AActor* KillingActor)
 	Super::OnDeath(KillingActor);
 	DisableInput(nullptr);
 	if (!HasAuthority()) return;
+	if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())
+	{
+		ThreatSub->RemovePlayer(this);
+	}
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerCharacter::RespawnPlayer);
 }

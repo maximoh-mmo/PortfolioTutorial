@@ -57,6 +57,9 @@ public:
 	/** World seconds when the last noise was heard (drives remembrance timeout). */
 	float LastNoiseHeardTime = 0.0f;
 
+	/** True while the NPC is evading/returning to HomeTransform after exceeding leash distance. */
+	bool bIsReturningHome = false;
+
 	// --- AI LOD ---
 
 	/** Cached sight range for LOD tier calculation (set in ApplyPerceptionProfile). */

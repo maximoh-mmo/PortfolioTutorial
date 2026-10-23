@@ -18,16 +18,16 @@ EStateTreeRunStatus FOnsetStateTreeContextTask::EnterState(FStateTreeExecutionCo
 	if (!AIController) return EStateTreeRunStatus::Failed;
 	if (!AIController->HasAuthority()) return EStateTreeRunStatus::Failed;
 	
+	InstanceData.SelfActor = AIController->GetPawn();
 	if (AIController->TargetingComponent)
 	{
 		InstanceData.Target = AIController->TargetingComponent->GetTarget();
 	}
 
-	const TArray<FName> Names = AIController->StateTreeComponent->GetActiveStateNames();
 	return EStateTreeRunStatus::Running;
 }
 	
 EStateTreeRunStatus FOnsetStateTreeContextTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	return EnterState(Context, FStateTreeTransitionResult());
-}          
+}

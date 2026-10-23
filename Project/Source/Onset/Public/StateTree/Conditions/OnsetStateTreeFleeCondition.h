@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 #include "StateTreeConditionBase.h"
@@ -19,8 +19,12 @@ struct FOnsetFleeConditionInstanceData
 	float FleeProbability = 0.7f;
 
 	/** Radius in which alive group members are counted for courage calculation. */
-	UPROPERTY(EditAnywhere,Category = "Flee")
+	UPROPERTY(EditAnywhere, Category = "Flee")
 	float GroupSupportRadius = 800.0f;
+
+	/** Ensures FleeProbability is rolled once per low-health drop rather than every frame. */
+	bool bHasRolledBelowThreshold = false;
+	bool bLastRollSucceeded = false;
 };
 
 USTRUCT()

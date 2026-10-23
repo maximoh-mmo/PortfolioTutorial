@@ -16,7 +16,6 @@ bool FOnsetStateTreeDistanceCondition::TestCondition(FStateTreeExecutionContext&
 	FVector TargetLocation;
 	
 	// Resolve target location
-	
 	if (InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::CurrentTarget ||
 		InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::AttackRange ||
 		InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::ChaseRange)
@@ -34,7 +33,6 @@ bool FOnsetStateTreeDistanceCondition::TestCondition(FStateTreeExecutionContext&
 	}
 	
 	// Resolve threshold
-	
 	float DistanceThresholdSquared;
 	if (InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::AttackRange ||
 		InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::ChaseRange)
@@ -43,6 +41,14 @@ bool FOnsetStateTreeDistanceCondition::TestCondition(FStateTreeExecutionContext&
 		float Threshold = InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::AttackRange 
 			                  ? AIController->GetAIProfile()->AttackRange 
 			                  : AIController->GetAIProfile()->ChaseRange;
+		DistanceThresholdSquared = Threshold * Threshold;
+	}
+	else if (InstanceData.DistanceSource == EOnsetStateTreeDistanceSource::HomeLocation &&
+	         InstanceData.DistanceThreshold <= 0.0f &&
+	         AIController->GetAIProfile())
+	{
+		// When measuring from HomeLocation without an explicit override, default to the profile's ChaseRange (leash distance)
+		const float Threshold = AIController->GetAIProfile()->ChaseRange;
 		DistanceThresholdSquared = Threshold * Threshold;
 	}
 	else

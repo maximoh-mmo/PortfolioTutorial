@@ -34,14 +34,14 @@ AOnsetAIController::AOnsetAIController()
 	
 	PerceptionComponent->OnPerceptionUpdated.AddDynamic(this, &AOnsetAIController::OnPerceptionUpdated);
 	
-	UCrowdFollowingComponent* CrowdComp = Cast<UCrowdFollowingComponent>(                                           
-		 GetPathFollowingComponent());                                                                               
-	if (CrowdComp)                                                                                                  
-	{                                                                                                               
-		CrowdComp->SetCrowdSeparation(true);                                                                        
-		CrowdComp->SetCrowdSeparationWeight(8.0f);                                                                       
+	UCrowdFollowingComponent* CrowdComp = Cast<UCrowdFollowingComponent>(
+		 GetPathFollowingComponent());
+	if (CrowdComp)
+	{
+		CrowdComp->SetCrowdSeparation(true);
+		CrowdComp->SetCrowdSeparationWeight(8.0f);
 		CrowdComp->SetCrowdAvoidanceQuality(ECrowdAvoidanceQuality::Good);
-	}         
+	}
 }
 
 void AOnsetAIController::ApplyAIProfile(UAIProfile* Profile)
@@ -70,18 +70,18 @@ void AOnsetAIController::ApplyAIProfile(UAIProfile* Profile)
 
 	UStateTree* Tree = Profile->StateTreeAsset;
 
-	// Runtime rescue: freshly loaded StateTrees can be unlinked (no schema, not ready)
-	// in game/server processes. The player-AI controller already self-heals this way;
-	// mirror it here so NPC trees link instead of silently refusing to start.
-	if (Tree && !Tree->IsReadyToRun())
+	// Runtime rescue: freshly loaded or recently modified StateTrees can be unlinked or stale
+	// in game/server processes. Ensure CompileIfChanged runs in editor builds whenever applied.
+	if (Tree)
 	{
 #if WITH_EDITOR
-		UE_LOG(LogTemp, Warning, TEXT("[DIAG] ApplyAIProfile %s: tree '%s' not ready - recompiling"),
-			*GetName(), *Tree->GetName());
-		Tree->MarkAsModified(false);
+		if (!Tree->IsReadyToRun())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DIAG] ApplyAIProfile %s: tree '%s' not ready - recompiling"),
+				*GetName(), *Tree->GetName());
+			Tree->MarkAsModified(false);
+		}
 		Tree->CompileIfChanged();
-		UE_LOG(LogTemp, Warning, TEXT("[DIAG] ApplyAIProfile %s: post-rescue readyToRun=%d"),
-			*GetName(), static_cast<int32>(Tree->IsReadyToRun()));
 #endif
 	}
 
@@ -89,8 +89,11 @@ void AOnsetAIController::ApplyAIProfile(UAIProfile* Profile)
 	StateTreeComponent->SetStateTree(Profile->StateTreeAsset);
 	AIProfile = Profile;
 }
+
 void AOnsetAIController::ApplyPerceptionProfile(const UPerceptionProfile* Profile)
 {
+	if (!Profile) return;
+
 	if (SightConfig)
 	{
 		SightConfig->SightRadius = Profile->SightRange;
@@ -111,6 +114,11 @@ void AOnsetAIController::ApplyPerceptionProfile(const UPerceptionProfile* Profil
 		PerceptionComponent->ConfigureSense(*HearingConfig);
 	}
 
+	if (PerceptionComponent)
+	{
+		PerceptionComponent->RequestStimuliListenerUpdate();
+	}
+
 	CachedSightRange = Profile->SightRange;
 	CachedHearingRange = Profile->HearingRange;
 }
@@ -118,10 +126,21 @@ void AOnsetAIController::ApplyPerceptionProfile(const UPerceptionProfile* Profil
 void AOnsetAIController::OnPossess(APawn* InPawn)
 {
 	bInUse = true;
+	bIsReturningHome = false;
+	LodTickCounter = 0;
+	SetActorTickInterval(0.0f);
+
+	// Cache TargetingComponent BEFORE Super::OnPossess / StartLogic so the initial
+	// StateTree EnterState has valid access to it on frame 0.
+	TargetingComponent = InPawn ? InPawn->FindComponentByClass<UTargetingComponent>() : nullptr;
+
 	Super::OnPossess(InPawn);
 	if (!HasAuthority()) return;
 
-	StateTreeComponent->StartLogic();
+	if (!StateTreeComponent->IsRunning())
+	{
+		StateTreeComponent->StartLogic();
+	}
 	UE_LOG(LogTemp, Warning, TEXT("[DIAG] OnPossess %s pawn=%s running=%d status=%d"),
 		*GetName(),
 		*GetNameSafe(InPawn),
@@ -137,26 +156,34 @@ void AOnsetAIController::OnPossess(APawn* InPawn)
 			UE_LOG(LogTemp, Warning, TEXT("[DIAG] +1s %s running=%d"), *GetName(), static_cast<int32>(StateTreeComponent->IsRunning()));
 		}
 	}), 1.0f, false);
-
-	TargetingComponent = GetPawn()->FindComponentByClass<UTargetingComponent>();
 }
 
 void AOnsetAIController::OnUnPossess()
 {
 	bInUse = false;
+	bIsReturningHome = false;
+	LodTickCounter = 0;
+	StopMovement();
+	ClearFocus(EAIFocusPriority::Gameplay);
 	StateTreeComponent->StopLogic(TEXT("Unpossessed"));
-	ApplyAIProfile(nullptr);                                                                                        
-	SetActorHiddenInGame(true);                                                                                   
-	SetActorTickEnabled(false);                                                                                   
-	StateTreeComponent->SetComponentTickEnabled(false);                                                           
-	DisableInput(nullptr);                                                                                        
+	ApplyAIProfile(nullptr);
+	if (PerceptionComponent)
+	{
+		PerceptionComponent->ForgetAll();
+		PerceptionComponent->SetComponentTickEnabled(false);
+	}
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
+	SetActorTickInterval(0.0f);
+	StateTreeComponent->SetComponentTickEnabled(false);
+	DisableInput(nullptr);
 	SetActorEnableCollision(false);
 	Super::OnUnPossess();
 	TargetingComponent = nullptr;
-	HeardNoiseLocation = FVector::ZeroVector;                                                               
-	HeardNoiseInstigator = nullptr;                                                                    
-	bHasPendingNoise = false;                                                                                  
-	LastNoiseHeardTime = 0.0f;       
+	HeardNoiseLocation = FVector::ZeroVector;
+	HeardNoiseInstigator = nullptr;
+	bHasPendingNoise = false;
+	LastNoiseHeardTime = 0.0f;
 }
 
 void AOnsetAIController::BeginPlay()
@@ -237,8 +264,13 @@ void AOnsetAIController::UpdateLodTier()
 
 void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActors)
 {
-	if (!HasAuthority() || GetPawn() == nullptr) return;
+	if (!HasAuthority() || GetPawn() == nullptr || bIsReturningHome) return;
 	
+	AOnsetEnemy* SelfEnemy = Cast<AOnsetEnemy>(GetPawn());
+	const float LeashRange = (AIProfile && AIProfile->ChaseRange > 0.0f) ? AIProfile->ChaseRange : 0.0f;
+	const float LeashRangeSq = FMath::Square(LeashRange);
+	const FVector HomeLocation = SelfEnemy ? SelfEnemy->HomeTransform.GetLocation() : GetPawn()->GetActorLocation();
+
 	// --- Sight: set targeting component and add threat ---
 	TArray<AActor*> SeenActors;
 	PerceptionComponent->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), SeenActors);
@@ -248,27 +280,47 @@ void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActor
 	
 	for (AActor* Actor : SeenActors)
 	{
-		if (Actor == nullptr) continue;
+		if (Actor == nullptr || Actor == GetPawn()) continue;
 		
 		if (Actor->ActorHasTag(FName("Player")) == GetPawn()->ActorHasTag(FName("Player")))
 		{
 			continue;
 		}
+
+		const AOnsetBaseCharacter* SeenChar = Cast<AOnsetBaseCharacter>(Actor);
+		if (!SeenChar || !SeenChar->IsAlive())
+		{
+			continue;
+		}
+
+		// Do not sight-aggro onto targets standing outside this NPC's leash territory around HomeTransform
+		if (SelfEnemy && LeashRange > 0.0f)
+		{
+			const float DistFromHomeSq = FVector::DistSquared2D(HomeLocation, Actor->GetActorLocation());
+			if (DistFromHomeSq > LeashRangeSq)
+			{
+				continue;
+			}
+		}
+
 		float Dist = FVector::DistSquared(MyLocation, Actor->GetActorLocation());
-		if (Dist < BestDist)	
+		if (Dist < BestDist)
 		{
 			BestDist = Dist;
 			BestTarget = Actor;
 		}
 	}
+
 	if (BestTarget)
 	{
-		TargetingComponent->SetTarget(BestTarget);
+		if (TargetingComponent)
+		{
+			TargetingComponent->SetTarget(BestTarget);
+		}
 
 		// Add threat when a player is visually perceived
 		if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())
 		{
-			AOnsetEnemy* SelfEnemy = Cast<AOnsetEnemy>(GetPawn());
 			AOnsetBaseCharacter* PlayerChar = Cast<AOnsetBaseCharacter>(BestTarget);
 			if (SelfEnemy && PlayerChar)
 			{
@@ -281,9 +333,16 @@ void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActor
 			}
 		}
 	}
-	else if (SeenActors.Num() == 0)
+	else if (TargetingComponent)
 	{
-		TargetingComponent->ClearTarget();
+		// Only clear the target on sight loss when no valid threat targets remain in combat.
+		// This prevents dropping target mid-melee when a player steps behind the 90-degree sight cone,
+		// while still properly clearing target even when fellow enemies are in SeenActors.
+		UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>();
+		if (!SelfEnemy || !ThreatSub || ThreatSub->GetTargetCount(SelfEnemy) == 0)
+		{
+			TargetingComponent->ClearTarget();
+		}
 	}
 	
 	// --- Hearing: store closest noise ---
@@ -292,30 +351,45 @@ void AOnsetAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActor
 	
 	if (HeardActors.Num() > 0)
 	{
-		AActor* ClosestHeard = nullptr;                                                                         
-             float ClosestDistSq = FLT_MAX;                                                                            
-                                                                                                                     
-             for (AActor* Actor : HeardActors)                                                                       
-             {                                                                                                       
-                 if (Actor == nullptr) continue;                                                                     
-                 float DistSq = FVector::DistSquared(MyLocation, Actor->GetActorLocation());                           
-                 if (DistSq < ClosestDistSq)                                                                             
-                 {                                                                                                   
-                     ClosestDistSq = DistSq;                                                                             
-                     ClosestHeard = Actor;                                                                           
-                 }                                                                                                   
-             }                                                                                                       
-                                                                                                                     
-             if (ClosestHeard)                                                                                       
-             {                                                                                                       
-                 HeardNoiseLocation = ClosestHeard->GetActorLocation();                                              
-                 HeardNoiseInstigator = ClosestHeard;                                                                
-                 bHasPendingNoise = true;                                                                            
-                 LastNoiseHeardTime = GetWorld()->GetTimeSeconds();                                                       
-             }           
+		AActor* ClosestHeard = nullptr;
+		float ClosestDistSq = FLT_MAX;
+
+		for (AActor* Actor : HeardActors)
+		{
+			if (Actor == nullptr || Actor == GetPawn()) continue;
+			if (const AOnsetBaseCharacter* HeardChar = Cast<AOnsetBaseCharacter>(Actor))
+			{
+				if (!HeardChar->IsAlive()) continue;
+			}
+			if (SelfEnemy && LeashRange > 0.0f)
+			{
+				if (FVector::DistSquared2D(HomeLocation, Actor->GetActorLocation()) > LeashRangeSq)
+				{
+					continue;
+				}
+			}
+			float DistSq = FVector::DistSquared(MyLocation, Actor->GetActorLocation());
+			if (DistSq < ClosestDistSq)
+			{
+				ClosestDistSq = DistSq;
+				ClosestHeard = Actor;
+			}
+		}
+
+		if (ClosestHeard)
+		{
+			HeardNoiseLocation = ClosestHeard->GetActorLocation();
+			HeardNoiseInstigator = ClosestHeard;
+			bHasPendingNoise = true;
+			LastNoiseHeardTime = GetWorld()->GetTimeSeconds();
+		}
+		else
+		{
+			bHasPendingNoise = false;
+		}
 	}
 	else
 	{
-		bHasPendingNoise = false;	
+		bHasPendingNoise = false;
 	}
 }

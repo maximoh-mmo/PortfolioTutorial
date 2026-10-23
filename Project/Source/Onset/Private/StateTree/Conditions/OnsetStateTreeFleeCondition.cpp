@@ -1,4 +1,4 @@
-#include "StateTree/Conditions/OnsetStateTreeFleeCondition.h"                                                                  
+#include "StateTree/Conditions/OnsetStateTreeFleeCondition.h"
 #include "StateTreeExecutionContext.h"
 #include "AI/OnsetAIController.h"
 #include "Enemy/Profile/AIProfile.h"
@@ -11,9 +11,9 @@ bool FOnsetStateTreeFleeCondition::TestCondition(FStateTreeExecutionContext& Con
 {
 	FOnsetFleeConditionInstanceData& InstanceData = Context.GetInstanceData<FOnsetFleeConditionInstanceData>(*this);
 	AOnsetAIController* AIController = FOnsetStateTreeTask::GetController(Context); 
-	if (!AIController->GetAIProfile()) return false;
+	if (!AIController || !AIController->GetAIProfile()) return false;
 	const AOnsetEnemy* Self = FOnsetStateTreeTask::GetSelfPawn<AOnsetEnemy>(Context);
-	if (!Self || !Self->AbilitySystemComponent) return false;
+	if (!Self || !Self->AbilitySystemComponent || !Self->AttributeSet) return false;
 	
 	float MaxHealth = Self->AttributeSet->GetMaxHealth();
 	if (MaxHealth <= 0.0f) return false;
@@ -26,14 +26,25 @@ bool FOnsetStateTreeFleeCondition::TestCondition(FStateTreeExecutionContext& Con
 	{
 		FGroupData GroupData = Self->GroupComp->GetGroupData();
 		float DistToCenterSq = FVector::DistSquared(Self->GetActorLocation(), GroupData.Center);
-		if (DistToCenterSq < InstanceData.GroupSupportRadius*InstanceData.GroupSupportRadius)
+		if (DistToCenterSq < InstanceData.GroupSupportRadius * InstanceData.GroupSupportRadius)
 		{
 			int32 AllyCount = FMath::Max(0, GroupData.AliveCount - 1);
 			Threshold -= AllyCount * InstanceData.GroupCouragePerAlly;
 		}
 	}
 	
-	if (HealthRatio > Threshold) return false;
+	if (HealthRatio > Threshold)
+	{
+		InstanceData.bHasRolledBelowThreshold = false;
+		InstanceData.bLastRollSucceeded = false;
+		return false;
+	}
 	
-	return FMath::FRand() <= InstanceData.FleeProbability;
+	if (!InstanceData.bHasRolledBelowThreshold)
+	{
+		InstanceData.bHasRolledBelowThreshold = true;
+		InstanceData.bLastRollSucceeded = (FMath::FRand() <= InstanceData.FleeProbability);
+	}
+
+	return InstanceData.bLastRollSucceeded;
 }
