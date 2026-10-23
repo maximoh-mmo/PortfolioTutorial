@@ -59,8 +59,15 @@ public:
 	/** Enables or disables capture and image visibility. */
 	void SetActive(bool bInActive);
 
-	/** Updates the camera location, rotation, and field of view relative to the rig root. */
-	void SetCameraSettings(const FVector& InRelativeLocation, const FRotator& InRelativeRotation, float InFOV);
+	virtual void Tick(float DeltaTime) override;
+
+	/** Updates the camera location, rotation, and field of view relative to the rig root. Smoothly interpolates unless bImmediate is true. */
+	void SetCameraSettings(const FVector& InRelativeLocation, const FRotator& InRelativeRotation, float InFOV, bool bImmediate = false);
+
+	/** Sets camera interpolation speed (exponential ease-out, default 5.0f). */
+	void SetCameraInterpSpeed(float InSpeed) { CameraInterpSpeed = InSpeed; }
+	float GetCameraInterpSpeed() const { return CameraInterpSpeed; }
+	bool IsInterpolatingCamera() const { return bIsInterpolatingCamera; }
 
 	/** Rotates the preview character by the specified yaw delta. */
 	void SetCharacterRotation(const FRotator& InRotation);
@@ -124,5 +131,17 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UOnsetAppearanceCatalog> Catalog;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Preview|Camera")
+	float CameraInterpSpeed = 5.0f;
+
+	FVector CurrentCameraLocation = FVector(290.f, 0.f, 162.f);
+	FRotator CurrentCameraRotation = FRotator(-13.5f, 180.f, 0.f);
+	float CurrentCameraFOV = 32.f;
+
+	FVector TargetCameraLocation = FVector(290.f, 0.f, 162.f);
+	FRotator TargetCameraRotation = FRotator(-13.5f, 180.f, 0.f);
+	float TargetCameraFOV = 32.f;
+
+	bool bIsInterpolatingCamera = false;
 	bool bIsActive = true;
 };

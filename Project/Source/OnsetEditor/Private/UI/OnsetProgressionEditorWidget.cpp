@@ -19,6 +19,7 @@
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/MessageDialog.h"
 #include "Misc/Paths.h"
+#include "UObject/Package.h"
 #include "PackageTools.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"

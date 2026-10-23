@@ -28,6 +28,8 @@
 #include "Components/PointLightComponent.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
+#include "Animation/AnimSequence.h"
+#include "TimerManager.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Components/EditableText.h"
@@ -769,6 +771,7 @@ void UCharacterCreationScreen::EnsurePreview()
             PreviewRenderTarget = Rig->GetRenderTarget();
             PreviewMaterialInstance = Rig->GetMaterialInstance();
             PreviewImage = Rig->GetPreviewImage();
+            Rig->SetCameraSettings(FullBodyCameraOffset, FullBodyCameraRotation, FullBodyFOV, true);
         }
     }
 }
@@ -981,8 +984,24 @@ void UCharacterCreationScreen::CommitDraft(FOnsetAppearanceRecipe Candidate)
     RefreshPreview();
 }
 
+void UCharacterCreationScreen::SetCameraFraming(bool bFaceCloseUp)
+{
+    if (AOnsetAppearancePreviewRig* Rig = Cast<AOnsetAppearancePreviewRig>(PreviewRigActor))
+    {
+        if (bFaceCloseUp)
+        {
+            Rig->SetCameraSettings(FaceCameraOffset, FaceCameraRotation, FaceFOV, false);
+        }
+        else
+        {
+            Rig->SetCameraSettings(FullBodyCameraOffset, FullBodyCameraRotation, FullBodyFOV, false);
+        }
+    }
+}
+
 void UCharacterCreationScreen::SelectBodyPreset(int32 Index)
 {
+    SetCameraFraming(false);
     FOnsetAppearanceRecipe Candidate;
     if (!UOnsetCharacterAppearanceComponent::GetPlayerPreset(Index, Candidate)) return;
     Candidate.SkinColor = DraftAppearance.SkinColor;
@@ -992,6 +1011,7 @@ void UCharacterCreationScreen::SelectBodyPreset(int32 Index)
 
 void UCharacterCreationScreen::SelectHead(FName Id)
 {
+    SetCameraFraming(true);
     if (!AppearanceCatalog) return;
     const auto* Head = AppearanceCatalog->Heads.Find(Id);
     if (!Head || !Head->CompatibleBodies.Contains(DraftAppearance.BodyId)) return;
@@ -1003,6 +1023,8 @@ void UCharacterCreationScreen::SelectHead(FName Id)
 
 void UCharacterCreationScreen::SelectPart(FName PartSlot, FName Id)
 {
+    const bool bIsHeadPart = (PartSlot == TEXT("Hair") || PartSlot.ToString().StartsWith(TEXT("Hair")) || PartSlot == TEXT("HeadTop"));
+    SetCameraFraming(bIsHeadPart);
     if (!AppearanceCatalog) return;
     if (!Id.IsNone())
     {
@@ -1028,6 +1050,7 @@ void UCharacterCreationScreen::SelectPart(FName PartSlot, FName Id)
 
 void UCharacterCreationScreen::AdjustMorph(FName Id, bool bFace, float Delta)
 {
+    SetCameraFraming(bFace);
     if (!AppearanceCatalog || !FMath::IsFinite(Delta)) return;
     const TArray<FName>* Supported = nullptr;
     if (bFace) { if (const auto* Head = AppearanceCatalog->Heads.Find(DraftAppearance.HeadId)) Supported = &Head->SupportedMorphs; }
@@ -1041,13 +1064,14 @@ void UCharacterCreationScreen::AdjustMorph(FName Id, bool bFace, float Delta)
 }
 
 void UCharacterCreationScreen::SetSkinColor(FLinearColor Color)
-{ FOnsetAppearanceRecipe Candidate = DraftAppearance; Candidate.SkinColor = Color; CommitDraft(MoveTemp(Candidate)); }
+{ SetCameraFraming(false); FOnsetAppearanceRecipe Candidate = DraftAppearance; Candidate.SkinColor = Color; CommitDraft(MoveTemp(Candidate)); }
 
 void UCharacterCreationScreen::SetEyeColor(FLinearColor Color)
-{ FOnsetAppearanceRecipe Candidate = DraftAppearance; Candidate.EyeColor = Color; CommitDraft(MoveTemp(Candidate)); }
+{ SetCameraFraming(true); FOnsetAppearanceRecipe Candidate = DraftAppearance; Candidate.EyeColor = Color; CommitDraft(MoveTemp(Candidate)); }
 
 void UCharacterCreationScreen::SetOutfitColor(int32 Channel, FLinearColor Color)
 {
+    SetCameraFraming(false);
     if (Channel < 0 || Channel > 2 || !AppearanceCatalog) return;
     FOnsetAppearanceRecipe Candidate = DraftAppearance;
     for (FOnsetPartSelection& Part : Candidate.Parts)

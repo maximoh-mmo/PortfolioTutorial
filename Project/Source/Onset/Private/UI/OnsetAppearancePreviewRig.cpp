@@ -6,6 +6,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Animation/AnimSequence.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Components/Image.h"
@@ -22,7 +23,8 @@
 
 AOnsetAppearancePreviewRig::AOnsetAppearancePreviewRig()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 	SetActorEnableCollision(false);
 
 	RigRoot = CreateDefaultSubobject<USceneComponent>(TEXT("RigRoot"));
@@ -443,12 +445,57 @@ void AOnsetAppearancePreviewRig::SetActive(bool bInActive)
 	}
 }
 
-void AOnsetAppearancePreviewRig::SetCameraSettings(const FVector& InRelativeLocation, const FRotator& InRelativeRotation, float InFOV)
+void AOnsetAppearancePreviewRig::Tick(float DeltaTime)
 {
-	if (PreviewCaptureComponent)
+	Super::Tick(DeltaTime);
+
+	if (bIsInterpolatingCamera && PreviewCaptureComponent)
 	{
-		PreviewCaptureComponent->SetRelativeLocationAndRotation(InRelativeLocation, InRelativeRotation);
-		PreviewCaptureComponent->FOVAngle = InFOV;
+		CurrentCameraLocation = FMath::VInterpTo(CurrentCameraLocation, TargetCameraLocation, DeltaTime, CameraInterpSpeed);
+		CurrentCameraRotation = FMath::RInterpTo(CurrentCameraRotation, TargetCameraRotation, DeltaTime, CameraInterpSpeed);
+		CurrentCameraFOV = FMath::FInterpTo(CurrentCameraFOV, TargetCameraFOV, DeltaTime, CameraInterpSpeed);
+
+		PreviewCaptureComponent->SetRelativeLocationAndRotation(CurrentCameraLocation, CurrentCameraRotation);
+		PreviewCaptureComponent->FOVAngle = CurrentCameraFOV;
+
+		if (FVector::DistSquared(CurrentCameraLocation, TargetCameraLocation) < 0.05f &&
+			FMath::Abs(CurrentCameraFOV - TargetCameraFOV) < 0.05f &&
+			CurrentCameraRotation.Equals(TargetCameraRotation, 0.05f))
+		{
+			CurrentCameraLocation = TargetCameraLocation;
+			CurrentCameraRotation = TargetCameraRotation;
+			CurrentCameraFOV = TargetCameraFOV;
+
+			PreviewCaptureComponent->SetRelativeLocationAndRotation(CurrentCameraLocation, CurrentCameraRotation);
+			PreviewCaptureComponent->FOVAngle = CurrentCameraFOV;
+
+			bIsInterpolatingCamera = false;
+		}
+	}
+}
+
+void AOnsetAppearancePreviewRig::SetCameraSettings(const FVector& InRelativeLocation, const FRotator& InRelativeRotation, float InFOV, bool bImmediate)
+{
+	TargetCameraLocation = InRelativeLocation;
+	TargetCameraRotation = InRelativeRotation;
+	TargetCameraFOV = InFOV;
+
+	if (bImmediate || !PreviewCaptureComponent)
+	{
+		CurrentCameraLocation = InRelativeLocation;
+		CurrentCameraRotation = InRelativeRotation;
+		CurrentCameraFOV = InFOV;
+		bIsInterpolatingCamera = false;
+
+		if (PreviewCaptureComponent)
+		{
+			PreviewCaptureComponent->SetRelativeLocationAndRotation(InRelativeLocation, InRelativeRotation);
+			PreviewCaptureComponent->FOVAngle = InFOV;
+		}
+	}
+	else
+	{
+		bIsInterpolatingCamera = true;
 	}
 }
 
