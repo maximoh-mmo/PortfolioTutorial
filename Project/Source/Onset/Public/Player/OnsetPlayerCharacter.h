@@ -30,6 +30,8 @@ public:
 	
 	virtual void BeginPlay() override;
 
+	virtual void OnConstruction(const FTransform& Transform) override;
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	void RespawnPlayer();
@@ -119,6 +121,18 @@ protected:
 	/** Camera attached to the spring arm socket. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> FollowCamera;
+
+	/** Distance of the camera from the player. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	float CameraTargetArmLength = 1500.f;
+
+	/** Pitch/Yaw/Roll rotation of the camera boom. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	FRotator CameraRotation = FRotator(-46.f, 0.f, 0.f);
+
+	/** Field of View for the camera (lower values create an isometric look). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	float CameraFOV = 60.f;
 
 private:
 	/** Adds XP and processes any level-ups; does NOT persist (GrantXPFromEnemy does). */

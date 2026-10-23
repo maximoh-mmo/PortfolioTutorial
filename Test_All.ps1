@@ -3,6 +3,7 @@ param(
     [int]$GamePort = 7778,
     [string]$EnginePath = "C:\Program Files\Epic Games\UE_5.8.3",
     [string]$ProjectPath = "E:\Unreal Projects\PortfolioTutorial\Project\Onset.uproject",
+    [string]$Map = "/Game/Maps/DemoLevel",
     [string]$DataStoreType = "HttpApi",
     [string]$DataStoreURL = "",
     [string]$DataStoreAPIKey = "",
@@ -196,7 +197,10 @@ Write-Host "DataStore mode: $DataStoreMode -> $DataStoreURL" -ForegroundColor Cy
 $LoginCmd = "-project=`"$ProjectPath`" /Game/Maps/LoginServer -server -log -AuthMode=Direct -Port=$LoginPort -NOSTEAM" +
             " -AbsLog=`"$LoginLog`" -LogCmds=`"$LogFilter`"" + $DataStoreArgs
 
-$GameCmd = "-project=`"$ProjectPath`" /Game/Maps/DemoLevel -server -log -AuthMode=Token -Port=$GamePort -NOSTEAM" +
+$GameMap = if ($Map.StartsWith("/")) { $Map } else { "/Game/Maps/$Map" }
+Write-Host "Game map: $GameMap" -ForegroundColor Cyan
+
+$GameCmd = "-project=`"$ProjectPath`" $GameMap -server -log -AuthMode=Token -Port=$GamePort -NOSTEAM" +
            " -AbsLog=`"$GameLog`" -LogCmds=`"$LogFilter`"" + $DataStoreArgs
 
 $ClientBaseCmd = "-project=`"$ProjectPath`" 127.0.0.1:${LoginPort}?ClientIndex={1} -game -log -windowed -ResX=1280 -ResY=720 -NOSTEAM" +
