@@ -15,6 +15,7 @@ replacement. Lyra and GameFeature integration belongs in optional adapters above
 | MHBackend | MHPersistenceHttp | Generic v1 binary record API client |
 | MHOnline | MHOnlineCore | Provider-neutral identity contracts |
 | MHOnline | MHOnlineSteam | Steam implementation of identity contracts |
+| MHInteraction | MHInteraction | Generic world and actor interaction contracts, components, and validation |
 
 MHCore implements results, errors and cancellable requests. MHBackendCore implements
 session-token signing, verification and configuration. MHBackendHttp provides async

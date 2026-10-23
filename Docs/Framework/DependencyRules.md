@@ -8,6 +8,7 @@
 - MHPersistenceHttp depends on MHPersistence/MHCore; MHBackendHttp is implementation-private.
 - MHOnlineCore may depend on MHCore, never on Steam.
 - MHOnlineSteam may depend on MHOnlineCore; provider SDK details stay private.
+- MHInteraction may depend on MHCore and Engine; game-specific interaction rules stay in Onset.
 - MHBackend and MHOnline do not depend on each other. Onset coordinates them.
 - MH modules never depend on Onset, Lyra or GameFeatures, including header includes.
 - Adapters and Onset may consume MH. Do not invert this relationship for convenience.

@@ -1,0 +1,25 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "MHInteraction",
+  "Description": "MH framework generic world and actor interaction mechanisms; see Docs/Framework.",
+  "Category": "MH Framework",
+  "CreatedBy": "Maximo H",
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "MHInteraction",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "MHCore",
+      "Enabled": true
+    }
+  ]
+}
