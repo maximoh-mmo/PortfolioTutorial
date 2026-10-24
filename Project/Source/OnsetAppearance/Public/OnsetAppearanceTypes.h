@@ -6,6 +6,17 @@
 UENUM(BlueprintType)
 enum class EOnsetAppearanceUse : uint8 { Player, AuthoredCharacter };
 
+UENUM(BlueprintType)
+enum class EOnsetAppearanceCategory : uint8
+{
+	NPC             UMETA(DisplayName = "NPC / Non-Combatant"),
+	Enemy           UMETA(DisplayName = "Enemy / Hostile Combatant"),
+	PlayerPreset    UMETA(DisplayName = "Player Preset"),
+	Companion       UMETA(DisplayName = "Companion / Ally"),
+	Civilian        UMETA(DisplayName = "Civilian Citizen"),
+	Boss            UMETA(DisplayName = "Boss / Elite")
+};
+
 USTRUCT(BlueprintType)
 struct ONSETAPPEARANCE_API FOnsetAppearanceIssue
 {

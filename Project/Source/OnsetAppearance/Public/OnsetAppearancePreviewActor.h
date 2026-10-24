@@ -8,6 +8,8 @@
 class UOnsetAppearanceComponent;
 class UOnsetAppearanceCatalog;
 class UOnsetAppearancePreset;
+class UOnsetAuthoredAppearance;
+class UOnsetAnimationProfile;
 class UAnimSequence;
 class USkeletalMeshComponent;
 
@@ -20,10 +22,14 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Appearance") TObjectPtr<UOnsetAppearanceComponent> Appearance;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance") TSoftObjectPtr<UOnsetAppearanceCatalog> Catalog;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance") TSoftObjectPtr<UOnsetAppearancePreset> Preset;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance") TSoftObjectPtr<UOnsetAuthoredAppearance> AuthoredAppearance;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance") TSoftObjectPtr<UOnsetAnimationProfile> ActiveAnimationProfile;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance") FOnsetAppearanceRecipe Recipe;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance") EOnsetAppearanceUse Use = EOnsetAppearanceUse::AuthoredCharacter;
     UFUNCTION(CallInEditor, BlueprintCallable, Category="Appearance") bool RebuildPreview();
     UFUNCTION(CallInEditor, BlueprintCallable, Category="Appearance") bool LoadPreset();
+    UFUNCTION(CallInEditor, BlueprintCallable, Category="Appearance") bool LoadAuthoredAppearance(UOnsetAuthoredAppearance* InAppearance);
+    UFUNCTION(CallInEditor, BlueprintCallable, Category="Animation Preview") bool LoadAnimationProfile(UOnsetAnimationProfile* InProfile);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Animation Preview") TSoftObjectPtr<UAnimSequence> PreviewAnimation;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Animation Preview") TArray<TSoftObjectPtr<UAnimSequence>> SampleAnimations;
@@ -35,6 +41,10 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Animation Preview") float AnimationLength = 0.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Animation Preview") FString AnimationStatus;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Turntable") bool bTurntableEnabled = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Turntable") float TurntableSpeed = 30.0f;
+
+    UFUNCTION(CallInEditor, BlueprintCallable, Category="Turntable") void RotatePreview(float DeltaYawDegrees);
     UFUNCTION(CallInEditor, BlueprintCallable, Category="Animation Preview") bool PlayPreview();
     UFUNCTION(CallInEditor, BlueprintCallable, Category="Animation Preview") void PausePreview();
     UFUNCTION(CallInEditor, BlueprintCallable, Category="Animation Preview") bool RestartPreview();

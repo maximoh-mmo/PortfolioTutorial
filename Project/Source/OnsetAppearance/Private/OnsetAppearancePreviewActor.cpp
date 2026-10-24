@@ -1,6 +1,8 @@
 #include "OnsetAppearancePreviewActor.h"
 #include "OnsetAppearanceComponent.h"
 #include "OnsetAppearancePreset.h"
+#include "OnsetAuthoredAppearance.h"
+#include "OnsetAnimationProfile.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -33,6 +35,59 @@ bool AOnsetAppearancePreviewActor::LoadPreset()
     return RebuildPreview();
 }
 
+bool AOnsetAppearancePreviewActor::LoadAuthoredAppearance(UOnsetAuthoredAppearance* InAppearance)
+{
+    if (!InAppearance)
+    {
+        InAppearance = AuthoredAppearance.LoadSynchronous();
+    }
+    if (!InAppearance) return false;
+
+    AuthoredAppearance = InAppearance;
+    Recipe = InAppearance->Recipe;
+    Use = EOnsetAppearanceUse::AuthoredCharacter;
+
+    if (!InAppearance->AnimationProfile.IsNull())
+    {
+        LoadAnimationProfile(InAppearance->AnimationProfile.LoadSynchronous());
+    }
+
+    return RebuildPreview();
+}
+
+bool AOnsetAppearancePreviewActor::LoadAnimationProfile(UOnsetAnimationProfile* InProfile)
+{
+    if (!InProfile)
+    {
+        InProfile = ActiveAnimationProfile.LoadSynchronous();
+    }
+    if (!InProfile) return false;
+
+    ActiveAnimationProfile = InProfile;
+    SampleAnimations = InProfile->SamplePreviewAnimations;
+
+    if (UAnimSequence* IdleSeq = Cast<UAnimSequence>(InProfile->DefaultIdleAnim.LoadSynchronous()))
+    {
+        PreviewAnimation = IdleSeq;
+    }
+    else if (!InProfile->SamplePreviewAnimations.IsEmpty())
+    {
+        PreviewAnimation = InProfile->SamplePreviewAnimations[0];
+    }
+
+    if (bPreviewInitialized)
+    {
+        ConfigureAnimation();
+        if (bAutoPlay) PlayPreview();
+    }
+    return true;
+}
+
+void AOnsetAppearancePreviewActor::RotatePreview(float DeltaYawDegrees)
+{
+    AddActorLocalRotation(FRotator(0.f, DeltaYawDegrees, 0.f));
+}
+
 bool AOnsetAppearancePreviewActor::ConfigureAnimation()
 {
     auto* Body = Appearance->GetBodyMesh();
@@ -48,7 +103,6 @@ bool AOnsetAppearancePreviewActor::ConfigureAnimation()
     {
         Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
         Body->SetAnimation(Candidate);
-        // The actor owns time advancement. Disabling component tick avoids double evaluation and gameplay notifies.
         Body->SetComponentTickEnabled(false);
         ActiveBody = Body; ActiveAnimation = Candidate;
     }
@@ -139,6 +193,11 @@ bool AOnsetAppearancePreviewActor::PreviousSampleAnimation() { return SelectSamp
 void AOnsetAppearancePreviewActor::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    if (bTurntableEnabled && FMath::Abs(TurntableSpeed) > 0.01f)
+    {
+        AddActorLocalRotation(FRotator(0.f, TurntableSpeed * DeltaSeconds, 0.f));
+    }
+
     if (!bPreviewPlaying || !ActiveAnimation || !ActiveBody.IsValid()) return;
     if (!FMath::IsFinite(DeltaSeconds) || DeltaSeconds < 0.f || !FMath::IsFinite(PlaybackSpeed) || FMath::Abs(PlaybackSpeed) > 4.f)
     { PausePreview(); AnimationStatus = TEXT("Invalid playback time or speed."); return; }
