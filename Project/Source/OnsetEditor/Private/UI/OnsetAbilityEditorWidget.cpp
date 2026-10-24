@@ -9,28 +9,41 @@
 #include "Blueprint/WidgetTree.h"
 #include "Combat/OnsetAbilityLibrary.h"
 #include "Combat/OnsetGameplayAbility.h"
-#include "Components/DetailsView.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/ScrollBox.h"
 #include "Components/SizeBox.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Data/OnsetAbilityTypes.h"
 #include "Data/OnsetItemLibrary.h"
 #include "Data/OnsetItemTypes.h"
+#include "DrawDebugHelpers.h"
+#include "Editor.h"
 #include "Engine/DataTable.h"
+#include "Engine/World.h"
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
+#include "LevelEditorViewport.h"
 #include "Misc/Char.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "OnsetAppearanceComponent.h"
+#include "OnsetAppearancePreviewActor.h"
 #include "Rendering/SlateRenderer.h"
+#include "Selection.h"
+#include "Sound/SoundBase.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "Styling/SlateTypes.h"
 #include "Styling/StyleDefaults.h"
 #include "UI/OnsetAbilityCreationDialog.h"
 #include "UI/OnsetAbilityRowButton.h"
+#include "UI/OnsetNotifyDetailsView.h"
 #include "UObject/Class.h"
 #include "UObject/SavePackage.h"
 #include "UObject/UObjectGlobals.h"
@@ -268,7 +281,7 @@ void UOnsetAbilityEditorWidget::BuildUI()
 		return;
 	}
 
-	// Root: vertical — content (list + details) on top, buttons pinned to the bottom.
+	// Root: vertical — content (list + details) on top, metrics and buttons pinned to the bottom.
 	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RootLayout"));
 	UHorizontalBox* ContentRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ContentRow"));
 
@@ -300,13 +313,21 @@ void UOnsetAbilityEditorWidget::BuildUI()
 	RowListBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RowListBox"));
 	ListScroll->AddChild(RowListBox);
 
-	// --- Right: property view bound to the selected row ---
-	PropertyView = WidgetTree->ConstructWidget<UDetailsView>(UDetailsView::StaticClass(), TEXT("PropertyView"));
+	// --- Right: property view bound to the selected row with live modification notifications ---
+	PropertyView = WidgetTree->ConstructWidget<UOnsetNotifyDetailsView>(UOnsetNotifyDetailsView::StaticClass(), TEXT("PropertyView"));
+	PropertyView->OnPropertyEdited.AddUObject(this, &UOnsetAbilityEditorWidget::HandlePropertyEdited);
 
 	// The list panel hugs its columns (minimum width); the details panel takes the rest.
 	ContentRow->AddChildToHorizontalBox(LeftPanel)->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
 	ContentRow->AddChildToHorizontalBox(PropertyView)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	RootBox->AddChildToVerticalBox(ContentRow)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+
+	// --- Live DPS & Pacing Metrics Card ---
+	DpsMetricsText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("DpsMetricsText"));
+	DpsMetricsText->SetFont(FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 9));
+	DpsMetricsText->SetColorAndOpacity(FSlateColor(FLinearColor(0.88f, 0.92f, 1.0f, 1.0f)));
+	DpsMetricsText->SetAutoWrapText(true);
+	RootBox->AddChildToVerticalBox(DpsMetricsText)->SetPadding(FMargin(4.0f, 4.0f, 4.0f, 4.0f));
 
 	// --- Bottom: full-width action bar pinned under the content ---
 	UHorizontalBox* ButtonRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ButtonRow"));
@@ -318,6 +339,10 @@ void UOnsetAbilityEditorWidget::BuildUI()
 	UButton* DeleteButton = MakeTextButton(WidgetTree, NSLOCTEXT("OnsetAbilityEditor", "Delete", "Delete"), TEXT("Delete"));
 	DeleteButton->OnClicked.AddDynamic(this, &UOnsetAbilityEditorWidget::DeleteDefinition);
 	ButtonRow->AddChildToHorizontalBox(DeleteButton)->SetPadding(FMargin(0.0f, 0.0f, 4.0f, 0.0f));
+
+	UButton* PreviewButton = MakeTextButton(WidgetTree, NSLOCTEXT("OnsetAbilityEditor", "PreviewViewport", "Preview in Viewport"), TEXT("PreviewViewport"));
+	PreviewButton->OnClicked.AddDynamic(this, &UOnsetAbilityEditorWidget::PreviewCastInViewport);
+	ButtonRow->AddChildToHorizontalBox(PreviewButton)->SetPadding(FMargin(0.0f, 0.0f, 4.0f, 0.0f));
 
 	UButton* SaveButton = MakeTextButton(WidgetTree, NSLOCTEXT("OnsetAbilityEditor", "Save", "Save"), TEXT("Save"));
 	SaveButton->OnClicked.AddDynamic(this, &UOnsetAbilityEditorWidget::SaveDefinition);
@@ -407,6 +432,19 @@ void UOnsetAbilityEditorWidget::RebuildList()
 		RowListBox->AddChildToVerticalBox(RowButton)->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Left);
 		RowButtons.Add(RowName, RowButton);
 	}
+
+	if (SelectedRowName.IsNone())
+	{
+		for (const TPair<FName, uint8*>& RowPair : Table->GetRowMap())
+		{
+			SelectRow(RowPair.Key);
+			break;
+		}
+	}
+	else
+	{
+		UpdateDpsMetrics();
+	}
 }
 
 void UOnsetAbilityEditorWidget::SelectRow(FName RowName)
@@ -436,6 +474,8 @@ void UOnsetAbilityEditorWidget::SelectRow(FName RowName)
 		PropertyView->SetObject(EditWrapper);
 	}
 
+	UpdateDpsMetrics();
+
 	// Update the selection highlight in place (avoids rebuilding the list while the
 	// clicked button is still dispatching its click event).
 	for (const TPair<FName, TObjectPtr<UOnsetAbilityRowButton>>& Pair : RowButtons)
@@ -444,6 +484,319 @@ void UOnsetAbilityEditorWidget::SelectRow(FName RowName)
 		{
 			Pair.Value->SetStyle(MakeRowStyle(Pair.Key == SelectedRowName));
 		}
+	}
+}
+
+void UOnsetAbilityEditorWidget::HandlePropertyEdited()
+{
+	WriteBackRow();
+	UpdateDpsMetrics();
+}
+
+void UOnsetAbilityEditorWidget::UpdateDpsMetrics()
+{
+	if (!DpsMetricsText)
+	{
+		return;
+	}
+
+	if (!EditWrapper || SelectedRowName.IsNone())
+	{
+		DpsMetricsText->SetText(FText::GetEmpty());
+		return;
+	}
+
+	const FOnsetAbilityDefinition& Def = EditWrapper->Definition;
+
+	float DirectDamage = 0.0f;
+	float TotalDotDamage = 0.0f;
+	float DirectHeal = 0.0f;
+	float TotalHotHeal = 0.0f;
+	TArray<FString> StatusEffects;
+
+	for (const FOnsetAbilityEffect& Effect : Def.Effects)
+	{
+		switch (Effect.Type)
+		{
+		case EOnsetAbilityEffectType::Damage:
+			if (Effect.Duration > 0.0f && Effect.Period > 0.0f)
+			{
+				const int32 Ticks = FMath::FloorToInt(Effect.Duration / Effect.Period);
+				TotalDotDamage += Effect.Magnitude * Ticks;
+			}
+			else
+			{
+				DirectDamage += Effect.Magnitude;
+			}
+			break;
+
+		case EOnsetAbilityEffectType::Heal:
+			if (Effect.Duration > 0.0f && Effect.Period > 0.0f)
+			{
+				const int32 Ticks = FMath::FloorToInt(Effect.Duration / Effect.Period);
+				TotalHotHeal += Effect.Magnitude * Ticks;
+			}
+			else
+			{
+				DirectHeal += Effect.Magnitude;
+			}
+			break;
+
+		case EOnsetAbilityEffectType::Snare:
+			StatusEffects.Add(FString::Printf(TEXT("Snare (%.0f%% spd, %.1fs)"), Effect.Magnitude * 100.0f, Effect.Duration));
+			break;
+
+		case EOnsetAbilityEffectType::Slow:
+			StatusEffects.Add(FString::Printf(TEXT("Slow (%.1fx CD, %.1fs)"), Effect.Magnitude, Effect.Duration));
+			break;
+
+		case EOnsetAbilityEffectType::Stun:
+			StatusEffects.Add(FString::Printf(TEXT("Stun (%.1fs)"), Effect.Duration));
+			break;
+
+		case EOnsetAbilityEffectType::Freeze:
+			StatusEffects.Add(FString::Printf(TEXT("Freeze (%.1fs)"), Effect.Duration));
+			break;
+
+		case EOnsetAbilityEffectType::Invulnerable:
+			StatusEffects.Add(FString::Printf(TEXT("Invulnerable (%.1fs)"), Effect.Duration));
+			break;
+		}
+	}
+
+	const float EffectiveCooldown = FMath::Max(Def.CooldownSeconds, 0.05f);
+	const float TotalDamagePerCast = DirectDamage + TotalDotDamage;
+	const float SustainedDps = TotalDamagePerCast / EffectiveCooldown;
+	const float TotalHealPerCast = DirectHeal + TotalHotHeal;
+	const float SustainedHps = TotalHealPerCast / EffectiveCooldown;
+	const float ThreatPerCast = TotalDamagePerCast * Def.ThreatMultiplier;
+	const float ThreatPerSecond = ThreatPerCast / EffectiveCooldown;
+
+	FString MetricsStr = FString::Printf(TEXT("⚡ Live Pacing: CD %.2fs | Direct Dmg: %.1f | DoT Dmg: %.1f | Total Dmg/Cast: %.1f | DPS: %.1f | HPS: %.1f | Threat/s: %.1f (Mult: %.1fx)"),
+		Def.CooldownSeconds, DirectDamage, TotalDotDamage, TotalDamagePerCast, SustainedDps, SustainedHps, ThreatPerSecond, Def.ThreatMultiplier);
+
+	if (StatusEffects.Num() > 0)
+	{
+		MetricsStr += FString::Printf(TEXT("\nStatus: %s"), *FString::Join(StatusEffects, TEXT(", ")));
+	}
+
+	// Pacing / Animation sync warnings
+	TArray<FString> Warnings;
+	if (Def.CooldownSeconds <= 0.0f)
+	{
+		Warnings.Add(TEXT("⚠️ Zero Cooldown: Spammable without delay!"));
+	}
+
+	UAnimMontage* Montage = nullptr;
+	if (!Def.Montage.IsNull())
+	{
+		Montage = Def.Montage.LoadSynchronous();
+		if (Montage)
+		{
+			const float MontageLength = Montage->GetPlayLength();
+			if (MontageLength > Def.CooldownSeconds && Def.CooldownSeconds > 0.0f)
+			{
+				Warnings.Add(FString::Printf(TEXT("⚠️ Clipping Hazard: Montage length (%.2fs) > Cooldown (%.2fs). Ability can be interrupted before anim completes."), MontageLength, Def.CooldownSeconds));
+			}
+			if (Def.DamageTime > MontageLength)
+			{
+				Warnings.Add(FString::Printf(TEXT("⚠️ Hit Desync: DamageTime (%.2fs) > Montage length (%.2fs). Hit resolves after animation finishes!"), Def.DamageTime, MontageLength));
+			}
+		}
+	}
+
+	if (Warnings.Num() > 0)
+	{
+		MetricsStr += TEXT("\n") + FString::Join(Warnings, TEXT(" | "));
+	}
+
+	DpsMetricsText->SetText(FText::FromString(MetricsStr));
+}
+
+void UOnsetAbilityEditorWidget::PreviewCastInViewport()
+{
+	if (SelectedRowName.IsNone() || !EditWrapper)
+	{
+		return;
+	}
+
+	WriteBackRow();
+
+	UWorld* World = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
+	if (!World)
+	{
+		return;
+	}
+
+	const FOnsetAbilityDefinition& Def = EditWrapper->Definition;
+
+	// Determine origin and forward vector in the viewport
+	FVector CasterOrigin = FVector::ZeroVector;
+	FRotator CasterRot = FRotator::ZeroRotator;
+	FVector Forward = FVector::ForwardVector;
+	AActor* TargetActor = nullptr;
+
+	if (GEditor && GEditor->GetSelectedActors() && GEditor->GetSelectedActors()->Num() > 0)
+	{
+		TargetActor = Cast<AActor>(GEditor->GetSelectedActors()->GetSelectedObject(0));
+	}
+
+	if (!TargetActor)
+	{
+		TArray<AActor*> FoundActors;
+		UGameplayStatics::GetAllActorsOfClass(World, AOnsetAppearancePreviewActor::StaticClass(), FoundActors);
+		if (FoundActors.Num() > 0)
+		{
+			TargetActor = FoundActors[0];
+		}
+	}
+
+	if (TargetActor)
+	{
+		CasterOrigin = TargetActor->GetActorLocation();
+		CasterRot = TargetActor->GetActorRotation();
+		Forward = TargetActor->GetActorForwardVector();
+	}
+	else if (GEditor && GEditor->GetActiveViewport())
+	{
+		FEditorViewportClient* Client = static_cast<FEditorViewportClient*>(GEditor->GetActiveViewport()->GetClient());
+		if (Client)
+		{
+			CasterOrigin = Client->GetViewLocation() + Client->GetViewRotation().Vector() * 300.0f;
+			CasterRot = FRotator(0.f, Client->GetViewRotation().Yaw, 0.f);
+			Forward = CasterRot.Vector();
+		}
+	}
+
+	// Play Montage if caster actor has a mesh
+	if (TargetActor && !Def.Montage.IsNull())
+	{
+		if (UAnimMontage* Montage = Def.Montage.LoadSynchronous())
+		{
+			if (ACharacter* Char = Cast<ACharacter>(TargetActor))
+			{
+				if (USkeletalMeshComponent* Mesh = Char->GetMesh())
+				{
+					Mesh->PlayAnimation(Montage, false);
+				}
+			}
+			else if (AOnsetAppearancePreviewActor* PreviewActor = Cast<AOnsetAppearancePreviewActor>(TargetActor))
+			{
+				if (PreviewActor->Appearance && PreviewActor->Appearance->GetBodyMesh())
+				{
+					PreviewActor->Appearance->GetBodyMesh()->PlayAnimation(Montage, false);
+				}
+			}
+			else if (USkeletalMeshComponent* Mesh = TargetActor->FindComponentByClass<USkeletalMeshComponent>())
+			{
+				Mesh->PlayAnimation(Montage, false);
+			}
+		}
+	}
+
+	// Play Cast Niagara and Sound
+	if (!Def.CastNiagara.IsNull())
+	{
+		if (UNiagaraSystem* Niagara = Def.CastNiagara.LoadSynchronous())
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, Niagara, CasterOrigin, CasterRot);
+		}
+	}
+	if (!Def.CastSound.IsNull())
+	{
+		if (USoundBase* Sound = Def.CastSound.LoadSynchronous())
+		{
+			UGameplayStatics::PlaySoundAtLocation(World, Sound, CasterOrigin);
+		}
+	}
+
+	// Draw Debug Visualizers based on AbilityType
+	const float Lifetime = 6.0f;
+	const float Thickness = 2.5f;
+
+	switch (Def.AbilityType)
+	{
+	case EOnsetAbilityType::SingleTarget:
+	{
+		const float Range = FMath::Max(Def.AttackRange, 50.0f);
+		const FVector EndPoint = CasterOrigin + Forward * Range;
+		DrawDebugDirectionalArrow(World, CasterOrigin, EndPoint, 35.0f, FColor::Red, false, Lifetime, 0, Thickness);
+		DrawDebugSphere(World, EndPoint, 30.0f, 16, FColor::Orange, false, Lifetime, 0, Thickness * 0.75f);
+		DrawDebugString(World, EndPoint + FVector(0.f, 0.f, 40.f),
+			*FString::Printf(TEXT("%s [Single Target | Range: %.0f]"), *Def.DisplayName.ToString(), Range),
+			nullptr, FColor::White, Lifetime);
+
+		if (!Def.ImpactNiagara.IsNull())
+		{
+			if (UNiagaraSystem* Niagara = Def.ImpactNiagara.LoadSynchronous())
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, Niagara, EndPoint, CasterRot);
+			}
+		}
+		if (!Def.ImpactSound.IsNull())
+		{
+			if (USoundBase* Sound = Def.ImpactSound.LoadSynchronous())
+			{
+				UGameplayStatics::PlaySoundAtLocation(World, Sound, EndPoint);
+			}
+		}
+		break;
+	}
+
+	case EOnsetAbilityType::AoE:
+	{
+		const float CastDist = FMath::Max(Def.CastRange, 50.0f);
+		const float Radius = FMath::Max(Def.Radius, 20.0f);
+		const FVector ImpactPoint = CasterOrigin + Forward * CastDist;
+
+		DrawDebugLine(World, CasterOrigin, ImpactPoint, FColor::Cyan, false, Lifetime, 0, 1.5f);
+		DrawDebugCircle(World, ImpactPoint, Radius, 36, FColor::Cyan, false, Lifetime, 0, Thickness, FVector(1, 0, 0), FVector(0, 1, 0));
+		DrawDebugCylinder(World, ImpactPoint - FVector(0, 0, 10), ImpactPoint + FVector(0, 0, 80), Radius, 16, FColor::Cyan, false, Lifetime, 0, 1.5f);
+		DrawDebugString(World, ImpactPoint + FVector(0.f, 0.f, 100.f),
+			*FString::Printf(TEXT("%s [AoE | Radius: %.0f | Cast Range: %.0f]"), *Def.DisplayName.ToString(), Radius, CastDist),
+			nullptr, FColor::White, Lifetime);
+
+		if (!Def.ImpactNiagara.IsNull())
+		{
+			if (UNiagaraSystem* Niagara = Def.ImpactNiagara.LoadSynchronous())
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, Niagara, ImpactPoint, FRotator::ZeroRotator);
+			}
+		}
+		if (!Def.ImpactSound.IsNull())
+		{
+			if (USoundBase* Sound = Def.ImpactSound.LoadSynchronous())
+			{
+				UGameplayStatics::PlaySoundAtLocation(World, Sound, ImpactPoint);
+			}
+		}
+		break;
+	}
+
+	case EOnsetAbilityType::PointBlankAoE:
+	{
+		const float Radius = FMath::Max(Def.Radius, 20.0f);
+		DrawDebugCircle(World, CasterOrigin, Radius, 36, FColor::Yellow, false, Lifetime, 0, Thickness, FVector(1, 0, 0), FVector(0, 1, 0));
+		DrawDebugCylinder(World, CasterOrigin - FVector(0, 0, 10), CasterOrigin + FVector(0, 0, 80), Radius, 16, FColor::Yellow, false, Lifetime, 0, 1.5f);
+		DrawDebugString(World, CasterOrigin + FVector(0.f, 0.f, 100.f),
+			*FString::Printf(TEXT("%s [Point-Blank AoE | Radius: %.0f]"), *Def.DisplayName.ToString(), Radius),
+			nullptr, FColor::White, Lifetime);
+		break;
+	}
+
+	case EOnsetAbilityType::Cone:
+	{
+		const float Radius = FMath::Max(Def.Radius, 50.0f);
+		const float HalfAngle = FMath::Clamp(Def.ConeHalfAngle, 5.0f, 175.0f);
+		DrawDebugCone(World, CasterOrigin, Forward, Radius, FMath::DegreesToRadians(HalfAngle), FMath::DegreesToRadians(HalfAngle), 24, FColor::Magenta, false, Lifetime, 0, Thickness);
+		DrawDebugString(World, CasterOrigin + Forward * (Radius * 0.5f) + FVector(0.f, 0.f, 50.f),
+			*FString::Printf(TEXT("%s [Cone | Radius: %.0f | Angle: %.0f°]"), *Def.DisplayName.ToString(), Radius, HalfAngle * 2.0f),
+			nullptr, FColor::White, Lifetime);
+		break;
+	}
+
+	default:
+		break;
 	}
 }
 

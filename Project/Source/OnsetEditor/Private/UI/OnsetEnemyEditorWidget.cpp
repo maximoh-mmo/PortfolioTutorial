@@ -1,8 +1,6 @@
 #include "UI/OnsetEnemyEditorWidget.h"
 #include "Editor.h"
 #include "Engine/Engine.h"
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 
 #include "AI/OnsetAIController.h"
 #include "Combat/OnsetEquipmentLibrary.h"
@@ -25,11 +23,17 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Docking/TabManager.h"
 #include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
+#include "LevelEditorViewport.h"
+#include "OnsetAppearancePreviewActor.h"
+#include "OnsetAuthoredAppearance.h"
 #include "OnsetEditor.h"
 #include "PackageTools.h"
+#include "Selection.h"
 #include "Subsystem/OnsetPoolSubsystem.h"
 #include "UI/OnsetAbilityRowButton.h"
 #include "UI/OnsetEnemyCreationDialog.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "UI/OnsetNotifyDetailsView.h"
 #include "UObject/SavePackage.h"
 #include "UObject/UObjectGlobals.h"
@@ -44,20 +48,14 @@ namespace OnsetEnemyEditorWidgetConstants
 	constexpr float TierWidth = 70.0f;
 }
 
-/** Generates a unique widget name so WidgetTree names never collide across rows. */
 static FName EnemyNextWidgetName(const FString& Base)
 {
 	static int32 WidgetCounter = 0;
 	return FName(*FString::Printf(TEXT("%s_%d"), *Base, ++WidgetCounter));
 }
 
-/** Maximum row-name length; keeps generated names well under FName's truncation limit. */
 constexpr int32 MaxEnemyCleanNameLength = 60;
 
-/**
- * Sanitizes a display name into a valid DataTable row name. Same rules as the
- * ability editor: alphanumerics kept, separator runs collapse to a single '_'.
- */
 static FString CleanEnemyName(const FString& RawName)
 {
 	const FString Trimmed = RawName.TrimStartAndEnd();
@@ -94,7 +92,6 @@ static FString CleanEnemyName(const FString& RawName)
 	return Clean;
 }
 
-/** Flat, compact button style: no chrome, subtle hover/press fill. */
 static FButtonStyle MakeEnemyFlatStyle()
 {
 	FButtonStyle Style;
@@ -113,7 +110,6 @@ static FButtonStyle MakeEnemyFlatStyle()
 	return Style;
 }
 
-/** Row style: transparent normally; tinted fill when the row is selected. */
 static FButtonStyle MakeEnemyRowStyle(bool bSelected)
 {
 	FButtonStyle Style = MakeEnemyFlatStyle();
@@ -132,7 +128,6 @@ static FButtonStyle MakeEnemyRowStyle(bool bSelected)
 	return Style;
 }
 
-/** A fixed-width text cell (used for both the column header and row values). */
 static USizeBox* MakeEnemyCell(UWidgetTree* WidgetTree, const FString& BaseName, float Width, const FText& Text, bool bHeader, ETextJustify::Type Justification)
 {
 	USizeBox* CellBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), EnemyNextWidgetName(BaseName + TEXT("_Cell")));
@@ -151,7 +146,6 @@ static USizeBox* MakeEnemyCell(UWidgetTree* WidgetTree, const FString& BaseName,
 	return CellBox;
 }
 
-/** Creates a compact UButton whose content is a single centered text block. */
 static UButton* MakeEnemyTextButton(UWidgetTree* WidgetTree, const FText& Label, const FString& BaseName)
 {
 	UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), EnemyNextWidgetName(BaseName + TEXT("_Button")));
@@ -182,6 +176,7 @@ void UOnsetEnemyEditorWidget::NativeConstruct()
 
 void UOnsetEnemyEditorWidget::NativeDestruct()
 {
+	CleanupPreviewActor();
 	PersistOnClose();
 	Super::NativeDestruct();
 }
@@ -234,6 +229,12 @@ void UOnsetEnemyEditorWidget::BuildUI()
 	PreviewText->SetColorAndOpacity(FSlateColor(FLinearColor(0.7f, 0.8f, 0.7f, 1.0f)));
 	RootBox->AddChildToVerticalBox(PreviewText)->SetPadding(FMargin(0.0f, 2.0f, 0.0f, 0.0f));
 
+	// --- Multi-Tier Combat Scaling Matrix ---
+	ScalingMatrixText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ScalingMatrixText"));
+	ScalingMatrixText->SetFont(FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 9));
+	ScalingMatrixText->SetColorAndOpacity(FSlateColor(FLinearColor(0.85f, 0.88f, 0.95f, 1.0f)));
+	RootBox->AddChildToVerticalBox(ScalingMatrixText)->SetPadding(FMargin(0.0f, 2.0f, 0.0f, 0.0f));
+
 	// --- Bottom: full-width action bar ---
 	UHorizontalBox* ButtonRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ButtonRow"));
 
@@ -244,6 +245,10 @@ void UOnsetEnemyEditorWidget::BuildUI()
 	UButton* DeleteButton = MakeEnemyTextButton(WidgetTree, NSLOCTEXT("OnsetEnemyEditor", "Delete", "Delete"), TEXT("Delete"));
 	DeleteButton->OnClicked.AddDynamic(this, &UOnsetEnemyEditorWidget::DeleteDefinition);
 	ButtonRow->AddChildToHorizontalBox(DeleteButton)->SetPadding(FMargin(0.0f, 0.0f, 4.0f, 0.0f));
+
+	UButton* PreviewAppBtn = MakeEnemyTextButton(WidgetTree, NSLOCTEXT("OnsetEnemyEditor", "PreviewApp", "Preview In Viewport"), TEXT("PreviewApp"));
+	PreviewAppBtn->OnClicked.AddDynamic(this, &UOnsetEnemyEditorWidget::PreviewAppearanceInViewport);
+	ButtonRow->AddChildToHorizontalBox(PreviewAppBtn)->SetPadding(FMargin(0.0f, 0.0f, 4.0f, 0.0f));
 
 	UButton* TestButton = MakeEnemyTextButton(WidgetTree, NSLOCTEXT("OnsetEnemyEditor", "TestInPIE", "Test in PIE"), TEXT("Test"));
 	TestButton->OnClicked.AddDynamic(this, &UOnsetEnemyEditorWidget::TestInPIE);
@@ -281,7 +286,7 @@ void UOnsetEnemyEditorWidget::RebuildList()
 
 	for (const TPair<FName, uint8*>& RowPair : Table->GetRowMap())
 	{
-		FName RowName = RowPair.Key;
+		const FName RowName = RowPair.Key;
 		const FOnsetEnemyStats* Stats = reinterpret_cast<const FOnsetEnemyStats*>(RowPair.Value);
 		if (!Stats)
 		{
@@ -299,8 +304,22 @@ void UOnsetEnemyEditorWidget::RebuildList()
 
 		const FText NameText = Stats->DisplayName.IsEmpty() ? FText::FromName(RowName) : Stats->DisplayName;
 		const FText LevelText = FText::AsNumber(Stats->Level);
-		const FText XpText = FText::AsNumber(Stats->XpReward);
-		const FText TierText = FText::AsNumber(1); // Default preview tier; real tiers live on the spawner.
+		const int32 BaseXp = UOnsetLevelingLibrary::GetEnemyBaseXP(FMath::Max(1, Stats->Level), Stats->XpReward);
+		const FText XpText = FText::AsNumber(BaseXp);
+
+		FText TierText;
+		if (Stats->VisualProfile && !Stats->VisualProfile->SkeletalMesh.IsNull())
+		{
+			TierText = NSLOCTEXT("OnsetEnemyEditor", "ProfileReady", "Profile");
+		}
+		else if (!Stats->AuthoredAppearance.IsNull())
+		{
+			TierText = NSLOCTEXT("OnsetEnemyEditor", "AppearanceReady", "Modular");
+		}
+		else
+		{
+			TierText = FText::FromString(TEXT("—"));
+		}
 
 		Cells->AddChild(MakeEnemyCell(WidgetTree, TEXT("Name"), OnsetEnemyEditorWidgetConstants::NameWidth, NameText, false, ETextJustify::Left));
 		Cells->AddChild(MakeEnemyCell(WidgetTree, TEXT("Level"), OnsetEnemyEditorWidgetConstants::LevelWidth, LevelText, false, ETextJustify::Center));
@@ -316,21 +335,27 @@ void UOnsetEnemyEditorWidget::RebuildList()
 		RowListBox->AddChildToVerticalBox(RowButton)->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Left);
 		RowButtons.Add(RowName, RowButton);
 	}
+
+	if (SelectedRowName.IsNone())
+	{
+		for (const TPair<FName, uint8*>& RowPair : Table->GetRowMap())
+		{
+			SelectRow(RowPair.Key);
+			break;
+		}
+	}
 }
 
 void UOnsetEnemyEditorWidget::SelectRow(FName RowName)
 {
-	// Commit any pending edits of the previously selected row before switching.
-	WriteBackRow();
-
 	UDataTable* Table = GetEnemyStatsTable();
 	if (!Table)
 	{
 		return;
 	}
 
-	const FOnsetEnemyStats* Stats = Table->FindRow<FOnsetEnemyStats>(RowName, nullptr);
-	if (!Stats)
+	const FOnsetEnemyStats* Row = Table->FindRow<FOnsetEnemyStats>(RowName, nullptr);
+	if (!Row)
 	{
 		return;
 	}
@@ -341,7 +366,7 @@ void UOnsetEnemyEditorWidget::SelectRow(FName RowName)
 	{
 		EditWrapper = NewObject<UOnsetEnemyEditRowWrapper>(this);
 	}
-	EditWrapper->Stats = *Stats;
+	EditWrapper->Stats = *Row;
 
 	if (PropertyView)
 	{
@@ -369,6 +394,7 @@ void UOnsetEnemyEditorWidget::UpdatePreviewText()
 	if (SelectedRowName.IsNone() || !CachedTable || !EditWrapper)
 	{
 		PreviewText->SetText(FText::GetEmpty());
+		if (ScalingMatrixText) ScalingMatrixText->SetText(FText::GetEmpty());
 		return;
 	}
 
@@ -379,9 +405,60 @@ void UOnsetEnemyEditorWidget::UpdatePreviewText()
 	const int32 OnLevelGrant = UOnsetLevelingLibrary::GetGrantedXP(EnemyLevel, EnemyLevel, Stats.XpReward);
 
 	const FText Text = FText::Format(
-		NSLOCTEXT("OnsetEnemyEditor", "XpPreview", "XP at level {0}: required {1} | base per kill {2} | on-level grant {3} | kills/level {4:.1f}"),
-		EnemyLevel, Required, BaseXp, OnLevelGrant, UOnsetLevelingLibrary::GetKillsPerLevel());
+		NSLOCTEXT("OnsetEnemyEditor", "XpPreview", "Level {0} XP Pacing: Required to level: {1} | Base/Kill: {2} | Grant: {3} | Kills/Level: {4:.1f}"),
+		FText::AsNumber(EnemyLevel),
+		FText::AsNumber(Required),
+		FText::AsNumber(BaseXp),
+		FText::AsNumber(OnLevelGrant),
+		(OnLevelGrant > 0) ? ((double)Required / (double)OnLevelGrant) : 0.0);
 	PreviewText->SetText(Text);
+
+	if (ScalingMatrixText)
+	{
+		const float KDef = UOnsetEquipmentLibrary::GetKDefense();
+		const float ArchetypeCooldown = FMath::Max(0.2f, UOnsetEquipmentLibrary::GetArchetypeBaseCooldown(Stats.WeaponArchetype));
+		const float BaselinePlayerDps = 35.0f;
+
+		FString MatrixStr = TEXT("=== Multi-Tier Combat Scaling Matrix ===\n");
+		for (int32 Tier = 0; Tier <= 3; ++Tier)
+		{
+			const float DiffMult = UOnsetEquipmentLibrary::GetEnemyDifficultyMultiplier(Tier);
+			const float TierHP = Stats.MaxHealth * DiffMult;
+			const float TierDmg = Stats.DamageBase * DiffMult;
+			const float TierEHP = TierHP * (1.0f + (Stats.Defense / KDef));
+			const float TierDPS = TierDmg / ArchetypeCooldown;
+			const float PlayerTTK = TierEHP / BaselinePlayerDps;
+			const float EnemyTTK = (TierDPS > 0.f) ? (100.0f / TierDPS) : 999.0f;
+
+			MatrixStr += FString::Printf(
+				TEXT("Tier %d: HP %6.1f | Atk %5.1f | EHP %6.1f | DPS %5.1f | Kill Player in: %4.1fs | Die to Player in: %4.1fs\n"),
+				Tier, TierHP, TierDmg, TierEHP, TierDPS, EnemyTTK, PlayerTTK);
+		}
+
+		const float T0_EnemyDPS = Stats.DamageBase / ArchetypeCooldown;
+		const float T0_EnemyTTK = (T0_EnemyDPS > 0.f) ? (100.0f / T0_EnemyDPS) : 999.f;
+		const float T0_PlayerTTK = (Stats.MaxHealth * (1.0f + (Stats.Defense / KDef))) / BaselinePlayerDps;
+
+		FString PacingStatus;
+		if (T0_EnemyTTK <= 2.0f)
+		{
+			PacingStatus = TEXT("⚠️ HAZARD: Kills standard on-level player in under 2 seconds! Reduce DamageBase or increase attack cooldown.");
+			ScalingMatrixText->SetColorAndOpacity(FSlateColor(FLinearColor(1.0f, 0.4f, 0.2f)));
+		}
+		else if (T0_PlayerTTK >= 30.0f)
+		{
+			PacingStatus = TEXT("⚠️ PACING WARNING: Takes over 30s to defeat! Consider reducing MaxHealth or Defense.");
+			ScalingMatrixText->SetColorAndOpacity(FSlateColor(FLinearColor(1.0f, 0.7f, 0.2f)));
+		}
+		else
+		{
+			PacingStatus = TEXT("✅ BALANCED: Combat encounter pacing within standard RPG engagement curve (3s - 12s).");
+			ScalingMatrixText->SetColorAndOpacity(FSlateColor(FLinearColor(0.7f, 0.95f, 0.7f)));
+		}
+
+		MatrixStr += FString::Printf(TEXT("Status: %s"), *PacingStatus);
+		ScalingMatrixText->SetText(FText::FromString(MatrixStr));
+	}
 }
 
 void UOnsetEnemyEditorWidget::AddDefinition()
@@ -405,7 +482,7 @@ void UOnsetEnemyEditorWidget::AddDefinition()
 
 	TSharedRef<SWindow> Window = SNew(SWindow)
 		.Title(NSLOCTEXT("OnsetEnemyEditor", "CreateEnemy", "Create Enemy"))
-		.ClientSize(FVector2D(360.0f, 260.0f))
+		.ClientSize(FVector2D(380.0f, 220.0f))
 		.SupportsMaximize(false)
 		.SupportsMinimize(false);
 
@@ -420,62 +497,67 @@ void UOnsetEnemyEditorWidget::AddDefinition()
 		return;
 	}
 
-	UOnsetEnemyCreationData* Data = PendingCreationData;
-
-	const FString Clean = CleanEnemyName(Data->DisplayName.ToString());
-	FName NewRowName = FName(*Clean);
-	int32 Suffix = 1;
-	while (Table->FindRow<FOnsetEnemyStats>(NewRowName, nullptr))
-	{
-		NewRowName = FName(*FString::Printf(TEXT("%s%d"), *Clean, Suffix++));
-	}
-
-	FOnsetEnemyStats NewStats;
-	NewStats.DisplayName = Data->DisplayName;
-	NewStats.Level = 1;
-	NewStats.MaxHealth = 100.0f;
-	NewStats.DamageBase = 25.0f;
-	NewStats.Defense = 10.0f;
-	NewStats.Luck = 10.0f;
-
-	if (Data->bAutoCreateProfiles)
-	{
-		const FString BaseName = NewRowName.ToString();
-		const FString ProfileFolder = TEXT("/Game/AI");
-
-		// Visual profile.
-		const FString VPPath = FString::Printf(TEXT("%s/%s_VP"), *ProfileFolder, *BaseName);
-		if (UPackage* Package = CreatePackage(*VPPath))
-		{
-			UVisualProfile* VP = NewObject<UVisualProfile>(Package, UVisualProfile::StaticClass(), FName(*FString::Printf(TEXT("%s_VP"), *BaseName)), RF_Public | RF_Standalone);
-			NewStats.VisualProfile = VP;
-		}
-
-		// AI profile.
-		const FString AIPath = FString::Printf(TEXT("%s/%s_AI"), *ProfileFolder, *BaseName);
-		if (UPackage* Package = CreatePackage(*AIPath))
-		{
-			UAIProfile* AI = NewObject<UAIProfile>(Package, UAIProfile::StaticClass(), FName(*FString::Printf(TEXT("%s_AI"), *BaseName)), RF_Public | RF_Standalone);
-			NewStats.AIProfile = AI;
-		}
-
-		// Perception profile.
-		const FString PPPath = FString::Printf(TEXT("%s/%s_PP"), *ProfileFolder, *BaseName);
-		if (UPackage* Package = CreatePackage(*PPPath))
-		{
-			UPerceptionProfile* PP = NewObject<UPerceptionProfile>(Package, UPerceptionProfile::StaticClass(), FName(*FString::Printf(TEXT("%s_PP"), *BaseName)), RF_Public | RF_Standalone);
-			NewStats.PerceptionProfile = PP;
-		}
-	}
-
-	Table->AddRow(NewRowName, NewStats);
-
-	// Persist later when the editor closes (see PersistOnClose).
-	bDirty = true;
-
+	const FString CleanName = CleanEnemyName(PendingCreationData->DisplayName.ToString());
+	const bool bAutoCreate = PendingCreationData->bAutoCreateProfiles;
 	PendingCreationData = nullptr;
 
-	RefreshFromTable();
+	FString UniqueRowName = CleanName;
+	int32 Suffix = 1;
+	while (Table->FindRow<FOnsetEnemyStats>(FName(*UniqueRowName), nullptr))
+	{
+		UniqueRowName = FString::Printf(TEXT("%s_%d"), *CleanName, ++Suffix);
+	}
+	const FName NewRowName(*UniqueRowName);
+
+	FOnsetEnemyStats NewRow;
+	NewRow.DisplayName = FText::FromString(CleanName);
+	NewRow.Level = 1;
+	NewRow.XpReward = 0;
+	NewRow.MaxHealth = 100.0f;
+	NewRow.DamageBase = 25.0f;
+	NewRow.Defense = 10.0f;
+
+	TArray<UObject*> NewlyCreatedProfiles;
+
+	if (bAutoCreate)
+	{
+		const FString PackageBase = FString::Printf(TEXT("/Game/Data/Enemies/%s/"), *CleanName);
+
+		auto CreateProfileAsset = [&](UClass* Class, const FString& Prefix) -> UObject*
+		{
+			const FString AssetName = Prefix + TEXT("_") + CleanName;
+			const FString FullPath = PackageBase + AssetName;
+			UPackage* Pkg = CreatePackage(*FullPath);
+			Pkg->FullyLoad();
+			UObject* NewAsset = NewObject<UObject>(Pkg, Class, *AssetName, RF_Public | RF_Standalone);
+			Pkg->MarkPackageDirty();
+			FAssetRegistryModule::AssetCreated(NewAsset);
+			return NewAsset;
+		};
+
+		UVisualProfile* VP = Cast<UVisualProfile>(CreateProfileAsset(UVisualProfile::StaticClass(), TEXT("VP")));
+		UAIProfile* AIP = Cast<UAIProfile>(CreateProfileAsset(UAIProfile::StaticClass(), TEXT("AI")));
+		UPerceptionProfile* PP = Cast<UPerceptionProfile>(CreateProfileAsset(UPerceptionProfile::StaticClass(), TEXT("PP")));
+
+		NewRow.VisualProfile = VP;
+		NewRow.AIProfile = AIP;
+		NewRow.PerceptionProfile = PP;
+
+		NewlyCreatedProfiles.Add(VP);
+		NewlyCreatedProfiles.Add(AIP);
+		NewlyCreatedProfiles.Add(PP);
+	}
+
+	Table->AddRow(NewRowName, NewRow);
+	Table->GetPackage()->MarkPackageDirty();
+
+	if (NewlyCreatedProfiles.Num() > 0)
+	{
+		SaveTableAndProfiles(NewlyCreatedProfiles);
+	}
+
+	bDirty = true;
+	RebuildList();
 	SelectRow(NewRowName);
 }
 
@@ -487,19 +569,19 @@ void UOnsetEnemyEditorWidget::DeleteDefinition()
 	}
 
 	CachedTable->RemoveRow(SelectedRowName);
+	CachedTable->GetPackage()->MarkPackageDirty();
+
 	SelectedRowName = NAME_None;
+	if (EditWrapper)
+	{
+		EditWrapper->Stats = FOnsetEnemyStats();
+	}
 	if (PropertyView)
 	{
 		PropertyView->SetObject(nullptr);
 	}
-	if (PreviewText)
-	{
-		PreviewText->SetText(FText::GetEmpty());
-	}
 
-	// Persist later when the editor closes (see PersistOnClose).
 	bDirty = true;
-
 	RefreshFromTable();
 }
 
@@ -534,9 +616,8 @@ void UOnsetEnemyEditorWidget::SaveTableAndProfiles(const TArray<UObject*>& Objec
 
 void UOnsetEnemyEditorWidget::HandlePropertyEdited()
 {
-	// The user changed a property in the details panel: write the new value into
-	// the in-memory table immediately so switching rows never loses the edit.
 	WriteBackRow();
+	UpdatePreviewText();
 	bDirty = true;
 }
 
@@ -553,7 +634,6 @@ void UOnsetEnemyEditorWidget::PersistOnClose()
 		return;
 	}
 
-	// Commit any pending edit of the currently selected row.
 	WriteBackRow();
 
 	TArray<UObject*> ToSave{ Table };
@@ -573,6 +653,92 @@ void UOnsetEnemyEditorWidget::PersistOnClose()
 	bDirty = false;
 }
 
+void UOnsetEnemyEditorWidget::PreviewAppearanceInViewport()
+{
+	if (SelectedRowName.IsNone() || !CachedTable)
+	{
+		return;
+	}
+
+	FOnsetEnemyStats* Stats = CachedTable->FindRow<FOnsetEnemyStats>(SelectedRowName, nullptr);
+	if (!Stats)
+	{
+		return;
+	}
+
+	WriteBackRow();
+
+	UWorld* World = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
+	if (!World)
+	{
+		return;
+	}
+
+	AOnsetAppearancePreviewActor* PreviewActor = CachedPreviewActor.Get();
+	if (!PreviewActor)
+	{
+		TArray<AActor*> FoundActors;
+		UGameplayStatics::GetAllActorsOfClass(World, AOnsetAppearancePreviewActor::StaticClass(), FoundActors);
+		if (FoundActors.Num() > 0)
+		{
+			PreviewActor = Cast<AOnsetAppearancePreviewActor>(FoundActors[0]);
+		}
+		else
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			SpawnParams.ObjectFlags |= RF_Transient;
+
+			FVector SpawnLoc = FVector::ZeroVector;
+			FRotator SpawnRot = FRotator(0.f, -90.f, 0.f);
+
+			if (GEditor && GEditor->GetActiveViewport())
+			{
+				FEditorViewportClient* Client = (FEditorViewportClient*)GEditor->GetActiveViewport()->GetClient();
+				if (Client)
+				{
+					SpawnLoc = Client->GetViewLocation() + Client->GetViewRotation().Vector() * 300.0f;
+					SpawnLoc.Z -= 80.0f;
+					SpawnRot = FRotator(0.f, Client->GetViewRotation().Yaw + 180.0f, 0.f);
+				}
+			}
+
+			PreviewActor = World->SpawnActor<AOnsetAppearancePreviewActor>(AOnsetAppearancePreviewActor::StaticClass(), SpawnLoc, SpawnRot, SpawnParams);
+		}
+		CachedPreviewActor = PreviewActor;
+	}
+
+	if (!PreviewActor) return;
+
+	if (!Stats->AuthoredAppearance.IsNull())
+	{
+		if (UOnsetAuthoredAppearance* Authored = Stats->AuthoredAppearance.LoadSynchronous())
+		{
+			PreviewActor->LoadAuthoredAppearance(Authored);
+		}
+	}
+	else
+	{
+		PreviewActor->RebuildPreview();
+	}
+
+	if (GEditor)
+	{
+		GEditor->SelectNone(false, true);
+		GEditor->SelectActor(PreviewActor, true, true);
+		GEditor->MoveViewportCamerasToActor(*PreviewActor, false);
+	}
+}
+
+void UOnsetEnemyEditorWidget::CleanupPreviewActor()
+{
+	if (CachedPreviewActor.IsValid())
+	{
+		CachedPreviewActor->Destroy();
+		CachedPreviewActor.Reset();
+	}
+}
+
 void UOnsetEnemyEditorWidget::TestInPIE()
 {
 	if (SelectedRowName.IsNone() || !CachedTable)
@@ -586,7 +752,6 @@ void UOnsetEnemyEditorWidget::TestInPIE()
 		return;
 	}
 
-	// Write back any in-progress edits so the spawned enemy reflects them.
 	WriteBackRow();
 
 	UWorld* World = GEditor ? GEditor->GetPIEWorldContext() ? GEditor->GetPIEWorldContext()->World() : nullptr : nullptr;
@@ -610,7 +775,6 @@ void UOnsetEnemyEditorWidget::TestInPIE()
 		return;
 	}
 
-	// Spawn ~300 units in front of the camera so it's visible on-screen.
 	const FVector SpawnLocation = CameraPawn->GetActorLocation() + CameraPawn->GetActorForwardVector() * 300.0f + FVector::UpVector * 100.0f;
 
 	FActorSpawnParameters Params;

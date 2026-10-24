@@ -6,11 +6,13 @@
 #include "Engine/DataTable.h"
 #include "Data/OnsetAbilityTypes.h"
 #include "Data/OnsetItemTypes.h"
+#include "Data/OnsetRankTypes.h"
 #include "OnsetEquipmentTypes.generated.h"
 
 class UVisualProfile;
 class UAIProfile;
 class UPerceptionProfile;
+class UOnsetAuthoredAppearance;
 
 /** Which equipment slot an item occupies. */
 UENUM(BlueprintType)
@@ -63,14 +65,6 @@ enum class EOnsetWeaponArchetype : uint8
 
 /**
  * One row in DT_Equipment. RowName is the stable item ID (e.g. "IronSword").
- *
- * - Weapon slot: WeaponDamage is the WeaponBase used by weapon-scaled abilities
- *   (Raw = WeaponDamage x (1 + STR/100)); DamageElement is the basic attack's element.
- * - Shield slot: BlockChance feeds the pre-mitigation block stage; DefenseBonus is a
- *   flat DEF bonus folded into RecalculateDerivedStats.
- * - Armor slots (Head/Chest/Hands/Legs/Feet): DefenseBonus contributes flat DEF.
- * - Accessory slots (Amulet/Ring1/Ring2/Trinket): stat bonuses.
- * - Stat bonuses apply to any slot and are summed into the character's stats.
  */
 USTRUCT(BlueprintType)
 struct FOnsetEquipmentDefinition : public FOnsetItemDefinition
@@ -215,14 +209,30 @@ struct FOnsetEnemyStats : public FTableRowBase
 	 * a complete enemy definition: spawners without an explicit FSpawnConfig
 	 * profile fall back to these. Empty = keep the spawner's config value.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Visual")
 	TObjectPtr<UVisualProfile> VisualProfile;
 
+	/** Authored modular appearance asset linking visual recipe and animation profile. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Appearance")
+	TSoftObjectPtr<UOnsetAuthoredAppearance> AuthoredAppearance;
+
+	/** Combat abilities from DT_Abilities granted to this enemy. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Abilities")
+	TArray<FName> EquippedAbilities;
+
+	/** Confederate rank / threat tier for protocols and hierarchy. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Hierarchy")
+	EOnsetRankId MilitaryRank = EOnsetRankId::Civilian;
+
+	/** Branch or faction allegiance. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Hierarchy")
+	EOnsetHierarchyBranch HierarchyBranch = EOnsetHierarchyBranch::Military;
+
 	/** AI profile (state tree, aggression, ranges). Spawner config overrides this. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|AI")
 	TObjectPtr<UAIProfile> AIProfile;
 
 	/** Perception profile (sight range/angle, hearing). Spawner config overrides this. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|AI")
 	TObjectPtr<UPerceptionProfile> PerceptionProfile;
 };

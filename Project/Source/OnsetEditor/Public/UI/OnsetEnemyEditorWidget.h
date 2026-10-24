@@ -14,11 +14,12 @@ class UDetailsView;
 class UTextBlock;
 class UOnsetAbilityRowButton;
 class UOnsetNotifyDetailsView;
+class AOnsetAppearancePreviewActor;
 
 /**
  * Transient UObject exposing a single DT_EnemyStats row to the PropertyView so the
- * details panel auto-generates the whole form (stats, XP, loot table, and the three
- * profile asset pickers). One row = a complete enemy definition.
+ * details panel auto-generates the whole form (stats, XP, loot table, modular appearance,
+ * equipped combat abilities, and the three profile asset pickers).
  */
 UCLASS(Transient)
 class UOnsetEnemyEditRowWrapper : public UObject
@@ -46,11 +47,10 @@ public:
 };
 
 /**
- * Editor Utility Widget that edits DT_EnemyStats. Left: enemy list (Add/Delete).
- * Right: a PropertyView bound to the selected row wrapped in a transient UObject.
- * Edits are written back to the table immediately; the table + linked profile
- * assets are saved when the editor window closes (no Save button). A Test button
- * spawns the enemy at the camera in a running PIE session.
+ * Editor Utility Widget that edits DT_EnemyStats.
+ * Left: enemy list (Add/Delete).
+ * Right: PropertyView bound to the selected row with immediate write-back.
+ * Bottom: Multi-tier stat & TTK scaling matrix, Live In-Viewport Appearance Preview, and Test in PIE.
  */
 UCLASS()
 class UOnsetEnemyEditorWidget : public UEditorUtilityWidget
@@ -73,6 +73,14 @@ public:
 	/** Spawns the selected enemy at the camera in a running PIE session. */
 	UFUNCTION(BlueprintCallable, Category = "Enemy Editor")
 	void TestInPIE();
+
+	/** Spawns or updates a transient preview actor in the level editor viewport. */
+	UFUNCTION(BlueprintCallable, Category = "Enemy Editor")
+	void PreviewAppearanceInViewport();
+
+	/** Removes any spawned preview actor from the level viewport. */
+	UFUNCTION(BlueprintCallable, Category = "Enemy Editor")
+	void CleanupPreviewActor();
 
 	/** Selects the given row and loads it into the PropertyView. */
 	void SelectRow(FName RowName);
@@ -113,6 +121,11 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> PreviewText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> ScalingMatrixText;
+
+	TWeakObjectPtr<AOnsetAppearancePreviewActor> CachedPreviewActor;
 
 	/** Set when any edit / add / delete makes the table differ from disk. */
 	bool bDirty = false;

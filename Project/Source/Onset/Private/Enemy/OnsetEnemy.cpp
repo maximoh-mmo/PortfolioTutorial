@@ -3,7 +3,9 @@
 #include "Engine/StaticMesh.h"
 
 #include "TimerManager.h"
+#include "Combat/OnsetAbilityLibrary.h"
 #include "Combat/OnsetEquipmentLibrary.h"
+#include "Combat/OnsetGA_Generic.h"
 #include "Combat/OnsetLootLibrary.h"
 #include "Corpse/OnsetCorpse.h"
 #include "Data/OnsetEquipmentTypes.h"
@@ -19,6 +21,8 @@
 #include "Subsystem/OnsetCorpseSubsystem.h"
 #include "Enemy/GroupComponent.h"
 #include "Enemy/Profile/VisualProfile.h"
+#include "OnsetAppearanceComponent.h"
+#include "OnsetAuthoredAppearance.h"
 #include "Player/OnsetPlayerCharacter.h"
 #include "Quest/UOnsetQuestComponent.h"
 #include "Spawning/OnsetSpawner.h"
@@ -96,10 +100,6 @@ void AOnsetEnemy::ApplyEnemyStats(FName RowName, int32 Tier)
 	const FOnsetEnemyStats* Stats = UOnsetEquipmentLibrary::GetEnemyStats(RowName);
 	if (!Stats)
 	{
-		// No row (or no table): reset to the shared defaults + class default weapon.
-		// NOTE: stats only — do NOT call ResetAttributes() here, it clears bIsAlive
-		// (the pool-alive flag OnRespawn() just set) which would hide the enemy and
-		// disable its collision on clients via OnRep_bIsAlive.
 		EnemyLevel = 1;
 		XpReward = 0;
 		AttributeSet->InitMaxHealth(100.0f);
@@ -141,6 +141,39 @@ void AOnsetEnemy::ApplyEnemyStats(FName RowName, int32 Tier)
 		case EOnsetDamageElement::Poison:		AbilitySystemComponent->AddLooseGameplayTag(TAG_Element_Poison); break;
 		default: break; // Physical = neutral.
 	}
+
+	// Modular Authored Appearance integration
+	if (!Stats->AuthoredAppearance.IsNull())
+	{
+		if (UOnsetAuthoredAppearance* Authored = Stats->AuthoredAppearance.LoadSynchronous())
+		{
+			UOnsetAppearanceComponent* AppComp = FindComponentByClass<UOnsetAppearanceComponent>();
+			if (!AppComp)
+			{
+				AppComp = NewObject<UOnsetAppearanceComponent>(this, TEXT("EnemyAppearance"));
+				AppComp->RegisterComponent();
+				AppComp->BindExternalBodyMesh(GetMesh());
+			}
+			AppComp->ApplyRecipe(Authored->Recipe);
+		}
+	}
+
+	// Grant equipped combat abilities from DT_Abilities
+	if (AbilitySystemComponent && Stats->EquippedAbilities.Num() > 0)
+	{
+		for (const FName& AbilityRow : Stats->EquippedAbilities)
+		{
+			if (AbilityRow.IsNone()) continue;
+			TSubclassOf<UOnsetGameplayAbility> AbilityClass = UOnsetAbilityLibrary::ResolveAbilityClass(AbilityRow);
+			if (!AbilityClass)
+			{
+				AbilityClass = UOnsetGA_Generic::StaticClass();
+			}
+			FGameplayAbilitySpec Spec(AbilityClass, 1, INDEX_NONE, this);
+			Spec.GetDynamicSpecSourceTags().AddTag(UOnsetAbilityLibrary::MakeAbilityIDTag(AbilityRow));
+			AbilitySystemComponent->GiveAbility(Spec);
+		}
+	}
 }
 
 void AOnsetEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -160,8 +193,6 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 			AOnsetCorpse* Corpse = CorpseSub->SpawnCorpse(GetActorTransform(), VisualProfile->CorpseMesh.LoadSynchronous());
 			if (Corpse)
 			{
-				// Roll the enemy's loot server-side and stamp it before the corpse's
-				// first replication so every client sees the same contents.
 				FOnsetLootContext Context;
 				Context.Level = DifficultyTier;
 				Context.ZoneTag = ZoneTag;
@@ -170,7 +201,6 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 				Corpse->InventoryComponent->SetItems(Loot);
 				if (Loot.Num() == 0)
 				{
-					// Nothing to loot: expire fast so the field isn't littered with empty corpses.
 					Corpse->SetLifeSpan(4.0f);
 				}
 				UE_LOG(LogTemp, Log, TEXT("OnDeath: %s dropped %d items"), *GetName(), Loot.Num());
@@ -178,13 +208,12 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 		}
 	}
 
-	// XP grant (combat-formulas §12): idle/autoplay kills count because KillingActor
-	// is the player's pawn regardless of who possesses it.
+	// XP grant (combat-formulas §12)
 	if (AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(KillingActor))
 	{
 		PlayerChar->GrantXPFromEnemy(EnemyLevel, XpReward);
 
-		// Quest signal: kill objectives are keyed by the DT_EnemyStats row.
+		// Quest signal
 		if (PlayerChar->QuestComponent && !EnemyStatsRow.IsNone())
 		{
 			PlayerChar->QuestComponent->ReportObjectiveProgress(EOnsetQuestObjectiveType::Kill, EnemyStatsRow, 1);

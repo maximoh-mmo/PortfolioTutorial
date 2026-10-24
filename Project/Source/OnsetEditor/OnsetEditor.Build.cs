@@ -25,7 +25,8 @@ public class OnsetEditor : ModuleRules
 			"ScriptableEditorWidgets",
 			"ToolMenus",
 			"WorkspaceMenuStructure",
-			"CommonUI"
+			"CommonUI",
+			"Niagara"
 		});
 	}
 }

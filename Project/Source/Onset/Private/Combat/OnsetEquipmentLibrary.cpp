@@ -12,6 +12,93 @@ namespace OnsetEquipmentLibraryInternal
 	TStrongObjectPtr<UDataTable> CachedEquipmentTable = nullptr;
 	TStrongObjectPtr<UDataTable> CachedClassTable = nullptr;
 	TStrongObjectPtr<UDataTable> CachedEnemyStatsTable = nullptr;
+	TMap<FName, FOnsetEnemyStats> FallbackEnemyStats;
+	bool bEnemyFallbacksInitialized = false;
+
+	void EnsureEnemyFallbacks()
+	{
+		if (bEnemyFallbacksInitialized)
+		{
+			return;
+		}
+		bEnemyFallbacksInitialized = true;
+
+		{
+			FOnsetEnemyStats Grunt;
+			Grunt.DisplayName = FText::FromString(TEXT("Academy Combat Drone"));
+			Grunt.Level = 1;
+			Grunt.MaxHealth = 80.0f;
+			Grunt.DamageBase = 20.0f;
+			Grunt.Defense = 5.0f;
+			Grunt.XpReward = 3;
+			Grunt.ElementAffinity = EOnsetDamageElement::Physical;
+			FallbackEnemyStats.Add(FName(TEXT("Grunt")), Grunt);
+		}
+
+		{
+			FOnsetEnemyStats BioStalker;
+			BioStalker.DisplayName = FText::FromString(TEXT("Bio-Stalker"));
+			BioStalker.Level = 1;
+			BioStalker.MaxHealth = 80.0f;
+			BioStalker.DamageBase = 18.0f;
+			BioStalker.Defense = 5.0f;
+			BioStalker.XpReward = 4;
+			BioStalker.ElementAffinity = EOnsetDamageElement::Physical;
+			FallbackEnemyStats.Add(FName(TEXT("Academy_Lv1_BioStalker")), BioStalker);
+		}
+
+		{
+			FOnsetEnemyStats RogueDrone;
+			RogueDrone.DisplayName = FText::FromString(TEXT("Corrosive Maintenance Drone"));
+			RogueDrone.Level = 2;
+			RogueDrone.MaxHealth = 130.0f;
+			RogueDrone.DamageBase = 24.0f;
+			RogueDrone.Defense = 10.0f;
+			RogueDrone.ResistancePoison = 25.0f;
+			RogueDrone.XpReward = 5;
+			RogueDrone.ElementAffinity = EOnsetDamageElement::Poison;
+			FallbackEnemyStats.Add(FName(TEXT("Academy_Lv2_RogueDrone")), RogueDrone);
+		}
+
+		{
+			FOnsetEnemyStats OutcastRaider;
+			OutcastRaider.DisplayName = FText::FromString(TEXT("Outcast Salvage Raider"));
+			OutcastRaider.Level = 3;
+			OutcastRaider.MaxHealth = 180.0f;
+			OutcastRaider.DamageBase = 32.0f;
+			OutcastRaider.Defense = 15.0f;
+			OutcastRaider.ResistanceIce = 25.0f;
+			OutcastRaider.XpReward = 6;
+			OutcastRaider.ElementAffinity = EOnsetDamageElement::Ice;
+			FallbackEnemyStats.Add(FName(TEXT("Academy_Lv3_OutcastRaider")), OutcastRaider);
+		}
+
+		{
+			FOnsetEnemyStats Excavator;
+			Excavator.DisplayName = FText::FromString(TEXT("Heavy Excavator Unit"));
+			Excavator.Level = 4;
+			Excavator.MaxHealth = 260.0f;
+			Excavator.DamageBase = 42.0f;
+			Excavator.Defense = 22.0f;
+			Excavator.ResistanceLightning = 30.0f;
+			Excavator.XpReward = 8;
+			Excavator.ElementAffinity = EOnsetDamageElement::Lightning;
+			FallbackEnemyStats.Add(FName(TEXT("Academy_Lv4_ExcavatorUnit")), Excavator);
+		}
+
+		{
+			FOnsetEnemyStats Aberration;
+			Aberration.DisplayName = FText::FromString(TEXT("Rift Aberration"));
+			Aberration.Level = 5;
+			Aberration.MaxHealth = 380.0f;
+			Aberration.DamageBase = 55.0f;
+			Aberration.Defense = 30.0f;
+			Aberration.ResistanceFire = 35.0f;
+			Aberration.XpReward = 12;
+			Aberration.ElementAffinity = EOnsetDamageElement::Fire;
+			FallbackEnemyStats.Add(FName(TEXT("Academy_Lv5_RiftAberration")), Aberration);
+		}
+	}
 
 	// Zone-tier K scale, read once from config and cached.
 	float CachedZoneTierKScale = -1.0f;
@@ -232,12 +319,22 @@ UDataTable* UOnsetEquipmentLibrary::GetEnemyStatsTable()
 
 const FOnsetEnemyStats* UOnsetEquipmentLibrary::GetEnemyStats(FName RowName)
 {
-	UDataTable* Table = GetEnemyStatsTable();
-	if (!Table || RowName.IsNone())
+	if (RowName.IsNone())
 	{
 		return nullptr;
 	}
-	return Table->FindRow<FOnsetEnemyStats>(RowName, nullptr);
+
+	OnsetEquipmentLibraryInternal::EnsureEnemyFallbacks();
+
+	if (UDataTable* Table = GetEnemyStatsTable())
+	{
+		if (const FOnsetEnemyStats* Row = Table->FindRow<FOnsetEnemyStats>(RowName, nullptr))
+		{
+			return Row;
+		}
+	}
+
+	return OnsetEquipmentLibraryInternal::FallbackEnemyStats.Find(RowName);
 }
 
 float UOnsetEquipmentLibrary::GetHealthPerVitality()
