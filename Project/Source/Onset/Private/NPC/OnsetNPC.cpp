@@ -2,11 +2,17 @@
 
 #include "NPC/OnsetNPC.h"
 
+#include "Animation/AnimMontage.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Data/OnsetDialogueLibrary.h"
 #include "Data/OnsetQuestTypes.h"
+#include "Data/OnsetRankTypes.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "OnsetAppearanceComponent.h"
+#include "OnsetAuthoredAppearance.h"
+#include "Player/OnsetPlayerCharacter.h"
 #include "Player/OnsetPlayerController.h"
 #include "Quest/UOnsetQuestComponent.h"
 #include "UMHInteractableComponent.h"
@@ -67,6 +73,25 @@ void AOnsetNPC::BeginPlay()
 		if (!Def.InteractionPrompt.IsEmpty())
 		{
 			InteractableComponent->Definition.ActionPrompt = Def.InteractionPrompt;
+		}
+
+		if (UOnsetAuthoredAppearance* Authored = Def.AuthoredAppearance.LoadSynchronous())
+		{
+			UOnsetAppearanceComponent* AppComp = FindComponentByClass<UOnsetAppearanceComponent>();
+			if (!AppComp)
+			{
+				AppComp = NewObject<UOnsetAppearanceComponent>(this, TEXT("NPCAppearance"));
+				AppComp->RegisterComponent();
+				AppComp->BindExternalBodyMesh(GetMesh());
+			}
+			AppComp->ApplyRecipe(Authored->Recipe);
+			if (UOnsetAnimationProfile* Prof = Authored->AnimationProfile.LoadSynchronous())
+			{
+				if (!Prof->SaluteMontage.IsNull() && !ProtocolSaluteMontage)
+				{
+					ProtocolSaluteMontage = Prof->SaluteMontage.LoadSynchronous();
+				}
+			}
 		}
 	}
 }
@@ -141,6 +166,49 @@ void AOnsetNPC::HandleInteracted(const FMHInteractionContext& Context)
 		}
 	}
 
+	// --- Confederate Military & Governance Protocol Check ---
+	const FOnsetNPCDefinition Def = GetEffectiveNPCDefinition();
+	if (AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(Context.InstigatorActor))
+	{
+		const EOnsetRankId PlayerRank = PlayerChar->MilitaryRank;
+		const EOnsetRankId NPCRank = Def.MilitaryRank;
+		const EOnsetProtocolPrecedence Precedence = UOnsetRankLibrary::ComparePrecedence(PlayerRank, NPCRank);
+
+		if (Precedence != EOnsetProtocolPrecedence::CivilianEtiquette)
+		{
+			const FText PlayerName = FText::FromString(TEXT("Operative"));
+			const FText NPCName = !Def.DisplayName.IsEmpty() ? Def.DisplayName : FText::FromName(NPCRowName);
+
+			const FText BannerText = UOnsetRankLibrary::BuildProtocolBannerText(PlayerName, PlayerRank, NPCName, NPCRank);
+			const FText AckLine = (Precedence == EOnsetProtocolPrecedence::InitiatorIsSubordinate)
+				? UOnsetRankLibrary::GetAcknowledgementLine(NPCRank, PlayerRank)
+				: UOnsetRankLibrary::GetAcknowledgementLine(PlayerRank, NPCRank);
+
+			if (PC)
+			{
+				PC->Client_ShowProtocolInteraction(BannerText, AckLine);
+			}
+
+			// Subordinate salutes / performs protocol first
+			if (Precedence == EOnsetProtocolPrecedence::InitiatorIsSubordinate)
+			{
+				PlayerChar->Multicast_PlayProtocolGesture(Def.ProtocolStyle);
+				Multicast_PlayProtocolGesture(Def.ProtocolStyle);
+			}
+			else if (Precedence == EOnsetProtocolPrecedence::InitiatorIsSuperior)
+			{
+				Multicast_PlayProtocolGesture(Def.ProtocolStyle);
+				PlayerChar->Multicast_PlayProtocolGesture(Def.ProtocolStyle);
+			}
+			else
+			{
+				// Peers
+				PlayerChar->Multicast_PlayProtocolGesture(Def.ProtocolStyle);
+				Multicast_PlayProtocolGesture(Def.ProtocolStyle);
+			}
+		}
+	}
+
 	if (PC)
 	{
 		const FName EntryRow = ResolveStartingDialogueRow(QuestComp);
@@ -148,6 +216,18 @@ void AOnsetNPC::HandleInteracted(const FMHInteractionContext& Context)
 		{
 			PC->Client_OpenDialogue(this, EntryRow);
 		}
+	}
+}
+
+void AOnsetNPC::Multicast_PlayProtocolGesture_Implementation(EOnsetProtocolStyle Style)
+{
+	if (ProtocolSaluteMontage && GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		PlayAnimMontage(ProtocolSaluteMontage);
+	}
+	if (ProtocolSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ProtocolSound, GetActorLocation());
 	}
 }
 

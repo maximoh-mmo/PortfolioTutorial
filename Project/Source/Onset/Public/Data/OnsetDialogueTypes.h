@@ -3,8 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/OnsetRankTypes.h"
 #include "Engine/DataTable.h"
 #include "OnsetDialogueTypes.generated.h"
+
+class UOnsetAuthoredAppearance;
 
 /**
  * A single player response choice within a dialogue node.
@@ -111,6 +114,26 @@ struct ONSET_API FOnsetNPCDefinition : public FTableRowBase
 	/** Optional subtitle/role (e.g. "Village Elder", "Blacksmith"). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC")
 	FText TitleOrRole;
+
+	/** Confederate rank (Precedence Tiers 0..12). Governs salute hierarchy and protocol greetings. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC|Rank & Protocol")
+	EOnsetRankId MilitaryRank = EOnsetRankId::Civilian;
+
+	/** Service or governance branch within the Confederate hierarchy. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC|Rank & Protocol")
+	EOnsetHierarchyBranch HierarchyBranch = EOnsetHierarchyBranch::Governance;
+
+	/** Functional military or civil specialism. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC|Rank & Protocol")
+	EOnsetSpecialism Specialism = EOnsetSpecialism::None;
+
+	/** Preferred physical or ceremonial protocol style (Salute, Diplomatic Bow, Resonant Nod). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC|Rank & Protocol")
+	EOnsetProtocolStyle ProtocolStyle = EOnsetProtocolStyle::CivilianGreeting;
+
+	/** Authored modular appearance asset linking visual recipe and animation profile. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC|Appearance")
+	TSoftObjectPtr<UOnsetAuthoredAppearance> AuthoredAppearance;
 
 	/** Interaction verb shown on prompt (defaults to "Talk"). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC")

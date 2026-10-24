@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "World/OnsetDoor.h"
+#include "UObject/ConstructorHelpers.h"
 
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -27,6 +28,13 @@ AOnsetDoor::AOnsetDoor()
 	DoorMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	DoorMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	DoorMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultDoorMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (DefaultDoorMesh.Succeeded())
+	{
+		DoorMesh->SetStaticMesh(DefaultDoorMesh.Object);
+		DoorMesh->SetRelativeScale3D(FVector(0.3f, 2.0f, 2.5f));
+	}
 
 	InteractableComponent = CreateDefaultSubobject<UMHInteractableComponent>(TEXT("InteractableComponent"));
 	InteractableComponent->Definition.InteractableId = FName(TEXT("Door"));

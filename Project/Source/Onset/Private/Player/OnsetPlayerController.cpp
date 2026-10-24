@@ -431,12 +431,20 @@ void AOnsetPlayerController::OnPossess(APawn* InPawn)
 	AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(InPawn);
 	if (!PlayerChar) return;
 
-	// Only restore saved position on first login (no pending entry point).
-	// Zone travel uses ChoosePlayerStart for placement instead.
-	if (PS->PendingEntryPoint.IsEmpty())
+	// Only restore saved position on first login if the character was saved in this exact zone.
+	// Zone travel and entering a new zone uses ChoosePlayerStart for placement instead.
+	const FString CurrentMapName = GetWorld() ? GetWorld()->GetMapName() : FString();
+	const bool bSameZone = !CharData.CurrentZone.IsEmpty() && CurrentMapName.Contains(CharData.CurrentZone);
+
+	if (PS->PendingEntryPoint.IsEmpty() && bSameZone && !CharData.SavedPosition.IsNearlyZero())
 	{
 		PlayerChar->SetActorLocation(CharData.SavedPosition);
 		PlayerChar->SetActorRotation(FRotator(0.0f, CharData.SavedRotationYaw, 0.0f));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("OnPossess: Using PlayerStart placement for %s (SavedZone='%s', CurrentMap='%s')"),
+			*CharData.CharacterName, *CharData.CurrentZone, *CurrentMapName);
 	}
 
 	// Apply the character's build (class base stats + equipped loadout) and heal to full.
@@ -792,6 +800,12 @@ void AOnsetPlayerController::Client_OpenDialogue_Implementation(AActor* NPCActor
 	{
 		HUDWidget->ShowDialogue(NPCActor, DialogueRowName);
 	}
+}
+
+void AOnsetPlayerController::Client_ShowProtocolInteraction_Implementation(const FText& ProtocolMessage, const FText& DismissalText)
+{
+	UE_LOG(LogTemp, Log, TEXT("%s | %s"), *ProtocolMessage.ToString(), *DismissalText.ToString());
+	BP_OnProtocolInteraction(ProtocolMessage, DismissalText);
 }
 
 void AOnsetPlayerController::Client_CloseDialogue_Implementation()

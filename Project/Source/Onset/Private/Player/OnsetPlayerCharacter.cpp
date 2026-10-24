@@ -136,6 +136,9 @@ void AOnsetPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, Experience, COND_None);
 	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, UnspentStatPoints, COND_None);
 	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, PrestigeLevel, COND_None);
+	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, MilitaryRank, COND_None);
+	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, HierarchyBranch, COND_None);
+	DOREPLIFETIME_CONDITION(AOnsetPlayerCharacter, Specialism, COND_None);
 }
 
 void AOnsetPlayerCharacter::ApplyCharacterProgression(int32 InLevel, int32 InExperience, int32 InUnspentStatPoints, int32 InPrestigeLevel)
@@ -314,4 +317,18 @@ void AOnsetPlayerCharacter::OnDeath(AActor* KillingActor)
 		ThreatSub->RemovePlayer(this);
 	}
 	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerCharacter::RespawnPlayer);
+}
+
+void AOnsetPlayerCharacter::SetMilitaryRank(EOnsetRankId NewRank)
+{
+	if (!HasAuthority()) return;
+	MilitaryRank = NewRank;
+	const FOnsetRankInfo Info = UOnsetRankLibrary::GetRankInfo(NewRank);
+	HierarchyBranch = Info.DefaultBranch;
+	PersistProgression();
+}
+
+void AOnsetPlayerCharacter::Multicast_PlayProtocolGesture_Implementation(EOnsetProtocolStyle Style)
+{
+	// Visual feedback hook: clients can trigger animations or gestures
 }

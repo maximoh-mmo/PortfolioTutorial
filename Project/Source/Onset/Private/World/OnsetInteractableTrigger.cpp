@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "World/OnsetInteractableTrigger.h"
+#include "UObject/ConstructorHelpers.h"
 
 #include "Components/BoxComponent.h"
 #include "Components/SceneComponent.h"
@@ -25,6 +26,13 @@ AOnsetInteractableTrigger::AOnsetInteractableTrigger()
 	TriggerMesh->SetupAttachment(RootScene);
 	TriggerMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	TriggerMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultTriggerMesh(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+	if (DefaultTriggerMesh.Succeeded())
+	{
+		TriggerMesh->SetStaticMesh(DefaultTriggerMesh.Object);
+		TriggerMesh->SetRelativeScale3D(FVector(0.8f, 0.8f, 1.2f));
+	}
 
 	OverlapVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapVolume"));
 	OverlapVolume->SetupAttachment(RootScene);

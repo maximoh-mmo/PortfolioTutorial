@@ -45,6 +45,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC")
 	bool bFaceInteractingPlayer = true;
 
+	/** Optional animation montage played when saluting or performing military protocol. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC|Rank & Protocol")
+	TObjectPtr<UAnimMontage> ProtocolSaluteMontage;
+
+	/** Optional sound played when executing military protocol (e.g. armor snap / comms chirp). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "NPC|Rank & Protocol")
+	TObjectPtr<USoundBase> ProtocolSound;
+
+	/** Plays protocol gesture animation or posture on all clients. */
+	UFUNCTION(NetMulticast, Unreliable, Category = "NPC|Rank & Protocol")
+	void Multicast_PlayProtocolGesture(EOnsetProtocolStyle Style);
+
 	/** Returns the active NPC definition (from DT_NPCs or InlineNPCDefinition). */
 	UFUNCTION(BlueprintPure, Category = "NPC")
 	FOnsetNPCDefinition GetEffectiveNPCDefinition() const;

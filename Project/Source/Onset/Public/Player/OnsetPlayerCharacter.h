@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/OnsetBaseCharacter.h"
+#include "Data/OnsetRankTypes.h"
 #include "OnsetPlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -66,6 +67,28 @@ public:
 	/** Broadcasts when PrestigeLevel increments. */
 	UPROPERTY(BlueprintAssignable, Category = "Progression")
 	FOnProgressionChanged OnPrestigeChanged;
+
+	// --- Confederate Rank & Protocol ---
+
+	/** Current Confederate rank of the player (replicated server->client). */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Rank")
+	EOnsetRankId MilitaryRank = EOnsetRankId::CadetInductee;
+
+	/** Service or governance branch. */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Rank")
+	EOnsetHierarchyBranch HierarchyBranch = EOnsetHierarchyBranch::Military;
+
+	/** Functional specialism. */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Rank")
+	EOnsetSpecialism Specialism = EOnsetSpecialism::ShockAssault;
+
+	/** Promotes or assigns a new Confederate rank to the player. Server-only. */
+	UFUNCTION(BlueprintCallable, Category = "Rank")
+	void SetMilitaryRank(EOnsetRankId NewRank);
+
+	/** Plays protocol gesture animation/stance or visual feedback. */
+	UFUNCTION(NetMulticast, Unreliable, Category = "Rank")
+	void Multicast_PlayProtocolGesture(EOnsetProtocolStyle Style);
 
 	/**
 	 * Grants XP for killing an enemy of EnemyLevel whose row authorizes XpReward

@@ -476,6 +476,14 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_ShowLootOverlay(const TArray<FOnsetInventoryEntry>& LootedItems);
 
+	/** Notifies the client of a protocol exchange banner (e.g. salute protocol). */
+	UFUNCTION(Client, Reliable)
+	void Client_ShowProtocolInteraction(const FText& ProtocolMessage, const FText& DismissalText);
+
+	/** Blueprint hook fired on client when protocol occurs so HUD / UI can show protocol toasts. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Protocol")
+	void BP_OnProtocolInteraction(const FText& ProtocolMessage, const FText& DismissalText);
+
 	/** Debug: grants a DT_Equipment item to the possessed pawn's inventory (console: OnsetGrantItem <RowName>). */
 	UFUNCTION(Exec)
 	void OnsetGrantItem(const FString& RowName);
