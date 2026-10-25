@@ -43,6 +43,10 @@ struct FOnsetEquippedEntry
 	/** DT_Equipment row ID. Empty = nothing equipped in this slot. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
 	FName RowName;
+
+	/** Instance-specific state (durability, stat grades, infusion). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	FOnsetEquipmentInstanceData InstanceData;
 };
 
 /**

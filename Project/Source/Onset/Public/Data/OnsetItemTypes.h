@@ -14,7 +14,19 @@ enum class EOnsetItemCategory : uint8
 	Equipment	UMETA(DisplayName = "Equipment"),	// DT_Equipment (weapons / armor / accessories)
 	QuestItem	UMETA(DisplayName = "Quest Item"),	// DT_QuestItems
 	Junk		UMETA(DisplayName = "Junk"),		// DT_Junk
-	Scroll		UMETA(DisplayName = "Scroll")		// DT_Scrolls (ability-grant consumables)
+	Scroll		UMETA(DisplayName = "Scroll"),		// DT_Scrolls (ability-grant consumables)
+	Material	UMETA(DisplayName = "Material")		// DT_Materials (salvage & crafting components)
+};
+
+/** Quality grade of rolled equipment stats (D = Surplus/Defective, S = Apex/Masterwork). */
+UENUM(BlueprintType)
+enum class EOnsetQualityGrade : uint8
+{
+	GradeD		UMETA(DisplayName = "Grade D (Surplus)"),
+	GradeC		UMETA(DisplayName = "Grade C (Standard)"),
+	GradeB		UMETA(DisplayName = "Grade B (Refined)"),
+	GradeA		UMETA(DisplayName = "Grade A (Overclocked)"),
+	GradeS		UMETA(DisplayName = "Grade S (Apex)")
 };
 
 /** Display/sell-tiering metadata. */
@@ -66,7 +78,50 @@ struct FOnsetItemDefinition : public FTableRowBase
 	FText Description;
 };
 
-/** One stacked bag slot: a row in a category table plus a count. */
+/**
+ * Per-instance mutable state for equipment items.
+ * Carried on FOnsetInventoryEntry (bag) and FOnsetEquippedEntry (equipped loadout).
+ */
+USTRUCT(BlueprintType)
+struct FOnsetEquipmentInstanceData
+{
+	GENERATED_BODY()
+
+	/** Current item durability (0 = Malfunctioning). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	float CurrentDurability = 100.0f;
+
+	/** Maximum durability cap for this item. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	float MaxDurability = 100.0f;
+
+	/** Quality grade determining multiplier on primary combat stats (Damage / Defense). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	EOnsetQualityGrade PrimaryStatGrade = EOnsetQualityGrade::GradeC;
+
+	/** Quality grade determining multiplier on secondary attribute bonuses (STR, INT, VIT, etc.). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	EOnsetQualityGrade SecondaryStatGrade = EOnsetQualityGrade::GradeC;
+
+	/** Infusion progress towards the next grade promotion (0.0 to 1.0). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	float InfusionProgress = 0.0f;
+
+	/** Number of successful infusion promotions this item has undergone. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+	int32 InfusionLevel = 0;
+
+	/** Whether the item is malfunctioning (0 durability: 50% stat penalty). */
+	bool IsMalfunctioning() const { return CurrentDurability <= 0.0f; }
+
+	/** Durability percentage (0.0 to 1.0). */
+	float GetDurabilityPercent() const
+	{
+		return MaxDurability > 0.0f ? FMath::Clamp(CurrentDurability / MaxDurability, 0.0f, 1.0f) : 0.0f;
+	}
+};
+
+/** One stacked bag slot: a row in a category table plus a count and instance data for equipment. */
 USTRUCT(BlueprintType)
 struct FOnsetInventoryEntry
 {
@@ -81,6 +136,10 @@ struct FOnsetInventoryEntry
 
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	int32 Count = 1;
+
+	/** Instance-specific state (durability, stat grades, infusion). Used when Category == Equipment. */
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	FOnsetEquipmentInstanceData InstanceData;
 };
 
 /** One row in DT_QuestItems. Quest progress references these via quest data. */
@@ -118,4 +177,24 @@ struct FOnsetScrollDefinition : public FOnsetItemDefinition
 	/** 1 = learn; >1 = upgrade target level. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	int32 UpgradeLevel = 1;
+};
+
+/** Material tier for salvage, crafting, and repairs. */
+UENUM(BlueprintType)
+enum class EOnsetMaterialTier : uint8
+{
+	Scrap		UMETA(DisplayName = "Composite Scrap"),		// Low-tier scrap repair sink
+	Alloy		UMETA(DisplayName = "Reinforced Alloy"),	// Mid-tier alloy
+	Filament	UMETA(DisplayName = "Nanite Filament"),		// High-tier filament
+	Core		UMETA(DisplayName = "Quantum Core")			// Top-tier core
+};
+
+/** One row in DT_Materials. Salvage yields, crafting components, repair catalysts. */
+USTRUCT(BlueprintType)
+struct FOnsetMaterialDefinition : public FOnsetItemDefinition
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material")
+	EOnsetMaterialTier MaterialTier = EOnsetMaterialTier::Scrap;
 };

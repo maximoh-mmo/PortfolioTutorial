@@ -126,4 +126,54 @@ public:
 
 	/** Returns the stats row for RowName, or null if the row/table is missing. */
 	static const FOnsetEnemyStats* GetEnemyStats(FName RowName);
+
+	// --- Quality Grades, Durability, Salvage & Infusion ---
+
+	/** Stat multiplier for a quality grade (Grade D: 0.85, C: 1.0, B: 1.15, A: 1.30, S: 1.50). */
+	UFUNCTION(BlueprintPure, Category = "Equipment|Grade")
+	static float GetGradeMultiplier(EOnsetQualityGrade Grade);
+
+	/** Next promotional quality grade (caps at Grade S). */
+	UFUNCTION(BlueprintPure, Category = "Equipment|Grade")
+	static EOnsetQualityGrade GetNextGrade(EOnsetQualityGrade Grade);
+
+	/** User-facing display text for quality grade. */
+	UFUNCTION(BlueprintPure, Category = "Equipment|Grade")
+	static FText GetGradeDisplayText(EOnsetQualityGrade Grade);
+
+	/** Color representing quality grade in UI tooltips. */
+	UFUNCTION(BlueprintPure, Category = "Equipment|Grade")
+	static FLinearColor GetGradeColor(EOnsetQualityGrade Grade);
+
+	/** Rolls a random quality grade weighted by drop chances and optional luck. */
+	UFUNCTION(BlueprintPure, Category = "Equipment|Grade")
+	static EOnsetQualityGrade RollRandomGrade(float LuckBonus = 0.0f);
+
+	/** Generates freshly rolled instance data for an equipment item. */
+	UFUNCTION(BlueprintPure, Category = "Equipment|Grade")
+	static FOnsetEquipmentInstanceData RollNewEquipmentInstance(EOnsetItemRarity Rarity = EOnsetItemRarity::Common, float LuckBonus = 0.0f);
+
+	/** Effective weapon damage accounting for primary stat grade and malfunction status. */
+	static float CalculateEffectiveWeaponDamage(const FOnsetEquipmentDefinition* Def, const FOnsetEquipmentInstanceData& Instance);
+
+	/** Effective defense bonus accounting for primary stat grade and malfunction status. */
+	static float CalculateEffectiveDefense(const FOnsetEquipmentDefinition* Def, const FOnsetEquipmentInstanceData& Instance);
+
+	/** Effective secondary stat bonus (STR/INT/VIT/AGI/LUK) accounting for grade and malfunction status. */
+	UFUNCTION(BlueprintPure, Category = "Equipment|Combat")
+	static float CalculateEffectiveStatBonus(float BaseBonus, const FOnsetEquipmentInstanceData& Instance);
+
+	/** Calculates repair costs in credits and scraps based on missing durability and rarity. */
+	static void CalculateRepairCost(const FOnsetEquipmentDefinition* Def, const FOnsetEquipmentInstanceData& Instance, int32& OutCredits, int32& OutScraps);
+
+	/** Generates salvage materials yielded from dismantling an equipment item. */
+	static void GetSalvageYield(const FOnsetEquipmentDefinition* Def, const FOnsetEquipmentInstanceData& Instance, TArray<FOnsetInventoryEntry>& OutYield);
+
+	/** Base infusion progress gained per duplicate sacrificed (D->C: 100%, C->B: 50%, B->A: 34%, A->S: 20%). */
+	UFUNCTION(BlueprintPure, Category = "Equipment|Infusion")
+	static float GetInfusionProgressPerDuplicate(EOnsetQualityGrade CurrentGrade);
+
+	/** 15% random chance on infusion for instant grade promotion proc. */
+	UFUNCTION(BlueprintPure, Category = "Equipment|Infusion")
+	static bool RollCriticalResonance();
 };

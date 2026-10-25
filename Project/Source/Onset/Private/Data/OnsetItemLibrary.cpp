@@ -8,7 +8,7 @@
 
 namespace OnsetItemLibraryInternal
 {
-	TStrongObjectPtr<UDataTable> CachedTables[static_cast<uint8>(EOnsetItemCategory::Scroll) + 1] = { nullptr, nullptr, nullptr, nullptr };
+	TStrongObjectPtr<UDataTable> CachedTables[static_cast<uint8>(EOnsetItemCategory::Material) + 1] = { nullptr, nullptr, nullptr, nullptr, nullptr };
 }
 
 const TCHAR* OnsetItemLibraryInternal_CategoryConfigKey(EOnsetItemCategory Category)
@@ -19,6 +19,7 @@ const TCHAR* OnsetItemLibraryInternal_CategoryConfigKey(EOnsetItemCategory Categ
 		case EOnsetItemCategory::QuestItem:	return TEXT("QuestItemsDataTable");
 		case EOnsetItemCategory::Junk:		return TEXT("JunkDataTable");
 		case EOnsetItemCategory::Scroll:	return TEXT("ScrollDataTable");
+		case EOnsetItemCategory::Material:	return TEXT("MaterialsDataTable");
 	}
 	return TEXT("EquipmentDataTable");
 }
@@ -31,6 +32,7 @@ const TCHAR* OnsetItemLibraryInternal_CategoryDefaultPath(EOnsetItemCategory Cat
 		case EOnsetItemCategory::QuestItem:	return TEXT("/Game/Data/DT_QuestItems.DT_QuestItems");
 		case EOnsetItemCategory::Junk:		return TEXT("/Game/Data/DT_Junk.DT_Junk");
 		case EOnsetItemCategory::Scroll:	return TEXT("/Game/Data/DT_Scrolls.DT_Scrolls");
+		case EOnsetItemCategory::Material:	return TEXT("/Game/Data/DT_Materials.DT_Materials");
 	}
 	return TEXT("/Game/Data/DT_Equipment.DT_Equipment");
 }
@@ -49,7 +51,7 @@ FString UOnsetItemLibrary::GetTablePath(EOnsetItemCategory Category)
 UDataTable* UOnsetItemLibrary::GetTable(EOnsetItemCategory Category)
 {
 	const uint8 Index = static_cast<uint8>(Category);
-	if (Index > static_cast<uint8>(EOnsetItemCategory::Scroll))
+	if (Index > static_cast<uint8>(EOnsetItemCategory::Material))
 	{
 		return nullptr;
 	}
@@ -86,13 +88,15 @@ const FOnsetItemDefinition* UOnsetItemLibrary::GetItemDefinition(EOnsetItemCateg
 			return Table->FindRow<FOnsetJunkItemDefinition>(RowName, nullptr);
 		case EOnsetItemCategory::Scroll:
 			return Table->FindRow<FOnsetScrollDefinition>(RowName, nullptr);
+		case EOnsetItemCategory::Material:
+			return Table->FindRow<FOnsetMaterialDefinition>(RowName, nullptr);
 	}
 	return nullptr;
 }
 
 EOnsetItemCategory UOnsetItemLibrary::GetCategoryForTable(const UDataTable* Table)
 {
-	for (uint8 Index = 0; Index <= static_cast<uint8>(EOnsetItemCategory::Scroll); ++Index)
+	for (uint8 Index = 0; Index <= static_cast<uint8>(EOnsetItemCategory::Material); ++Index)
 	{
 		const EOnsetItemCategory Category = static_cast<EOnsetItemCategory>(Index);
 		if (GetTable(Category) == Table)
@@ -106,7 +110,15 @@ EOnsetItemCategory UOnsetItemLibrary::GetCategoryForTable(const UDataTable* Tabl
 int32 UOnsetItemLibrary::GetMaxStackSize(EOnsetItemCategory Category, FName RowName)
 {
 	const FOnsetItemDefinition* Definition = GetItemDefinition(Category, RowName);
-	return Definition ? FMath::Max(1, Definition->MaxStackSize) : 1;
+	if (Definition)
+	{
+		return FMath::Max(1, Definition->MaxStackSize);
+	}
+	if (Category == EOnsetItemCategory::Material || Category == EOnsetItemCategory::Junk)
+	{
+		return 999;
+	}
+	return 1;
 }
 
 void UOnsetItemLibrary::AddStacked(TArray<FOnsetInventoryEntry>& Bag, EOnsetItemCategory Category, FName RowName, int32 Count)
@@ -117,6 +129,25 @@ void UOnsetItemLibrary::AddStacked(TArray<FOnsetInventoryEntry>& Bag, EOnsetItem
 	}
 
 	const int32 MaxStack = GetMaxStackSize(Category, RowName);
+
+	// Equipment items are unique instances (MaxStack == 1 with instance data)
+	if (Category == EOnsetItemCategory::Equipment)
+	{
+		const FOnsetEquipmentDefinition* Def = static_cast<const FOnsetEquipmentDefinition*>(GetItemDefinition(Category, RowName));
+		const EOnsetItemRarity Rarity = Def ? Def->Rarity : EOnsetItemRarity::Common;
+
+		while (Count > 0)
+		{
+			FOnsetInventoryEntry NewEntry;
+			NewEntry.Category = Category;
+			NewEntry.RowName = RowName;
+			NewEntry.Count = 1;
+			NewEntry.InstanceData = UOnsetEquipmentLibrary::RollNewEquipmentInstance(Rarity);
+			Bag.Add(NewEntry);
+			--Count;
+		}
+		return;
+	}
 
 	// Fill existing matching stacks first.
 	for (FOnsetInventoryEntry& Entry : Bag)
@@ -145,4 +176,19 @@ void UOnsetItemLibrary::AddStacked(TArray<FOnsetInventoryEntry>& Bag, EOnsetItem
 		Bag.Add(NewEntry);
 		Count -= NewEntry.Count;
 	}
+}
+
+void UOnsetItemLibrary::AddEquipment(TArray<FOnsetInventoryEntry>& Bag, FName RowName, const FOnsetEquipmentInstanceData& InstanceData)
+{
+	if (RowName.IsNone())
+	{
+		return;
+	}
+
+	FOnsetInventoryEntry NewEntry;
+	NewEntry.Category = EOnsetItemCategory::Equipment;
+	NewEntry.RowName = RowName;
+	NewEntry.Count = 1;
+	NewEntry.InstanceData = InstanceData;
+	Bag.Add(NewEntry);
 }

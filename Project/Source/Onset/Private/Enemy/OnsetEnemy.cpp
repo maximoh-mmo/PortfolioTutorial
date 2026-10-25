@@ -196,6 +196,13 @@ void AOnsetEnemy::OnDeath(AActor* KillingActor)
 				FOnsetLootContext Context;
 				Context.Level = DifficultyTier;
 				Context.ZoneTag = ZoneTag;
+				if (const AOnsetBaseCharacter* KillerChar = Cast<AOnsetBaseCharacter>(KillingActor))
+				{
+					if (KillerChar->CombatAttributes)
+					{
+						Context.Luck = KillerChar->CombatAttributes->GetLuck();
+					}
+				}
 				const FOnsetEnemyStats* Stats = UOnsetEquipmentLibrary::GetEnemyStats(EnemyStatsRow);
 				const TArray<FOnsetInventoryEntry> Loot = Stats ? UOnsetLootLibrary::RollLoot(Stats->LootTable, Context) : TArray<FOnsetInventoryEntry>();
 				Corpse->InventoryComponent->SetItems(Loot);

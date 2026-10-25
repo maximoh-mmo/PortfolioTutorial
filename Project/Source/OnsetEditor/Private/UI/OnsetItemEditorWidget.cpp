@@ -146,6 +146,7 @@ const FOnsetItemDefinition* UOnsetItemEditorWidget::FindItemBase(EOnsetItemCateg
 		case EOnsetItemCategory::QuestItem:	return Table->FindRow<FOnsetQuestItemDefinition>(RowName, nullptr);
 		case EOnsetItemCategory::Junk:		return Table->FindRow<FOnsetJunkItemDefinition>(RowName, nullptr);
 		case EOnsetItemCategory::Scroll:	return Table->FindRow<FOnsetScrollDefinition>(RowName, nullptr);
+		case EOnsetItemCategory::Material:	return Table->FindRow<FOnsetMaterialDefinition>(RowName, nullptr);
 	}
 	return nullptr;
 }
@@ -849,7 +850,7 @@ void UOnsetItemEditorWidget::RollPreview()
 		const FString DisplayName = [&]() -> FString
 		{
 			// Look up the item's display name across the category tables.
-			const EOnsetItemCategory Categories[] = { EOnsetItemCategory::Equipment, EOnsetItemCategory::QuestItem, EOnsetItemCategory::Junk, EOnsetItemCategory::Scroll };
+			const EOnsetItemCategory Categories[] = { EOnsetItemCategory::Equipment, EOnsetItemCategory::QuestItem, EOnsetItemCategory::Junk, EOnsetItemCategory::Scroll, EOnsetItemCategory::Material };
 			for (EOnsetItemCategory Category : Categories)
 			{
 				if (const FOnsetItemDefinition* Item = FindItemBase(Category, Pair.Key))

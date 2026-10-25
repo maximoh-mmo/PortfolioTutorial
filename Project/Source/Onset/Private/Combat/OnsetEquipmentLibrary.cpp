@@ -380,3 +380,288 @@ float UOnsetEquipmentLibrary::GetBlockDamageReduction()
 	}
 	return OnsetEquipmentLibraryInternal::CachedBlockDamageReduction;
 }
+
+// --- Quality Grades, Durability, Salvage & Infusion ---
+
+float UOnsetEquipmentLibrary::GetGradeMultiplier(EOnsetQualityGrade Grade)
+{
+	switch (Grade)
+	{
+		case EOnsetQualityGrade::GradeD: return 0.85f;
+		case EOnsetQualityGrade::GradeC: return 1.00f;
+		case EOnsetQualityGrade::GradeB: return 1.15f;
+		case EOnsetQualityGrade::GradeA: return 1.30f;
+		case EOnsetQualityGrade::GradeS: return 1.50f;
+	}
+	return 1.0f;
+}
+
+EOnsetQualityGrade UOnsetEquipmentLibrary::GetNextGrade(EOnsetQualityGrade Grade)
+{
+	switch (Grade)
+	{
+		case EOnsetQualityGrade::GradeD: return EOnsetQualityGrade::GradeC;
+		case EOnsetQualityGrade::GradeC: return EOnsetQualityGrade::GradeB;
+		case EOnsetQualityGrade::GradeB: return EOnsetQualityGrade::GradeA;
+		case EOnsetQualityGrade::GradeA: return EOnsetQualityGrade::GradeS;
+		case EOnsetQualityGrade::GradeS: return EOnsetQualityGrade::GradeS;
+	}
+	return EOnsetQualityGrade::GradeS;
+}
+
+FText UOnsetEquipmentLibrary::GetGradeDisplayText(EOnsetQualityGrade Grade)
+{
+	switch (Grade)
+	{
+		case EOnsetQualityGrade::GradeD: return NSLOCTEXT("Onset", "GradeD", "Grade D (Surplus)");
+		case EOnsetQualityGrade::GradeC: return NSLOCTEXT("Onset", "GradeC", "Grade C (Standard)");
+		case EOnsetQualityGrade::GradeB: return NSLOCTEXT("Onset", "GradeB", "Grade B (Refined)");
+		case EOnsetQualityGrade::GradeA: return NSLOCTEXT("Onset", "GradeA", "Grade A (Overclocked)");
+		case EOnsetQualityGrade::GradeS: return NSLOCTEXT("Onset", "GradeS", "Grade S (Apex)");
+	}
+	return FText::GetEmpty();
+}
+
+FLinearColor UOnsetEquipmentLibrary::GetGradeColor(EOnsetQualityGrade Grade)
+{
+	switch (Grade)
+	{
+		case EOnsetQualityGrade::GradeD: return FLinearColor(0.55f, 0.55f, 0.55f);
+		case EOnsetQualityGrade::GradeC: return FLinearColor(0.90f, 0.90f, 0.90f);
+		case EOnsetQualityGrade::GradeB: return FLinearColor(0.12f, 0.80f, 0.45f);
+		case EOnsetQualityGrade::GradeA: return FLinearColor(0.65f, 0.25f, 0.95f);
+		case EOnsetQualityGrade::GradeS: return FLinearColor(1.00f, 0.82f, 0.15f);
+	}
+	return FLinearColor::White;
+}
+
+EOnsetQualityGrade UOnsetEquipmentLibrary::RollRandomGrade(float LuckBonus)
+{
+	const float NormalizedLuck = FMath::Clamp(LuckBonus * 0.05f, 0.0f, 15.0f);
+	const float WeightD = FMath::Max(5.0f, 25.0f - NormalizedLuck * 1.5f);
+	const float WeightC = 50.0f;
+	const float WeightB = 20.0f + NormalizedLuck * 0.8f;
+	const float WeightA = 4.5f + NormalizedLuck * 0.5f;
+	const float WeightS = 0.5f + NormalizedLuck * 0.2f;
+
+	const float Total = WeightD + WeightC + WeightB + WeightA + WeightS;
+	const float Roll = FMath::FRandRange(0.0f, Total);
+
+	float Acc = WeightD;
+	if (Roll <= Acc) return EOnsetQualityGrade::GradeD;
+	Acc += WeightC;
+	if (Roll <= Acc) return EOnsetQualityGrade::GradeC;
+	Acc += WeightB;
+	if (Roll <= Acc) return EOnsetQualityGrade::GradeB;
+	Acc += WeightA;
+	if (Roll <= Acc) return EOnsetQualityGrade::GradeA;
+	return EOnsetQualityGrade::GradeS;
+}
+
+FOnsetEquipmentInstanceData UOnsetEquipmentLibrary::RollNewEquipmentInstance(EOnsetItemRarity Rarity, float LuckBonus)
+{
+	FOnsetEquipmentInstanceData Instance;
+	Instance.CurrentDurability = 100.0f;
+	Instance.MaxDurability = 100.0f;
+	Instance.InfusionProgress = 0.0f;
+	Instance.InfusionLevel = 0;
+
+	float RarityLuck = LuckBonus;
+	switch (Rarity)
+	{
+		case EOnsetItemRarity::Uncommon: RarityLuck += 5.0f; break;
+		case EOnsetItemRarity::Rare:     RarityLuck += 15.0f; break;
+		case EOnsetItemRarity::Epic:     RarityLuck += 30.0f; break;
+		case EOnsetItemRarity::Legendary:RarityLuck += 50.0f; break;
+		default: break;
+	}
+
+	Instance.PrimaryStatGrade = RollRandomGrade(RarityLuck);
+	Instance.SecondaryStatGrade = RollRandomGrade(RarityLuck);
+
+	return Instance;
+}
+
+float UOnsetEquipmentLibrary::CalculateEffectiveWeaponDamage(const FOnsetEquipmentDefinition* Def, const FOnsetEquipmentInstanceData& Instance)
+{
+	if (!Def) return 0.0f;
+	const float BaseDamage = Def->WeaponDamage;
+	const float GradeMult = GetGradeMultiplier(Instance.PrimaryStatGrade);
+	const float MalfunctionPenalty = Instance.IsMalfunctioning() ? 0.5f : 1.0f;
+	return BaseDamage * GradeMult * MalfunctionPenalty;
+}
+
+float UOnsetEquipmentLibrary::CalculateEffectiveDefense(const FOnsetEquipmentDefinition* Def, const FOnsetEquipmentInstanceData& Instance)
+{
+	if (!Def) return 0.0f;
+	const float BaseDef = Def->DefenseBonus;
+	const float GradeMult = GetGradeMultiplier(Instance.PrimaryStatGrade);
+	const float MalfunctionPenalty = Instance.IsMalfunctioning() ? 0.5f : 1.0f;
+	return BaseDef * GradeMult * MalfunctionPenalty;
+}
+
+float UOnsetEquipmentLibrary::CalculateEffectiveStatBonus(float BaseBonus, const FOnsetEquipmentInstanceData& Instance)
+{
+	const float GradeMult = GetGradeMultiplier(Instance.SecondaryStatGrade);
+	const float MalfunctionPenalty = Instance.IsMalfunctioning() ? 0.5f : 1.0f;
+	return BaseBonus * GradeMult * MalfunctionPenalty;
+}
+
+void UOnsetEquipmentLibrary::CalculateRepairCost(const FOnsetEquipmentDefinition* Def, const FOnsetEquipmentInstanceData& Instance, int32& OutCredits, int32& OutScraps)
+{
+	const float MissingPercent = 1.0f - Instance.GetDurabilityPercent();
+	if (MissingPercent <= KINDA_SMALL_NUMBER)
+	{
+		OutCredits = 0;
+		OutScraps = 0;
+		return;
+	}
+
+	const int32 BaseVal = Def && Def->BuyValue > 0 ? Def->BuyValue : 100;
+	float RarityMult = 1.0f;
+	if (Def)
+	{
+		switch (Def->Rarity)
+		{
+			case EOnsetItemRarity::Uncommon: RarityMult = 1.25f; break;
+			case EOnsetItemRarity::Rare:     RarityMult = 1.60f; break;
+			case EOnsetItemRarity::Epic:     RarityMult = 2.00f; break;
+			case EOnsetItemRarity::Legendary:RarityMult = 2.50f; break;
+			default: break;
+		}
+	}
+
+	OutCredits = FMath::Max(5, FMath::CeilToInt(MissingPercent * (BaseVal * 0.25f) * RarityMult));
+	OutScraps = FMath::Max(1, FMath::CeilToInt(MissingPercent * 5.0f * RarityMult));
+}
+
+void UOnsetEquipmentLibrary::GetSalvageYield(const FOnsetEquipmentDefinition* Def, const FOnsetEquipmentInstanceData& Instance, TArray<FOnsetInventoryEntry>& OutYield)
+{
+	OutYield.Reset();
+	const EOnsetItemRarity Rarity = Def ? Def->Rarity : EOnsetItemRarity::Common;
+
+	switch (Rarity)
+	{
+		case EOnsetItemRarity::Common:
+		{
+			FOnsetInventoryEntry Scrap;
+			Scrap.Category = EOnsetItemCategory::Material;
+			Scrap.RowName = FName("CompositeScrap");
+			Scrap.Count = FMath::RandRange(2, 4);
+			OutYield.Add(Scrap);
+			break;
+		}
+		case EOnsetItemRarity::Uncommon:
+		{
+			FOnsetInventoryEntry Scrap;
+			Scrap.Category = EOnsetItemCategory::Material;
+			Scrap.RowName = FName("CompositeScrap");
+			Scrap.Count = FMath::RandRange(3, 5);
+			OutYield.Add(Scrap);
+
+			FOnsetInventoryEntry Alloy;
+			Alloy.Category = EOnsetItemCategory::Material;
+			Alloy.RowName = FName("ReinforcedAlloy");
+			Alloy.Count = FMath::RandRange(1, 2);
+			OutYield.Add(Alloy);
+			break;
+		}
+		case EOnsetItemRarity::Rare:
+		{
+			FOnsetInventoryEntry Alloy;
+			Alloy.Category = EOnsetItemCategory::Material;
+			Alloy.RowName = FName("ReinforcedAlloy");
+			Alloy.Count = FMath::RandRange(3, 5);
+			OutYield.Add(Alloy);
+
+			FOnsetInventoryEntry Filament;
+			Filament.Category = EOnsetItemCategory::Material;
+			Filament.RowName = FName("NaniteFilament");
+			Filament.Count = FMath::RandRange(1, 2);
+			OutYield.Add(Filament);
+			break;
+		}
+		case EOnsetItemRarity::Epic:
+		{
+			FOnsetInventoryEntry Filament;
+			Filament.Category = EOnsetItemCategory::Material;
+			Filament.RowName = FName("NaniteFilament");
+			Filament.Count = FMath::RandRange(3, 5);
+			OutYield.Add(Filament);
+
+			FOnsetInventoryEntry Core;
+			Core.Category = EOnsetItemCategory::Material;
+			Core.RowName = FName("QuantumCore");
+			Core.Count = FMath::RandRange(1, 2);
+			OutYield.Add(Core);
+			break;
+		}
+		case EOnsetItemRarity::Legendary:
+		{
+			FOnsetInventoryEntry Filament;
+			Filament.Category = EOnsetItemCategory::Material;
+			Filament.RowName = FName("NaniteFilament");
+			Filament.Count = FMath::RandRange(5, 8);
+			OutYield.Add(Filament);
+
+			FOnsetInventoryEntry Core;
+			Core.Category = EOnsetItemCategory::Material;
+			Core.RowName = FName("QuantumCore");
+			Core.Count = FMath::RandRange(2, 4);
+			OutYield.Add(Core);
+			break;
+		}
+	}
+
+	if (Def)
+	{
+		if (Def->Slot == EOnsetEquipmentSlot::Weapon)
+		{
+			FOnsetInventoryEntry WeaponParts;
+			WeaponParts.Category = EOnsetItemCategory::Material;
+			WeaponParts.RowName = FName("WeaponChassis");
+			WeaponParts.Count = FMath::RandRange(1, 2);
+			OutYield.Add(WeaponParts);
+		}
+		else if (Def->Slot == EOnsetEquipmentSlot::Shield ||
+				 Def->Slot == EOnsetEquipmentSlot::Head ||
+				 Def->Slot == EOnsetEquipmentSlot::Chest ||
+				 Def->Slot == EOnsetEquipmentSlot::Hands ||
+				 Def->Slot == EOnsetEquipmentSlot::Legs ||
+				 Def->Slot == EOnsetEquipmentSlot::Feet)
+		{
+			FOnsetInventoryEntry ArmorParts;
+			ArmorParts.Category = EOnsetItemCategory::Material;
+			ArmorParts.RowName = FName("ArmorPlating");
+			ArmorParts.Count = FMath::RandRange(1, 2);
+			OutYield.Add(ArmorParts);
+		}
+	}
+
+	if (Instance.PrimaryStatGrade >= EOnsetQualityGrade::GradeA || Instance.SecondaryStatGrade >= EOnsetQualityGrade::GradeA)
+	{
+		FOnsetInventoryEntry Bonus;
+		Bonus.Category = EOnsetItemCategory::Material;
+		Bonus.RowName = FName("ReinforcedAlloy");
+		Bonus.Count = (Instance.PrimaryStatGrade == EOnsetQualityGrade::GradeS) ? 2 : 1;
+		OutYield.Add(Bonus);
+	}
+}
+
+float UOnsetEquipmentLibrary::GetInfusionProgressPerDuplicate(EOnsetQualityGrade CurrentGrade)
+{
+	switch (CurrentGrade)
+	{
+		case EOnsetQualityGrade::GradeD: return 1.0f;
+		case EOnsetQualityGrade::GradeC: return 0.5f;
+		case EOnsetQualityGrade::GradeB: return 0.334f;
+		case EOnsetQualityGrade::GradeA: return 0.20f;
+		case EOnsetQualityGrade::GradeS: return 0.0f;
+	}
+	return 0.0f;
+}
+
+bool UOnsetEquipmentLibrary::RollCriticalResonance()
+{
+	return FMath::FRand() < 0.15f;
+}

@@ -243,26 +243,27 @@ void AOnsetBaseCharacter::RecalculateDerivedStats()
 	float LuckBonus = 0.0f;
 	float BlockChance = 0.0f;
 
-	for (const TPair<EOnsetEquipmentSlot, FName>& Pair : InventoryComponent ? InventoryComponent->GetEquippedMap() : TMap<EOnsetEquipmentSlot, FName>())
+	const TArray<FOnsetEquippedEntry> Loadout = InventoryComponent ? InventoryComponent->GetEquippedEntries() : TArray<FOnsetEquippedEntry>();
+	for (const FOnsetEquippedEntry& Entry : Loadout)
 	{
-		const FOnsetEquipmentDefinition* Def = UOnsetEquipmentLibrary::GetDefinition(Pair.Value);
+		const FOnsetEquipmentDefinition* Def = UOnsetEquipmentLibrary::GetDefinition(Entry.RowName);
 		if (!Def)
 		{
 			continue;
 		}
 
-		StrengthBonus += Def->StrengthBonus;
-		IntellectBonus += Def->IntellectBonus;
-		VitalityBonus += Def->VitalityBonus;
-		AgilityBonus += Def->AgilityBonus;
-		LuckBonus += Def->LuckBonus;
+		StrengthBonus += UOnsetEquipmentLibrary::CalculateEffectiveStatBonus(Def->StrengthBonus, Entry.InstanceData);
+		IntellectBonus += UOnsetEquipmentLibrary::CalculateEffectiveStatBonus(Def->IntellectBonus, Entry.InstanceData);
+		VitalityBonus += UOnsetEquipmentLibrary::CalculateEffectiveStatBonus(Def->VitalityBonus, Entry.InstanceData);
+		AgilityBonus += UOnsetEquipmentLibrary::CalculateEffectiveStatBonus(Def->AgilityBonus, Entry.InstanceData);
+		LuckBonus += UOnsetEquipmentLibrary::CalculateEffectiveStatBonus(Def->LuckBonus, Entry.InstanceData);
 
-		if (Pair.Key == EOnsetEquipmentSlot::Shield)
+		if (Entry.Slot == EOnsetEquipmentSlot::Shield)
 		{
 			// Shield block/DEF from the item, plus the Tank mastery bonus:
 			// BlockChance = item + TankMasteryBlock; ShieldDEF = item + TankMasteryDEF.
-			float Block = Def->BlockChance;
-			float ShieldDef = Def->DefenseBonus;
+			float Block = Def->BlockChance * (Entry.InstanceData.IsMalfunctioning() ? 0.5f : 1.0f);
+			float ShieldDef = UOnsetEquipmentLibrary::CalculateEffectiveDefense(Def, Entry.InstanceData);
 			if (CurrentClass == EOnsetCharacterClass::Tank)
 			{
 				Block += UOnsetEquipmentLibrary::GetTankMasteryBlock();
@@ -271,12 +272,12 @@ void AOnsetBaseCharacter::RecalculateDerivedStats()
 			BlockChance = FMath::Max(BlockChance, Block);
 			DefenseBonus += ShieldDef;
 		}
-		else if (Pair.Key == EOnsetEquipmentSlot::Head || Pair.Key == EOnsetEquipmentSlot::Chest ||
-			Pair.Key == EOnsetEquipmentSlot::Hands || Pair.Key == EOnsetEquipmentSlot::Legs ||
-			Pair.Key == EOnsetEquipmentSlot::Feet)
+		else if (Entry.Slot == EOnsetEquipmentSlot::Head || Entry.Slot == EOnsetEquipmentSlot::Chest ||
+			Entry.Slot == EOnsetEquipmentSlot::Hands || Entry.Slot == EOnsetEquipmentSlot::Legs ||
+			Entry.Slot == EOnsetEquipmentSlot::Feet)
 		{
-			// Armor pieces contribute flat DEF; accessories only carry stat bonuses.
-			DefenseBonus += Def->DefenseBonus;
+			// Armor pieces contribute effective DEF
+			DefenseBonus += UOnsetEquipmentLibrary::CalculateEffectiveDefense(Def, Entry.InstanceData);
 		}
 	}
 
@@ -335,11 +336,17 @@ bool AOnsetBaseCharacter::EquipFromInventory(FName RowName)
 
 float AOnsetBaseCharacter::GetEquippedWeaponDamage() const
 {
-	if (const FOnsetEquipmentDefinition* Weapon = GetEquippedItem(EOnsetEquipmentSlot::Weapon))
+	if (InventoryComponent)
 	{
-		if (Weapon->WeaponDamage > 0.0f)
+		if (const FOnsetEquippedEntry* WeaponEntry = InventoryComponent->GetEquippedEntry(EOnsetEquipmentSlot::Weapon))
 		{
-			return Weapon->WeaponDamage;
+			if (const FOnsetEquipmentDefinition* Weapon = UOnsetEquipmentLibrary::GetDefinition(WeaponEntry->RowName))
+			{
+				if (Weapon->WeaponDamage > 0.0f)
+				{
+					return UOnsetEquipmentLibrary::CalculateEffectiveWeaponDamage(Weapon, WeaponEntry->InstanceData);
+				}
+			}
 		}
 	}
 
@@ -391,6 +398,11 @@ void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)
 	bIsAlive = false;
 	SetTargetReticule(false);
 
+	if (HasAuthority() && InventoryComponent)
+	{
+		InventoryComponent->ApplyDurabilityLossOnDeath(15.0f);
+	}
+
 	if (IsPlayerControlled())
 	{
 		if (UMHAudioSubsystem* Audio = UMHAudioSubsystem::Get(this))
@@ -398,6 +410,37 @@ void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)
 			Audio->SetMusicState(FName("CombatState"), FName("Exploration"));
 		}
 	}
+}
+
+void AOnsetBaseCharacter::DegradeEquippedWeapon(float Amount)
+{
+	if (InventoryComponent)
+	{
+		InventoryComponent->DegradeEquippedWeapon(Amount);
+	}
+}
+
+void AOnsetBaseCharacter::DegradeEquippedArmor(float Amount)
+{
+	if (InventoryComponent)
+	{
+		InventoryComponent->DegradeEquippedArmor(Amount);
+	}
+}
+
+bool AOnsetBaseCharacter::RepairAllEquipped()
+{
+	return InventoryComponent ? InventoryComponent->RepairAllEquipped() : false;
+}
+
+bool AOnsetBaseCharacter::SalvageItem(int32 BagSlotIndex, TArray<FOnsetInventoryEntry>& OutYield)
+{
+	return InventoryComponent ? InventoryComponent->SalvageItem(BagSlotIndex, OutYield) : false;
+}
+
+bool AOnsetBaseCharacter::InfuseItem(int32 TargetSlotIndex, int32 CatalystSlotIndex, bool& bOutGradeUp, bool& bOutCriticalProc)
+{
+	return InventoryComponent ? InventoryComponent->InfuseItem(TargetSlotIndex, CatalystSlotIndex, bOutGradeUp, bOutCriticalProc) : false;
 }
 
 bool AOnsetBaseCharacter::IsAlive() const

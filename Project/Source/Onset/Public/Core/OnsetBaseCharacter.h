@@ -120,6 +120,26 @@ public:
 	/** The equipped item definition for Slot, or null when nothing is equipped. */
 	const FOnsetEquipmentDefinition* GetEquippedItem(EOnsetEquipmentSlot Slot) const;
 
+	/** Degrades the equipped weapon durability. */
+	UFUNCTION(BlueprintCallable, Category = "Combat|Durability")
+	void DegradeEquippedWeapon(float Amount = 1.0f);
+
+	/** Degrades equipped armor pieces durability. */
+	UFUNCTION(BlueprintCallable, Category = "Combat|Durability")
+	void DegradeEquippedArmor(float Amount = 1.0f);
+
+	/** Repairs all equipped items using scrap from bag. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Repair")
+	bool RepairAllEquipped();
+
+	/** Dismantles bag item at BagSlotIndex. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Salvage")
+	bool SalvageItem(int32 BagSlotIndex, TArray<FOnsetInventoryEntry>& OutYield);
+
+	/** Infuses Target item with Catalyst duplicate item. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Infusion")
+	bool InfuseItem(int32 TargetSlotIndex, int32 CatalystSlotIndex, bool& bOutGradeUp, bool& bOutCriticalProc);
+
 	EOnsetCharacterClass GetCharacterClass() const { return CurrentClass; }
 
 	void SetCharacterClass(EOnsetCharacterClass InClass) { CurrentClass = InClass; }

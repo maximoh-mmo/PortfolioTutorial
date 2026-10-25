@@ -55,6 +55,15 @@ void UOnsetAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 
 		if (Data.EvaluatedData.Magnitude < 0.0f && GetHealth() > 0.0f)
 		{
+			if (AOnsetBaseCharacter* TargetChar = Cast<AOnsetBaseCharacter>(GetOwningActor()))
+			{
+				TargetChar->DegradeEquippedArmor(0.1f);
+			}
+			if (AOnsetBaseCharacter* InstigatorChar = Cast<AOnsetBaseCharacter>(Data.EffectSpec.GetContext().GetInstigator()))
+			{
+				InstigatorChar->DegradeEquippedWeapon(0.05f);
+			}
+
 			FGameplayEventData Payload;
 			Payload.EventTag = TAG_Event_HitReaction;
 			Payload.Instigator = Data.EffectSpec.GetContext().GetInstigator();

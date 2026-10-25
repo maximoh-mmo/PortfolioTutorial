@@ -96,6 +96,68 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	TMap<EOnsetEquipmentSlot, FName> GetEquippedMap() const;
 
+	/** Equips item with specific instance state into Slot. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void EquipItemWithInstance(EOnsetEquipmentSlot Slot, FName RowName, const FOnsetEquipmentInstanceData& InstanceData);
+
+	/** Moves item at BagIndex into its designated equipment slot, preserving its instance data. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	bool EquipFromInventorySlot(int32 BagIndex);
+
+	/** Adds an equipment item with specific instance data to the bag. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void AddEquipmentInstance(FName RowName, const FOnsetEquipmentInstanceData& InstanceData);
+
+	/** Returns entry at BagIndex, or false if index is out of bounds. */
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	bool GetItemAtSlot(int32 SlotIndex, FOnsetInventoryEntry& OutEntry) const;
+
+	/** Const pointer to equipped entry for Slot. */
+	const FOnsetEquippedEntry* GetEquippedEntry(EOnsetEquipmentSlot Slot) const;
+
+	/** All equipped entries. */
+	const TArray<FOnsetEquippedEntry>& GetEquippedEntries() const { return EquippedEntries; }
+
+	/** Retrieves instance data for equipped slot. Returns true if slot has an item. */
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	bool GetEquippedInstanceData(EOnsetEquipmentSlot Slot, FOnsetEquipmentInstanceData& OutData) const;
+
+	// --- Durability & Repair ---
+
+	/** Degrades the equipped weapon by Amount. Server only. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Durability")
+	void DegradeEquippedWeapon(float Amount = 1.0f);
+
+	/** Degrades all equipped armor pieces (Shield, Head, Chest, Hands, Legs, Feet) by Amount. Server only. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Durability")
+	void DegradeEquippedArmor(float Amount = 1.0f);
+
+	/** Deducts durability from all equipped items on player death (-Percent%). Server only. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Durability")
+	void ApplyDurabilityLossOnDeath(float Percent = 15.0f);
+
+	/** Repairs equipped item in Slot using CompositeScrap materials from bag. Server only. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Repair")
+	bool RepairEquippedItem(EOnsetEquipmentSlot Slot);
+
+	/** Repairs all equipped damaged items using CompositeScrap materials from bag. Server only. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Repair")
+	bool RepairAllEquipped();
+
+	/** Repairs bag item at BagSlotIndex using CompositeScrap materials from bag. Server only. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Repair")
+	bool RepairBagItem(int32 BagSlotIndex);
+
+	// --- Salvage & Infusion ---
+
+	/** Dismantles equipment item at BagSlotIndex into scrap/alloys/materials. Server only. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Salvage")
+	bool SalvageItem(int32 BagSlotIndex, TArray<FOnsetInventoryEntry>& OutYield);
+
+	/** Infuses Target equipment item with Catalyst duplicate, progressing stat grades. Server only. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Infusion")
+	bool InfuseItem(int32 TargetSlotIndex, int32 CatalystSlotIndex, bool& bOutGradeUp, bool& bOutCriticalProc);
+
 	// --- Persistence ---
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")

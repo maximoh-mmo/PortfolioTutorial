@@ -20,6 +20,10 @@ struct FOnsetLootContext
 	/** Spawner-assigned area tag used for RequiredZoneTag gating. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loot")
 	FGameplayTag ZoneTag;
+
+	/** Killer's luck stat to improve rolled equipment quality grades and chances. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loot")
+	float Luck = 0.0f;
 };
 
 /**

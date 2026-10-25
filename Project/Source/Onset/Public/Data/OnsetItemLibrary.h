@@ -41,4 +41,7 @@ public:
 	 * when a stack overflows). No owner/authority checks — pure container math.
 	 */
 	static void AddStacked(TArray<FOnsetInventoryEntry>& Bag, EOnsetItemCategory Category, FName RowName, int32 Count);
+
+	/** Adds an individual equipment item instance to Bag. */
+	static void AddEquipment(TArray<FOnsetInventoryEntry>& Bag, FName RowName, const FOnsetEquipmentInstanceData& InstanceData);
 };

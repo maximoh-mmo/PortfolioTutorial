@@ -2,6 +2,8 @@
 
 #include "Combat/OnsetLootLibrary.h"
 
+#include "Combat/OnsetEquipmentLibrary.h"
+#include "Data/OnsetEquipmentTypes.h"
 #include "Data/OnsetItemLibrary.h"
 #include "Engine/World.h"
 #include "Misc/ConfigCacheIni.h"
@@ -107,7 +109,20 @@ TArray<FOnsetInventoryEntry> UOnsetLootLibrary::RollLoot(const FDataTableRowHand
 		}
 		const int32 Quantity = FMath::Max(1, FMath::RandRange(Entry->MinQty, FMath::Max(Entry->MinQty, Entry->MaxQty)));
 		const EOnsetItemCategory Category = UOnsetItemLibrary::GetCategoryForTable(Entry->Item.DataTable);
-		UOnsetItemLibrary::AddStacked(Loot, Category, Entry->Item.RowName, Quantity);
+		if (Category == EOnsetItemCategory::Equipment)
+		{
+			const FOnsetEquipmentDefinition* Def = static_cast<const FOnsetEquipmentDefinition*>(UOnsetItemLibrary::GetItemDefinition(Category, Entry->Item.RowName));
+			const EOnsetItemRarity Rarity = Def ? Def->Rarity : EOnsetItemRarity::Common;
+			for (int32 Q = 0; Q < Quantity; ++Q)
+			{
+				const FOnsetEquipmentInstanceData Rolled = UOnsetEquipmentLibrary::RollNewEquipmentInstance(Rarity, Context.Luck);
+				UOnsetItemLibrary::AddEquipment(Loot, Entry->Item.RowName, Rolled);
+			}
+		}
+		else
+		{
+			UOnsetItemLibrary::AddStacked(Loot, Category, Entry->Item.RowName, Quantity);
+		}
 	}
 
 	return Loot;
