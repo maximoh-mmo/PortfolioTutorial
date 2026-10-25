@@ -13,7 +13,7 @@ The Onset UI framework is built around **CommonUI** activatable screens managed 
 | Layer | Description | Routing Subsystem | Common Input Mode | Example Widgets |
 | :--- | :--- | :--- | :--- | :--- |
 | **Game** | In-game interactive overlays and toggled gameplay menus. | `PushScreen(Game)` | GameAndMenu / Game | `WBP_InventoryScreen` |
-| **Menu** | Standalone menus pausing or capturing navigation. | `PushScreen(Menu)` | Menu (Game Paused / Input Captured) | `WBP_PauseMenu`, `WBP_SettingsMenu` |
+| **Menu** | System & escape menus capturing UI navigation without stopping the online simulation. | `PushScreen(Menu)` | Menu (UI Focus Only / Simulation Continues) | `WBP_PauseMenu`, `WBP_SettingsMenu` |
 | **Modal** | Top-priority blocking dialogs and state gates. | `PushScreen(Modal)` | Menu (UI Only, Focus Trapped) | `WBP_DeathScreen`, Confirmation Modals |
 | **Viewport / HUD** | Non-activatable persistent combat HUD and indicators. | `AOnsetPlayerController` Viewport | Game Only | `WBP_HUD` (Health, Buffs, Cast Bar, Paperdoll, Quest) |
 
@@ -49,7 +49,11 @@ Derive from `UOnsetDeathScreen`.
 
 ---
 
-## 3. Pause & Escape Menu
+## 3. System & In-Game Escape Menu ("Pause Menu")
+
+> [!NOTE]
+> **No Game Pause on Dedicated Server:**  
+> In Onset's dedicated-server multiplayer architecture, the game simulation **never pauses**. Enemies, other players, combat ticks, and cooldowns continue updating. "Pause Menu" is used strictly as industry-standard player-facing terminology for the in-game Escape/System menu. Activating this screen sets the local input mode to `ECommonInputMode::Menu` (capturing mouse/keyboard focus for UI widgets and releasing camera control), but the live game world continues running uninterrupted around the player.
 
 ### C++ Class: `UOnsetPauseMenuScreen`
 - **Base Class:** `UOnsetScreenBase`
