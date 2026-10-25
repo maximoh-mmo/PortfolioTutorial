@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "UI/InventoryScreen.h"
 
 #include "Blueprint/UserWidget.h"
@@ -10,6 +8,9 @@
 #include "Inventory/UOnsetInventoryComponent.h"
 #include "Subsystem/OnsetUISubsystem.h"
 #include "UI/InventorySlotWidget.h"
+#include "UI/OnsetButtonBase.h"
+#include "UI/OnsetItemActionMenuWidget.h"
+#include "UI/OnsetItemTooltipWidget.h"
 
 namespace
 {
@@ -33,10 +34,19 @@ void UInventoryScreen::NativeOnActivated()
 	Super::NativeOnActivated();
 	BindToInventory(GetInventoryComponent());
 	RebuildSlots();
+
+	if (RepairAllButton)
+	{
+		RepairAllButton->OnClicked().AddUObject(this, &UInventoryScreen::HandleRepairAllClicked);
+	}
 }
 
 void UInventoryScreen::NativeOnDeactivated()
 {
+	if (RepairAllButton)
+	{
+		RepairAllButton->OnClicked().RemoveAll(this);
+	}
 	BindToInventory(nullptr);
 	Super::NativeOnDeactivated();
 }
@@ -184,14 +194,14 @@ void UInventoryScreen::RefreshEquipment()
 			continue;
 		}
 
-		const FName RowName = BoundInventory->GetEquippedRow(EquipSlot);
-		if (RowName.IsNone())
+		const FOnsetEquippedEntry* EquipEntry = BoundInventory->GetEquippedEntry(EquipSlot);
+		if (!EquipEntry || EquipEntry->RowName.IsNone())
 		{
 			SlotWidget->SetEquipmentEmpty(EquipSlot);
 		}
 		else
 		{
-			SlotWidget->SetEquipment(EquipSlot, RowName);
+			SlotWidget->SetEquipmentWithInstance(EquipSlot, EquipEntry->RowName, EquipEntry->InstanceData);
 		}
 	}
 }
@@ -204,9 +214,41 @@ void UInventoryScreen::HandleInventoryChanged()
 
 void UInventoryScreen::HandleSlotClicked(int32 SlotIndex)
 {
-	// Reserved for future interactions (equip/use/compare/drop). The bag UI
-	// skeleton only renders + refreshes the grid for now.
-	UE_LOG(LogTemp, Log, TEXT("InventoryScreen: bag slot %d clicked (interaction not yet wired)"), SlotIndex);
+	if (!BoundInventory)
+	{
+		return;
+	}
+
+	FOnsetInventoryEntry Entry;
+	if (!BoundInventory->GetItemAtSlot(SlotIndex, Entry))
+	{
+		return;
+	}
+
+	if (ItemTooltip)
+	{
+		ItemTooltip->SetItemEntry(Entry);
+	}
+
+	if (ActionMenu)
+	{
+		ActionMenu->SetupForBagItem(BoundInventory, SlotIndex);
+	}
+	else
+	{
+		if (Entry.Category == EOnsetItemCategory::Equipment)
+		{
+			BoundInventory->EquipFromInventorySlot(SlotIndex);
+		}
+	}
+}
+
+void UInventoryScreen::HandleRepairAllClicked()
+{
+	if (BoundInventory)
+	{
+		BoundInventory->RepairAllEquipped();
+	}
 }
 
 UInventorySlotWidget* UInventoryScreen::GetEquipmentSlotWidget(EOnsetEquipmentSlot EquipSlot) const

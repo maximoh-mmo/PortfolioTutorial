@@ -42,6 +42,27 @@ public:
 	/** Empties an equipment cell, showing the slot's name (e.g. "Head"). */
 	void SetEquipmentEmpty(EOnsetEquipmentSlot InSlot);
 
+	/** Fills an equipment cell with row and instance data (durability, stat grades, infusion). */
+	void SetEquipmentWithInstance(EOnsetEquipmentSlot InSlot, FName InRowName, const FOnsetEquipmentInstanceData& InInstanceData);
+
+	/** Returns the entry stored in this cell. */
+	const FOnsetInventoryEntry& GetEntry() const { return Entry; }
+	int32 GetSlotIndex() const { return SlotIndex; }
+	bool IsEquipmentCell() const { return bIsEquipmentCell; }
+	EOnsetEquipmentSlot GetEquipmentSlot() const { return EquipmentSlot; }
+
+	UFUNCTION(BlueprintPure, Category = "Onset|Inventory")
+	float GetDurabilityPercent() const;
+
+	UFUNCTION(BlueprintPure, Category = "Onset|Inventory")
+	bool IsMalfunctioning() const;
+
+	UFUNCTION(BlueprintPure, Category = "Onset|Inventory")
+	EOnsetQualityGrade GetQualityGrade() const;
+
+	UFUNCTION(BlueprintPure, Category = "Onset|Inventory")
+	FLinearColor GetQualityGradeColor() const;
+
 	/** Broadcast when the cell is clicked (SlotIndex, or INDEX_NONE for equipment). */
 	UPROPERTY(BlueprintAssignable, Category = "Onset|Inventory")
 	FOnsetInventorySlotClicked OnSlotClicked;

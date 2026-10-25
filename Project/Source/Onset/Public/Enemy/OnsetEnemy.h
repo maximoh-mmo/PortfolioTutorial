@@ -56,6 +56,10 @@ public:
 	UFUNCTION()
 	void OnRep_VisualProfile();
 
+	/** Returns the DT_EnemyStats row applied to this enemy. */
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	FName GetEnemyStatsRow() const { return EnemyStatsRow; }
+
 protected:
 
 	/** Delayed death work (corpse spawn, pool return) so the death frame stays cheap. */

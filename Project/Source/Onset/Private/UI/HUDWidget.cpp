@@ -20,6 +20,11 @@
 #include "UI/PlayerXPBarWidget.h"
 #include "UI/TargetHUDWidget.h"
 #include "Player/OnsetPlayerCharacter.h"
+#include "Quest/UOnsetQuestComponent.h"
+#include "UI/OnsetBuffBarWidget.h"
+#include "UI/OnsetCastBarWidget.h"
+#include "UI/OnsetDurabilityWarningWidget.h"
+#include "UI/OnsetQuestTrackerWidget.h"
 
 void UHUDWidget::BindToPlayer(AOnsetPlayerController* InController, AOnsetBaseCharacter* InPawn)
 {
@@ -63,6 +68,21 @@ void UHUDWidget::BindToPlayer(AOnsetPlayerController* InController, AOnsetBaseCh
 	{
 		PlayerASC->GetGameplayAttributeValueChangeDelegate(UOnsetAttributeSet::GetHealthAttribute())
 			.AddUObject(this, &UHUDWidget::HandlePlayerHealthChanged);
+	}
+
+	if (BuffBar)
+	{
+		BuffBar->BindToASC(PlayerASC);
+	}
+
+	if (DurabilityWarning && InPawn->InventoryComponent)
+	{
+		DurabilityWarning->BindToInventory(InPawn->InventoryComponent);
+	}
+
+	if (QuestTracker && InPawn->QuestComponent)
+	{
+		QuestTracker->BindToQuestComponent(InPawn->QuestComponent);
 	}
 }
 
@@ -231,6 +251,30 @@ void UHUDWidget::CloseDialogue()
 	if (DialogueOverlayWidget)
 	{
 		DialogueOverlayWidget->CloseDialogue();
+	}
+}
+
+void UHUDWidget::StartCasting(const FText& AbilityName, float Duration, bool bIsChannel)
+{
+	if (CastBar)
+	{
+		CastBar->StartCast(AbilityName, Duration, bIsChannel);
+	}
+}
+
+void UHUDWidget::InterruptCasting()
+{
+	if (CastBar)
+	{
+		CastBar->InterruptCast();
+	}
+}
+
+void UHUDWidget::FinishCasting()
+{
+	if (CastBar)
+	{
+		CastBar->FinishCast();
 	}
 }
 

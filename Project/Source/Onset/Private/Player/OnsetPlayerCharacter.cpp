@@ -1,6 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Player/OnsetPlayerCharacter.h"
+#include "Enemy/OnsetEnemy.h"
+#include "Player/OnsetPlayerController.h"
+#include "UI/OnsetDeathScreen.h"
 #include "Engine/World.h"
 
 #include "TimerManager.h"
@@ -118,8 +121,9 @@ void AOnsetPlayerCharacter::RespawnPlayer()
 			*GetName());
 	}
 
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	if (AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(GetController()))
 	{
+		PC->Client_DismissDeathScreen();
 		EnableInput(PC);
 	}
 }
@@ -311,12 +315,47 @@ void AOnsetPlayerCharacter::OnDeath(AActor* KillingActor)
 {
 	Super::OnDeath(KillingActor);
 	DisableInput(nullptr);
-	if (!HasAuthority()) return;
+
 	if (UOnsetThreatSubsystem* ThreatSub = GetWorld()->GetSubsystem<UOnsetThreatSubsystem>())
 	{
 		ThreatSub->RemovePlayer(this);
 	}
-	GetWorldTimerManager().SetTimerForNextTick(this, &AOnsetPlayerCharacter::RespawnPlayer);
+
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	FOnsetDeathReport Report;
+	Report.DurabilityLossPercent = 15.0f;
+	Report.RespawnDelay = 5.0f;
+	Report.RespawnLocationName = NSLOCTEXT("Onset", "DefaultHomeOutpost", "Outpost Alpha");
+
+	if (KillingActor)
+	{
+		if (const AOnsetEnemy* Enemy = Cast<AOnsetEnemy>(KillingActor))
+		{
+			const FOnsetEnemyStats* Stats = UOnsetEquipmentLibrary::GetEnemyStats(Enemy->GetEnemyStatsRow());
+			Report.KillerName = Stats && !Stats->DisplayName.IsEmpty() ? Stats->DisplayName : FText::FromString(Enemy->GetName());
+		}
+		else if (const AOnsetPlayerCharacter* KillerPlayer = Cast<AOnsetPlayerCharacter>(KillingActor))
+		{
+			Report.KillerName = FText::FromString(KillerPlayer->GetName());
+		}
+		else
+		{
+			Report.KillerName = FText::FromString(KillingActor->GetName());
+		}
+	}
+	else
+	{
+		Report.KillerName = NSLOCTEXT("Onset", "UnknownHazard", "Combat Hazard");
+	}
+
+	if (AOnsetPlayerController* PC = Cast<AOnsetPlayerController>(GetController()))
+	{
+		PC->Client_ShowDeathScreen(Report);
+	}
 }
 
 void AOnsetPlayerCharacter::SetMilitaryRank(EOnsetRankId NewRank)

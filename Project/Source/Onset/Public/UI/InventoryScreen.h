@@ -11,6 +11,9 @@
 class UInventorySlotWidget;
 class UOnsetInventoryComponent;
 class UUniformGridPanel;
+class UOnsetButtonBase;
+class UOnsetItemActionMenuWidget;
+class UOnsetItemTooltipWidget;
 
 /**
  * In-game inventory screen (bag grid + equipped loadout). Derived from in a
@@ -61,6 +64,9 @@ protected:
 	UFUNCTION()
 	void HandleSlotClicked(int32 SlotIndex);
 
+	/** Callback for Repair All button click. */
+	void HandleRepairAllClicked();
+
 	/** Fixed number of rows in the bag grid; columns auto-derive from MaxInventorySlots. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Onset|Inventory|Layout")
 	int32 GridRows = 10;
@@ -97,6 +103,18 @@ protected:
 	TObjectPtr<UInventorySlotWidget> Ring2Slot;
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UInventorySlotWidget> TrinketSlot;
+
+	/** Button to repair all equipped items using scrap. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UOnsetButtonBase> RepairAllButton;
+
+	/** Contextual action menu popup. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UOnsetItemActionMenuWidget> ActionMenu;
+
+	/** Item inspection tooltip widget. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UOnsetItemTooltipWidget> ItemTooltip;
 
 	UPROPERTY()
 	TObjectPtr<UOnsetInventoryComponent> BoundInventory;

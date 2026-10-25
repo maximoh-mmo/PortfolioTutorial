@@ -9,6 +9,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "OnsetAppearanceTypes.h"
+#include "UI/OnsetDeathScreen.h"
 #include "OnsetPlayerController.generated.h"
 
 struct FOnsetAccountData;
@@ -22,6 +23,7 @@ class UCursorManager;
 class UInputAction;
 class UInputMappingContext;
 class UOnsetRootLayout;
+class UOnsetPauseMenuScreen;
 class UOnsetScreenBase;
 class UTargetingComponent;
 class UHUDWidget;
@@ -475,6 +477,28 @@ public:
 	/** Shows the looted-items popup on the owning client after a successful loot. */
 	UFUNCTION(Client, Reliable)
 	void Client_ShowLootOverlay(const TArray<FOnsetInventoryEntry>& LootedItems);
+
+	/** Displays the full-screen modal Death Screen on the owning client. */
+	UFUNCTION(Client, Reliable)
+	void Client_ShowDeathScreen(const FOnsetDeathReport& Report);
+
+	/** Dismisses the Death Screen on the owning client upon respawn. */
+	UFUNCTION(Client, Reliable)
+	void Client_DismissDeathScreen();
+
+	/** Server-authoritative respawn request from the client Death Screen. */
+	UFUNCTION(Server, Reliable)
+	void Server_RequestRespawn();
+
+	/** Toggles the in-game Pause / Escape Menu. */
+	UFUNCTION(BlueprintCallable, Category = "Onset|UI")
+	void TogglePauseMenu();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Onset|UI")
+	TSubclassOf<UOnsetDeathScreen> DeathScreenClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Onset|UI")
+	TSubclassOf<UOnsetPauseMenuScreen> PauseMenuClass;
 
 	/** Notifies the client of a protocol exchange banner (e.g. salute protocol). */
 	UFUNCTION(Client, Reliable)

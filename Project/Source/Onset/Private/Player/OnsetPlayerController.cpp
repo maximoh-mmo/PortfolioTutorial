@@ -2,6 +2,8 @@
 
 
 #include "Player/OnsetPlayerController.h"
+#include "UI/OnsetDeathScreen.h"
+#include "UI/OnsetPauseMenuScreen.h"
 #include "Player/OnsetCharacterAppearanceComponent.h"
 #include "OnsetAppearanceLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -1970,4 +1972,56 @@ void AOnsetPlayerController::Server_UpdateCharacterAppearance_Implementation(con
         Client_CharacterAppearanceResult(false, Issues); return;
     }
     Client_CharacterAppearanceResult(true, Issues);
+}
+
+void AOnsetPlayerController::Client_ShowDeathScreen_Implementation(const FOnsetDeathReport& Report)
+{
+	UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>();
+	if (!UI || !DeathScreenClass)
+	{
+		return;
+	}
+
+	if (UOnsetDeathScreen* DeathScreen = Cast<UOnsetDeathScreen>(UI->PushScreen(EOnsetUILayer::Modal, DeathScreenClass)))
+	{
+		DeathScreen->SetDeathReport(Report);
+	}
+}
+
+void AOnsetPlayerController::Client_DismissDeathScreen_Implementation()
+{
+	if (UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>(); UI != nullptr)
+	{
+		UI->PopScreen(EOnsetUILayer::Modal);
+	}
+}
+
+void AOnsetPlayerController::Server_RequestRespawn_Implementation()
+{
+	if (AOnsetPlayerCharacter* PlayerChar = Cast<AOnsetPlayerCharacter>(GetPawn()))
+	{
+		PlayerChar->RespawnPlayer();
+	}
+}
+
+void AOnsetPlayerController::TogglePauseMenu()
+{
+	UOnsetUISubsystem* UI = GetGameInstance()->GetSubsystem<UOnsetUISubsystem>();
+	if (!UI || !PauseMenuClass)
+	{
+		return;
+	}
+
+	UOnsetActivatableWidgetStack* MenuStack = UI->GetRootLayout()
+		? UI->GetRootLayout()->GetStackForLayer(EOnsetUILayer::Menu)
+		: nullptr;
+
+	if (MenuStack && MenuStack->GetActiveWidget() && MenuStack->GetActiveWidget()->IsA<UOnsetPauseMenuScreen>())
+	{
+		UI->PopScreen(EOnsetUILayer::Menu);
+	}
+	else
+	{
+		UI->PushScreen(EOnsetUILayer::Menu, PauseMenuClass);
+	}
 }

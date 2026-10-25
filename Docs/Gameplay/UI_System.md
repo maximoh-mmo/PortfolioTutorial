@@ -26,6 +26,7 @@ Touch targets sized for mobile (minimum 44×44 px). Ability buttons use on-scree
 - **Implemented (A6):** in-game HUD — player health bar, target frame with target-type skins, ability bar with cooldowns, pooled damage numbers, combat (PvP) toggle, ground-reticle decal targeting indicator. Content lives under `Content/UI/` with the new content pipeline (`Docs/UI_ASSET_CHECKLIST.md`).
 - **Implemented (items pass):** loot overlay popup listing just-looted items (`ULootOverlayWidget`), driven by `Client_ShowLootOverlay`. See [Inventory & Loot System](../Inventory/Inventory_System.md).
 - **Implemented (leveling):** player XP/level bar (`UPlayerXPBarWidget`), bound to `OnProgressionChanged` on the player pawn. See [Leveling System](../Player/Leveling_System.md).
+- **Implemented (UI Pass):** Death & Respawn screen (`UOnsetDeathScreen`), Pause menu (`UOnsetPauseMenuScreen`), Settings screen with audio RTPCs (`UOnsetSettingsScreen`), Item Action menu (`UOnsetItemActionMenuWidget`), Item Tooltip with Durability & Quality Grades (`UOnsetItemTooltipWidget`), Buff Bar (`UOnsetBuffBarWidget`), Cast Bar (`UOnsetCastBarWidget`), Durability Paperdoll Alert (`UOnsetDurabilityWarningWidget`), and Quest Tracker (`UOnsetQuestTrackerWidget`). Full designer Blueprint setup instructions are in [UI Implementation Guide](../UI/UI_Implementation_Guide.md).
 
 ---
 

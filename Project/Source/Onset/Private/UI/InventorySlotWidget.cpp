@@ -2,6 +2,8 @@
 
 #include "UI/InventorySlotWidget.h"
 
+#include "Combat/OnsetEquipmentLibrary.h"
+
 #include "CommonTextBlock.h"
 #include "Components/Image.h"
 #include "Data/OnsetItemLibrary.h"
@@ -123,11 +125,19 @@ void UInventorySlotWidget::SetEmpty()
 
 void UInventorySlotWidget::SetEquipment(EOnsetEquipmentSlot InSlot, FName InRowName)
 {
+	const FOnsetEquipmentDefinition* Def = UOnsetEquipmentLibrary::GetDefinition(InRowName);
+	const FOnsetEquipmentInstanceData Rolled = UOnsetEquipmentLibrary::RollNewEquipmentInstance(Def ? Def->Rarity : EOnsetItemRarity::Common);
+	SetEquipmentWithInstance(InSlot, InRowName, Rolled);
+}
+
+void UInventorySlotWidget::SetEquipmentWithInstance(EOnsetEquipmentSlot InSlot, FName InRowName, const FOnsetEquipmentInstanceData& InInstanceData)
+{
 	bIsEquipmentCell = true;
 	EquipmentSlot = InSlot;
 	Entry.Category = EOnsetItemCategory::Equipment;
 	Entry.RowName = InRowName;
 	Entry.Count = 1;
+	Entry.InstanceData = InInstanceData;
 
 	const FOnsetItemDefinition* Def = UOnsetItemLibrary::GetItemDefinition(Entry.Category, Entry.RowName);
 
@@ -165,6 +175,26 @@ void UInventorySlotWidget::SetEquipment(EOnsetEquipmentSlot InSlot, FName InRowN
 	}
 
 	ApplyVisualState();
+}
+
+float UInventorySlotWidget::GetDurabilityPercent() const
+{
+	return Entry.Category == EOnsetItemCategory::Equipment ? Entry.InstanceData.GetDurabilityPercent() : 1.0f;
+}
+
+bool UInventorySlotWidget::IsMalfunctioning() const
+{
+	return Entry.Category == EOnsetItemCategory::Equipment && Entry.InstanceData.IsMalfunctioning();
+}
+
+EOnsetQualityGrade UInventorySlotWidget::GetQualityGrade() const
+{
+	return Entry.InstanceData.PrimaryStatGrade;
+}
+
+FLinearColor UInventorySlotWidget::GetQualityGradeColor() const
+{
+	return UOnsetEquipmentLibrary::GetGradeColor(Entry.InstanceData.PrimaryStatGrade);
 }
 
 void UInventorySlotWidget::SetEquipmentEmpty(EOnsetEquipmentSlot InSlot)

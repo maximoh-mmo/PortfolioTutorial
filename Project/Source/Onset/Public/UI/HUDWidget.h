@@ -20,6 +20,10 @@ class UOnsetInteractionPromptWidget;
 struct FMHInteractionDefinition;
 class UPlayerHealthBarWidget;
 class UPlayerXPBarWidget;
+class UOnsetBuffBarWidget;
+class UOnsetCastBarWidget;
+class UOnsetDurabilityWarningWidget;
+class UOnsetQuestTrackerWidget;
 class UTargetHUDWidget;
 class UTargetingComponent;
 struct FOnAttributeChangeData;
@@ -53,6 +57,23 @@ public:
 
 	/** Closes the NPC dialogue overlay. */
 	void CloseDialogue();
+
+	/** Starts ability casting progress on the HUD cast bar. */
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void StartCasting(const FText& AbilityName, float Duration, bool bIsChannel = false);
+
+	/** Interrupts active casting on the HUD cast bar. */
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void InterruptCasting();
+
+	/** Completes active casting on the HUD cast bar. */
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void FinishCasting();
+
+	UOnsetBuffBarWidget* GetBuffBar() const { return BuffBar; }
+	UOnsetCastBarWidget* GetCastBar() const { return CastBar; }
+	UOnsetDurabilityWarningWidget* GetDurabilityWarning() const { return DurabilityWarning; }
+	UOnsetQuestTrackerWidget* GetQuestTracker() const { return QuestTracker; }
 
 protected:
 	virtual void NativeConstruct() override;
@@ -96,6 +117,18 @@ private:
 	/** Autoplay + continue-on-disconnect toggles. */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UCombatToggleWidget> CombatToggle;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UOnsetBuffBarWidget> BuffBar;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UOnsetCastBarWidget> CastBar;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UOnsetDurabilityWarningWidget> DurabilityWarning;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UOnsetQuestTrackerWidget> QuestTracker;
 
 	/** Designer canvas that receives the pooled damage numbers. */
 	UPROPERTY(meta = (BindWidgetOptional))
