@@ -26,6 +26,7 @@ public class OnsetEditor : ModuleRules
 			"ToolMenus",
 			"WorkspaceMenuStructure",
 			"CommonUI",
+			"MHAudio",
 			"Niagara"
 		});
 	}

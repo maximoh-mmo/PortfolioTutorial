@@ -10,6 +10,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Quest/UOnsetQuestComponent.h"
 #include "UMHInteractableComponent.h"
+#include "MHAudioSubsystem.h"
 
 AOnsetDoor::AOnsetDoor()
 {
@@ -150,6 +151,21 @@ void AOnsetDoor::OnRep_IsOpen()
 {
 	SetActorTickEnabled(true);
 	BP_OnDoorStateChanged(bIsOpen);
+
+	if (bIsOpen && OpenAudioEvent.IsValid())
+	{
+		if (UMHAudioSubsystem* Audio = UMHAudioSubsystem::Get(this))
+		{
+			Audio->PostAudioEventAttached(OpenAudioEvent, DoorMesh ? DoorMesh.Get() : RootScene.Get());
+		}
+	}
+	else if (!bIsOpen && CloseAudioEvent.IsValid())
+	{
+		if (UMHAudioSubsystem* Audio = UMHAudioSubsystem::Get(this))
+		{
+			Audio->PostAudioEventAttached(CloseAudioEvent, DoorMesh ? DoorMesh.Get() : RootScene.Get());
+		}
+	}
 }
 
 bool AOnsetDoor::CanPawnUnlockDoor(const AActor* InstigatorPawn, FText& OutFailureReason) const
@@ -249,6 +265,13 @@ void AOnsetDoor::HandleInteracted(const FMHInteractionContext& Context)
 		FText FailureReason;
 		if (!CanPawnUnlockDoor(Context.InstigatorActor, FailureReason))
 		{
+			if (LockedAudioEvent.IsValid())
+			{
+				if (UMHAudioSubsystem* Audio = UMHAudioSubsystem::Get(this))
+				{
+					Audio->PostAudioEventAttached(LockedAudioEvent, DoorMesh ? DoorMesh.Get() : RootScene.Get());
+				}
+			}
 			return;
 		}
 

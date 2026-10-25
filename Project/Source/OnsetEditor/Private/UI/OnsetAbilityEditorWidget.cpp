@@ -29,6 +29,7 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelEditorViewport.h"
+#include "MHAudioSubsystem.h"
 #include "Misc/Char.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
@@ -702,7 +703,15 @@ void UOnsetAbilityEditorWidget::PreviewCastInViewport()
 			UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, Niagara, CasterOrigin, CasterRot);
 		}
 	}
-	if (!Def.CastSound.IsNull())
+	// Play Cast Audio: via MHAudio if tag is set, otherwise fallback to native CastSound
+	if (Def.CastAudioEvent.IsValid())
+	{
+		if (UMHAudioSubsystem* Audio = UMHAudioSubsystem::Get(World))
+		{
+			Audio->PostAudioEvent(Def.CastAudioEvent, CasterOrigin, CasterRot);
+		}
+	}
+	else if (!Def.CastSound.IsNull())
 	{
 		if (USoundBase* Sound = Def.CastSound.LoadSynchronous())
 		{
@@ -733,7 +742,14 @@ void UOnsetAbilityEditorWidget::PreviewCastInViewport()
 				UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, Niagara, EndPoint, CasterRot);
 			}
 		}
-		if (!Def.ImpactSound.IsNull())
+		if (Def.ImpactAudioEvent.IsValid())
+		{
+			if (UMHAudioSubsystem* Audio = UMHAudioSubsystem::Get(World))
+			{
+				Audio->PostAudioEvent(Def.ImpactAudioEvent, EndPoint, CasterRot);
+			}
+		}
+		else if (!Def.ImpactSound.IsNull())
 		{
 			if (USoundBase* Sound = Def.ImpactSound.LoadSynchronous())
 			{
@@ -763,7 +779,14 @@ void UOnsetAbilityEditorWidget::PreviewCastInViewport()
 				UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, Niagara, ImpactPoint, FRotator::ZeroRotator);
 			}
 		}
-		if (!Def.ImpactSound.IsNull())
+		if (Def.ImpactAudioEvent.IsValid())
+		{
+			if (UMHAudioSubsystem* Audio = UMHAudioSubsystem::Get(World))
+			{
+				Audio->PostAudioEvent(Def.ImpactAudioEvent, ImpactPoint, FRotator::ZeroRotator);
+			}
+		}
+		else if (!Def.ImpactSound.IsNull())
 		{
 			if (USoundBase* Sound = Def.ImpactSound.LoadSynchronous())
 			{

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameplayTagContainer.h"
 #include "MHInteractionTypes.h"
 #include "OnsetDoor.generated.h"
 
@@ -69,6 +70,18 @@ public:
 	/** Speed at which the door interpolates between open and closed states (1 / duration in seconds). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door|Motion", meta = (ClampMin = "0.1"))
 	float OpenCloseSpeed = 2.5f;
+
+	/** Optional MHAudio event triggered when the door begins opening. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door|Audio")
+	FGameplayTag OpenAudioEvent;
+
+	/** Optional MHAudio event triggered when the door begins closing. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door|Audio")
+	FGameplayTag CloseAudioEvent;
+
+	/** Optional MHAudio event triggered when an interaction attempt fails because the door is locked. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door|Audio")
+	FGameplayTag LockedAudioEvent;
 
 	/** Opens or closes the door on server authority. */
 	UFUNCTION(BlueprintCallable, Category = "Door")

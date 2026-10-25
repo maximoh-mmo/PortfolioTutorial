@@ -28,6 +28,7 @@
 #include "Engine/World.h"
 #include "GAS/OnsetMovementAttributeSet.h"
 #include "GAS/OnsetCombatAttributeSet.h"
+#include "MHAudioSubsystem.h"
 #include "Materials/MaterialInterface.h"
 #include "Core/TargetingComponent.h"
 #include "Dom/JsonObject.h"
@@ -389,6 +390,14 @@ void AOnsetBaseCharacter::OnDeath(AActor* KillingActor)
 {
 	bIsAlive = false;
 	SetTargetReticule(false);
+
+	if (IsPlayerControlled())
+	{
+		if (UMHAudioSubsystem* Audio = UMHAudioSubsystem::Get(this))
+		{
+			Audio->SetMusicState(FName("CombatState"), FName("Exploration"));
+		}
+	}
 }
 
 bool AOnsetBaseCharacter::IsAlive() const
@@ -402,6 +411,15 @@ void AOnsetBaseCharacter::OnRespawn()
 	SetActorHiddenInGame(false);                                                                   
 	SetActorTickEnabled(true);
 	SetActorEnableCollision(true);
+
+	if (IsPlayerControlled())
+	{
+		if (UMHAudioSubsystem* Audio = UMHAudioSubsystem::Get(this))
+		{
+			Audio->SetRTPC(FName("PlayerHealthPercent"), 1.0f);
+			Audio->SetMusicState(FName("CombatState"), FName("Exploration"));
+		}
+	}
 }
 
 void AOnsetBaseCharacter::SetTargetReticule(bool bShow)

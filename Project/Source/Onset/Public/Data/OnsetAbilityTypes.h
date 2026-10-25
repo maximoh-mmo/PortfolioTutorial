@@ -208,7 +208,15 @@ struct FOnsetAbilityDefinition : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual & Audio Cues")
 	TSoftObjectPtr<USoundBase> CastSound;
 
+	/** Optional provider-neutral MHAudio event triggered on cast start (e.g. Audio.Event.Ability.Cast). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual & Audio Cues")
+	FGameplayTag CastAudioEvent;
+
 	/** Optional sound played on hit / impact. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual & Audio Cues")
 	TSoftObjectPtr<USoundBase> ImpactSound;
+
+	/** Optional provider-neutral MHAudio event triggered on hit / impact (e.g. Audio.Event.Ability.Impact). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual & Audio Cues")
+	FGameplayTag ImpactAudioEvent;
 };
