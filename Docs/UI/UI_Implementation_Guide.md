@@ -47,6 +47,27 @@ Derive from `UOnsetDeathScreen`.
 | `TimerText` | `UCommonTextBlock` | `meta = (BindWidgetOptional)` | Real-time countdown: *"Respawn available in 4s..."*. |
 | `RespawnButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Action button disabled during countdown, enabled at 0s. |
 
+### Visual Layout Specification
+![Death & Respawn Modal Layout](Images/layout_death_screen.png)
+
+#### Canvas Hierarchy & Anchors
+- **Root Canvas Panel** (Full Screen 1920x1080)
+  - `Border_Vignette`: Anchors `[0, 0, 1, 1]`, Offsets `(0, 0, 0, 0)`, Brush tint: Dark Red/Black semi-transparent `RGBA(0.03, 0.02, 0.03, 0.88)`
+  - `SizeBox_ModalContainer`: Anchors Center `[0.5, 0.5]`, Alignment `(0.5, 0.5)`, Width `700px`, Height `680px`
+    - `Border_Card`: Rounded dark acrylic slate background with `ACCENT_RED` outline (2px)
+      - `VerticalBox_Content`:
+        - `Border_Banner`: Dark red banner header with `"YOU HAVE FALLEN"` (36pt bold)
+        - `Spacer` (20px)
+        - `VerticalBox_Killer`: `KillerText` (*"Slain by: Gorgon Berserker (Elite Tier 3)"*)
+        - `Spacer` (15px)
+        - `VerticalBox_Penalty`: `DurabilityLossText` (*"-15% Equipment Durability Loss"*)
+        - `Spacer` (15px)
+        - `VerticalBox_Sanctuary`: `RespawnLocationText` (*"Sanctuary: Outpost Alpha"*)
+        - `Spacer` (25px)
+        - `TimerText`: Real-time countdown (*"Respawn available in 3s..."*)
+        - `Spacer` (15px)
+        - `RespawnButton`: Large glowing button `[RESPAWN NOW]` (Enabled when timer reaches 0s)
+
 ---
 
 ## 3. System & In-Game Escape Menu ("Pause Menu")
@@ -73,6 +94,28 @@ Derive from `UOnsetPauseMenuScreen`.
 | `SettingsButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Pushes `WBP_SettingsMenu` onto the Menu layer. |
 | `CharacterSelectButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Cleans up session and returns to character selection. |
 | `QuitDesktopButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Quits the game client (`UKismetSystemLibrary::QuitGame`). |
+
+### Visual Layout Specification
+![In-Game System Menu Layout](Images/layout_pause_menu.png)
+
+#### Canvas Hierarchy & Anchors
+- **Root Canvas Panel** (Full Screen 1920x1080)
+  - `Border_Dimmer`: Fullscreen subtle backdrop tint `RGBA(0.04, 0.05, 0.08, 0.65)`
+  - `SizeBox_Drawer`: Anchors Center `[0.5, 0.5]`, Alignment `(0.5, 0.5)`, Width `500px`, Height `740px`
+    - `Border_DrawerPanel`: Dark slate panel with rounded corners and subtle blue border
+      - `VerticalBox_DrawerContent`:
+        - `TextBlock_Title`: `"SYSTEM MENU"` (24pt bold, white)
+        - `TextBlock_Session`: `"Game Session: Online (DS)"` (14pt cyan)
+        - `Separator` (1px)
+        - `Border_ServerStatus`: Ping / Packet loss readout (Latency: 28ms, Server: EU-Central-1)
+        - `Spacer` (25px)
+        - `VerticalBox_Buttons`:
+          - `ResumeButton`: `[RESUME GAME]` (Primary Gold)
+          - `SettingsButton`: `[SETTINGS]`
+          - `CharacterSelectButton`: `[CHARACTER SELECT]`
+          - `QuitDesktopButton`: `[QUIT TO DESKTOP]`
+        - `Spacer` (20px)
+        - `Border_Notice`: Warning note that the world simulation continues ticking while open
 
 ---
 
@@ -107,6 +150,31 @@ Derive from `UOnsetSettingsScreen`.
 | `ApplyButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Commits video settings to user configuration. |
 | `ResetDefaultsButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Resets audio sliders to 100% and reapplies RTPCs. |
 | `BackButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Pops settings screen, returning to pause menu. |
+
+### Visual Layout Specification
+![Audio & Video Settings Layout](Images/layout_settings_screen.png)
+
+#### Canvas Hierarchy & Anchors
+- **Root Canvas Panel** (Full Screen 1920x1080)
+  - `SizeBox_SettingsPanel`: Anchors Center `[0.5, 0.5]`, Alignment `(0.5, 0.5)`, Width `1200px`, Height `820px`
+    - `Border_SettingsCard`: Rounded dark acrylic panel
+      - `VerticalBox_Settings`:
+        - `TextBlock_SettingsTitle`: `"SETTINGS & PREFERENCES"` (24pt bold)
+        - `HorizontalBox_Columns`:
+          - `VerticalBox_AudioCol` (Left Pane, Width `540px`):
+            - `MasterVolumeSlider` (Track + Fill + Thumb, bound to RTPC `MasterVolume`)
+            - `MusicVolumeSlider` (bound to RTPC `MusicVolume`)
+            - `SFXVolumeSlider` (bound to RTPC `SFXVolume`)
+            - `VoiceVolumeSlider` (bound to RTPC `VoiceVolume`)
+          - `Spacer` (40px)
+          - `VerticalBox_VideoCol` (Right Pane, Width `540px`):
+            - `FullscreenToggleButton` + `FullscreenLabel` (*"Fullscreen"* vs *"Windowed"*)
+            - Resolution readout & Graphics quality presets
+        - `HorizontalBox_Footer`:
+          - `ResetDefaultsButton` (Left-aligned)
+          - `Spacer` (Fill)
+          - `BackButton` (Right-aligned)
+          - `ApplyButton` (Right-aligned Primary Gold)
 
 ---
 
@@ -145,6 +213,54 @@ Derive from `UOnsetItemActionMenuWidget`.
 | `InfuseButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Calls duplicate infusion mechanism to boost stat roll tier. |
 | `SalvageButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Calls `Server_SalvageItem(SlotIndex)` to break down into scrap. |
 | `CloseButton` | `UOnsetButtonBase` | `meta = (BindWidgetOptional)` | Closes the popup action menu. |
+
+### Visual Layout Specification: Full Inventory Screen
+![Inventory & Loadout Screen Layout](Images/layout_inventory_screen.png)
+
+#### Canvas Hierarchy & Anchors
+- **Root Canvas Panel** (Full Screen 1920x1080)
+  - `HorizontalBox_Panes`: Anchors Center `[0.5, 0.5]`, Alignment `(0.5, 0.5)`, Width `1680px`, Height `860px`
+    - `Border_EquipmentPane` (Left, Width `660px`):
+      - `Title`: `"EQUIPPED LOADOUT & STATS"`
+      - `Canvas_Paperdoll`: Freeform slot widgets arranged around character silhouette:
+        - `HeadSlot` `(X:250, Y:80)`, `NeckSlot` `(X:250, Y:160)`, `ChestSlot` `(X:250, Y:240)`
+        - `HandsSlot` `(X:80, Y:240)`, `WeaponSlot` `(X:80, Y:330)`, `Ring1Slot` `(X:80, Y:420)`
+        - `ShieldSlot` `(X:420, Y:330)`, `Ring2Slot` `(X:420, Y:420)`, `LegsSlot` `(X:250, Y:330)`
+        - `FeetSlot` `(X:250, Y:420)`, `TrinketSlot` `(X:250, Y:510)`
+      - `Border_StatsPreview`: Primary stats breakdown (Attack Power, Armor, Elemental Resistance, Crit)
+      - `RepairAllButton`: Full-width button `[REPAIR ALL EQUIPPED (Cost: 140 Scrap)]`
+    - `Spacer` (40px)
+    - `Border_BagPane` (Right, Width `980px`):
+      - `Header`: Title + Currency/Scrap Counter (`Scrap: 1,850`)
+      - `HorizontalBox_FilterTabs`: `[ALL]`, `[EQUIPMENT]`, `[CONSUMABLE]`, `[MATERIAL]`, `[QUEST]`
+      - `ScrollBox_Bag`:
+        - `BagGrid`: `UniformGridPanel` (8 columns x 10 rows = 80 cells of `WBP_InventorySlot`)
+
+---
+
+### Visual Layout Specification: Item Inspection Tooltip & Context Action Menu
+![Item Tooltip and Action Menu Layout](Images/layout_item_tooltip_action.png)
+
+#### Tooltip (`WBP_ItemTooltip`) Hierarchy
+- `Border_TooltipCard` (Width `580px`, Dark slate with Quality Tier colored border)
+  - `VerticalBox_Content`:
+    - `Header`: `ItemNameText` (*"Astral Voidblade +2"*), `CategoryText` (*"Two-Handed Greatsword"*), `QualityGradeBadge` (*"GRADE S"* with Purple tint)
+    - `DurabilitySection`: `DurabilityText` (*"85 / 100 (85%)"*), `DurabilityBar` (Progress bar tinted green/yellow/red)
+    - `MalfunctioningBanner`: Flashing red caution banner visible only if Durability == 0
+    - `PrimaryStatSection`: `PrimaryStatText` (*"Weapon Physical Attack: +182"*)
+    - `SecondaryStatsSection`: `SecondaryStatsText` (Dynamic bulleted affixes: Crit Damage, Elemental Attack, Bonus HP)
+    - `InfusionSection`: `InfusionText` (*"Infusion Rank +2 / +5"*), `InfusionProgressBar`
+    - `LoreSection`: Italic item lore text & binding rule (*"Soulbound"*)
+
+#### Action Menu (`WBP_ItemActionMenu`) Hierarchy
+- `Border_ActionMenuCard` (Width `400px`, Floating popup anchored to clicked slot or mouse cursor)
+  - `VerticalBox_Actions`:
+    - `ItemTitleText`: Header banner with selected item title
+    - `EquipUnequipButton`: `[EQUIP TO SLOT]` or `[UNEQUIP]`
+    - `RepairButton`: `[REPAIR ITEM (Cost: 25 Scrap)]`
+    - `InfuseButton`: `[INFUSE DUPLICATE (+1 Roll Tier)]`
+    - `SalvageButton`: `[SALVAGE FOR SCRAP (Yield: 85 Scrap)]`
+    - `CloseButton`: `[CANCEL / CLOSE]`
 
 ---
 
